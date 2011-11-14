@@ -12,6 +12,7 @@ object ForwardRateDataType extends MarketDataType {
   type dataType = ForwardRateData
   type keyType = ForwardRateDataKey
   val keys = UOM.currencies.map(s => ForwardRateDataKey(s))
+  val humanName = "forward rates"
 
   def extendedKeys = List(currencyField)
   override def valueKeys = List(formatField, dayField, instrumentTypeField)
@@ -57,7 +58,7 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
   type marketDataType = ForwardRateData
   type marketDataDBType = ForwardRateData
   def typeName = ForwardRateDataType.name
-  def subTypeKey = ccy.toString
+  def humanName = ccy.toString
   def fields = Set(ForwardRateDataType.currencyField.field)
 }
 

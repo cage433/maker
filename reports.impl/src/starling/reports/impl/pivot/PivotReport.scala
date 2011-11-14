@@ -6,13 +6,13 @@ import starling.utils._
 import starling.curves._
 import starling.pivot._
 import collection.Seq
-import collection.immutable.Set
 import starling.gui.api._
 import starling.market.FuturesMarket
 import starling.instrument.SingleCalendarSpreadOption
 import starling.market.FuturesFrontPeriodIndex
 import starling.marketdata.{MarketDataKey, MarketData}
 import starling.marketdata.ReferenceDataLookup
+import collection.immutable.{Map, Set}
 
 /**
  * Holds the general pivot report code.
@@ -204,9 +204,9 @@ class PivotReportData[R <: PivotReportRow](data: Map[UTPIdentifier, Either[List[
     case Right(t) => List(tuple._1)
   })
 
-  def errors = Map() ++ data.flatMap(tuple => tuple._2 match {
+  def errors: Map[UTPIdentifier, StackTrace] = Map() ++ data.flatMap(tuple => tuple._2 match {
     case Left(_) => List()
-    case Right(t) => List(tuple._1 -> t.getMessage)
+    case Right(t) => List( (tuple._1, StackTrace(t)) )
   })
 }
 object PivotReportData {

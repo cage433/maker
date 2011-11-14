@@ -7,36 +7,49 @@ import starling.db.DBWriter
 import starling.dbx.QueryBuilder
 import starling.utils.ImplicitConversions._
 import QueryBuilder._
-import xml.{Utility, Elem, Text}
+import xml.transform.{RuleTransformer, RewriteRule}
+import xml.{Node, Utility, Elem, Text}
 
 class Patch139_BenchmarkCodes extends Patch {
 
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) {
-
-    def renameFields(data:Elem) = {
-      val fixed = data.child.map {
-        case <entry><string>Country Code</string>{value}</entry> => <entry><string>Country</string>{value}</entry>
-        case <entry><string>Area Code</string>{value}</entry> => <entry><string>Area</string>{value}</entry>
-        case <entry><string>Grade Code</string>{value}</entry> => <entry><string>Grade</string>{value}</entry>
-        case o => o
-      }
-      data.copy(child=fixed)
+    ChangeMarketDataValueKeys.fixMarketDataValueKey(starling, writer, Fix)
+  }
+  object Fix extends RewriteRule {
+    override def transform(n: Node): Seq[Node] = n match {
+      case <entry><string>Country Code</string>{value}</entry> => <entry><string>Country</string>{value}</entry>
+      case <entry><string>Area Code</string>{value}</entry> => <entry><string>Area</string>{value}</entry>
+      case <entry><string>Grade Code</string>{value}</entry> => <entry><string>Grade</string>{value}</entry>
+      case o => o
     }
+  }
+}
+object ChangeMarketDataValueKeys {
 
+  def fixMarketDataValueKey(starling: RichDB, writer: DBWriter, rule:RewriteRule) {
+    fix(starling, writer, "MarketDataValueKey", "valueKey", rule)
+  }
+
+  def fixMarketDataExtendedKey(starling: RichDB, writer: DBWriter, rule:RewriteRule) {
+    fix(starling, writer, "MarketDataExtendedKey", "marketDataKey", rule)
+  }
+
+  def fix(starling: RichDB, writer: DBWriter, table:String, xmlColumn:String, rule:RewriteRule) {
+    val transformer = new RuleTransformer(rule)
     var fixCount = 0
     starling inTransaction { writer => {
-      starling.query("select * from MarketDataValueKey") {
+      starling.query("select * from " + table) {
         rs => {
           val id = rs.getInt("id")
-          val data = Utility.trimProper(rs.getXML("valueKey")).toList.head.asInstanceOf[Elem]
-          val fixed = renameFields(data)
+          val data = Utility.trimProper(rs.getXML(xmlColumn)).toList.head.asInstanceOf[Elem]
+          val fixed = transformer(data)
           if (data != fixed) {
             fixCount+=1
-            writer.update("MarketDataValueKey", Map("valueKey"->fixed), ("id" eql id))
+            writer.update(table, Map(xmlColumn->fixed), ("id" eql id))
           }
         }
       }
     }}
-    println("Fixed " + fixCount + " MarketDataValueKey rows")
+    println("Fixed " + fixCount + " " + table + " rows")
   }
 }

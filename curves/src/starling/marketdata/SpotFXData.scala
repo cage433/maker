@@ -8,6 +8,7 @@ import starling.utils.ImplicitConversions._
 object SpotFXDataType extends MarketDataType {
   type dataType = SpotFXData
   type keyType = SpotFXDataKey
+  val humanName = "spot fx rate"
   val keys = UOM.currencies.filterNot(_ == UOM.USD).map(s=>SpotFXDataKey(s))
   val currencyField = FieldDetails("Currency")
   val rateField = new PivotQuantityFieldDetails("Rate")
@@ -37,7 +38,7 @@ case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
   type marketDataType = SpotFXData
   type marketDataDBType = SpotFXData
   def typeName = SpotFXDataType.name
-  def subTypeKey = ccy.toString
+  def humanName = ccy.toString
   def fields = Set(SpotFXDataType.currencyField.field)
 }
 

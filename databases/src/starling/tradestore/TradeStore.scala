@@ -63,7 +63,6 @@ object TradeableFields {
   private val normalizedNameToFieldAndMapper:Map[String,(FieldDetails,(Trade,Any)=>Any)] = Map() ++ fieldDetailsAndMapper.map{t=>t._1.field.name.removeWhiteSpace.toLowerCase->t}
 
   val fieldDetails = fieldDetailsAndMapper.map(_._1).toList
-  val fields = fieldDetails.map (_.field)
 
   def createFieldValues(trade:Trade, tradeable:Tradeable):Map[PField,Any] = {
     val tradeableDetails : Map[String, Any] = tradeable.shownTradeableDetails
@@ -163,7 +162,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   def tradeAttributeFieldsAsSQLColumnNames = tradeAttributeFieldDetails.map(_.field.name.removeWhiteSpace.toLowerCase)
 
 
-  lazy val allPossibleFieldDetails = Map() ++ (TradeableFields.fieldDetails ++ tradeAttributeFieldDetails ++ JustTradeFields.fieldDetails).map {
+  lazy val allPossibleFieldDetails = Map() ++ (tradeableFieldDetails ++ tradeAttributeFieldDetails ++ JustTradeFields.fieldDetails).map {
     fd => fd.field -> fd
   }
 
@@ -627,10 +626,12 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
 
   }
 
+  def tradeableFieldDetails = TradeableFields.fieldDetails
+
   private def createFieldDetailGroups(tradeableTypes:Set[TradeableType[_]]) = {
     val allFieldNames = Set() ++ tradeableTypes.flatMap(_.fields)
     val instrumentFieldDetails: List[FieldDetails] = addExtraInstrumentFieldDetails(
-      TradeableFields.fieldDetails.filter(
+      tradeableFieldDetails.filter(
         fd => allFieldNames.contains(fd.field.name)
       )
     )

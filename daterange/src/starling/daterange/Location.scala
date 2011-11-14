@@ -4,10 +4,11 @@ import org.joda.time.DateTime
 import java.io.Serializable
 import starling.utils.StarlingEnum
 import scalaz.Scalaz._
+import starling.calendar.Clock
 
 abstract class Location(val name: String) extends Serializable {
   def timeZoneOn(day: Day): TimeZone
-  def now = new DateTime(timeZoneOn(Day.today))
+  def now = new DateTime(Clock.timestamp.instant, timeZoneOn(Day.today))
 }
 
 object Location extends StarlingEnum(classOf[Location], (location:Location) => location.name) {

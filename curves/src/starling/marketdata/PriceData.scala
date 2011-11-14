@@ -50,6 +50,7 @@ object PeriodFieldDetails {
 object PriceDataType extends MarketDataType {
   type dataType = PriceData
   type keyType = PriceDataKey
+  val humanName = "prices"
   lazy val keys = Market.all.map(PriceDataKey)
   lazy val exchangeField = FieldDetails("Exchange")
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
@@ -101,7 +102,7 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   type marketDataType = PriceData
   type marketDataDBType = PriceDataDTO
   def typeName = PriceDataType.name
-  def subTypeKey = market.name
+  def humanName = market.name
 
   override def unmarshallDB(dbValue: Any): marketDataType =
     PriceData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)

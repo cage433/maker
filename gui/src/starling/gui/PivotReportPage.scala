@@ -9,10 +9,11 @@ import collection.mutable.ListBuffer
 import java.awt.datatransfer.StringSelection
 import starling.daterange.{Day}
 import java.awt.{Toolkit, Dimension}
-import javax.swing.ImageIcon
 import starling.browser._
 import common.{ExButton, ButtonClickedEx, NListView, MigPanel}
 import starling.gui.StarlingLocalCache._
+import javax.swing.{JSplitPane, ImageIcon}
+import java.beans.{PropertyChangeEvent, PropertyChangeListener}
 
 class PivotReportPage {}
 
@@ -317,7 +318,7 @@ case class ReportErrorsPage(reportParameters:ReportParameters) extends StarlingS
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new PivotReportErrorPageComponent(context, data, browserSize, previousPageData)
   def build(pageBuildingContext: StarlingServerContext) = {
     val errors = pageBuildingContext.reportService.reportErrors(reportParameters)
-    val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.message))
+    val errorsToUse = errors.errors.map(e => ErrorViewElement(e.instrumentText, e.stackTrace))
     PivotReportErrorPageData(errorsToUse)
   }
   def icon = StarlingIcons.im("/icons/error.png")
@@ -329,7 +330,7 @@ class PivotReportErrorPageComponent(pageContext:PageContext, data:PageData, brow
   val errors = data match {
     case d:PivotReportErrorPageData => d.reportErrors
   }
-  val errorView = new ErrorView(errors, Some(scala.math.round(browserSize.height / 4.0f)))
+  val errorView = new ErrorView(errors, browserSize, pageContext)
   add(errorView, "push, grow")
 }
 
@@ -340,21 +341,25 @@ case class ReportCellErrorsPage(errors:List[StackTrace]) extends StarlingServerP
     val errorsToUse = data match {
       case d:ReportCellErrorData => d.errors
     }
-    new ReportCellErrorsPageComponent(errorsToUse, browserSize, previousPageData)
+    new ReportCellErrorsPageComponent(errorsToUse, browserSize, previousPageData, context)
   }
-  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.message, d.stackTrace)))}
+  def build(pageBuildingContext:StarlingServerContext) = {ReportCellErrorData(errors.map(d => ErrorViewElement(d.longMessage.getOrElse(d.message), d)))}
 }
 case class ReportCellErrorData(errors:List[ErrorViewElement]) extends PageData
 
-class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension, previousPageData:Option[PreviousPageData]) extends MigPanel("") with PageComponent {
-  val errorView = new ErrorView(errors, Some(scala.math.round(browserSize.height / 4.0f)))
+class ReportCellErrorsPageComponent(errors:List[ErrorViewElement], browserSize:Dimension, previousPageData:Option[PreviousPageData], pageContext:PageContext) extends MigPanel("") with PageComponent {
+  val errorView = new ErrorView(errors, browserSize, pageContext)
   add(errorView, "push, grow")
 }
 
-case class ErrorViewElement(message:String, text:String)
-class ErrorView(errors:List[ErrorViewElement], dividerLocation0:Option[Int] = None) extends MigPanel("insets 0") {
+case class ErrorViewElement(message:String, stackTrace:StackTrace)
+object ErrorView {
+  var userHasShownStackTraces = false
+}
+class ErrorView(errors:List[ErrorViewElement], browserSize:Dimension, pageContext:PageContext) extends MigPanel("insets 0") {
+  val showStackTrace = pageContext.localCache.currentUser.isDeveloper || ErrorView.userHasShownStackTraces
   val errorMessages = errors.map(_.message)
-  val errorTexts = Map() ++ errors.map(e => (e.message -> e.text))
+  val errorTexts = Map() ++ errors.map(e => (e.message -> e.stackTrace.stackTrace))
   val messagesView = new NListView(errorMessages)
   val messagesScroll = new ScrollPane(messagesView)
   val textArea = new TextArea {
@@ -381,11 +386,13 @@ class ErrorView(errors:List[ErrorViewElement], dividerLocation0:Option[Int] = No
   val splitPane = new SplitPane(Orientation.Horizontal, messagesScroll, stackScrollPane) {
     oneTouchExpandable = true
     resizeWeight = 0.3
-    if (dividerLocation0 != None) {
-      dividerLocation = dividerLocation0.get
-    }
+    dividerLocation = if (showStackTrace) scala.math.round(browserSize.height / 4.0f) else Int.MaxValue
     border = scala.swing.Swing.EmptyBorder
   }
+  splitPane.peer.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, new PropertyChangeListener() {
+    //Once the stack traces have been shown, always show them until the user closes the application
+	  def propertyChange(event:PropertyChangeEvent) { ErrorView.userHasShownStackTraces = true}
+  });
 
   add(splitPane, "push, grow, wrap")
   add(copyToClipButton, "al right")

@@ -54,10 +54,10 @@ class FuturesTests extends TestMarketTest with TestNGSuite {
     val fixed = Quantity(100, USD / BBL)
 
     def environment(day:DayAndTime) = {
-      Environment(UnitTestingAtomicEnvironment(day, {
+      UnitTestingEnvironment(day, {
         case ForwardPriceKey(market, period, _) => forward
         case MarketFixingKey(market, ltd, period) => fixed
-      }))
+      })
     }
     val v = Quantity(1000, UOM.BBL)
     val strike = Quantity(20, UOM.USD/UOM.BBL)
@@ -83,10 +83,10 @@ class FuturesTests extends TestMarketTest with TestNGSuite {
     val fixed = Quantity(100, US_CENT / GAL)
 
     def environment(day:DayAndTime) = {
-      Environment(UnitTestingAtomicEnvironment(day, {
+      UnitTestingEnvironment(day, {
         case ForwardPriceKey(market, period, _) => forward
         case MarketFixingKey(market, ltd, period) => fixed
-      }))
+      })
     }
     val v = Quantity(42000, UOM.GAL)
     val strike = Quantity(200, UOM.US_CENT/UOM.GAL)
@@ -117,10 +117,10 @@ class FuturesTests extends TestMarketTest with TestNGSuite {
 
 
     def environment(day:DayAndTime, forward: Quantity, fixed: Quantity) = {
-      Environment(UnitTestingAtomicEnvironment(day, {
+      UnitTestingEnvironment(day, {
         case ForwardPriceKey(market, period, _) => forward
         case MarketFixingKey(market, ltd, period) => fixed
-      }))
+      })
     }
     val v = Quantity(42000, UOM.GAL)
     val strike = Quantity(200, UOM.US_CENT/UOM.GAL)

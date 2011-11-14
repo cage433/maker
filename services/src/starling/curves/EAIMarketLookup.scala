@@ -119,8 +119,8 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
                   case FuturesExchangeFactory.COMEX if nameLower.contains("hg copper") => expiryRules.COMEX_G_S_HG_COPPER
                   case FuturesExchangeFactory.COMEX if nameLower.contains("silver") => expiryRules.COMEX_G_S_HG_COPPER
                   case FuturesExchangeFactory.COMEX if nameLower.contains("um") => expiryRules.COMEX_PT_PA
-                  case FuturesExchangeFactory.SFS if nameLower.contains("fuel") => expiryRules.SHANGHAI_FUEL_OIL
-                  case FuturesExchangeFactory.SFS => expiryRules.SHANGHAI
+                  case FuturesExchangeFactory.SHFE if nameLower.contains("fuel") => expiryRules.SHANGHAI_FUEL_OIL
+                  case FuturesExchangeFactory.SHFE => expiryRules.SHANGHAI
                   case _ => expiry.ruleOrEmptyRule(quoteId, name)
                 }
               }
@@ -259,7 +259,7 @@ class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLo
       case "nymex" => NYMEX
       case "comex" => COMEX
       case "cbot" => COMEX
-      case "shfe" | "shanghai" => SFS
+      case "shfe" | "shanghai" => SHFE
       case "baltic" => BALTIC
       case "ice" | "ipe" => ICE
       case "mdex" => MDEX

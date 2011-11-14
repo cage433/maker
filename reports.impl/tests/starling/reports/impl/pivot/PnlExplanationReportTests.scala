@@ -170,12 +170,11 @@ class PnlExplanationReportTests extends JonTestEnv {
   @Test
   def testTimePnlOnForwardOption() {
     val market = Market.NYMEX_WTI
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(Day(2009, 9, 1).endOfDay, {
+    val env = UnitTestingEnvironment(Day(2009, 9, 1).endOfDay, {
         case ForwardPriceKey(`market`, _, _) => Quantity(10, market.priceUOM)
         case _: OilAtmVolAtomicDatumKey => Percentage(.10)
         case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-      })
+      }
     ).undiscounted
     val option = new FuturesOption(market, Day(2010, 10, 15), Month(2010, 11), Quantity(10, market.priceUOM), Quantity(1000, market.uom), Call, European)
 
@@ -225,15 +224,15 @@ class PnlExplanationReportTests extends JonTestEnv {
     )
     val marketDay1 = (4 Mar 2011).endOfDay
     val marketDay2 = (7 Mar 2011).endOfDay
-    val env1 = Environment(UnitTestingAtomicEnvironment(
+    val env1 = UnitTestingEnvironment(
       marketDay1,
       {
         case _ : ForwardPriceKey => 66.0(index.priceUOM)
         case _ : IndexFixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => new Quantity(1.0)
       }
-    )).forwardState(marketDay2).ignoreSwapRounding
-    val env2 = Environment(UnitTestingAtomicEnvironment(
+    ).forwardState(marketDay2).ignoreSwapRounding
+    val env2 = UnitTestingEnvironment(
       marketDay2,
       {
         case _ : ForwardPriceKey => 65.0(index.priceUOM)
@@ -241,7 +240,7 @@ class PnlExplanationReportTests extends JonTestEnv {
         case _ : IndexFixingKey => 77.0(index.priceUOM)
         case _ : DiscountRateKey => new Quantity(1.0)
       }
-    )).ignoreSwapRounding
+    ).ignoreSwapRounding
     val marketChangesPnl = new MarketChangesPnl(env1.atomicEnv, env2.atomicEnv, Map(UTPIdentifier(1) -> swap))
       val choices = ReportSpecificChoices(Map(showEqFutures_str -> false))
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), swap), choices)
@@ -264,18 +263,18 @@ class PnlExplanationReportTests extends JonTestEnv {
     val price1 = 1101.446448(index.priceUOM)
     val price2 = 1098.461042(index.priceUOM)
 
-    val env1 = Environment(UnitTestingAtomicEnvironment(
+    val env1 = UnitTestingEnvironment(
     marketDay1, {
       case _: ForwardPriceKey => price1
       case _: IndexFixingKey => 0(index.priceUOM)
     }
-    )).forwardState(marketDay2)
-    val env2 = Environment(UnitTestingAtomicEnvironment(
+    ).forwardState(marketDay2)
+    val env2 = UnitTestingEnvironment(
     marketDay2, {
       case _: ForwardPriceKey => price2
       case _: IndexFixingKey => 0(index.priceUOM)
     }
-    )).undiscounted
+    ).undiscounted
 
     val marketChangesPnl = new MarketChangesPnl(env1.atomicEnv, env2.atomicEnv, Map(UTPIdentifier(1) -> swap))
     val choices = ReportSpecificChoices(Map(showEqFutures_str -> false))

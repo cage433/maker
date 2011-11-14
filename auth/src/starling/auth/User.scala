@@ -28,6 +28,8 @@ case class User(
 
   override def hashCode = username.toLowerCase.hashCode
 
+  def isDeveloper = groups.contains("Starling Developers")
+
   def equalsIgnoreCase(name : String) = {
     name.equalsIgnoreCase(username)
   }

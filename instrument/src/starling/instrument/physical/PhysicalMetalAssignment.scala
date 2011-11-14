@@ -107,7 +107,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
         benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code) ++
        benchmarkIncoTermCode.map(benchmarkIncoTermCodeLabel -> _.code)
 
-  def price(env: Environment) = contractPricingSpec.price(env)
+  def price(env: Environment) = contractPricingSpec.priceExcludingVAT(env)
 
   def periodKey = contractPricingSpec.quotationPeriod.map(DateRangePeriod)
 
@@ -140,43 +140,32 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   }
   
   private def contractPaymentExplained(env : Environment) : NamedQuantity = {
-    val price = contractPricingSpec.price(env) 
+    val price = contractPricingSpec.priceIncludingVAT(env).getOrElse(contractPricingSpec.priceExcludingVAT(env))
     var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
     exp = timesVolume(exp)
     discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
   }
 
   private def benchmarkPaymentExplained(env : Environment) : NamedQuantity = {
-    val spec = benchmarkPricingSpec(env)
-    val price = spec.price(env) 
+    val spec = benchmarkPricingSpec
+    val price = spec.priceIncludingVAT(env).getOrElse(spec.priceExcludingVAT(env))
     var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
     exp = timesVolume(exp)
     discounted(env, exp, spec.settlementDay(env.marketDay))
   }
 
-  def benchmarkPricingSpec(env : Environment) : TitanPricingSpec = {
-    val namedEnv = env.withNaming()
-    //val countryCode = benchmarkCountryCode.get
+  lazy val benchmarkPricingSpec : TitanPricingSpec = {
     val month = benchmarkDeliveryDay.get.containingMonth
-    //val futuresMarket = env.atomicEnv.referenceDataLookup.marketFor(commodity, countryCode)
-    //val index = futuresMarket.physicalMetalBenchmarkIndex
-    //val day = TitanPricingSpec.representativeDay(index, month, env.marketDay)
-    //val areaBenchmark = env.areaBenchmark(countryCode, commodity, grade, day).named("Area Benchmark")
-    //val countryBenchmark = env.countryBenchmark(commodity, countryCode, day).named("Country Benchmark")
-
-    FixedPricingSpec(
-      month.lastDay.nextWeekday,
-      List((1.0, Quantity(1234, USD/MT))),
-      Quantity.NULL,
+    val futuresMarket = contractPricingSpec.futuresMarket
+    val index = futuresMarket.physicalMetalBenchmarkIndex
+    UnknownPricingSpecification(
+      index,
+      month,
+      Nil,
+      month.lastDay,
+      Quantity(0, index.priceUOM),
       valuationCCY
     )
-  //AveragePricingSpec(
-    //index,
-    //day,
-    //Quantity.NULL,
-    ////areaBenchmark + countryBenchmark,
-    //valuationCCY
-    //)
   }
 
   private def freightParityExplained(env : Environment) : NamedQuantity = {
@@ -206,18 +195,17 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       mtm = contractPaymentExplained(env)
     )
     val assets = if (benchmarkDeliveryDay.isDefined){
-      val spec = benchmarkPricingSpec(env)
       val benchmarkPaymentAsset = Asset(
         known = false,
         assetType = commodity.neptuneName,
-        settlementDay = spec.settlementDay(env.marketDay),
+        settlementDay = benchmarkPricingSpec.settlementDay(env.marketDay),
         amount = quantity,
         mtm = benchmarkPaymentExplained(env)
       )
       val freightParityAsset = Asset(
         known = false,
         assetType = "Freight",
-        settlementDay = spec.settlementDay(env.marketDay),
+        settlementDay = benchmarkPricingSpec.settlementDay(env.marketDay),
         amount = quantity,
         mtm = freightParityExplained(env)
       )
@@ -335,7 +323,7 @@ case class PhysicalMetalAssignment( assignmentID : String,
     require (isPurchase)
     benchmarkDeliveryDay match {
       case Some(bdd) => {
-        val bp = benchmarkPricingSpec(env)
+        val bp = benchmarkPricingSpec
         CostsAndIncomeUnallocatedAssignmentValuation(
           assignmentID,
           /*
@@ -443,11 +431,11 @@ object CostsAndIncomeValuation{
       Some(pricingSpec.premium)
 
     PricingValuationDetails(
-      pricingSpec.price(env),
-      Some(pricingSpec.price(env)),
+      pricingSpec.priceExcludingVAT(env),
+      pricingSpec.priceIncludingVAT(env),
       premium,
-      pricingSpec.price(env) * quantity,
-      Some(pricingSpec.price(env) * quantity),
+      pricingSpec.priceExcludingVAT(env) * quantity,
+      pricingSpec.priceIncludingVAT(env).map(_ * quantity),
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,

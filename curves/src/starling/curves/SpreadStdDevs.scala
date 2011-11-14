@@ -93,11 +93,12 @@ case class SpreadStdDevSurfaceDataKey(market : FuturesMarket) extends MarketData
   type marketDataType = SpreadStdDevSurfaceData
   type marketDataDBType = SpreadStdDevSurfaceData
   def typeName = SpreadStdDevSurfaceDataType.name
-  def subTypeKey = market.toString
+  def humanName = market.toString
   def fields = Set(SpreadStdDevSurfaceDataType.marketField.field)
 }
 
 object SpreadStdDevSurfaceDataType extends MarketDataType {
+  val humanName = "spread standard deviations"
   val marketField: FieldDetails = FieldDetails("Market")
   val firstPeriodField: FieldDetails = FieldDetails("First Period")
   val lastPeriodField: FieldDetails = FieldDetails("Last Period")

@@ -14,6 +14,7 @@ trait MarketDataType {
   val name: MarketDataTypeName = MarketDataTypeName(
     getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$").stripSuffix("DataType")
   )
+  val humanName:String
 
   def extendedKeys:List[FieldDetails]
   def valueKeys:List[FieldDetails] = Nil
@@ -93,7 +94,8 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
     SpreadStdDevSurfaceDataType,
     new GradeAreaBenchmarkDataType(referenceDataLookup),
     new CountryBenchmarkDataType(referenceDataLookup),
-    new FreightParityDataType(referenceDataLookup)
+    new FreightParityDataType(referenceDataLookup),
+    ShanghaiVATDataType
   )
 
   val lookup = types.toMapWithKeys(_.name.name)

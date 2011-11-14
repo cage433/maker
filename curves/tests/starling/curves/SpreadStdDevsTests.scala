@@ -54,7 +54,7 @@ class SpreadStdDevsTests extends TestMarketTest with TestNGSuite {
     val month = Month(2010, 6)
     val spread = Spread(month, month.next)
 
-    val atomicEnv = new UnitTestingAtomicEnvironment(DayAndTime(marketDate, TimeOfDay.EndOfDay), {
+    val env = UnitTestingEnvironment(DayAndTime(marketDate, TimeOfDay.EndOfDay), {
       key => key match {
         case _: SpreadAtmStdDevAtomicDatumKey => atmSD
         case _: SpreadSkewStdDevAtomicDatumKey => {
@@ -69,8 +69,6 @@ class SpreadStdDevsTests extends TestMarketTest with TestNGSuite {
         case _: OilAtmVolAtomicDatumKey => oilVol
       }
     })
-
-    val env = Environment(atomicEnv)
 
     assertEquals(
       env.spreadStdDev(Market.NYMEX_WTI, spread, observationDate, Quantity(strike, USD / BBL)).value,

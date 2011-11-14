@@ -37,8 +37,7 @@ object  RefinedTacticalRefDataConversions {
   )
   
   lazy val indices = List("Cash", "Three Month", "Average of Four", "Lowest of Four", "Max Settlement")
-
-  def index(exchange : RefMarket, metal : Metal, indexName : TitanIndexName) : IndexWithDailyPrices = {
+  def market(exchange : RefMarket, metal : Metal) : FuturesMarket = {
     val metalToMarketMap : Map[String, FuturesMarket] = exchange.mappingCode match {
       case `LME` => commodityNameToLMEMarket
       case `SHFE` => commodityNameToSHFEMarket
@@ -47,9 +46,14 @@ object  RefinedTacticalRefDataConversions {
       case other => throw new Exception("Unrecognised exchange " + other + ", metal was " + metal.name)
     }
 
-    if (! metalToMarketMap.contains(metal.name))
+    metalToMarketMap.getOrElse(
+      metal.name,
       throw new Exception("No market found for " + exchange.mappingCode + ", " + metal.name)
-    val futuresMarket = metalToMarketMap(metal.name)
+    )
+  }
+
+  def index(exchange : RefMarket, metal : Metal, indexName : TitanIndexName) : IndexWithDailyPrices = {
+    val futuresMarket = market(exchange, metal)
 
     (exchange.mappingCode, indexName) match {
       case (`LME`, CashIndex) => LmeCashSettlementIndex(futuresMarket, Level.Ask)

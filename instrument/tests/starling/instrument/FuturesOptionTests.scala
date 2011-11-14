@@ -120,13 +120,11 @@ class FuturesOptionTests extends StarlingTest {
   def testNumericDelta(market: FuturesMarket, price: Quantity) {
     val vol = new Percentage(.4)
     val md = Day(2011, 1, 1)
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(md.endOfDay, {
-        case ForwardPriceKey(`market`, _, _) => price
-        case _: OilAtmVolAtomicDatumKey => vol
-        case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
-      })
-    ).undiscounted
+    val env = UnitTestingEnvironment(md.endOfDay, {
+      case ForwardPriceKey(`market`, _, _) => price
+      case _: OilAtmVolAtomicDatumKey => vol
+      case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
+    }).undiscounted
 
     val month = Month(2011, 5)
     val expiry = market.optionExpiry(month)
@@ -155,14 +153,12 @@ class FuturesOptionTests extends StarlingTest {
         European)
     val marketDay = Day(2011, 1, 1).endOfDay
     val zeroRate = 0.03
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(marketDay, {
-        case _: ForwardPriceKey => Quantity(99, USD / MT)
-        case _: OilAtmVolAtomicDatumKey => Percentage(.4)
-        case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage](0.1 -> Percentage(0.05), 0.9 -> Percentage(0.04))
-        case DiscountRateKey(_, day, _) => new Quantity(math.exp(-zeroRate * (day.endOfDay.timeSince(marketDay))))
-      })
-    )
+    val env = UnitTestingEnvironment(marketDay, {
+      case _: ForwardPriceKey => Quantity(99, USD / MT)
+      case _: OilAtmVolAtomicDatumKey => Percentage(.4)
+      case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage](0.1 -> Percentage(0.05), 0.9 -> Percentage(0.04))
+      case DiscountRateKey(_, day, _) => new Quantity(math.exp(-zeroRate * (day.endOfDay.timeSince(marketDay))))
+    })
     val explanation = option.explanation(env)
     assertEquals(explanation.name, "((FuturesOption-European-Call(F, K, Vol, T) * Volume) * Discount)")
     assertEquals(explanation.format(1), "((FuturesOption-European-Call(A Test Market.OCT 2012, 100.00 USD/MT, 39.98%, 1.72) * 100.00 MT) * USD.20Sep2012)")

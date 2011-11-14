@@ -128,7 +128,9 @@ trait MarketDataStore {
 
   def marketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
 
-  def marketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType]
+  def availableMarketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType]
+
+  def marketDataTypes:MarketDataTypes
 
   def observationDaysByExcel(): Map[String, Set[Day]]
   def observationDaysByPricingGroup(): Map[PricingGroup, Set[Day]]

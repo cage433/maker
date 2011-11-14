@@ -2,6 +2,7 @@ package starling.calendar
 
 import starling.daterange.{Location, DateRange, Day}
 import starling.utils.ImplicitConversions._
+import org.joda.time.DateTime
 
 case class BusinessCalendarSet(name: String, location: Location, holidays: Set[Day]) extends BusinessCalendar {
   def isHoliday(day: Day) = holidays.contains(day)
@@ -17,6 +18,7 @@ trait BusinessCalendar { self =>
   def name: String
   def isHoliday(day : Day) : Boolean
   def location: Location
+  def now: DateTime = location.now
 
   def isBusinessDay(day: Day)                  = day.isWeekday && !isHoliday(day)
   def nextBusinessDay(day: Day): Day           = thisOrNextBusinessDay(day.nextDay)

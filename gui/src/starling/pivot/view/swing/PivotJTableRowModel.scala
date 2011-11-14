@@ -24,7 +24,7 @@ import PivotTableType._
 case class TreeFieldInformation(field:Field, selectedValue:Any)
 
 class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Array[Array[AxisCell]],
-                          removeAddedRowsIfBlank:(PivotEdits) => PivotEdits) extends PivotJTableModel {
+                          removeAddedRowsIfBlank:(PivotEdits) => PivotEdits, var extraFormatInfo:ExtraFormatInfo) extends PivotJTableModel {
   lazy val extraLine = helper.extraLine
   lazy val fieldState = helper.fieldState
   lazy val keyFields = helper.keyFields
@@ -32,14 +32,13 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   lazy val updateEdits = helper.updateEdits
   lazy val editableInfo = helper.editableInfo
   lazy val fieldInfo = helper.fieldInfo
-  lazy val extraFormatInfo = helper.extraFormatInfo
   lazy val popupListView = helper.popupListView
   lazy val popupMenu = helper.popupMenu
 
   private val addedRows0 = new ListBuffer[Array[AxisCell]]
   private val blankCells = rowHeaderData0(0).map(av => {
     val newAV = av.value.copy(value = BlankAddedAxisValueType)
-    av.copy(value = newAV, label = "", collapsible = None)
+    av.copy(value = newAV, label = "", collapsible = None, longLabel = "")
   })
   if (extraLine) {
     addedRows0 += blankCells
@@ -108,7 +107,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   }
 
   private def key(rowIndex:Int, columnIndex:Int): Map[Field, SomeSelection] = {
-    val filterFieldToValues = fieldState.singleValueFilterAreaFilters()
+    val filterFieldToValues = fieldState.filtersInTheFilterArea.collect{case (f, SomeSelection(v)) => (f, SomeSelection(v))}
     val rowFilters = fieldState.rowFilters
     val columnFilters = fieldState.columnFilters
 
@@ -213,7 +212,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       } else {
         overrideMap((rowIndex, columnIndex)) = OverrideDetails(newLabel, EditableCellState.Added)
         newValue.foreach { nv => {
-          val row = initializedBlankRow + (rowHeaderField -> nv)
+          val row = helper.initializedBlankRow + (rowHeaderField -> nv)
           helper.addRowToTables()
           newPivotEdits = newPivotEdits.withAddedRow(row)
         } }
@@ -225,19 +224,22 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     newPivotEdits
   }
 
-  private def initializedBlankRow() = Row(
-    (Map() ++ (keyFields.map(f => {f → UndefinedValue}))) ++ fieldState.singleValueFilterAreaFilters.mapValues(_.values.iterator.next)
-  )
-
   override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
     setValuesAt(List(TableValue(value, rowIndex, columnIndex)), Some(pivotEdits), true)
   }
 
-  def acceptableValues(r:Int, c:Int) = {
+  def acceptableValues(r:Int, c:Int):Set[String] = {
     val rowHeaderField = rowHeaderData0(0)(c).value.field
-    val parser = editableInfo.get.fieldToParser(rowHeaderField)
-//    val filteredValues = fieldState.fieldSelection(rowHeaderField)
-    parser.acceptableValues
+    fieldState.fieldSelection(rowHeaderField) match {
+      case None => {
+        val parser = editableInfo.get.fieldToParser(rowHeaderField)
+        parser.acceptableValues
+      }
+      case Some(filteredValues) => {
+        val formatter = fieldInfo.fieldToFormatter.getOrElse(rowHeaderField, DefaultPivotFormatter)
+        filteredValues.map(v => formatter.format(v, extraFormatInfo).text)
+      }
+    }
   }
 
   def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {

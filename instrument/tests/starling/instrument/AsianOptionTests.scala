@@ -208,12 +208,12 @@ class AsianOptionTests extends JonTestEnv {
 
     assertEquals(explanation.format(1), ex0)
 
-    val ex = "((Curran-Call(Average(IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, " +
-            "IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, IPE Gas Oil.JAN 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010, " +
-            "IPE Gas Oil.FEB 2010, IPE Gas Oil.FEB 2010), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
+    val ex = "((Curran-Call(Average(JAN 2010, JAN 2010, JAN 2010, " +
+            "JAN 2010, JAN 2010, JAN 2010, JAN 2010, " +
+            "FEB 2010, FEB 2010, FEB 2010, FEB 2010, " +
+            "FEB 2010, FEB 2010, FEB 2010, FEB 2010, " +
+            "FEB 2010, FEB 2010, FEB 2010, FEB 2010, " +
+            "FEB 2010, FEB 2010), 0.20, 100.00 USD/MT) * 123.00 MT) * 0.95)"
 
     val ex1 = "((Curran-Call(Average(101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT," +
             " 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, 101.00 USD/MT, " +
@@ -257,16 +257,14 @@ class AsianOptionTests extends JonTestEnv {
 
   @Test
   def testTheFuturesMonthVegaWhenATMVegaIsUncheckedIsTheSameAsScalingTheSwapVegaByTheObservationDays {
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(DayAndTime(Day(2010, 1, 1), TimeOfDay.EndOfDay), {
-        key => key match {
-          case _ : DiscountRateKey => new Quantity(1.0)
-          case ForwardPriceKey(market, _, _) => Quantity(100.0, market.priceUOM)
-          case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
-          case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.01), 0.1 -> Percentage(0.02), 0.9 -> Percentage(0.03))
-        }
-      })
-    )
+    val env = UnitTestingEnvironment(DayAndTime(Day(2010, 1, 1), TimeOfDay.EndOfDay), {
+      key => key match {
+        case _ : DiscountRateKey => new Quantity(1.0)
+        case ForwardPriceKey(market, _, _) => Quantity(100.0, market.priceUOM)
+        case _ : OilAtmVolAtomicDatumKey => Percentage(0.10)
+        case _ : OilVolSkewAtomicDatumKey => Map(0.5 -> Percentage(0.01), 0.1 -> Percentage(0.02), 0.9 -> Percentage(0.03))
+      }
+    })
 
     val nonSkewEnv = env.setShiftsCanBeIgnored(true)
 

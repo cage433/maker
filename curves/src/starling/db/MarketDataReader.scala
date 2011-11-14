@@ -11,7 +11,9 @@ trait MarketDataReader {
   //Abstract
   def identifier:String
 
-  def marketDataTypes:List[MarketDataType]
+  def marketDataTypes:MarketDataTypes
+
+  def availableMarketDataTypes:List[MarketDataType]
 
   def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]] = None,
            observationTimes: Option[Set[ObservationTimeOfDay]] = None,
@@ -31,8 +33,11 @@ trait MarketDataReader {
     val observationPoint = timedKey.observationPoint
     read(key.typeName, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)), Some(Set(key))).headOption match {
       case Some((_,marketData)) => marketData
-      case None => throw new MissingMarketDataException(
-        "No data found for " + identifier + " " + key + " for " + observationPoint)
+      case None => {
+        val marketDataType = marketDataTypes.fromName(key.typeName)
+        val short = "No " + timedKey.key.humanName + " " + marketDataType.humanName
+        throw new MissingMarketDataException(short, short + " found on " + observationPoint.unparse)
+      }
     }
   }
 

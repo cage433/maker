@@ -61,19 +61,17 @@ class CalendarSpreadOptionTests  extends JonTestEnv with TestNGSuite{
     val FJune = 101.0
     val FJuly = 100.0
     val K = 0.2333
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(
-        md,
-        {key =>
-          key match {
-            case ForwardPriceKey(_, `june`, _) => FJune(mkt.priceUOM)
-            case ForwardPriceKey(_, `july`, _) => FJuly(mkt.priceUOM)
-            case _ : DiscountRateKey => new Quantity(1.0)
-            case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
-            case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
-          }
+    val env = UnitTestingEnvironment(
+      md,
+      {key =>
+        key match {
+          case ForwardPriceKey(_, `june`, _) => FJune(mkt.priceUOM)
+          case ForwardPriceKey(_, `july`, _) => FJuly(mkt.priceUOM)
+          case _ : DiscountRateKey => new Quantity(1.0)
+          case _ : SpreadAtmStdDevAtomicDatumKey => stdDev(mkt.priceUOM)
+          case _ : SpreadSkewStdDevAtomicDatumKey => new DenseDoubleMatrix1D(Array(0.0, 0.0)).asRowMatrix
         }
-      )
+      }
     )
     val exerciseDay = june.firstDay - 1
     val T = exerciseDay.endOfDay.timeSince(md)

@@ -5,7 +5,7 @@ import org.testng.annotations._
 import org.testng.Assert._
 import starling.market.Market
 import starling.curves.Environment
-import starling.curves.UnitTestingAtomicEnvironment
+import starling.curves.UnitTestingEnvironment
 import starling.daterange.Month
 import starling.daterange.Day
 import starling.quantity.Quantity
@@ -16,13 +16,11 @@ class FuturesCalendarSpreadTests extends StarlingTest{
   @Test
   def testExplanation{
     val spread = FuturesCalendarSpread(Market.COMEX_SILVER, Month(2012, 1), Month(2012, 2), Quantity(101, USD/OZ), Quantity(99, USD/OZ), Quantity(1000, OZ))
-    val env = Environment(
-      new UnitTestingAtomicEnvironment(
-        Day(2011, 8, 2).endOfDay,
-        {
-          case ForwardPriceKey(_, Month(y, m), _) => Quantity(100.5 + m, USD/OZ)
-        }
-      )
+    val env = UnitTestingEnvironment(
+      Day(2011, 8, 2).endOfDay,
+      {
+        case ForwardPriceKey(_, Month(y, m), _) => Quantity(100.5 + m, USD/OZ)
+      }
     )
     val explanation = spread.explanation(env)
     assertEquals(explanation.name, "(Front + Back)")

@@ -14,6 +14,7 @@ import starling.market._
 object FreightFlatRateDataType extends MarketDataType {
   type dataType = FreightFlatRateData
   type keyType = FreightFlatRateDataKey
+  val humanName = "Freight flat rates"
   lazy val keys: List[FreightFlatRateDataKey] = Market.all.filter(_.commodity == Freight).filter(_.currency == UOM.WSC).map(FreightFlatRateDataKey)
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   lazy val marketTenorField = FieldDetails("Market Tenor")
@@ -71,7 +72,7 @@ case class FreightFlatRateDataKey(market: CommodityMarket) extends MarketDataKey
 
   def typeName = FreightFlatRateDataType.name
 
-  def subTypeKey = market.name
+  def humanName = market.name
 
   override def unmarshallDB(dbValue: Any): marketDataType =
     FreightFlatRateData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)

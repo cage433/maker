@@ -1,8 +1,8 @@
 package starling.pivot
 
-import model.UndefinedValue
 
 import java.io.Serializable
+import model.{UndefinedValueNew, UndefinedValue}
 import starling.quantity._
 import starling.utils.ImplicitConversions._
 import starling.utils.{StarlingEnum}
@@ -95,14 +95,16 @@ object IntPivotParser extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text.toInt, text)
 }
 object PivotQuantityPivotParser extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = typedParse(text, extraFormatInfo)
+
+  def typedParse(text: String, extraFormatInfo: ExtraFormatInfo) = {
     val textNoCommas = text.replaceAll(",", "").trim()
     val cleanTextMaybeWithUOM = if (textNoCommas.startsWith("(")) {
       "-" + textNoCommas.replaceAll("\\(", "").replaceAll("\\)", "")
     } else {
       textNoCommas
     }
-    val letterIndex = cleanTextMaybeWithUOM.indexWhere(_.isLetter)
+    val letterIndex = cleanTextMaybeWithUOM.indexWhere{c => c.isLetter || c == '%'}
     if (letterIndex == -1) {
       // No UOM specified
       (PivotQuantity(cleanTextMaybeWithUOM.toDouble),"")
@@ -110,7 +112,7 @@ object PivotQuantityPivotParser extends PivotParser {
       val (number, uomString) = cleanTextMaybeWithUOM.splitAt(letterIndex)
       val uom = UOM.fromString(uomString)
       val pq = PivotQuantity(new Quantity(number.toDouble, uom))
-      (pq, PivotFormatter.formatPivotQuantity(pq, extraFormatInfo, false) + uom.asString)
+      (pq, PivotFormatter.shortAndLongText(pq, extraFormatInfo, false)._1 + uom.asString)
     }
   }
 }
@@ -156,24 +158,31 @@ object PivotFormatter {
   val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat, PercentFormat)
   val DefaultExtraFormatInfo = ExtraFormatInfo(DefaultDecimalPlaces, DefaultDateRangeFormat)
 
-  def formatPivotQuantity(pq:PivotQuantity, formatInfo:ExtraFormatInfo, includeUOM:Boolean=true) = {
-    import starling.utils.ImplicitConversions._
-    if (pq.values.isEmpty && pq.errors.isEmpty) {
-      ""
+  def longText(pq: PivotQuantity) =
+    (pq.explanation, pq.warning) match {
+      case (None, None) => None
+      case (Some(e), None) => Some(e)
+      case (None, Some(w)) => Some("Validation Error: " + w)
+      case (Some(e), Some(w)) => Some(e + " Validation Error: " + w)
+    }
+  def shortAndLongText(pq:PivotQuantity, formatInfo:ExtraFormatInfo, includeUOM:Boolean=true):(String,Option[String]) = {
+    if (pq.isEmpty) {
+      ("", None)
     } else if (pq.values.isEmpty) {
       if (pq.errors.size == 1) {
-        "E " + pq.errors.keys.iterator.next
+        val stackTrace = pq.errors.values.iterator.next.iterator.next
+        (stackTrace.message, stackTrace.longMessage)
       } else {
-        "E (" + pq.errors.size + ")"
+        (pq.errors.size + " errors", None)
       }
     } else {
-      val warning = pq.warning.isDefined
       val l = pq.values.size - 1
-      (for (((uom, value), i) <- pq.values.zipWithIndex) yield {
+      val text = (for (((uom, value), i) <- pq.values.zipWithIndex) yield {
         val format = formatInfo.decimalPlaces.format(uom)
-        val space = if (warning && i == l) false else true
+        val space = if (pq.warning.isDefined && i == l) false else true
         value.format(format, space)  + (if (includeUOM) uom else "")
       }).mkString(", ")
+      (text, longText(pq))
     }
   }
 }
@@ -277,7 +286,7 @@ object DefaultPivotFormatter extends PivotFormatter {
 
 case class HasLongText(text:String, longText:String)
 
-case class FieldDetails(field:Field) {
+class FieldDetails(val field:Field) {
   def this(name:String) = this(Field(name))
   def name = field.name
   def nullValue():Any = "n/a"
@@ -321,7 +330,7 @@ case class FieldDetails(field:Field) {
   private def setToValue(set:Set[Any]) = {
     if (set.size == 1) {
       val value = set.toList.head
-      if (value == UndefinedValue) { //If we only have n/a just show blank
+      if (value == UndefinedValue || value == UndefinedValueNew) { //If we only have n/a just show blank
         Set()
       } else {
         value
@@ -381,6 +390,7 @@ trait Tupleable {
 }
 
 object FieldDetails {
+  def apply(field:Field) = new FieldDetails(field)
   def apply(name:String) = new FieldDetails(name)
   def apply(name:String, parser0:PivotParser) = new FieldDetails(name) {override def parser = parser0}
   def apply(name:String, parser0:PivotParser, formatter0:PivotFormatter) = new FieldDetails(name) {
@@ -392,13 +402,13 @@ object FieldDetails {
     override def formatter = formatter0
     override def parser = parser0
   }
-  def coded(name:String, codesToNames:Iterable[Tupleable]) = {
-    val formatterParser = new CodedFormatterAndParser(codesToNames.map(_.tuple).toMap)
-    new FieldDetails(name) {
-      override def parser = formatterParser
-      override def formatter = formatterParser
-    }
-  }
+  def coded(name:String, codesToNames:Iterable[Tupleable]) = new CodedFieldDetails(name, codesToNames)
+}
+
+class CodedFieldDetails(name:String,codesToNames:Iterable[Tupleable]) extends FieldDetails(name) {
+  val formatterParser = new CodedFormatterAndParser(codesToNames.map(_.tuple).toMap)
+  override def parser = formatterParser
+  override def formatter = formatterParser
 }
 
 class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotFormatter with PivotParser {
@@ -589,6 +599,19 @@ class MarketValueComparer(backup: Ordering[Any]) extends Ordering[Any] {
 
 object MarketValuePivotParser extends PivotParser {
   def parse(text: String, extraFormatInfo:ExtraFormatInfo) = (MarketValue.fromString(text).pivotValue, text)
+}
+
+object PricePivotParser extends PivotParser {
+  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
+    val (pq, v) = PivotQuantityPivotParser.typedParse(text, extraFormatInfo)
+
+    val benchmark = pq.quantityValue.get
+
+    require(benchmark.uom.numeratorUOM.isCurrency && !benchmark.uom.denominatorUOM.isCurrency,
+      benchmark + " does not have a valid unit of measure")
+
+    (pq, v)
+  }
 }
 
 class PivotQuantityFieldDetails(name:String) extends FieldDetails(Field(name)) {

@@ -27,6 +27,7 @@ trait InstrumentLevelEnvironment extends AtomicEnvironmentHelper {
   def apply(key : AtomicDatumKey) : Any
   def marketDay() : DayAndTime
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity
+  def shanghaiVATRate : Quantity
   def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity
   def priceOnDay(underlying: FuturesMarket, period: DateRange, fixingDay: Day) : Quantity
   def priceOnLastTradingDay(underlying: FuturesMarket, period: DateRange) : Quantity
@@ -58,6 +59,7 @@ class DefaultInstrumentLevelEnvironment(underlyingAtomicEnv : AtomicEnvironment)
   def shiftAtomicEnv(fn : AtomicEnvironment => AtomicEnvironment) = copy(fn(atomicEnv))
   def marketDay() : DayAndTime = atomicEnv().marketDay
   def discount(ccy : UOM, day : Day, ignoreShiftsIfPermitted : Boolean = false) : Quantity = atomicEnv.quantity(DiscountRateKey(ccy, day, ignoreShiftsIfPermitted))
+  def shanghaiVATRate : Quantity = atomicEnv.quantity(ShanghaiVATRateKey())
   def fixing(underlying: SingleIndex, fixingDay : Day) : Quantity = {
     underlying.fixing(this, fixingDay)
   }

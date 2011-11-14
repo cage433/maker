@@ -19,13 +19,18 @@ import stress.CommodityPriceStress
 import starling.quantity._
 import starling.marketdata._
 import scalaz.Scalaz._
+import starling.pivot.UserException
 
 /**
  * Throw this if a curve object is incapable of providing a value
  * because of a lack of market data only
  */
 
-class MissingMarketDataException(s : String = "Missing data", cause : Throwable = null) extends RuntimeException(s, cause)
+class MissingMarketDataException(short: String = "Missing data", long:Option[String]=None, cause : Throwable = null) extends UserException(short, long, cause) {
+  def this(short:String, long:String) = this(short, Some(long))
+  def this(short:String, long:String, cause:Throwable) = this(short, Some(long), cause)
+  def this(short:String, cause:Throwable) = this(short, None, cause)
+}
 class MissingPriceException(val marketName: String, val period: DateRange, msg : => String, cause : Throwable = null) extends MissingMarketDataException(msg, cause)
 class MissingForwardFXException(val ccy: UOM, val forwardDay: Day, msg : => String) extends MissingMarketDataException(msg)
 
@@ -74,6 +79,7 @@ case class Environment(
   def this() = this(null)
 
   def atomicEnv = instrumentLevelEnv.atomicEnv
+  def shanghaiVATRate = instrumentLevelEnv.shanghaiVATRate
 
   def benchmark(countryCode: NeptuneCountryCode, commodity: Commodity, gradeCode: GradeCode, day: Day): Quantity =
     areaBenchmark(countryCode, commodity, gradeCode, day) + countryBenchmark(commodity, countryCode, day)

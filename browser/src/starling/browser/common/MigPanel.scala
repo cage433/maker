@@ -13,6 +13,7 @@ import GuiUtils._
 import org.jdesktop.swingx.painter.{ImagePainter, PinstripePainter, Painter}
 import java.awt.geom.RoundRectangle2D
 import java.awt.geom.RoundRectangle2D.Float
+import swing.ListView.Renderer
 
 class MigPanel(layoutConstraints:String = "", columnConstraints:String = "", rowConstraints:String = "")
         extends Panel with SequentialContainer.Wrapper {

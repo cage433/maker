@@ -95,6 +95,9 @@ class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String
     "1234142dfSdfS&%&^%£)"
    )
 
+  object QlikViewServerUrl extends StringProperty("http://qvdev:8080/qmsb/Task.asmx")
+  object QlikViewSpotFXTask extends StringProperty("Reload of Spot FX")
+
   // Titan related configuration
   object ServiceInternalAdminUser extends StringProperty("refined.metalsadm") // admin user for service to service access (permission requirements here for service calls TBD)
   object EdmTradeServiceLocation extends StringProperty("http://localhost:8080/tradeservice")

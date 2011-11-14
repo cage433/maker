@@ -46,10 +46,10 @@ class PriceLimMarketDataSourceTests extends LimMarketDataSourceTests[PriceLimMar
     new PriceLimMarketDataSource(LIMService.Null, bloombergImports, emailService, template)
   }
 
-  protected def completeSetOfData = pricesForExchanges(LME, COMEX, SFS)
+  protected def completeSetOfData = pricesForExchanges(LME, COMEX, SHFE)
 
   lazy val bloombergMarkets: MultiMap[FuturesExchange, FuturesMarket] = MultiMap(
-    LME ->> (LME_ALUMINIUM, LME_ZINC), COMEX ->> (COMEX_GOLD, COMEX_SILVER), SFS ->> (SHANGHAI_ZINC, SHANGHAI_COPPER))
+    LME ->> (LME_ALUMINIUM, LME_ZINC), COMEX ->> (COMEX_GOLD, COMEX_SILVER), SHFE ->> (SHANGHAI_ZINC, SHANGHAI_COPPER))
 
   lazy val bloombergImports = BloombergImports(PriceLimMarketDataSource.priceSources._2.map(source =>
     (source.node.name, bloombergMarkets(source.exchange))).toMap.flatMultiMap { case (limFolder, market) =>
@@ -58,7 +58,7 @@ class PriceLimMarketDataSourceTests extends LimMarketDataSourceTests[PriceLimMar
 
   private implicit def enrichFuturesExchange(exchange: FuturesExchange) = new {
     import LIMService.TopRelation.Trafigura.Bloomberg._
-    lazy val limFolders: Map[FuturesExchange, LimNode] = Map(LME → Metals.Lme, COMEX → Futures.Comex, SFS → Futures.Shfe)
+    lazy val limFolders: Map[FuturesExchange, LimNode] = Map(LME → Metals.Lme, COMEX → Futures.Comex, SHFE → Futures.Shfe)
     lazy val limFolder = limFolders(exchange).name
     lazy val limMetalMarkets = exchange.markets.filter(_.limSymbol.isDefined).filter(isMetal).filter(correspondsToBloombergImport)
 
@@ -74,7 +74,7 @@ class PriceLimMarketDataSourceTests extends LimMarketDataSourceTests[PriceLimMar
       body = expectBodyWith(missing(COMEX.limMetalMarkets : _*))))))
 
     oneOf(emailService).send(withArg(equal(template.copy(subject = "No Prices for: SHFE Metals on 27Oct2011",
-      body = expectBodyWith(missing(SFS.limMetalMarkets : _*))))))
+      body = expectBodyWith(missing(SHFE.limMetalMarkets : _*))))))
   }
 
   private def pricesFor(markets: FuturesMarket*): List[(TimedMarketDataKey, PriceData)] = markets.map { market =>

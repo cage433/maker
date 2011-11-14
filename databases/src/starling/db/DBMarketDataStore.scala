@@ -56,6 +56,8 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
   val importer = new MarketDataImporter(this)
   val pivotCache = CacheFactory.getCache("MarketDataStore.pivotCache")
 
+  def marketDataTypes = dataTypes
+
   def readAll() {
     snapshotsByMarketDataSelection() //read MarketDataSnapshots table
     db.readAll()
@@ -268,7 +270,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
     excelmds ::: pgmds
   }
 
-  def marketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType] = {
+  def availableMarketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType] = {
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
     val mds = marketDataSets(marketDataIdentifier)
     db.marketDataTypes(version, mds).toList

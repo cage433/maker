@@ -16,8 +16,3 @@ else
     echo "Can't find pid.txt file, maybe the program isn't running"
     echo
 fi
-
-if [ -f starling.running ]; then
-    rm starling.running
-fi
-

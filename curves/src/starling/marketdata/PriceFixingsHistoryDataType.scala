@@ -9,6 +9,7 @@ import scalaz.Scalaz._
 object PriceFixingsHistoryDataType extends MarketDataType {
   type dataType = PriceFixingsHistoryData
   type keyType = PriceFixingsHistoryDataKey
+  val humanName = "fixings"
   val marketField = FieldDetails("Market")
   val levelField = FieldDetails("Level")
   val periodField = new FieldDetails("Period") {

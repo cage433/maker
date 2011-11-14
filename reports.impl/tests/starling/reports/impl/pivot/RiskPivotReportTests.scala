@@ -27,13 +27,13 @@ class RiskPivotReportTests extends TestMarketTest with TestNGSuite with Starling
     val option = new FuturesOption(market, exerciseDay, period, Quantity(100, market.priceUOM), Quantity(1000, BBL), Call, European)
     val T = exerciseDay.endOfDay.timeSince(md)
 
-    def env = Environment(new UnitTestingAtomicEnvironment(md, {
+    def env = UnitTestingEnvironment(md, {
         case _: ForwardPriceKey => Quantity(100, market.priceUOM)
         case _: OilAtmVolAtomicDatumKey => Percentage(0.4)
         case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
         case _: DiscountRateKey => new Quantity(scala.math.exp(-0.0 * T))
       }
-    ))
+    )
 
     val priceKey = PriceDifferentiable(market, period)
     val volKey = OilAtmVolAtomicDatumKey(market, None, period)
@@ -76,13 +76,13 @@ class RiskPivotReportTests extends TestMarketTest with TestNGSuite with Starling
     val option = new SingleAsianOption(index, period, Quantity(100, market.priceUOM), Quantity(1000, BBL), Call)
     val T = exerciseDay.endOfDay.timeSince(md)
 
-    def env = Environment(new UnitTestingAtomicEnvironment(md, {
+    def env = UnitTestingEnvironment(md, {
         case _: ForwardPriceKey => Quantity(100, market.priceUOM)
         case _: OilAtmVolAtomicDatumKey => Percentage(0.4)
         case _: OilVolSkewAtomicDatumKey => Map[Double, Percentage]()
         case _: DiscountRateKey => new Quantity(scala.math.exp(-0.0 * T))
       }
-    ))
+    )
 
     val pivotReport = new GreeksPivotReport(env, (md.day + 1).endOfDay, Map(UTPIdentifier(1) -> option))
     val greeks = pivotReport.combine(pivotReport.rows(UTPIdentifier(1), option), ReportSpecificChoices(showEqFutures_str -> true))

@@ -115,7 +115,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   def fixing(env : InstrumentLevelEnvironment, observationDay : Day) = {
     env.quantity(IndexFixingKey(this, observationDay)) match {
       case nq : NamedQuantity => {
-        val fixed = new SimpleNamedQuantity(market.name + "." + observedPeriod(observationDay).toShortString + " Fixed", new Quantity(nq.value, nq.uom))
+        val fixed = new SimpleNamedQuantity(observedPeriod(observationDay).toShortString + " Fixed", new Quantity(nq.value, nq.uom))
         SimpleNamedQuantity(observationDay.toString, fixed)
       }
       case q => q
@@ -124,7 +124,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
 
   def forwardPriceOnObservationDay(env: InstrumentLevelEnvironment, observationDay: Day, ignoreShiftsIfPermitted: Boolean) = {
     env.quantity(ForwardPriceKey(market, observedPeriod(observationDay), ignoreShiftsIfPermitted)) match {
-      case nq : NamedQuantity =>  SimpleNamedQuantity(observationDay.toString, nq)
+      case nq : NamedQuantity =>  SimpleNamedQuantity(observationDay.toString, nq.withNewName(observedPeriod(observationDay).toShortString))
       case q => q
     }
   }

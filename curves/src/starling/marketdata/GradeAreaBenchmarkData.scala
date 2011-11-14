@@ -1,12 +1,12 @@
 package starling.marketdata
 
-import starling.quantity.Quantity
-import starling.market.Commodity
 import starling.pivot._
 import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day
+import starling.quantity.{UOM, Quantity}
+import starling.market.{FuturesMarket, NeptuneCommodity, Commodity}
 
 case class AreaCode(code:String) {
   override def toString = code
@@ -42,20 +42,21 @@ case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends Market
   type marketDataType = GradeAreaBenchmarkData
   type marketDataDBType = GradeAreaBenchmarkData
   def typeName = MarketDataTypeName("GradeAreaBenchmark")
-  def subTypeKey = commodity.toString
+  def humanName = commodity.toString
   def fields = Set(Field("Commodity"))
 }
 
 class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDataLookup.Null) extends MarketDataType {
   type dataType = GradeAreaBenchmarkData
   type keyType = GradeAreaBenchmarkMarketDataKey
+  val humanName = "Grade Area Benchmarks"
 
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaCodeField = FieldDetails.coded("Area", referenceData.areas.values)
   val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values)
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
-    parser0 = PivotQuantityPivotParser, formatter0 = PivotQuantitySetPivotFormatter)
+    parser0 = PricePivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
   override def valueKeys = List(areaCodeField, gradeCodeField, effectiveFromField)
@@ -64,7 +65,7 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
     rowFields = List(areaCodeField, commodityField, gradeCodeField, effectiveFromField).map(_.field),
-    filters = List( Field("Observation Time") -> SomeSelection(Set("Default")) )
+    filters = List( Field("Observation Time") → SomeSelection(Set("Default")) )
   )
 
   def createKey(row: Row) = GradeAreaBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))

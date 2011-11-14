@@ -1,7 +1,8 @@
 package starling.pivot
 
+import controller.TreePivotFilter
 import java.io.Serializable
-import model.UndefinedValue
+import model.{UndefinedValueNew, UndefinedValue}
 import starling.utils.StarlingObject
 import collection.SortedMap
 import starling.utils.ImplicitConversions._
@@ -30,7 +31,7 @@ object AllSelection extends Selection with StarlingObject {
   def description = "All"
 }
 case class SomeSelection(values:Set[Any]) extends Selection{
-  def matches(fieldDetails:FieldDetails, value: Any) = fieldDetails.matches(values, value)
+  def matches(fieldDetails:FieldDetails, value: Any) = value == UndefinedValueNew || fieldDetails.matches(values, value)
   def description = values.mkString(", ").replaceLast(", ", ", or ")
 }
 
@@ -714,14 +715,6 @@ class PivotFieldsState(
 
   def rowFilters = Map() ++ filters.collect{case (f,s:SomeSelection) if rowFields.contains(f) => (f -> s)}
   def columnFilters = Map() ++ filters.collect{case (f,s:SomeSelection) if columns.allFields.contains(f) => (f -> s)}
-
-  def singleValueFilterAreaFilters(): Map[Field, SomeSelection] = Map() ++ filterAreaFields.flatMap(f => {
-    val (field, selection) = filters.find{case (f0,sel) => f == f0}.get
-    selection match {
-      case s@SomeSelection(v) if v.size == 1 => Some((field → s))
-      case _ => None
-    }
-  })
 }
 
 object PivotFieldsState {

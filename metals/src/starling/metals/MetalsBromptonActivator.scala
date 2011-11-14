@@ -217,8 +217,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     val marketDataAvailabilityBroadcaster = new MarketDataAvailabilityBroadcaster(marketDataStore, broadcaster,
       marketDataSources.flatMap(_.eventSources(marketDataStore)))
 
-    marketDataSources.flatMap(_.availabilityTasks(marketDataStore)).map(_.offset(Period.minutes(30)))
-      .foreach(context.registerService(classOf[TaskDescription], _))
+    marketDataSources.flatMap(_.availabilityTasks(marketDataStore)).foreach(context.registerService(classOf[TaskDescription], _))
 
     context.registerService(classOf[Receiver], marketDataAvailabilityBroadcaster)
   }

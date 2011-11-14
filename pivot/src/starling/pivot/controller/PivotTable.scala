@@ -7,7 +7,9 @@ import starling.utils.{GridConverter, Utils}
 import collection.immutable.List._
 import java.lang.Boolean
 
-case class TreePivotFilter(root:TreePivotFilterNode)
+case class TreePivotFilter(root:TreePivotFilterNode) {
+  def singleValue = root.children match {case v :: Nil => v.value}
+}
 case class TreePivotFilterNode(value:Any, children:List[TreePivotFilterNode]) {
   def this(value:Any) = this(value, List())
 }

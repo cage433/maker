@@ -85,40 +85,44 @@ trait AtomicEnvironment extends AtomicEnvironmentHelper{
   def shiftsCanBeIgnored : Boolean
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) : AtomicEnvironment
 
-  //  def quantity(key : AtomicDatumKey) = apply(key).asInstanceOf[Quantity]
-  //  def percentage(key : AtomicDatumKey) = apply(key).asInstanceOf[Percentage]
-  //
-  //  def double(key : AtomicDatumKey) = apply(key).asInstanceOf[Double]
-  //  def volMap(key : AtomicDatumKey) : DoubleMatrix2D = apply(key) match {
-  //    case matrix : DoubleMatrix2D => matrix
-  //    case untypedMap : Map[_,_] =>{
-  //      val map = untypedMap.asInstanceOf[Map[Double, Percentage]]
-  //      val xs = map.keySet.toArray
-  //      val ys = xs.map{x => map(x).decimalValue}
-  //      val m = new DenseDoubleMatrix2D(xs.size, 2)
-  //      m.viewColumn(0).assign(xs)
-  //      m.viewColumn(1).assign(ys)
-  //      m
-  //    }
-  //  }
   /**	The market day and time of day (start/end) of this atomic environment
    */
   def marketDay : DayAndTime
 
 }
 
-case class UnitTestingAtomicEnvironment(marketDay : DayAndTime, data: PartialFunction[AtomicDatumKey, Any], shiftsCanBeIgnored : Boolean = false) extends AtomicEnvironment {
+//case class UnitTestingAtomicEnvironment(marketDay : DayAndTime, data: PartialFunction[AtomicDatumKey, Any], shiftsCanBeIgnored : Boolean = false) extends AtomicEnvironment {
+  //
+  //override def apply(key: AtomicDatumKey) = {
+    //try {
+      //data(key)
+      //} catch {
+        //case _ : MatchError => throw new MissingMarketDataException("No market data for " + key)
+        //}
+        //}
+        //def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
+        //
+        //def referenceDataLookup = ReferenceDataLookup.Null
+        //}
 
-  override def apply(key: AtomicDatumKey) = {
-    try {
-      data(key)
-    } catch {
-      case _ : MatchError => throw new MissingMarketDataException("No market data for " + key)
+object UnitTestingEnvironment{
+  def apply(marketDay_ : DayAndTime, data: PartialFunction[AtomicDatumKey, Any], shiftsCanBeIgnored_ : Boolean = false) = {
+    def makeAtomicEnv(ignorableShists : Boolean) : AtomicEnvironment = new AtomicEnvironment{
+        def marketDay = marketDay_
+        def shiftsCanBeIgnored = shiftsCanBeIgnored_
+        override def apply(key: AtomicDatumKey) = {
+          try {
+            data(key)
+          } catch {
+            case _ : MatchError => throw new MissingMarketDataException("No market data for " + key)
+          }
+        }
+        def setShiftsCanBeIgnored(canBeIgnored : Boolean) = makeAtomicEnv(canBeIgnored)
+
+        def referenceDataLookup = ReferenceDataLookup.Null
     }
+    Environment(makeAtomicEnv(shiftsCanBeIgnored_))
   }
-  def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
-
-  def referenceDataLookup = ReferenceDataLookup.Null
 }
 
 /**

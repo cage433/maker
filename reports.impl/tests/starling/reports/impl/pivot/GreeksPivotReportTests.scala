@@ -337,7 +337,7 @@ class GreeksPivotReportTests extends StarlingTest {
     val asian = SingleAsianOption(
       idx, Month(2010, 10), fwdPrice, 100(idx.uom), Call)
     val marketDay = (1 Jan 2010).endOfDay
-    val env = Environment(UnitTestingAtomicEnvironment(
+    val env = UnitTestingEnvironment(
       marketDay,
       {
         case _ : ForwardPriceKey => fwdPrice
@@ -345,7 +345,7 @@ class GreeksPivotReportTests extends StarlingTest {
         case _ : DiscountRateKey => new Quantity(1.0)
         case skewKey : OilVolSkewAtomicDatumKey => skewKey.nullValue
       }
-    ))
+    )
 
     val utpID = UTPIdentifier(0) 
     val utps = Map(utpID -> asian)

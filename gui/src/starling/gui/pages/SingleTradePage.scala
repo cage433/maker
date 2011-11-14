@@ -70,7 +70,7 @@ object SingleTradePageComponent {
     new MigPanel("insets 0", "[" + StandardLeftIndent + "][p][p]") {
       val columns = List(SColumn("Cost Type"), SColumn("Value"))
       class MyPivotQuantity(val value:Quantity) extends PivotQuantity(Map(value.uom -> value.value), Map[String,List[StackTrace]]()) {
-        override def toString = PivotFormatter.formatPivotQuantity(this, PivotFormatter.DefaultExtraFormatInfo)
+        override def toString = PivotFormatter.shortAndLongText(this, PivotFormatter.DefaultExtraFormatInfo)._1
       }
       val data = costs.costInfo.map(c => {
         List(c.name, new MyPivotQuantity(c.value))
