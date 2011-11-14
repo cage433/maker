@@ -4,11 +4,9 @@ import interestrate.DayCountActual365
 import starling.marketdata.{ForwardRateDataKey, ForwardRateData}
 import math._
 import starling.daterange.{DateRange, Day, DayAndTime}
-import starling.quantity.{Percentage, UOM, Quantity}
+import starling.quantity.{UOM, Quantity}
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
-import collection.mutable.{Map => MMap}
-import collection.SortedMap
 import starling.marketdata.ForwardRateSource._
 import starling.metals.datasources.LIBORFixing
 import scalaz.Scalaz._
@@ -181,33 +179,17 @@ class ForwardForwardDiscountCurve(
 case class DiscountCurveKey(ccy : UOM) extends NonHistoricalCurveKey[ForwardRateData]{
   def marketDataKey = ForwardRateDataKey(ccy)
 
-
-
   def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData): DiscountCurve = {
-    var lastMaturityDay: Day = marketDayAndTime.day
+    val fixings = forwardRateData.rates(LIBOR).map { case (tenor, rate) => LIBORFixing(ccy, marketDayAndTime.day, tenor, rate) }
+      .toList.sortWith(_ < _)
 
-    val forwardForwardRates: MMap[DateRange, Quantity] = MMap()
-
-    forwardRateData.rates(LIBOR).map { case (tenor, rate) =>
-      LIBORFixing(ccy, marketDayAndTime.day, tenor, rate)
-    }.toList.sortWith(_ < _).foreach { case fixing =>
-      import fixing._
-      if (valueDay >= lastMaturityDay) {
-        forwardForwardRates.updated(lastMaturityDay upto maturityDay, rate)
-      } else {
-        assert(maturityDay > lastMaturityDay,  "Require maturity days to be strictly increasing")
-        val discountCurve = new ForwardForwardDiscountCurve(ccy, marketDayAndTime, Map() ++ forwardForwardRates)
-        val valueDayDiscount = discountCurve.discount(valueDay)
-        val lastMaturityDayDiscount = discountCurve.discount(lastMaturityDay)
-        val maturityDayDiscount = valueDayDiscount * forwardDiscount
-        val forwardRateTime = dcc.factor(lastMaturityDay, maturityDay) 
-        val forwardRate = - math.log(maturityDayDiscount / lastMaturityDayDiscount) / forwardRateTime
-        forwardForwardRates.updated(lastMaturityDay upto maturityDay, forwardRate)
-      }
-      lastMaturityDay = maturityDay
-
+    val (_, forwardForwardRates) = fixings.foldLeft((marketDayAndTime.day, Map.empty[DateRange, Quantity])) {
+      case ((lastMaturityDay, currentForwardForwardRates), fixing) => (fixing.maturityDay,
+        currentForwardForwardRates.updated(lastMaturityDay upto fixing.maturityDay,
+          fixing.forwardRate(lastMaturityDay, marketDayAndTime, currentForwardForwardRates)))
     }
-    new ForwardForwardDiscountCurve(ccy, marketDayAndTime, Map() ++ forwardForwardRates)
+
+    new ForwardForwardDiscountCurve(ccy, marketDayAndTime, forwardForwardRates)
   }
 
   def underlying = ccy.toString

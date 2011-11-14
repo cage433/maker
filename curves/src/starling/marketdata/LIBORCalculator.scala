@@ -10,25 +10,18 @@ import starling.quantity.{Quantity, UOM}
 import Day._
 import UOM._
 import starling.utils.ImplicitConversions._
-import java.text.DecimalFormat
 import starling.utils.Pattern._
 import scalaz.Scalaz._
-import starling.curves.interestrate.{DayCountActual365, DayCount30_360}
+import starling.curves.ForwardForwardDiscountCurve
+import starling.curves.interestrate.{DayCount, DayCountActual365, DayCount30_360}
 
 case class LIBORFixing(currency: UOM, fixingDay: Day, tenor: Tenor, rate: Quantity) extends Ordered[LIBORFixing] {
-  val calc = new LIBORCalculator(currency,  fixingDay)
+  private val dayCountConvention = if (currency == UOM.GBP) DayCountActual365 else DayCount30_360
+  private val calc = new LIBORCalculator(currency, fixingDay)
   val (valueDay, maturityDay) = (calc.valueDay(tenor), calc.maturityDay(tenor))
-  val dcc = if (currency == UOM.GBP) DayCountActual365 else DayCount30_360
-  val rateTime = dcc.factor(valueDay, maturityDay)
 
-  def ccZeroRate: Quantity = {
-
-    val act365Time = DayCountActual365.factor(valueDay, maturityDay)
-
-    (rate * rateTime + 1).ln / act365Time
-  }
-
-  def forwardDiscount = math.exp(-ccZeroRate.value * rateTime)
+  def ccZeroRate: Quantity = (rate * timeUsing(dayCountConvention) + 1).ln / timeUsing(DayCountActual365)
+  def forwardDiscount = math.exp(-ccZeroRate.value * timeUsing(dayCountConvention))
 
   def compare(that: LIBORFixing) = {
     require(currency == that.currency, "Cannot compare fixings of different currencies")
@@ -36,6 +29,22 @@ case class LIBORFixing(currency: UOM, fixingDay: Day, tenor: Tenor, rate: Quanti
 
     maturityDay.compare(that.maturityDay)
   }
+
+  def forwardRate(lastMaturityDay: Day, marketDayAndTime: DayAndTime, forwardForwardRates: Map[DateRange, Quantity]): Quantity = {
+    if (valueDay >= lastMaturityDay) rate else {
+      assert(maturityDay > lastMaturityDay, "Require maturity days to be strictly increasing")
+
+      val discountCurve = new ForwardForwardDiscountCurve(currency, marketDayAndTime, forwardForwardRates)
+      val valueDayDiscount = discountCurve.discount(valueDay)
+      val lastMaturityDayDiscount = discountCurve.discount(lastMaturityDay)
+      val maturityDayDiscount = valueDayDiscount * forwardDiscount
+      val forwardRateTime = timeUsing(dayCountConvention, from = lastMaturityDay)
+
+      Quantity(-math.log(maturityDayDiscount / lastMaturityDayDiscount) / forwardRateTime, UOM.PERCENT)
+    }
+  }
+
+  private def timeUsing(dcc: DayCount, from: Day = valueDay) = dcc.factor(from, maturityDay)
 }
 
 case class LIBORCalculator(currency: UOM, fixingDay: Day) {
