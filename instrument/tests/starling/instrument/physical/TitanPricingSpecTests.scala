@@ -27,6 +27,16 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest{
         Day(2012, 1, 31),
         Quantity(15, GBP/MT),
         EUR
+      ),
+      FixedPricingSpec(
+        Market.SHANGHAI_COPPER,
+        Day(2012, 2, 1),
+        List(
+          (0.4, Quantity(15, EUR/MT)),
+          (0.6, Quantity(32, GBP/MT))
+        ),
+        Quantity(99, USD/MT),
+        CNY
       )
     )
 

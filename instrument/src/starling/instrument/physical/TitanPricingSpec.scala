@@ -5,11 +5,18 @@ import starling.market.{FuturesMarket, CommodityMarket, FuturesExchangeFactory, 
 import starling.daterange._
 import starling.quantity.{Ratio, UOM, Quantity}
 import starling.quantity.UOM._
+import starling.market.FuturesExchange
 
 trait TitanPricingSpec {
 
   def priceExcludingVAT(env : Environment) : Quantity
-  def priceIncludingVAT(env : Environment) : Option[Quantity] 
+  def priceIncludingVAT(env : Environment) = {
+    if (isLiableToShanghaiVAT){
+      Some(priceExcludingVAT(env) * (env.shanghaiVATRate + 1.0))
+    } else {
+      None
+    }
+  }
   def settlementDay(marketDay: DayAndTime): Day
 
   def premiumCCY: Option[UOM] = {
@@ -41,7 +48,7 @@ trait TitanPricingSpec {
     if (premium == Quantity.NULL) // no premium case
       priceInValuationCurrency 
     else 
-      priceInValuationCurrency + inValuationCurrency(env, premium.named("Premium"))
+      priceInValuationCurrency + inValuationCurrency(env, premium)
   }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity): Quantity
@@ -54,15 +61,17 @@ trait TitanPricingSpec {
 
   def quotationPeriod: Option[DateRange]
 
-  // Working assumption is that premium is exclusive of VAT
+  // Working assumption is that premium is inclusive of VAT when the releveant exchange includes it
   def premium: Quantity
 
   def indexOption: Option[IndexWithDailyPrices]
 
+  protected def isExchangeLiableToVAT(exchange : FuturesExchange) = exchange == FuturesExchangeFactory.SHFE  || exchange == FuturesExchangeFactory.EXBXG
+
   protected def isLiableToShanghaiVAT = {
     indexOption match {
       case Some(index) => index.market match{
-        case fm : FuturesMarket => fm.exchange == FuturesExchangeFactory.SHFE  || fm.exchange == FuturesExchangeFactory.EXBXG
+        case fm : FuturesMarket => isExchangeLiableToVAT(fm.exchange)
         case _ => false
       }
       case None => false
@@ -75,12 +84,6 @@ trait TitanPricingSpec {
       price
   }
 
-  protected def addVATIfLiable(env : Environment, price : Quantity) = {
-    if (isLiableToShanghaiVAT)
-      price * (Quantity(100, PERCENT) + env.shanghaiVATRate).named("VAT")
-    else
-      price
-  }
   def expiryDay: Day
   def futuresMarket : FuturesMarket 
 }
@@ -139,15 +142,8 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
   def expiryDay = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
   def priceExcludingVAT(env : Environment) = {
     val priceExclVAT = subtractVATIfLiable(env, env.averagePrice(index, period))
-    addPremiumConvertingIfNecessary(env, priceExclVAT, premium)
-  }
-  def priceIncludingVAT(env : Environment) = {
-    if (isLiableToShanghaiVAT){
-      val premiumInclVAT = addVATIfLiable(env, premium)
-      Some(addPremiumConvertingIfNecessary(env, env.averagePrice(index, period), premiumInclVAT))
-    } else {
-      None
-    }
+    val premiumExclVAT = subtractVATIfLiable(env, premium.named("Premium"))
+    addPremiumConvertingIfNecessary(env, priceExclVAT, premiumExclVAT)
   }
   def futuresMarket : FuturesMarket = index.market.asInstanceOf[FuturesMarket]
 }
@@ -165,15 +161,14 @@ case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesB
       throw new InvalidTitanPricingSpecException("Fixed Pricing Spec with no fixed prices")
     } else {
       Quantity.sum(pricesByFraction.zipWithIndex.map {
-        case ((qty, prc), i) => prc.named("F_" + i) * qty
+        case ((qty, prc), i) => inValuationCurrency(env, prc.named("Fix " + i)) * qty
       }) / totalFraction
     }
   }
 
   def priceExcludingVAT(env : Environment) = {
-    addPremiumConvertingIfNecessary(env, priceExclPremium(env), premium)
+    addPremiumConvertingIfNecessary(env, subtractVATIfLiable(env, priceExclPremium(env)), subtractVATIfLiable(env, premium.named("Premium")))
   }
-  def priceIncludingVAT(env : Environment) = None
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity
 
@@ -194,6 +189,8 @@ case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesB
   def indexOption = None
 
   def expiryDay = settDay
+
+  override def isLiableToShanghaiVAT = isExchangeLiableToVAT(futuresMarket.exchange)
 }
 
 
@@ -227,17 +224,9 @@ case class UnknownPricingSpecification(
 
   def priceExcludingVAT(env: Environment) = {
     val price = priceExclPremium(env)
-    addPremiumConvertingIfNecessary(env, subtractVATIfLiable(env, price), premium)
+    addPremiumConvertingIfNecessary(env, subtractVATIfLiable(env, price), subtractVATIfLiable(env, premium.named("Premium")))
   }
 
-  def priceIncludingVAT(env: Environment) = {
-    if (isLiableToShanghaiVAT){
-      val price = priceExclPremium(env)
-      Some(addPremiumConvertingIfNecessary(env, price, addVATIfLiable(env, premium)))
-    } else {
-      None
-    }
-  }
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity * fixations.map(_.fraction).sum
 
   def isComplete(marketDay: DayAndTime) = declarationDay.endOfDay >= marketDay

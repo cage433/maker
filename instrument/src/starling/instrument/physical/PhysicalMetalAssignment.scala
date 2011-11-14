@@ -140,7 +140,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   }
   
   private def contractPaymentExplained(env : Environment) : NamedQuantity = {
-    val price = contractPricingSpec.priceIncludingVAT(env).getOrElse(contractPricingSpec.priceExcludingVAT(env))
+    val price = contractPricingSpec.priceExcludingVAT(env)
     var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
     exp = timesVolume(exp)
     discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
@@ -148,7 +148,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
 
   private def benchmarkPaymentExplained(env : Environment) : NamedQuantity = {
     val spec = benchmarkPricingSpec(env)
-    val price = spec.priceIncludingVAT(env).getOrElse(spec.priceExcludingVAT(env))
+    val price = spec.priceExcludingVAT(env)
     var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
     exp = timesVolume(exp)
     discounted(env, exp, spec.settlementDay(env.marketDay))
@@ -170,22 +170,19 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     )
   }
 
-  private def freightParityExplained(env : Environment) : NamedQuantity = {
-    var exp : NamedQuantity = (env.freightParity(
-      contractIncoTermCode, contractLocationCode, 
-      benchmarkIncoTermCode.get, benchmarkCountryCode.get
-    ) * -1).named("Freight Parity")
-    exp = timesVolume(exp)
-    discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
-  }
+  //private def freightParityExplained(env : Environment) : NamedQuantity = {
+    //var exp : NamedQuantity = (env.freightParity(
+      //contractIncoTermCode, contractLocationCode, 
+      //benchmarkIncoTermCode.get, benchmarkCountryCode.get
+      //) * -1).named("Freight Parity")
+    //exp = timesVolume(exp)
+    //discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
+    //}
 
   def explanation(env: Environment): NamedQuantity = {
     val namedEnv = env.withNaming()
-    var exp = contractPaymentExplained(namedEnv)
-    if (benchmarkDeliveryDay.isDefined){
-      exp = exp + benchmarkPaymentExplained(namedEnv) + freightParityExplained(namedEnv)
-    }
-    exp 
+    val components = assets(namedEnv).assets.map(_.mtm.asInstanceOf[NamedQuantity])
+    components.tail.fold(components.head)(_+_)
   }
 
   def assets(env: Environment) = {
@@ -204,14 +201,14 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
         amount = quantity,
         mtm = benchmarkPaymentExplained(env)
       )
-      val freightParityAsset = Asset(
-        known = false,
-        assetType = "Freight",
-        settlementDay = benchmarkPricingSpec(env).settlementDay(env.marketDay),
-        amount = quantity,
-        mtm = freightParityExplained(env)
-      )
-      List(contractPaymentAsset, benchmarkPaymentAsset, freightParityAsset)
+    //val freightParityAsset = Asset(
+      //known = false,
+      //assetType = "Freight",
+      //settlementDay = benchmarkPricingSpec(env).settlementDay(env.marketDay),
+      //amount = quantity,
+      //mtm = freightParityExplained(env)
+      //)
+      List(contractPaymentAsset, benchmarkPaymentAsset)//, freightParityAsset)
 
     } else {
       List(contractPaymentAsset)
