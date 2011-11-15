@@ -12,7 +12,7 @@ import java.io.File
 object StarlingBuild extends Build{
 
   val projectName = "starling"
-  val scalaVer = "2.9,1"
+  val scalaVer = "2.9.1"
   val amqpVersion = "1.7.2"
 
   import Utils._
