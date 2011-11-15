@@ -151,7 +151,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     db.inTransaction(writer => {
       val updates: Iterable[Map[String, Any]] = marketDataUpdates.flatMap { marketDataUpdate =>
         updateIt(writer, marketDataUpdate, marketDataSet).map(result => {
-          cacheChanges ++= result.cacheChanges
+          result.cacheChanges.map {
+            case (_, null) =>
+            case o => cacheChanges ++= result.cacheChanges
+          }
           if (result.changed) update = true
           innerMaxVersion = scala.math.max(innerMaxVersion, result.version)
           result.updates
