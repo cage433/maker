@@ -9,39 +9,35 @@ import starling.pivot.MarketValue
 import FuturesExchangeFactory._
 import ObservationTimeOfDay._
 import starling.utils.ImplicitConversions._
-import starling.scheduler.ScheduledTime._
 import starling.gui.api._
-import starling.utils.{Broadcaster, Pattern}
-import starling.scheduler.{EmailingScheduledTask, TaskDescription}
-import starling.quantity.{Percentage, UOM}
-import starling.utils.ClosureUtil._
-import starling.db.{NormalMarketDataReader, MarketDataStore, MarketDataEntry}
+import starling.utils.Pattern
+import starling.scheduler.TaskDescription
+import starling.quantity.UOM
+import starling.db.{MarketDataStore, MarketDataEntry}
 import starling.databases.{AbstractMarketDataProvider, PricingGroupMarketDataEventSource, MarketDataChange, MarketDataProvider}
 import starling.lim.{LIMService, LIMConnection, LimNode}
 import Level._
 import LIMService.TopRelation._
 import Pattern._
 import scalaz.Scalaz._
-import starling.calendar.{BusinessCalendars}
 import starling.services.EmailService
 
 
 object PriceFixingLimMarketDataSource {
-  val fixingsSources = PriceFixingsHistoryDataType.name → (List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates, BalticFixings,
+  val sources = List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates, BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE.fixingLevel),
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all)
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all
 }
 
 case class PriceFixingLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
-  extends LimMarketDataSource(service) {
+  extends LimMarketDataSource(service, PriceFixingsHistoryDataType.name) {
 
   import PriceFixingLimMarketDataSource._
 
-  override def description = List(fixingsSources).flatMap
-    { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
+  override def description = descriptionFor(sources)
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(PriceFixingsHistoryDataType.name, day.startOfFinancialYear, day, fixingsSources))
+    Map(getValuesForType(day.startOfFinancialYear, day, sources))
   }
 
   override def eventSources(marketDataStore: MarketDataStore) = {
@@ -49,32 +45,15 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
   }
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-    TaskDescription("Verify SIBOR Available", limDaily(LME.calendar, 4 H 30), notImplemented),
-    TaskDescription("Verify ROBOR Available", limDaily(LME.calendar, 9 H 00), notImplemented),
-    TaskDescription("Verify JIBAR Available", limDaily(LME.calendar, 10 H 30), notImplemented),
-    TaskDescription("Verify Libor maturities available", limDaily(LME.calendar, 12 H 00),
-      new VerifyLiborMaturitiesAvailable(marketDataStore, emailService, template).withSource("LIM")),
     TaskDescription("Verify LME AMR1 Fixings Available", limDaily(LME.calendar, 12 H 30), notImplemented),
   //      registerTasks(tasks(limDaily(LME, 13 H 15), TRAF.LME.{EUR, GBP, JPY} SpotFX
     TaskDescription("Verify LME OFFICIAL Fixings Available", limDaily(LME.calendar, 13 H 30), notImplemented),
     TaskDescription("Verify LME PMR1 LMEFixings Available", limDaily(LME.calendar, 16 H 30), notImplemented),
     TaskDescription("Verify LME UNOFFICIAL LMEFixings Available", limDaily(LME.calendar, 17 H 00), notImplemented),
-    TaskDescription("Verify IRS Available", limDaily(LME.calendar, 18 H 00), notImplemented),
     TaskDescription("Verify BloombergTokyoCompositeFXRates Available", limDaily(LME.calendar, 20 H 00), notImplemented),
     TaskDescription("Verify BalticFixings Available", limDaily(LME.calendar, 20 H 00), notImplemented),
 
-    TaskDescription("Verify SHIBOR Available", limDaily(NYMEX.calendar, 0 H 00), notImplemented),
-    TaskDescription("Verify MIBOR-1 Available", limDaily(NYMEX.calendar, 1 H 00), notImplemented),
-    TaskDescription("Verify AIDIBOR Available", limDaily(NYMEX.calendar, 3 H 00), notImplemented),
-    TaskDescription("Verify MIBOR-2 Available", limDaily(NYMEX.calendar, 5 H 00), notImplemented),
-    TaskDescription("Verify BUBOR Available", limDaily(NYMEX.calendar, 05 H 00), notImplemented),
-    TaskDescription("Verify SOFIBOR Available", limDaily(NYMEX.calendar, 05 H 00), notImplemented),
-    TaskDescription("Verify TRLIBOR Available", limDaily(NYMEX.calendar, 6 H 00), notImplemented),
-    TaskDescription("Verify NIBOR Available", limDaily(NYMEX.calendar, 7 H 00), notImplemented),
     TaskDescription("Verify COMEX Fixings Available", limDaily(COMEX.calendar, 20 H 00), notImplemented),
-    TaskDescription("Verify KLIBOR Available", limDaily(NYMEX.calendar, 23 H 00), notImplemented),
-
-    TaskDescription("Verify HIBOR Available", limDaily(SHFE.calendar, 11 H 00), notImplemented),
     TaskDescription("Verify Shfe Fixings Available", limDaily(SHFE.calendar, 20 H 00), notImplemented)
   ).filterNot(_.task == notImplemented)
 }
@@ -197,47 +176,4 @@ case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore
 
     fixingsByDayAndExchange.groupBy(_._1).mapValues(_.map(_._2).toMap)
   }
-}
-
-class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailService: EmailService, template: Email)
-  extends EmailingScheduledTask(emailService, template) {
-
-  import LIBORFixing._
-
-  protected def emailFor(observationDay: Day) = {
-    val liborFixings: NestedMap[UOM, Tenor, (Percentage, Day)] = latestLiborFixings(marketDataStore, observationDay)
-    val tenorsByCurrency = liborFixings.mapValues(_.keys.toList).withDefaultValue(Nil)
-    val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency))
-      .filterValuesNot(_.isEmpty).sortBy(_.toString)
-
-    (missingTenorsByCurrency.size > 0).option {
-      template.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
-        body = <span>
-                 <p>The following LIBOR tenors are required by Trinity but are missing in LIM</p>
-                 <table>
-                   { for ((currency, missingTenors) <- missingTenorsByCurrency) yield
-                     <tr><td><b>{currency}: </b></td><td>{missingTenors.mkString(", ")}</td></tr>
-                   }
-                 </table>
-               </span>.toString)
-    }
-  }
-
-  def latestLiborFixings(marketDataStore: MarketDataStore, observationDay: Day): NestedMap[UOM, Tenor, (Percentage, Day)] = {
-    liborFixingsHistoryData(marketDataStore, observationDay).mapValues(_.fixingsFor(periods).collect {
-      case ((Level.Close, StoredFixingPeriod.Tenor(tenor)), MarketValue.Percentage(percentage)) => {
-        tenor → (percentage, observationDay)
-      }
-    })
-  }
-
-  private def liborFixingsHistoryData(marketDataStore: MarketDataStore, observationDay: Day): Map[UOM, PriceFixingsHistoryData] =
-    currencies.toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, currency)).toOption)
-
-  private def read(marketDataStore: MarketDataStore, observationDay: Day, currency: UOM) =
-    latestLimOnlyMarketDataReader(marketDataStore).readAs[PriceFixingsHistoryData](TimedMarketDataKey(
-      observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose), PriceFixingsHistoryDataKey(currency.toString, Some("LIBOR"))))
-
-  private def latestLimOnlyMarketDataReader(marketDataStore: MarketDataStore) = new NormalMarketDataReader(
-    marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals))))
 }

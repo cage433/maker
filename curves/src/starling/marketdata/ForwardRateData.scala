@@ -1,12 +1,21 @@
 package starling.marketdata
 
-
-import starling.daterange.Day
-import starling.quantity.{Percentage, UOM}
 import starling.utils.ImplicitConversions._
 
 import starling.pivot._
-import starling.quantity.Percentage._
+import starling.quantity.{Quantity, UOM}
+import starling.daterange.{Day, Tenor}
+import starling.metals.datasources.LIBORCalculator
+import starling.utils.ImplicitConversions
+import collection.immutable.Map
+import scalaz.NewType
+
+
+object TenorPivotParser extends PivotParser {
+  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = text match {
+    case Tenor.Parse(tenor) => (tenor, text)
+  }
+}
 
 object ForwardRateDataType extends MarketDataType {
   type dataType = ForwardRateData
@@ -15,46 +24,39 @@ object ForwardRateDataType extends MarketDataType {
   val humanName = "forward rates"
 
   def extendedKeys = List(currencyField)
-  override def valueKeys = List(formatField, dayField, instrumentTypeField)
+  override def valueKeys = List(sourceField, tenorField)
   def valueFieldDetails = List(rateField)
 
+  val sourceField = FieldDetails("Source")
   val currencyField = FieldDetails("Currency")
-  val formatField = FieldDetails("Format")
-  val instrumentTypeField = FieldDetails("Instrument Type")
-  val dayField = FieldDetails("Day")
-  val rateField = FieldDetails.createMeasure("Rate", PercentagePivotFormatter, PercentagePivotParser)
+  val tenorField = new FieldDetails("Tenor") {
+    override def parser = TenorPivotParser
+    override def comparator = new OrderedOrdering[Tenor].untyped
+  }
+  val rateField = FieldDetails.createMeasure("Rate", PivotQuantitySetPivotFormatter, PivotQuantityPivotParser)
 
   def createKey(row: Row) = ForwardRateDataKey(row[UOM](currencyField))
+
   def createValue(rows: List[Row]) = ForwardRateData(rows.map { row =>
-    ForwardRateDataEntry(row[Day](dayField), row.string(formatField), row.string(instrumentTypeField), row[Percentage](rateField))
-  })
+    (ForwardRateSource(row.string(sourceField)), (Tenor.parse(row(tenorField)), row[Quantity](rateField)))
+  }.toNestedMap)
 
   val initialPivotState = PivotFieldsState(
-    dataFields=List(rateField.field),
-    rowFields=List(dayField.field),
-    columnFields=List(currencyField.field)
+    rowFields = List(sourceField.field, currencyField.field),
+    columnFields = List(tenorField.field),
+    dataFields = List(rateField.field)
   )
 
   protected def fieldValuesFor(key: ForwardRateDataKey) = Row(currencyField.field → key.ccy)
 
-  def rows(key: ForwardRateDataKey, data: ForwardRateData) = data.entries.map { entry => Row(
-    currencyField.field → key.ccy,
-    formatField.field → (if (entry.format== null) "" else entry.format),
-    instrumentTypeField.field → entry.trinityInstrumentType,
-    dayField.field → entry.forwardDay,
-    rateField.field → Percentage(entry.rate)
-  ) }
-}
-
-case class ForwardRateDataEntry(forwardDay : Day, format : String, trinityInstrumentType : String, rate : Double) {
-  def isDiscount = format == "Discount"
-  def key() = (forwardDay, format, trinityInstrumentType)
+  def rows(key: ForwardRateDataKey, data: ForwardRateData) = data.rates.mapNested { case (source, tenor, rate) =>
+    fieldValuesFor(key) + Row(sourceField.field → source.value, tenorField.field → tenor, rateField.field → rate.pq)
+  }
 }
 
 case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
-  if(!ccy.isCurrency) {
-    assert(ccy.isCurrency, ccy + " is not a currency")
-  }
+  ccy.ensuring(_.isCurrency, ccy + " is not a currency")
+
   type marketDataType = ForwardRateData
   type marketDataDBType = ForwardRateData
   def typeName = ForwardRateDataType.name
@@ -62,19 +64,20 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
   def fields = Set(ForwardRateDataType.currencyField.field)
 }
 
-case class ForwardRateData(entries : List[ForwardRateDataEntry]) extends MarketData {
-  def lastDay = entries.maximum(_.forwardDay)
-  def size = entries.size
-  private def toMap() = {
-    entries.groupBy(_.key())
-  }
-  override def equals(obj: Any) = {
-    obj match {
-      case rhs:ForwardRateData => toMap() == rhs.toMap()
-      case _ => false
-    }
-  }
-  override def hashCode = toMap().hashCode
+case class ForwardRateSource(value: String) extends NewType[String]
+
+object ForwardRateSource {
+  val LIBOR = ForwardRateSource("LIBOR")
+}
+
+case class ForwardRateData(rates: NestedMap[ForwardRateSource, Tenor, Quantity]) extends MarketData {
+  require(rates.keySet.forall(_.isInstanceOf[ForwardRateSource]))
+  require(rates.flipNesting.keySet.forall(_.isInstanceOf[Tenor]))
+  require(rates.allValues.forall(_.isInstanceOf[Quantity]))
+
+  def lastDay(fixingDay: Day): Day = fixingDay
+
+  def size = rates.nestedSize
 }
 
 

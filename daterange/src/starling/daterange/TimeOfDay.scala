@@ -16,4 +16,7 @@ class TimeOfDay(name:String, val shortName:String) extends Serializable {
   }
   override def hashCode = toString.hashCode
   override def toString = name
+  def daysSince(that: TimeOfDay): Int = numericValue - that.numericValue
+
+  private def numericValue = if (this == TimeOfDay.StartOfDay) 0 else 1
 }

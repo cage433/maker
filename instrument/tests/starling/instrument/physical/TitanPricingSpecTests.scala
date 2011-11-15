@@ -27,7 +27,63 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest{
         Day(2012, 1, 31),
         Quantity(15, GBP/MT),
         EUR
+      ),
+      FixedPricingSpec(
+        Market.SHANGHAI_COPPER,
+        Day(2012, 2, 1),
+        List(
+          (0.4, Quantity(15, EUR/MT)),
+          (0.6, Quantity(32, GBP/MT))
+        ),
+        Quantity(99, USD/MT),
+        CNY
+      ),
+      WeightedPricingSpec(
+        List(
+          (
+            0.4, 
+            AveragePricingSpec(
+              FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
+              Month(2011, 12),
+              Quantity(10, USD/MT),
+              GBP
+            )
+          ),
+          (
+            0.6, 
+            UnknownPricingSpecification(
+              FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
+              Month(2012, 1),
+              List(UnknownPricingFixation(0.4, Quantity(100, USD/MT))),
+              Day(2012, 1, 31),
+              Quantity(15, GBP/MT),
+              EUR
+            )
+          )
+        ),
+        USD
+      ),
+      OptionalPricingSpec(
+        List(
+          AveragePricingSpec(
+            FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
+            Month(2011, 12),
+            Quantity(10, USD/MT),
+            GBP
+          ),
+          UnknownPricingSpecification(
+            FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
+            Month(2012, 1),
+            List(UnknownPricingFixation(0.4, Quantity(100, USD/MT))),
+            Day(2012, 1, 31),
+            Quantity(15, GBP/MT),
+            EUR
+          )
+        ),
+        Day(2012, 1, 1),
+        None
       )
+
     )
 
     val fxRates = Map(

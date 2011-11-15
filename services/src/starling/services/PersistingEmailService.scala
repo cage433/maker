@@ -6,15 +6,12 @@ import starling.pivot.model.PivotTableModel
 import starling.dbx.{From, RealTable}
 import starling.pivot._
 import starling.utils.ImplicitConversions._
-import org.springframework.mail.javamail.{JavaMailSenderImpl, MimeMessageHelper, JavaMailSender}
 import org.springframework.dao.DuplicateKeyException
 import starling.utils.{Broadcaster, Log}
 import starling.gui.api.{EmailSent, Email}
 
-class PersistingEmailService(broadcaster: Broadcaster, db: DB, jSender: JavaMailSender) extends EmailService with Log {
-  def this(broadcaster: Broadcaster, db: DB, host: String, port: Int) =
-    this(broadcaster, db, new JavaMailSenderImpl().update(_.setHost(host), _.setPort(port)))
 
+class PersistingEmailService(broadcaster: Broadcaster, db: DB, mailSender: MailSender) extends EmailService with Log {
   def send(email: Email) = db.inTransaction { writer => new Timestamp().update { now =>
     val sendEmail = try writer.insert("EmailsSent", Map(
       "hash"      → email.hash,
@@ -28,10 +25,7 @@ class PersistingEmailService(broadcaster: Broadcaster, db: DB, jSender: JavaMail
       case _ => true                         // DB is broken somehow, but sending is more important
     }
 
-    if (sendEmail) {
-      jSender.send(toMessage(email))
-      broadcaster.broadcast(EmailSent(now))
-    }
+    if (sendEmail && mailSender.send(email)) broadcaster.broadcast(EmailSent(now))
   } }
 
   def emailsSent(mostRecent: Timestamp, pivotFieldParams: PivotFieldParams) = PivotTableModel.createPivotData(
@@ -44,10 +38,6 @@ class PersistingEmailService(broadcaster: Broadcaster, db: DB, jSender: JavaMail
         dataFields = List(Field("Sender"), Field("Recipient"), Field("Body"))), Nil
     ), pivotFieldParams
   )
-
-  private def toMessage(email: Email) = jSender.createMimeMessage.update { message => new MimeMessageHelper(message, true).update(
-    _.setFrom(email.from), _.setTo(email.to.toArray), _.setSubject(email.subject), _.setText(email.bodyWithFooters, true)
-  ) }
 
   private def stringColumns(columns: String*) = columns.map(c => StringColumnDefinition(c.capitalize, c, "EmailsSent")).toList
 }

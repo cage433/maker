@@ -21,7 +21,7 @@ import starling.curves.readers.VerifyMarketDataAvailable
 object PriceLimMarketDataSource extends scalaz.Options {
   import LIMService.TopRelation.Trafigura.Bloomberg._
 
-  val priceSources = PriceDataType.name → List(
+  val sources = List(
     new PriceLimSource(new LMELIMRelation(Metals.Lme, FuturesExchangeFactory.LME)),
     new PriceLimSource(new MonthlyLIMRelation(Futures.Comex, FuturesExchangeFactory.COMEX)),
     new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SHFE)))
@@ -49,17 +49,16 @@ object PriceLimMarketDataSource extends scalaz.Options {
   }
 }
 
-case class PriceLimMarketDataSource(service: LIMService, bloombergImports: BloombergImports, emailService: EmailService, template: Email)
-  extends LimMarketDataSource(service) {
+case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service: LIMService, emailService: EmailService, template: Email)
+  extends LimMarketDataSource(service, PriceDataType.name) {
 
   import PriceLimMarketDataSource._
   import FuturesExchangeFactory._
 
-  override def description = List(priceSources).flatMap
-    { case (marketDataType, sources) => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
+  override def description = descriptionFor(sources)
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(PriceDataType.name, day.startOfFinancialYear, day, priceSources))
+    Map(getValuesForType(day.startOfFinancialYear, day, sources))
   }
 
   override def eventSources(marketDataStore: MarketDataStore) = limMetalMarketsForExchanges.map(markets =>
@@ -75,7 +74,7 @@ case class PriceLimMarketDataSource(service: LIMService, bloombergImports: Bloom
 //    "WuXi Metals") with NullMarketDataEventSource
 //      tasks(daily(SFE, 16 H 30), availabilityBroadcaster.verifyPricesAvailable(exbxgMetals), verifyPricesValid(exbxgMetals))
 
-  private lazy val limMetalMarketsForExchanges@List(lme, comex, shfe) = priceSources._2.map(pricesSource => {
+  private lazy val limMetalMarketsForExchanges@List(lme, comex, shfe) = sources.map(pricesSource => {
     pricesSource.exchange.markets.filter(_.limSymbol.isDefined).filter(isMetal).filter(correspondsToBloombergImport(pricesSource.node))
   } )
 

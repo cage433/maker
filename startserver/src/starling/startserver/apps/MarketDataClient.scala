@@ -5,6 +5,7 @@ import com.trafigura.services.marketdata._
 import starling.daterange.Day
 import valuation.TitanMarketDataIdentifier
 import starling.client.BouncyRMIServiceApi
+import Day._
 
 
 object MarketDataClient {
@@ -15,7 +16,7 @@ object MarketDataClient {
     val day = Day(2011, 6, 24)
     val date = day.toLocalDate
     val observationDay = TitanSerializableDate(date)
-    val titanSnapshotIdentifier: TitanSnapshotIdentifier = TitanSnapshotIdentifier("4439")
+    val titanSnapshotIdentifier: TitanSnapshotIdentifier = TitanSnapshotIdentifier("42")
     val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, day)
 
     ///////////////////
@@ -52,6 +53,7 @@ object MarketDataClient {
     ///////////////////////////////////
 
     {
+      val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, 11 Nov 2011)
       val interestRates: List[ReferenceInterestRate] = marketData.getReferenceInterestRates(marketDataID)
 
       println("getReferenceInterestRates:...")
@@ -59,6 +61,7 @@ object MarketDataClient {
     }
 
     {
+      val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, 11 Nov 2011)
       val interestRate: ReferenceInterestRate = marketData.getReferenceInterestRate(
         marketDataID, ReferenceRateSource("LIBOR"), Maturity.get("1M"), TitanSerializableCurrency("GBP"))
 

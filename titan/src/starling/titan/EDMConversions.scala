@@ -26,6 +26,7 @@ object EDMConversions {
   implicit def enrichQuantity(q: Quantity) = new {
     def toTitan = toTitanQuantity(q)
     def toSerializable = toTitanSerializableQuantity(q)
+    def toSerializablePercentage = TitanSerializablePercentage(q.checkedValue(UOM.PERCENT))
   }
 
   implicit def enrichTenor(tenor: Tenor) = new {

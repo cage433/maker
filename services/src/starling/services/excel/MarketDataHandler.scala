@@ -303,27 +303,28 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "The settlement days for the interest rates",
       "The interest rates (matching the settlement days)"))
   def uploadInterestRates(label: String, observationDate: Object, currency: String, periods: Array[Double], rates: Array[Double]) = {
-    assert(label.nonEmpty, "Can't have an empty label for the market data")
-
-    val observationPoint = ObservationPoint.parse(observationDate)
-    val ccy = UOM.parseCurrency(currency)
-    val rows = (periods zip rates).flatMap{
-      case (period, rate) => {
-        if (period != 0) {
-          val day = Day.fromExcel(period)
-          val entry = ForwardRateDataEntry(day, "Annual", "SWAP", rate)
-          List(entry)
-        } else {
-          Nil
-        }
-      }
-    }
-    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, ForwardRateDataKey(ccy)), ForwardRateData(rows.toList))
-
-    val dates = periods.map((d: Double) => Day.fromExcel(d))
-    broadcaster.broadcast(UploadInterestRatesUpdate(User.currentlyLoggedOn, label, observationPoint.day, dates, currency, rates))
-
-    "OK:" + result
+    throw new Exception("Not implemented")
+//    assert(label.nonEmpty, "Can't have an empty label for the market data")
+//
+//    val observationPoint = ObservationPoint.parse(observationDate)
+//    val ccy = UOM.parseCurrency(currency)
+//    val rows = (periods zip rates).flatMap{
+//      case (period, rate) => {
+//        if (period != 0) {
+//          val day = Day.fromExcel(period)
+//          val entry = ForwardRateDataEntry(day, "Annual", "SWAP", rate)
+//          List(entry)
+//        } else {
+//          Nil
+//        }
+//      }
+//    }
+//    val result = marketDataStore.save(MarketDataSet.excel(label), TimedMarketDataKey(observationPoint, ForwardRateDataKey(ccy)), ForwardRateData(rows.toList))
+//
+//    val dates = periods.map((d: Double) => Day.fromExcel(d))
+//    broadcaster.broadcast(UploadInterestRatesUpdate(User.currentlyLoggedOn, label, observationPoint.day, dates, currency, rates))
+//
+//    "OK:" + result
   }
 
   @ExcelMethod

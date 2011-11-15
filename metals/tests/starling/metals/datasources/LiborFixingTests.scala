@@ -35,7 +35,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
   //println("Dodgy fixings: " + dodgyFixings)
 
   "Spot/Next value date matches against file from BBA" in {
-    expectedValueDays("Spot_Next_Fixing_Calendar_2011.txt").filter(_.currency.isOneOf(LIBORFixing.currencies)).map { fixingEntry =>
+    expectedValueDays("Spot_Next_Fixing_Calendar_2011.txt").filter(_.currency.isOneOf(LIBORCalculator.currencies)).map { fixingEntry =>
       fixingEntry.valueDays.map { case ((tenor, fixingDay), expected) =>
         if (!dodgyFixings.contains(fixingEntry.currency, fixingDay)) {
           val fixing = fixingEntry.fixingFor(fixingDay)
@@ -45,21 +45,21 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
     }
   }
 
-  private implicit def arbitraryFixing: Arbitrary[LIBORFixing] = Arbitrary {
+  private implicit def arbitraryFixing: Arbitrary[LIBORCalculator] = Arbitrary {
     for {
-      currency <- Gen.oneOf(LIBORFixing.currencies.toSeq)
+      currency <- Gen.oneOf(LIBORCalculator.currencies.toSeq)
       fixingDay <- Gen.choose((03 Jan 2011).julianDayNumber, (30 Dec 2011).julianDayNumber)
-    } yield LIBORFixing(Quantity(1, currency), Day.fromJulianDayNumber(fixingDay))
+    } yield LIBORCalculator(currency, Day.fromJulianDayNumber(fixingDay))
   }.filter(fixing => fixing.isBusinessDay)
 
   private implicit def arbitraryTenor: Arbitrary[Tenor] = Arbitrary { Gen.oneOf(Tenor.ON, Tenor(Week, 1)) }
 
   "maturity day of O/N == value day" in {
-    check((fixing: LIBORFixing) => fixing.supportsOvernight ==> (fixing.maturityDay(Tenor.ON) == fixing.valueDay(Tenor.ON)))
+    check((fixing: LIBORCalculator) => fixing.supportsOvernight ==> (fixing.maturityDay(Tenor.ON) == fixing.valueDay(Tenor.ON)))
   }
 
   "1M maturity day  == 1 month from value day" in {
-    check((fixing: LIBORFixing) => {
+    check((fixing: LIBORCalculator) => {
       val maturityDay = fixing.maturityDay(Tenor.OneMonth)
       val valueDay = fixing.valueDay(Tenor.OneMonth)
       val oneMonthAfterValueDay = valueDay.addMonths(1).thisOrNextBusinessDay(fixing.combinedCalendar)
@@ -112,7 +112,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
   }
 
   private case class FixingEntry(currency: UOM, tenors: List[String] = Nil, valueDays: Map[(Tenor, Day), Day]= Map()) {
-    def fixingFor(fixingDay: Day) = LIBORFixing(Quantity(1, currency), fixingDay)
+    def fixingFor(fixingDay: Day) = LIBORCalculator(currency, fixingDay)
     def addTenors(tenors: List[String]) = copy(tenors = this.tenors ::: tenors)
     def addValueDays(valueDays: List[(Day, Option[Day])]) = copy(valueDays = this.valueDays ++ getValueDays(valueDays))
 
@@ -143,5 +143,5 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
     }
   }
 
-  private def fixingFor(currency: UOM, fixingDay: Day) = LIBORFixing(Quantity(1, currency), fixingDay)
+  private def fixingFor(currency: UOM, fixingDay: Day) = LIBORCalculator(currency, fixingDay)
 }

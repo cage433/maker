@@ -6,6 +6,7 @@ import model.{UndefinedValueNew, UndefinedValue}
 import starling.quantity._
 import starling.utils.ImplicitConversions._
 import starling.utils.{StarlingEnum}
+import starling.utils.Pattern.Extractor
 
 class Field(val name: String) extends Serializable {
   override val hashCode = name.hashCode
@@ -125,6 +126,8 @@ case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:St
       currencyFormat
     else if (uom.numeratorUOM.isCurrency) // probably a price
       priceFormat
+    else if (uom.isPercent)
+      percentageFormat
     else
       defaultFormat
   }

@@ -35,14 +35,8 @@ case class DayAndTime(day : Day, timeOfDay0 : TimeOfDay) extends Ordered[DayAndT
   def timeSince(that : DayAndTime) : Double = {
     if (that > this)
       -that.timeSince(this)
-    else {
-      val numDays = (that.timeOfDay, timeOfDay) match {
-        case (`EndOfDay`, `StartOfDay`) => day - that.day - 1
-        case (`StartOfDay`, `EndOfDay`) => day - that.day + 1
-        case _ => day - that.day
-      }
-      numDays / Day.daysInYear
-    }
+    else
+      (day - that.day + timeOfDay.daysSince(that.timeOfDay)) / Day.daysInYear
   }
 }
 

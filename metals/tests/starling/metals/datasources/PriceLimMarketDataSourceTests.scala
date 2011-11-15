@@ -43,7 +43,7 @@ class PriceLimMarketDataSourceTests extends LimMarketDataSourceTests[PriceLimMar
   }
 
   protected def createDataSource(emailService: EmailService): PriceLimMarketDataSource = {
-    new PriceLimMarketDataSource(LIMService.Null, bloombergImports, emailService, template)
+    new PriceLimMarketDataSource(bloombergImports)(LIMService.Null, emailService, template)
   }
 
   protected def completeSetOfData = pricesForExchanges(LME, COMEX, SHFE)
@@ -51,7 +51,7 @@ class PriceLimMarketDataSourceTests extends LimMarketDataSourceTests[PriceLimMar
   lazy val bloombergMarkets: MultiMap[FuturesExchange, FuturesMarket] = MultiMap(
     LME ->> (LME_ALUMINIUM, LME_ZINC), COMEX ->> (COMEX_GOLD, COMEX_SILVER), SHFE ->> (SHANGHAI_ZINC, SHANGHAI_COPPER))
 
-  lazy val bloombergImports = BloombergImports(PriceLimMarketDataSource.priceSources._2.map(source =>
+  lazy val bloombergImports = BloombergImports(PriceLimMarketDataSource.sources.map(source =>
     (source.node.name, bloombergMarkets(source.exchange))).toMap.flatMultiMap { case (limFolder, market) =>
     BloombergImport(123, None, market.limSymbol.map(_.name), Some(limFolder), None, None, true, null, TimeZone.UTC)
   }.toList)

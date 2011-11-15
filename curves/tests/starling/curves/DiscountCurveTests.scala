@@ -1,16 +1,17 @@
 package starling.curves
 
-import starling.utils.StarlingTest
 import interestrate.{DayCount30_360, DayCountActualActual, DayCountActual365}
 import starling.marketdata.MarketData
 import org.testng.annotations._
 import org.testng.Assert._
 import starling.quantity.UOM._
 import starling.maths.RandomVariables
-import starling.quantity.{UOM, Percentage}
 import starling.daterange.{DateRange, DayAndTime, SimpleDateRange, Day}
+import starling.quantity.{Quantity, UOM, Percentage}
+import starling.quantity.utils.QuantityTestUtils._
+import starling.utils.{Log, StarlingTest}
 
-class DiscountCurveTests extends StarlingTest {
+class DiscountCurveTests extends StarlingTest with Log {
 	@Test
 	/** Sanity check on the swap rate conversion to continuously compounded. The cc rates should be a bit higher.
   */
@@ -79,7 +80,7 @@ class DiscountCurveTests extends StarlingTest {
     days = days.reverse
     val x = RandomVariables.standardUniform(54321)
     val periods = days.zip(days.tail).map{case (d1, d2) => SimpleDateRange(d1, d2)}
-    val rateData = Map.empty[DateRange, Percentage] ++ periods.map((_, Percentage(/*x.nextDouble * */0.1)))
+    val rateData = Map.empty[DateRange, Quantity] ++ periods.map((_, Quantity(x.nextDouble, UOM.PERCENT)))
     val marketDayAndtime: DayAndTime = days.head.endOfDay               
     val discountCurve = new ForwardForwardDiscountCurve(USD, marketDayAndtime, rateData)
     val env = Environment(
@@ -87,17 +88,17 @@ class DiscountCurveTests extends StarlingTest {
     )
     periods.foreach{
       p =>
-        assertEquals(env.forwardRate(USD, p.firstDay, p.lastDay, DayCountActual365).value, rateData(p).value, 1e-6)
-        assertEquals(
-          env.forwardCCRate(USD, p.firstDay, p.lastDay, DayCountActual365).value,
-          env.forwardCCRate(USD, p.firstDay + 1, p.lastDay - 1, DayCountActual365).value,
+        assertQtyEquals(env.forwardRate(USD, p.firstDay, p.lastDay, DayCountActual365), rateData(p), 1e-6)
+        assertQtyEquals(
+          env.forwardCCRate(USD, p.firstDay, p.lastDay, DayCountActual365),
+          env.forwardCCRate(USD, p.firstDay + 1, p.lastDay - 1, DayCountActual365),
           1e-6)
     }
 
   }
 
   @Test
-  def testConstantCurveCanBeRecoveredFromForwardForwardRates{
+  def testConstantCurveCanBeRecoveredFromForwardForwardRates = log.off {
     val marketDay = Day(2009, 9, 10).startOfDay
     val discountCurve = new ConstantDiscountCurve(marketDay, USD, 0.05)
 
@@ -109,15 +110,23 @@ class DiscountCurveTests extends StarlingTest {
     val env = Environment(
       new MappingCurveObjectEnvironment(Map[CurveKey, CurveObject](DiscountCurveKey(USD) ->discountCurve), marketDay)
     )
-    val rates = Map.empty[DateRange, Percentage] ++ periods.map{ p : DateRange =>  (p -> env.forwardRate(USD, p, DayCountActual365))}
+    val rates = Map.empty[DateRange, Quantity] ++ periods.map{ p : DateRange =>
+      val fwdRate = env.forwardRate(USD, p, DayCountActual365)
+      log.debug(p + ": " + fwdRate)
+      (p → fwdRate)
+    }
     val newCurve = new ForwardForwardDiscountCurve(USD, marketDay, rates)
 
     val newEnv = Environment(
       new MappingCurveObjectEnvironment(Map[CurveKey, CurveObject](DiscountCurveKey(USD) -> newCurve), marketDay)
     )
 
+    rates.values.foreach(log.debug(_))
+
     periods.foreach{
       p =>
+        log.debug(env.forwardRate(USD, p, DayCountActual365))
+        log.debug(newEnv.forwardRate(USD, p, DayCountActual365))
         assertEquals(
           env.forwardRate(USD, p, DayCountActual365).value,
           newEnv.forwardRate(USD, p, DayCountActual365).value,

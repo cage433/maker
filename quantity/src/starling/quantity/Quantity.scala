@@ -96,6 +96,8 @@ object Quantity {
 }
  
 class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with Summable[Quantity] with Serializable {
+  def ln = copy(value = Math.log(checkedValue(UOM.SCALAR)))
+
   require(! value.isNaN, "Value is NaN")
   require(! value.isInfinite, "Value is Infinite")
   //require(value == 0.0 || uom != UOM.NULL, "Can't have non-zero null quantities - you probably want uom SCALAR")
@@ -158,6 +160,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   }
 
   def isScalar = uom.isScalar
+  def isPercent = uom.isPercent
 
   def +(rhs: Quantity): Quantity = {
     if (this == Quantity.NULL)

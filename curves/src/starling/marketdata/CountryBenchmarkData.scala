@@ -7,7 +7,7 @@ import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-case class CountryBenchmarkData(countryData: NestedMap[NeptuneCountryCode, Day, Quantity]) extends MarketData {
+case class CountryBenchmarkData(countryData: NestedMap[(NeptuneCountryCode, GradeCode), Day, Quantity]) extends MarketData {
   def size = countryData.nestedSize
 }
 
@@ -19,18 +19,19 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   val commodityField = FieldDetails("Commodity", new SpecifiedValuesParser(Commodity.metalsCommodities.map(_.name).toSet))
   val areaField = FieldDetails("Area")
   val countryCodeField = FieldDetails.coded("Country", referenceData.countries.values)
+  val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values)
   val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PricePivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
-  override def valueKeys = List(countryCodeField, effectiveFromField)
+  override def valueKeys = List(countryCodeField, gradeCodeField, effectiveFromField)
   override def derivedFieldDetails = List(areaField)
   def valueFieldDetails = List(benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
-    rowFields = List(commodityField.field, countryCodeField.field, effectiveFromField.field),
+    rowFields = List(commodityField.field, countryCodeField.field, gradeCodeField.field, effectiveFromField.field),
     filters = List( Field("Observation Time") -> SomeSelection(Set("Default")) )
   )
 
@@ -38,7 +39,7 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
 
   def createValue(rows: List[Row]) = {
     val data = rows.map { row =>
-      NeptuneCountryCode(row.string(countryCodeField)) → (row[Day](effectiveFromField), row.quantity(benchmarkPriceField))
+      (NeptuneCountryCode(row.string(countryCodeField)), GradeCode(row.string(gradeCodeField))) → (row[Day](effectiveFromField), row.quantity(benchmarkPriceField))
     }
 
     CountryBenchmarkData(data.toNestedMap)
@@ -47,9 +48,10 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   protected def fieldValuesFor(key: CountryBenchmarkMarketDataKey) = Row(commodityField.field → key.commodity.name)
 
   def rows(key: CountryBenchmarkMarketDataKey, data: CountryBenchmarkData) = data.countryData.mapNested {
-    case (countryCode, effectiveFrom, price) => Row(
+    case ((countryCode, gradeCode), effectiveFrom, price) => Row(
       commodityField.field → key.commodity.name,
       countryCodeField.field → countryCode.code,
+      gradeCodeField.field → gradeCode.code,
       areaField.field → referenceData.areaFor(countryCode).map(_.name).getOrElse("Unknown"),
       effectiveFromField.field → effectiveFrom,
       benchmarkPriceField.field → price.pq

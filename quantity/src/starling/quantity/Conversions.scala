@@ -22,8 +22,6 @@ protected[quantity] class Conversions(val conversions: Map[UOM, BigDecimal]) ext
   protected[quantity] def convert(from: UOM, to: UOM): Option[BigDecimal] = {
     if (from == to) {
       Some(BigDecimal(1.0))
-    } else if (to.isScalar || to.isNull) {
-      Some(BigDecimal(1.0))
     } else {
       conversionCache.memoize((from, to), {
         (from.div(to)) match {

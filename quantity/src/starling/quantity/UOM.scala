@@ -319,6 +319,7 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
   def isNull = this == UOM.NULL
 
   def isScalar = this == UOM.SCALAR
+  def isPercent = this == UOM.PERCENT
 
   override def toString = asString
 

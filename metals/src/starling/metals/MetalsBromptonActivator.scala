@@ -1,6 +1,6 @@
 package starling.metals
 
-import datasources.{DBBloombergImports, PriceFixingLimMarketDataSource, PriceLimMarketDataSource, SpotFXLimMarketDataSource}
+import datasources._
 import swing.event.Event
 
 import starling.curves._
@@ -120,11 +120,11 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       val template = Email(props.MetalsEmailAddress(), props.LimEmailAddress())
       val emailService = context.awaitService(classOf[EmailService]).enabledIf(props.EnableVerificationEmails())
 
-      List(
-        new PriceLimMarketDataSource(limService, bloombergImports, emailService, template),
-        new SpotFXLimMarketDataSource(limService, emailService, template),
-        new PriceFixingLimMarketDataSource(limService, emailService, template)
-      ).foreach(context.registerService(classOf[MarketDataSource], _))
+      val marketDataSourcesFactories = List(SpotFXLimMarketDataSource.apply _, PriceFixingLimMarketDataSource.apply _,
+        ForwardRateLimMarketDataSource.apply _, PriceLimMarketDataSource.apply(bloombergImports) _)
+
+      marketDataSourcesFactories.foreach(factory =>
+        context.registerService(classOf[MarketDataSource], factory(limService, emailService, template)))
     }
 
     registerScheduler(context, broadcaster)

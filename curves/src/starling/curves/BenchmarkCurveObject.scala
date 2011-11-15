@@ -49,10 +49,10 @@ case class AreaBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : 
   }
 }
 
-case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, day: Day,
+case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, grade : GradeCode, day: Day, refData : ReferenceDataLookup,
   override val ignoreShiftsIfPermitted: Boolean = false
 )
-  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity), (country, day), ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity, refData), (country, grade, day), ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
@@ -64,12 +64,12 @@ case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCount
 /**
  * Benchmark curve key for benchmark location data
  */
-case class CountryBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[CountryBenchmarkData]{
+case class CountryBenchmarkCurveKey(commodity : Commodity, refData : ReferenceDataLookup) extends NonHistoricalCurveKey[CountryBenchmarkData]{
   override def typeName = PriceDataType.name
   def marketDataKey = CountryBenchmarkMarketDataKey(commodity)
   def underlying = commodity.toString + " Benchmark"
   def buildFromMarketData(marketDay : DayAndTime, marketData : CountryBenchmarkData) : CurveObject = {
-    CountryBenchmarkCurveObject(marketDay, marketData)
+    CountryBenchmarkCurveObject(marketDay, marketData, refData)
   }
 }
 
@@ -77,14 +77,15 @@ case class CountryBenchmarkCurveKey(commodity : Commodity) extends NonHistorical
 /**
  * Benchmark Location Curve for benchmarks using grade and location as keys
  */
-case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : CountryBenchmarkData) extends CurveObject {
+case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : CountryBenchmarkData, refData : ReferenceDataLookup) extends CurveObject {
   val countryData = marketData.countryData.withDefaultValue(Map.empty[Day, Quantity])
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) = point match {
-    case (country: NeptuneCountryCode, day: Day) => {
-      val (days, benchmarks) = countryData(country).sorted.unzip
-
+    case (country: NeptuneCountryCode, grade : GradeCode, day: Day) => {
+      val (days, benchmarks) = countryData((country, grade)).sorted.unzip
+      if (benchmarks.isEmpty)
+        throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade))
       InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
     }
   }

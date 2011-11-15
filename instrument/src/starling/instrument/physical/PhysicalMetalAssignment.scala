@@ -140,50 +140,49 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   }
   
   private def contractPaymentExplained(env : Environment) : NamedQuantity = {
-    val price = contractPricingSpec.priceIncludingVAT(env).getOrElse(contractPricingSpec.priceExcludingVAT(env))
+    val price = contractPricingSpec.priceExcludingVAT(env)
     var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
     exp = timesVolume(exp)
     discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
   }
 
   private def benchmarkPaymentExplained(env : Environment) : NamedQuantity = {
-    val spec = benchmarkPricingSpec
-    val price = spec.priceIncludingVAT(env).getOrElse(spec.priceExcludingVAT(env))
+    val spec = benchmarkPricingSpec(env)
+    val price = spec.priceExcludingVAT(env)
     var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
     exp = timesVolume(exp)
     discounted(env, exp, spec.settlementDay(env.marketDay))
   }
 
-  lazy val benchmarkPricingSpec : TitanPricingSpec = {
+  def benchmarkPricingSpec(env : Environment) : TitanPricingSpec = {
     val month = benchmarkDeliveryDay.get.containingMonth
     val futuresMarket = contractPricingSpec.futuresMarket
     val index = futuresMarket.physicalMetalBenchmarkIndex
+    val benchmarkLookupDay = TitanPricingSpec.representativeDay(index, month, env.marketDay)
+    val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, benchmarkLookupDay)
     UnknownPricingSpecification(
       index,
       month,
       Nil,
       month.lastDay,
-      Quantity(0, index.priceUOM),
+      benchmark,
       valuationCCY
     )
   }
 
-  private def freightParityExplained(env : Environment) : NamedQuantity = {
-    var exp : NamedQuantity = (env.freightParity(
-      contractIncoTermCode, contractLocationCode, 
-      benchmarkIncoTermCode.get, benchmarkCountryCode.get
-    ) * -1).named("Freight Parity")
-    exp = timesVolume(exp)
-    discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
-  }
+  //private def freightParityExplained(env : Environment) : NamedQuantity = {
+    //var exp : NamedQuantity = (env.freightParity(
+      //contractIncoTermCode, contractLocationCode, 
+      //benchmarkIncoTermCode.get, benchmarkCountryCode.get
+      //) * -1).named("Freight Parity")
+    //exp = timesVolume(exp)
+    //discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
+    //}
 
   def explanation(env: Environment): NamedQuantity = {
     val namedEnv = env.withNaming()
-    var exp = contractPaymentExplained(namedEnv)
-    if (benchmarkDeliveryDay.isDefined){
-      exp = exp + benchmarkPaymentExplained(namedEnv) + freightParityExplained(namedEnv)
-    }
-    exp 
+    val components = assets(namedEnv).assets.map(_.mtm.asInstanceOf[NamedQuantity])
+    components.tail.fold(components.head)(_+_)
   }
 
   def assets(env: Environment) = {
@@ -198,18 +197,18 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       val benchmarkPaymentAsset = Asset(
         known = false,
         assetType = commodity.neptuneName,
-        settlementDay = benchmarkPricingSpec.settlementDay(env.marketDay),
+        settlementDay = benchmarkPricingSpec(env).settlementDay(env.marketDay),
         amount = quantity,
         mtm = benchmarkPaymentExplained(env)
       )
-      val freightParityAsset = Asset(
-        known = false,
-        assetType = "Freight",
-        settlementDay = benchmarkPricingSpec.settlementDay(env.marketDay),
-        amount = quantity,
-        mtm = freightParityExplained(env)
-      )
-      List(contractPaymentAsset, benchmarkPaymentAsset, freightParityAsset)
+    //val freightParityAsset = Asset(
+      //known = false,
+      //assetType = "Freight",
+      //settlementDay = benchmarkPricingSpec(env).settlementDay(env.marketDay),
+      //amount = quantity,
+      //mtm = freightParityExplained(env)
+      //)
+      List(contractPaymentAsset, benchmarkPaymentAsset)//, freightParityAsset)
 
     } else {
       List(contractPaymentAsset)
@@ -323,7 +322,7 @@ case class PhysicalMetalAssignment( assignmentID : String,
     require (isPurchase)
     benchmarkDeliveryDay match {
       case Some(bdd) => {
-        val bp = benchmarkPricingSpec
+        val bp = benchmarkPricingSpec(env)
         CostsAndIncomeUnallocatedAssignmentValuation(
           assignmentID,
           /*

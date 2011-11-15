@@ -26,7 +26,7 @@ class DiscountCurvePivotTableDataSource(context:EnvironmentWithDomain) extends U
     val env = context.environment
     context.discounts.flatMap {
       case (currency, forwardRateData) => {
-        val lastDay = forwardRateData.lastDay
+        val lastDay = forwardRateData.lastDay(marketDay)
         val nextMonth = marketDay.containingMonth.next
         val lastMonth = lastDay.containingMonth
         val days = (nextMonth upto lastMonth).toList.map { m => m.firstDay}
