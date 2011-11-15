@@ -6,6 +6,7 @@ import starling.daterange.DayAndTime
 import starling.curves.{Environment}
 import starling.daterange.Day
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, UOM, Quantity}
+import starling.utils.StackTraceToString
 
 class InvalidInstrumentException extends RuntimeException
 
@@ -54,6 +55,7 @@ object ErrorInstrument extends TradeableType[ErrorInstrument] with InstrumentTyp
   def sample = {
     ErrorInstrument("sample")
   }
+  def apply(t : Throwable) : ErrorInstrument = ErrorInstrument(StackTraceToString.string(t).trim)
 }
 
 case class NullInstrument() extends InvalidInstrument {
