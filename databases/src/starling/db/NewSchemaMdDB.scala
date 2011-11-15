@@ -149,8 +149,17 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     val cacheChanges = ListBuffer[(String, Day)]()
 
     db.inTransaction(writer => {
+      var commitID:Int = 0
+      def nextCommitId(): Int = {
+        if (commitID == 0) {
+          commitID = writer.insertAndReturnKey("MarketDataCommit", "id",
+            Map("timestamp" → Clock.timestamp, "username" → User.optLoggedOn.map(_.username).orNull)).toInt
+        }
+        commitID
+      }
+
       val updates: Iterable[Map[String, Any]] = marketDataUpdates.flatMap { marketDataUpdate =>
-        updateIt(writer, marketDataUpdate, marketDataSet).map(result => {
+        updateIt(writer, nextCommitId _, marketDataUpdate, marketDataSet).map(result => {
           cacheChanges ++= result.removeRealTime.cacheChanges
           if (result.changed) update = true
           innerMaxVersion = scala.math.max(innerMaxVersion, result.version)
@@ -302,7 +311,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     def removeRealTime = copy(cacheChanges = cacheChanges.filterNot(_._2 == null))
   }
 
-  private def updateIt(writer: DBWriter, anUpdate: MarketDataUpdate, marketDataSet: MarketDataSet): Option[UpdateResult] = {
+  private def updateIt(writer: DBWriter, commitIdF:()=>Int, anUpdate: MarketDataUpdate, marketDataSet: MarketDataSet): Option[UpdateResult] = {
     val id = anUpdate.dataIdFor(marketDataSet, dataTypes)
     val existingData = anUpdate.existingData
     val maybeData = anUpdate.data
@@ -320,14 +329,11 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     }
     def insertKey(table: String, values: Map[String, Any]) = writer.insertAndReturnKey(table, "id", values).asInstanceOf[Int]
 
-    def nextCommitId(): Int = writer.insertAndReturnKey("MarketDataCommit", "id",
-      Map("timestamp" → Clock.timestamp, "username" → User.optLoggedOn.map(_.username).orNull)).toInt
-
     (existingData, maybeData) match {
       case (None, None) => None
       case (Some(VersionedMarketData(version, Some(old))), Some(newData)) if old == newData => Some(UpdateResult(false, version))
       case _ => {
-        val commitId = nextCommitId
+        val commitId = commitIdF()
         val extendedKey = findOrUpdateExtendedKey(id.extendedKey, commitId)
         val observationDay = id.observationPoint.day.getOrElse(null)
 
