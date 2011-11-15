@@ -44,7 +44,7 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
                 "No " + market + " prices on " + observationDay + " at " + market.asInstanceOf[FuturesMarket].closeTime
               ))
             }
-            case key: ForwardRateDataKey => read_(ObservationTimeOfDay.Default, key)
+            case key: ForwardRateDataKey => read_(ObservationTimeOfDay.LiborClose, key)
             case key: CountryBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: GradeAreaBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: FreightParityDataKey => read_(ObservationTimeOfDay.Default, key)
@@ -78,7 +78,7 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
     new EnvironmentWithDomain {
       val environment = environmentX
       def markets = marketsX
-      override def discounts = marketDataReader.readAll(ForwardRateDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.Default)).map {
+      override def discounts = marketDataReader.readAll(ForwardRateDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose)).map {
         case (key:ForwardRateDataKey, data:ForwardRateData) => key.ccy -> data
       }
 
