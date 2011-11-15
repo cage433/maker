@@ -306,8 +306,15 @@ class MarketDataPivotTableDataSource(preBuilt:PrebuiltMarketDataPivotData, edits
 
   def data(pfs : PivotFieldsState):PivotResult = {
 
-    val missingKeyFields = preBuilt.editable.get.keyFields -- pfs.allFieldsUsed.toSet
-    val pfsWithAddedKeyFields = pfs.copy(filters = missingKeyFields.toList.map(f => f -> AllSelection) ::: pfs.filters)
+    val pfsWithAddedKeyFields = {
+      preBuilt.editable match {
+        case Some(editPivot) => {
+          val missingKeyFields = editPivot.keyFields -- pfs.allFieldsUsed.toSet
+          pfs.copy(filters = missingKeyFields.toList.map(f => f -> AllSelection) ::: pfs.filters)
+        }
+        case None => pfs
+      }
+    }
 
     val (initialPossibleValues, data) = preBuilt.dataWithoutEdits(pfsWithAddedKeyFields)
 
