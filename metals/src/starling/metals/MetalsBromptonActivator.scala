@@ -30,6 +30,7 @@ import starling.lim.LIMService
 import starling.gui.api.Email._
 import starling.gui.api.{Email, MarketDataSelection, PricingGroup}
 import starling.metals.tasks.{UploadCurveToTrinityTask, TrinityUploader}
+import starling.props.ServerTypeInstances
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -188,7 +189,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       }
     })
 
-    if (props.ServerType() == "FC2" && props.ImportMarketDataAutomatically()) registerFC2Tasks(context, broadcaster)
+    if (props.ServerType() == ServerTypeInstances.FC2 && props.ImportMarketDataAutomatically()) registerFC2Tasks(context, broadcaster)
   }
 
   private def registerFC2Tasks(context: BromptonContext, broadcaster: Broadcaster) {

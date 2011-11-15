@@ -127,11 +127,10 @@ class PropsHelper(starlingProps : Map[String,PropertyValue], trafiguraProps : Ma
     extends Property(values0.headOption.getOrElse("<MISSING>")) {
 
     private val values = values0.toSet
-    def apply() = {
+    protected def validateValue(){
       require(value != "<MISSING>", "EnumProperty '%s' must be constructed with a list of valid values" % name)
       require(values.contains(value), "%s: %s is invalid, valid values are: %s" % (name, value, values.mkString(", ")))
 
-      value
     }
   }
 

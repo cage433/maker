@@ -5,7 +5,6 @@ import starling.bouncyrmi.BouncyRMIServerBromptonActivator
 import starling.auth.osgi.AuthBromptonActivator
 import starling.singleclasspathmanager.SingleClasspathManager
 import starling.utils.Log
-import starling.props.{Props, PropsHelper}
 import management.ManagementFactory
 import java.io.File
 import starling.reports.impl.ReportsBromptonActivator
@@ -15,6 +14,7 @@ import starling.props.internal.PropsBromptonActivator
 import starling.metals.MetalsBromptonActivator
 import starling.webservice.HttpWebserviceBromptonActivator
 import starling.manager.BromptonActivator
+import starling.props.{ServerTypeInstances, Props, PropsHelper}
 
 
 /**
@@ -45,7 +45,7 @@ object Server {
       classOf[MetalsBromptonActivator],
       classOf[RabbitEventViewerServiceBromptonActivator]
     )
-    val activators = baseActivators ::: (if (props.ServerType() == "FC2") metalsActivators else Nil)
+    val activators = baseActivators ::: (if (props.ServerType() == ServerTypeInstances.FC2) metalsActivators else Nil)
     val single = new SingleClasspathManager(false, activators)
     writePIDFile()
     Log.infoWithTime("Launching starling server") {

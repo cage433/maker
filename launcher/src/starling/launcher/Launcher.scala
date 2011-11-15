@@ -6,6 +6,9 @@ import java.net.{ConnectException, Socket, URL}
 import starling.gui.osgi.{MetalsGuiBromptonActivator, GuiBromptonActivator}
 import starling.manager.BromptonActivator
 import starling.bouncyrmi.{GuiLaunchParameters, BouncyRMIClientBromptonActivator}
+import starling.props.ServerTypeInstances
+import starling.props.ServerType
+import starling.props.ServerTypeInstances
 
 //Starts the gui without osgi
 object Launcher {
@@ -17,7 +20,7 @@ object Launcher {
     val rmiHost = args(0)
     val rmiPort = args(1).toInt
     val servicePrincipalName = args(2)
-    val serverType = args(3)
+    val serverType = ServerTypeInstances.fromName(args(3))
 
     if (args.length == 5) {
       try {
@@ -43,21 +46,21 @@ object Launcher {
     if (rmiPort == -1) {
       throw new Exception("You can only run as user once start has been called")
     }
-    start(rmiHost, rmiPort, servicePrincipalName, serverType, Some(overriddenUser))
+    start(rmiHost, rmiPort, servicePrincipalName, serverType.get, Some(overriddenUser))
   }
 
   // These variables are a big hack so we remember what they are when running the start method when changing users.
   private var rmiHost = ""
   private var rmiPort = -1
   private var servicePrincipalName = ""
-  private var serverType = ""
+  private var serverType : Option[ServerType] = None
 
-  def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:String, overriddenUser:Option[String] = None) {
+  def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:ServerType, overriddenUser:Option[String] = None) {
 
     this.rmiHost = rmiHost
     this.rmiPort = rmiPort
     this.servicePrincipalName = servicePrincipalName
-    this.serverType = serverType
+    this.serverType = Some(serverType)
 
     val launchParameters = GuiLaunchParameters(rmiHost, rmiPort, servicePrincipalName, overriddenUser)
 
@@ -66,10 +69,13 @@ object Launcher {
       classOf[BrowserBromptonActivator],
       classOf[GuiBromptonActivator]
     )
-    val extraActivators = serverType match {
-      case "FC2"|"Dev" => List[Class[_ <: BromptonActivator]](
-        classOf[MetalsGuiBromptonActivator], classOf[JettyBromptonActivator])
-      case "Oil" => List[Class[_ <: BromptonActivator]]()
+    val extraActivators = {
+      import ServerTypeInstances._
+      serverType match {
+        case `FC2`|`Dev` => List[Class[_ <: BromptonActivator]](
+          classOf[MetalsGuiBromptonActivator], classOf[JettyBromptonActivator])
+        case `Oil` => List[Class[_ <: BromptonActivator]]()
+      }
     }
     val activators = baseActivators ::: extraActivators
     val single = new SingleClasspathManager(true, activators, List( (classOf[GuiLaunchParameters], launchParameters) ) )

@@ -6,9 +6,24 @@ import java.io.File
 import scalaz.Scalaz._
 import starling.api.utils.PropertyValue
 
+abstract class ServerType(val name : String){
+}
+object ServerTypeInstances {
+  val Dev = new ServerType("Dev"){}
+  val FC2 = new ServerType("FC2"){}
+  val Oil = new ServerType("Oil"){}
+  val instances = List(Dev, FC2, Oil)
+  def fromName(name : String) = instances.find(_.name == name).getOrElse(throw new Exception("Unrecognised server name " + name))
+}
+
 class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String, PropertyValue]) extends PropsHelper(starlingProps, trafiguraProps) {
   object ServerName extends ServerNameStringProperty()
-  object ServerType extends EnumProperty("Dev", "FC2", "Oil")
+  object ServerType extends EnumProperty(ServerTypeInstances.instances.map(_.name) : _*){
+    def apply() : ServerType = {
+      super.validateValue()
+      ServerTypeInstances.fromName(value)
+    }
+  }
   object ServerNameOrBlank extends StringProperty(ServerName())
   object ServerColour extends StringProperty(PropsHelper.createColourString(ServerName()))
   object UseProductionColour extends BooleanProperty(false)
