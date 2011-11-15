@@ -58,6 +58,7 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def withDefault(f : K => V) = new MapProxy[K, V]{val self = thisMap.map; override def default(k : K) = f(k)}
   def innerJoin[W](other: Map[V, W]): Map[K, W] = >>>(other)
   def >>>[W](other: Map[V, W]): Map[K, W] = map.collectValuesO(other.get)
+  def combine(other: Map[K, V], combiner: (List[V]) => V): Map[K, V] = (map.toSeq ++ other.toSeq).toMultiMap.mapValues(combiner)
 }
 
 class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map) {
@@ -67,7 +68,7 @@ class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map)
   def allValues: List[V] = map.values.flatten.toList
   def union(k: K, v: List[V]): Map[K, List[V]] = map.getOrUpdate(k, old => (old ++ v).distinct)
   def union(kv: (K, List[V])): Map[K, List[V]] = union(kv._1, kv._2)
-  def union(other: Map[K, List[V]]): Map[K, List[V]] = (map ++ other).mapValues(_.distinct)
+  def union(other: Map[K, List[V]]): Map[K, List[V]] = map.combine(other, _.reverse.flatten.distinct)
   def flatMultiMap[W](f: ((K, V)) => W): Iterable[W] = map.flatMap(kvs => kvs._2.map(v => f(kvs._1, v)))
 }
 
