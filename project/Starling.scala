@@ -104,7 +104,7 @@ object StarlingBuild extends Build{
         }
       }
 
-    val repoName = projectName + if (isSnapshot) /* "-snapshots" */ "-releases" else "-releases"
+    val repoName = projectName + (if (isSnapshot) /* "-snapshots" */ "-releases" else "-releases")
 
     Some(repo(repoName))
   }
