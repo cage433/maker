@@ -11,6 +11,8 @@ import java.io.File
 
 object StarlingBuild extends Build{
 
+  val projectName = "starling"
+  val scalaVer = "2.9.1"
   val amqpVersion = "1.7.2"
 
   import Utils._
@@ -36,7 +38,7 @@ object StarlingBuild extends Build{
     unmanagedJars in Test <++= (baseDirectory) map lib_managed_jars,
     unmanagedJars in Runtime <++= (baseDirectory) map lib_managed_jars,
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>, 
-    scalaVersion := "2.9.1",
+    scalaVersion := scalaVer,
     showLibsTask,
     writeClasspathScriptTask,
     credentialsSetting,
@@ -68,7 +70,7 @@ object StarlingBuild extends Build{
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>,
-    scalaVersion := "2.9.1",
+    scalaVersion := scalaVer,
     showLibsTask,
     writeClasspathScriptTask,
     deployClasspathTask,
@@ -90,18 +92,21 @@ object StarlingBuild extends Build{
   )
 
   lazy val publishSetting = publishTo <<= (version) {
-    version: String =>
+
+    val isSnapshot = starlingVersion.trim.toLowerCase.endsWith("snapshot")
+
+    version : String =>
       def repo(name: String) = {
-        if (starlingVersion.trim.toLowerCase == "snapshot") {
+        if (isSnapshot) {
           name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/" + name
         } else {
           name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-releases/" + name
         }
       }
-//      val isSnapshot = version.trim.endsWith("SNAPSHOT")
-//      val repoName   = if(isSnapshot) "snapshots" else "releases"
-//      Some(repo(repoName))
-     Some(repo("starling-releases"))
+
+    val repoName = projectName + (if (isSnapshot) /* "-snapshots" */ "-releases" else "-releases")
+
+    Some(repo(repoName))
   }
 
   lazy val credentialsSetting = credentials += {

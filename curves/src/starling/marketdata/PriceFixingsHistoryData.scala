@@ -41,7 +41,7 @@ object PriceFixingsHistoryData {
     create(Map( (level,period) → MarketValue.quantity(value)))
 
   def create(prices: Traversable[((Level, StoredFixingPeriod), MarketValue)]): PriceFixingsHistoryData = {
-    PriceFixingsHistoryData(emptyFixings ++ prices)
+    PriceFixingsHistoryData(emptyFixings ++ prices.toMap.mapValues(_.quantityPercentageToPercentage))
   }
 
   private val emptyFixings = TreeMap.empty[(Level, StoredFixingPeriod), MarketValue](new Tuple2Ordering[Level, StoredFixingPeriod])

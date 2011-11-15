@@ -11,6 +11,10 @@ case class MarketValue(value: Either[AQuantity, APercentage]) extends Serializab
   override def toString = value.fold(_.toString, _.toString)
   def toQuantity = value.fold(identity, _.toQuantity)
   def pivotValue = value.fold(_.pq, identity)
+  def quantityPercentageToPercentage = value match {
+    case Left(q) if q.isPercent => MarketValue.percentage(q.toPercentage)
+    case _ => this
+  }
 }
 
 object MarketValue {
