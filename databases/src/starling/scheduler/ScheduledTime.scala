@@ -7,20 +7,19 @@ import starling.calendar.BusinessCalendar
 import starling.daterange.Day
 
 import starling.utils.ImplicitConversions._
-import java.util.{Date, TimerTask, Timer}
+import java.util.{TimerTask, Timer}
 
 
 case class ScheduledTime(description: String, time: LocalTime, period: Period, cal: BusinessCalendar, ignoreMissed: Boolean = true) {
   def schedule(task: TimerTask, timer: Timer) = timer.scheduleAtFixedRate(task, scheduledTime.toDate, periodInSeconds * 1000)
-  val prettyTime = scheduledTime.toString(DateTimeFormat.forPattern("HH:mm"))
+  val prettyTime = scheduledTime.toString(DateTimeFormat.forPattern("HH:mm [dd MMM]"))
 
   private def scheduledTime: DateTime = {
     val scheduledTime = Day.today.atTimeOfDay(time, cal.location)
     val now = cal.now
     val periodsToAdd = if (scheduledTime < now && ignoreMissed) ((now - scheduledTime) / periodInSeconds) + 1 else 0
 
-    val x = (scheduledTime + (periodsToAdd * periodInSeconds * 1000))
-    x
+    scheduledTime + (periodsToAdd * periodInSeconds * 1000)
   }
 
   private lazy val periodInSeconds = period.toStandardSeconds.getSeconds.ensuring(_ > 0, "Period cannot be 0")
