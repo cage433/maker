@@ -80,7 +80,7 @@ object MarketDataIdentifier {
 /**
  * explanation is Either a String (of an exception) indicating an error, or the named quantity explanation
  */
-case class TradeValuation(explanation: Either[String, NamedQuantity])
+case class TradeValuation(explanation: Either[StackTrace, NamedQuantity])
 case class TradeValuationAndDetails(tradeValuation:TradeValuation, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn])
 
 case class PricingGroup(name:String) {

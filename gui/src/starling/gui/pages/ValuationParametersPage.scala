@@ -241,13 +241,28 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
         add(valuationParametersExplainPanel, "push, grow")
       }
       case Left(error) => {
-        val valuationParametersExplainPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
-          val errorScrollPane = new ScrollPane(new TextArea(error))
-          add(LabelWithSeparator("Error Explaining Valuation"), "spanx, growx, wrap")
+        import StarlingLocalCache._
+        val valuationStackTracePanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
+          add(LabelWithSeparator("Stacktrace"), "spanx, growx, wrap")
+          val errorScrollPane = new ScrollPane(new TextArea(error.stackTrace))
           add(errorScrollPane, "skip 1, push, grow, gapright " + RightPanelSpace)
+          visible = context.localCache.currentUser.isDeveloper
         }
-
-        add(valuationParametersExplainPanel, "push, grow")
+        val valuationParametersErrorPanel = new MigPanel("insets 0", "[" + StandardLeftIndent + "][p]") {
+          add(LabelWithSeparator("Error Explaining Valuation"), "spanx, growx, wrap")
+          val errorLabel= new Label(error.longMessage.getOrElse(error.message)) {
+            foreground = Color.RED
+          }
+          add(errorLabel, "skip 1, push, grow, gapright " + RightPanelSpace)
+          reactions += {
+            case MouseClicked(_,_,_,2,_) => {
+              valuationStackTracePanel.visible = !valuationStackTracePanel.visible
+            }
+          }
+          listenTo(mouse.clicks)
+        }
+        add(valuationParametersErrorPanel, "push, wrap")
+        add(valuationStackTracePanel, "push, grow")
       }
     }
   }
