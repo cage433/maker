@@ -169,7 +169,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
         }
 
         add(helpLabelHolder, "split, spanx, ax right, ay top, wrap")
-        add(buttonPanel, "skip 1, wrap")
+        add(buttonPanel, "skip 1, grow, wrap")
         add(bookmarksPanel, "skip 1, growx, wrap")
         add(versionPanel, "newline, split, spanx, ax center, gapbottom 5lp")
       }

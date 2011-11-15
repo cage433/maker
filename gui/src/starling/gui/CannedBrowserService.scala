@@ -34,7 +34,6 @@ object CannedBrowserService extends BrowserService {
 
 object CannedBrowserBundle extends BrowserBundle {
   def bundleName = "Canned"
-  def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher: Publisher) {}
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
   override def homeButtons(pageContext: PageContext) = CannedHomePagePageComponent.buttons

@@ -99,7 +99,7 @@ class BouncyRMITests extends TestNGSuite {
   def before() {
     someService = new SomeService()
     server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, Set())
-    server.addInstance(classOf[Service].getName, someService)
+    server.addInstance(classOf[Service], someService)
     client = new BouncyRMIClient("localhost", port1, auth = Client.Null, overriddenUser = None)
   }
 
@@ -151,7 +151,7 @@ class BouncyRMITests extends TestNGSuite {
   @Test
   def testClientConnectFailsIfVersionsDoNotMatch() {
     val server = new BouncyRMIServer(port1, auth, "Two", Set())
-    server.addInstance(classOf[Service].getName, new SomeService())
+    server.addInstance(classOf[Service], new SomeService())
     server.start
 
     val needsReboot = new WaitForFlag
@@ -202,7 +202,7 @@ class BouncyRMITests extends TestNGSuite {
     disconnected.waitForFlip
     Thread.sleep(500) // client has to try a few times
     server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, Set())
-    server.addInstance(classOf[Service].getName, new SomeService())
+    server.addInstance(classOf[Service], new SomeService())
     server.start
     secondConnect.waitForFlip
     client.stop
@@ -276,7 +276,7 @@ class BouncyRMITests extends TestNGSuite {
     disconnected.waitForFlip
 
     server = new BouncyRMIServer(port1, auth, BouncyRMI.CodeVersion, Set())
-    server.addInstance(classOf[Service].getName, new SomeService())
+    server.addInstance(classOf[Service], new SomeService())
     server.start
 
     Thread.sleep(2000)
@@ -408,7 +408,7 @@ class BouncyRMITests extends TestNGSuite {
     server.stop()
     disconnected.waitForFlip
     val serverOne = new BouncyRMIServer(port1, auth, "One", Set())
-    server.addInstance(classOf[Service].getName, new SomeService())
+    server.addInstance(classOf[Service], new SomeService())
     serverOne.start
     try {
       Thread.sleep(2000) // wait for reconnect

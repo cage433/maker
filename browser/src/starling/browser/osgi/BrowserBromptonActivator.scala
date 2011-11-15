@@ -57,12 +57,14 @@ class BrowserBromptonActivator extends BromptonActivator {
     var bookmarks = serverContext.browserService.bookmarks
     context.createServiceTracker(Some(classOf[BrowserBundle]), ServiceProperties(), new BromptonServiceCallback[BrowserBundle] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, bundle: BrowserBundle) {
+        val cache = bundle.initCache()
         onEDT {
           val bundlesPublisher = new Publisher() {}
           bundlesPublisher.listenTo(localCachePublisher)
           bundlesByRef(ref) = (bundle, bundlesPublisher)
           bundlesByName(bundle.bundleName) = bundle
-          bundle.initCache(cacheMap, bundlesPublisher)
+          cacheMap.addAll(cache)
+          bundle.addListeners(cacheMap, bundlesPublisher)
           pageContextPublisher.publish(BundleAdded(bundle))
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
         }

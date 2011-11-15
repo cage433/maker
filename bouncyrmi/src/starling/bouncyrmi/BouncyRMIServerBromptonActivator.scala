@@ -56,10 +56,10 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
     def registerServiceTracker(serviceProperty:ServiceProperty, rmiServer:BouncyRMIServer) {
       context.createServiceTracker(None, ServiceProperties(serviceProperty), new BromptonServiceCallback[AnyRef] {
         def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, service: AnyRef) = {
-          rmiServer.addInstance(ref.klasses.head, service)
+          rmiServer.addInstance(Class.forName(ref.klasses.head), service)
         }
         override def serviceRemoved(ref: BromptonServiceReference) = {
-          rmiServer.removeInstance(ref.klasses.head)
+          rmiServer.removeInstance(Class.forName(ref.klasses.head))
         }
       })
     }

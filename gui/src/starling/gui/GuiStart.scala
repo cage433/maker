@@ -123,7 +123,40 @@ object GuiStart extends Log {
     )
   }
 
-  def initCacheMap(   cacheMap:HeterogeneousMap[LocalCacheKey],
+  def initCache(starlingServer:StarlingServer, fc2Service:FC2Facility, reportService:ReportFacility, tradeService:TradeFacility) = {
+    val cacheMap = new HeterogeneousMap[LocalCacheKey]
+    import LocalCache._
+    import StarlingLocalCache._
+    try {
+      cacheMap(CurrentUser) = starlingServer.whoAmI
+      cacheMap(AllUserNames) = starlingServer.allUserNames
+      cacheMap(PricingGroups) = fc2Service.pricingGroups
+      cacheMap(ExcelDataSets) = fc2Service.excelDataSets
+      cacheMap(Snapshots) = fc2Service.snapshots
+      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2Service.observationDays
+      cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
+      cacheMap(ObservationDaysForExcel) = observationDaysForExcel
+      cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
+      cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
+      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
+      cacheMap(DeskCloses) = tradeService.deskCloses
+      cacheMap(IntradayLatest) = tradeService.intradayLatest
+      cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
+      cacheMap(Desks) = tradeService.desks
+      cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
+      cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
+      cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
+      cacheMap(CurveTypes) = fc2Service.curveTypes
+      cacheMap(LatestEmailEvent) = new Timestamp
+    } catch {
+      case e : Throwable =>
+        e.printStackTrace()
+        throw e
+    }
+    cacheMap
+  }
+
+  def addListeners(   cacheMap:HeterogeneousMap[LocalCacheKey],
                       starlingServer:StarlingServer,
                       reportService:ReportFacility,
                       fc2Service:FC2Facility,
@@ -187,35 +220,6 @@ object GuiStart extends Log {
         cacheMap(LatestEmailEvent) = timeSent
       }
     }
-
-    import LocalCache._
-    try {
-      cacheMap(CurrentUser) = starlingServer.whoAmI
-      cacheMap(AllUserNames) = starlingServer.allUserNames
-      cacheMap(PricingGroups) = fc2Service.pricingGroups
-      cacheMap(ExcelDataSets) = fc2Service.excelDataSets
-      cacheMap(Snapshots) = fc2Service.snapshots
-      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2Service.observationDays
-      cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
-      cacheMap(ObservationDaysForExcel) = observationDaysForExcel
-      cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
-      cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
-      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
-      cacheMap(DeskCloses) = tradeService.deskCloses
-      cacheMap(IntradayLatest) = tradeService.intradayLatest
-      cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-      cacheMap(Desks) = tradeService.desks
-      cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
-      cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
-      cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
-      cacheMap(CurveTypes) = fc2Service.curveTypes
-      cacheMap(LatestEmailEvent) = new Timestamp
-    } catch {
-      case e : Throwable =>
-        e.printStackTrace()
-        throw e
-    }
-    cacheMap
   }
 
 
@@ -270,29 +274,6 @@ object GuiStart extends Log {
         
         reactions += {case WindowClosing(w) => exit()}
         def exit() {System.exit(-1)}
-      }
-    }
-  }
-
-  def auth(servicePrincipalName: String): Client = {
-    try {
-      val subject = new ClientLogin().login
-      new RealClient(servicePrincipalName, subject)
-    } catch {
-      case l: LoginException => {
-        import starling.utils.Utils._
-        os match {
-          case Linux => {
-            log.error("Failed to initialise kerberos, either it isn't used on this system or the ticket cache is stale (try krenew). Skipping kerberos.")
-            Client.Null
-          }
-          case _: Windows => {
-            throw new Exception("Windows: Failed to initialise kerberos for Starling log in.", l)
-          }
-          case u: UnknownOS => {
-            throw new Exception(u + ": Failed to initialise kerberos for Starling log in.", l)
-          }
-        }
       }
     }
   }
