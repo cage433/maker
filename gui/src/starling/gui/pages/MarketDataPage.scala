@@ -114,10 +114,7 @@ case class MarketDataPage(
   override def subClassesPageData(serverContext:ServerContext) = {
     val fc2Service = serverContext.lookup(classOf[FC2Facility])
     val avaliableMarketDataTypes = fc2Service.marketDataTypeLabels(marketDataIdentifier)
-    val selected = pageState.marketDataType match {
-      case Some(mdt) => Some(mdt)
-      case None => avaliableMarketDataTypes.headOption
-    }
+    val selected = pageState.marketDataType.orElse(avaliableMarketDataTypes.headOption)
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
@@ -282,16 +279,13 @@ case class MarketDataPage(
 
       reactions += {
         case SelectionChanged(extraPanel.dataTypeCombo) => {
-          val days = pageState.pivotPageState.pivotFieldParams.pivotFieldState.flatMap {
-            _.fieldSelection(Field("Observation Day")).asInstanceOf[Option[Set[Day]]]
-          }
-
-          MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), days)
+          MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), observationDays)
         }
         case SelectionChanged(pricingGroupPanel.snapshotsComboBox) =>
           context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value)), pageState = pageState.copy(edits = PivotEdits.Null)))
-        case MarketDataSelectionChanged(selection) => context.goTo(
-          copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))), pageState = pageState.copy(edits = PivotEdits.Null))
+        case MarketDataSelectionChanged(selection) => MarketDataPage.goTo(context,
+          StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))),
+          None, observationDays
         )
         case ButtonClicked(extraPanel.filterDataCheckbox) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
       }
@@ -299,6 +293,10 @@ case class MarketDataPage(
     }
 
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
+  }
+
+  private def observationDays: Option[Set[Day]] = pageState.pivotPageState.pivotFieldParams.pivotFieldState.flatMap {
+    _.fieldSelection(Field("Observation Day")).asInstanceOf[Option[Set[Day]]]
   }
 }
 
