@@ -71,7 +71,14 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
     RefinedTacticalRefDataConversions.market(exchanges(exchangeID), metal)
   }
 
-  def fromEdmPricingSpec(deliveryDay : Day, deliveryQuantity : Quantity, edmPricingSpec : PricingSpecification) : TitanPricingSpec = {
+  def fromEdmPricingSpec(
+    deliveryDay : Day, 
+    deliveryQuantity : Quantity, 
+    edmPricingSpec : PricingSpecification, 
+    // Trade Mgmt only seems to provide a currency at the top level of a nested pricing spec, hence
+    // we have to jump through some hoops.
+    valuationCurrency : Option[UOM] = None
+  ) : TitanPricingSpec = {
     Option(edmPricingSpec) match {
       case Some(edmPSpec) => edmPSpec match {
         case spec : MonthAveragePricingSpecification => {
@@ -79,7 +86,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
             getIndex(spec.market, spec.index),
             Day.fromJodaDate(spec.qpMonth).containingMonth,
             spec.premium,
-            spec.currency
+            valuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : PartialAveragePricingSpecification => {
@@ -87,26 +94,28 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
             getIndex(spec.market, spec.index),
             DateRange(Day.fromJodaDate(spec.firstAvgDate), Day.fromJodaDate(spec.lastAvgDate)),
             spec.premium,
-            spec.currency
+            valuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : OptionalPricingSpecification => {
+          val ccy : Option[UOM] = Option(spec.currency)
           OptionalPricingSpec(
-            spec.choices.map(fromEdmPricingSpec(deliveryDay, deliveryQuantity, _)),
+            spec.choices.map(fromEdmPricingSpec(deliveryDay, deliveryQuantity, _, ccy)),
             Day.fromJodaDate(spec.declarationBy),
             if (spec.chosenSpec == null)
               None
             else
-              Some(fromEdmPricingSpec(deliveryDay, deliveryQuantity, spec.chosenSpec))
+              Some(fromEdmPricingSpec(deliveryDay, deliveryQuantity, spec.chosenSpec, ccy))
           )
         }
         case spec : WeightedPricingSpecification => {
+          val ccy : Option[UOM] = Option(spec.currency)
           WeightedPricingSpec(
             spec.wtdSpecs.map{
               case weightedSpec =>
-                 (weightedSpec.weight, fromEdmPricingSpec(deliveryDay, deliveryQuantity * weightedSpec.weight, weightedSpec.pricingSpec))
+                 (weightedSpec.weight, fromEdmPricingSpec(deliveryDay, deliveryQuantity * weightedSpec.weight, weightedSpec.pricingSpec, ccy))
             },
-            spec.currency
+            valuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : UNKPricingSpecification => {
@@ -123,7 +132,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
              },
              declarationBy,
              spec.premium,
-             spec.currency
+             valuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : FixedPricingSpecification => {
@@ -142,7 +151,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
               }
             },
             spec.premium,
-            spec.currency
+            valuationCurrency.getOrElse(spec.currency)
           )
         }
         case _ => throw new Exception("Unsupported pricing spec type " + edmPricingSpec)

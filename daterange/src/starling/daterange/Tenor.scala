@@ -20,6 +20,26 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
     case _          => value + tenorName
   }
 
+  def +(day: Day): Day = this match {
+    case Tenor.ON => day + 1
+    case Tenor.SN => day + 1
+    case other => other.tenorType match {
+      case Day       => day + value
+      case Week      => day + (7 * value)
+      case HalfMonth => day + (15 * value)
+      case Month     => day.addMonths(value)
+      case Quarter   => day.addMonths(3 * value)
+      case HalfYear  => day.addMonths(6 * value)
+      case Year      => {
+        val theYear: Int = day.year + value
+        val theMonth: Int = day.month
+        val theDay: Int = day.dayNumber
+        val x: Day = Day(theYear, theMonth, theDay)
+        x
+      }
+    }
+  }
+
   def toDateRange(day: Day) = tenorType.containing(day) + value
 
   private def indexOf(tenor: String) = TenorType.ALL_IN_ORDER.indexOf(tenor)

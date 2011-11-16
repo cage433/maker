@@ -144,10 +144,10 @@ class ForwardForwardDiscountCurve(
   if (! rates.isEmpty){
     val periods = rates.keySet.toList.sortWith(_<_)
     val expectedFirstDay = marketDayAndTime
-    assert(periods(0).firstDay == marketDayAndTime.day, "Periods should begin on the market day")
+    require(periods(0).firstDay == marketDayAndTime.day, "Periods should begin on the market day")
     periods.zip(periods.tail).foreach {
       case (p1, p2) =>
-        assert(p1.lastDay == p2.firstDay, "Periods must join up first and last days, got " + (p1, p2))
+        require(p1.lastDay == p2.firstDay, "Periods must join up first and last days, got " + (p1, p2))
     }
   }
   val zippedData = rates.keySet.toList.sortWith(_<_).map{
@@ -182,6 +182,14 @@ case class DiscountCurveKey(ccy : UOM) extends NonHistoricalCurveKey[ForwardRate
   def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData): DiscountCurve = {
     val fixings = forwardRateData.rates(LIBOR).map { case (tenor, rate) => LIBORFixing(ccy, marketDayAndTime.day, tenor, rate) }
       .toList.sortWith(_ < _)
+
+    println("maturityDay: " + marketDayAndTime.day)
+    fixings.foreach { fixing => println("%s maturityDay: %s" % (fixing.tenor, fixing.maturityDay)) }
+
+//    fixings.foldLeft(marketDayAndTime.day)((lastMaturityDay, fixing) => {
+//      println("Maturity Range: " + (lastMaturityDay upto fixing.maturityDay))
+//      fixing.maturityDay
+//    })
 
     val (_, forwardForwardRates) = fixings.foldLeft((marketDayAndTime.day, Map.empty[DateRange, Quantity])) {
       case ((lastMaturityDay, currentForwardForwardRates), fixing) => (fixing.maturityDay,

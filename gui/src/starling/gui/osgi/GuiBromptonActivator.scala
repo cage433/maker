@@ -22,29 +22,17 @@ import starling.reports.facility.ReportFacility
 import starling.manager.{ServiceProperties, HttpContext, BromptonContext, BromptonActivator}
 import starling.services.EmailService
 
-case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
-
 class GuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
-    val guiLaunchParameters = context.awaitService(classOf[GuiLaunchParameters])
-    System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
-    val overriddenUser = guiLaunchParameters.runAs
-    val client = new BouncyRMIClient(guiLaunchParameters.serverRmiHost, guiLaunchParameters.serverRmiPort, GuiStart.auth(guiLaunchParameters.principalName), overriddenUser = overriddenUser)
-    client.startBlocking
-    val starlingServer = client.proxy(classOf[StarlingServer])
-    val tradeService = client.proxy(classOf[TradeFacility])
+    val starlingServer = context.awaitService(classOf[StarlingServer])
+    val tradeService = context.awaitService(classOf[TradeFacility])
     starlingServer.storeSystemInfo(GuiStart.systemInfo)
 
-    val fc2Service = client.proxy(classOf[FC2Facility])
-    val reportService = client.proxy(classOf[ReportFacility])
-    context.registerService(classOf[BouncyRMIClient], client) //Needed by MetalsGuiBromptonActivator
-    context.registerService(classOf[Publisher], client.remotePublisher)
-    context.registerService(classOf[StarlingServer], starlingServer)
-    context.registerService(classOf[FC2Facility], fc2Service)
-    context.registerService(classOf[ReportFacility], reportService)
-    context.registerService(classOf[TradeFacility], tradeService)
-    context.registerService(classOf[BrowserService], client.proxy(classOf[BrowserService]))
+    val fc2Service = context.awaitService(classOf[FC2Facility])
+    val reportService = context.awaitService(classOf[ReportFacility])
     context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, tradeService))
+
+    val publisher = context.awaitService(classOf[Publisher])
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
       override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {
@@ -64,7 +52,6 @@ class GuiBromptonActivator extends BromptonActivator {
       }
     }, ServiceProperties(HttpContext("gotoValuationScreen")))
 
-    context.onStopped { client.stop }
     def showTrade(tradeID:String, snapshotID:String) {
       val desk = Desk.Titan
       val tradeTimestamp = tradeService.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
@@ -88,7 +75,7 @@ class GuiBromptonActivator extends BromptonActivator {
       val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
       val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
 
-      client.remotePublisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp)))
+      publisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp)))
     }
   }
 }
@@ -103,8 +90,9 @@ class StarlingBrowserBundle(
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
 
-  def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
-    GuiStart.initCacheMap(cache, starlingServer, reportService, fc2Service, tradeService, publisher)
+  override def initCache() = GuiStart.initCache(starlingServer, fc2Service, reportService, tradeService)
+  override def addListeners(cache: HeterogeneousMap[LocalCacheKey], publisher:Publisher) {
+    GuiStart.addListeners(cache, starlingServer, reportService, fc2Service, tradeService, publisher)
   }
 
   override def notificationHandlers = StarlingServerNotificationHandlers.notificationHandler :: Nil
