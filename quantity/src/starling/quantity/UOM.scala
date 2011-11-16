@@ -88,6 +88,11 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   // Time
   val MILLISECONDS = UOM(UOMType.TIME, MILLISECONDS_SYMBOL, 1.0)
+  val SECONDS = UOM(UOMType.TIME, SECONDS_SYMBOL, 1000.0)
+
+  //Data
+  val BYTES = UOM(UOMType.BYTES, BYTES_SYMBOL, 1)
+  val KILOBYTES = UOM(UOMType.BYTES, BYTES_SYMBOL, 1000)
 
   // Heat energy
   val THERMS = UOM(UOMType.HEAT_ENERGY, THERMS_SYMBOL, 1)

@@ -83,6 +83,9 @@ object UOMSymbol{
   val NYMEX_NATGAS_LOTS_SYMBOL = UOMSymbol("Nymex NatGas Lots")
   val DUBAI_CRUDE_LOTS_SYMBOL = UOMSymbol("Dubai Crude Lots")
 
+  val BYTES_SYMBOL = UOMSymbol("bytes")
+  val KILOBYTES_SYMBOL = UOMSymbol("kb")
+  val SECONDS_SYMBOL = UOMSymbol("s")
   val MILLISECONDS_SYMBOL = UOMSymbol("ms")
 
   val PERCENT_SYMBOL = UOMSymbol("%")
@@ -139,9 +142,12 @@ object UOMSymbol{
     BUSHEL_WHEAT_SYMBOL,
     SHORT_TON_SYMBOL,
     MILLISECONDS_SYMBOL,
+    SECONDS_SYMBOL,
     SHARE_SYMBOL,
     US_CENT_SYMBOL,
-    PERCENT_SYMBOL
+    PERCENT_SYMBOL,
+    BYTES_SYMBOL,
+    KILOBYTES_SYMBOL
   ) ++ zCurrencies ++ zCurrencies2 ++ zCurrencies3
 
   // Map of name and altname to symbol

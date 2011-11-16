@@ -41,6 +41,7 @@ case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
   def pricingGroups(maybeDesk:Option[Desk]):List[PricingGroup] = localCache(PricingGroups).intersect(validGroups(maybeDesk))
   def excelDataSets = localCache(ExcelDataSets)
   def currentUser = localCache(CurrentUser)
+  def methodLogIndex = localCache(MethodLogIndex)
 
   def latestTimestamp(desk: Desk): Option[TradeTimestamp] = deskCloses(desk).sortWith(_.timestamp > _.timestamp).headOption
   def latestTimestamp(groups: IntradayGroups): Timestamp = {

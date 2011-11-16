@@ -219,10 +219,13 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
               val paramClasses = params.map(classForNameWithPrimitiveCheck(serverContextClass.getClassLoader, _))
               val method = serverContextClass.getMethod(name, paramClasses: _*)
               val decodedArgs = args.map( arg => BouncyRMI.decode(serverContextClass.getClassLoader, arg))
+              val start = System.currentTimeMillis()
               val r = ThreadUtils.withNamedThread(declaringClassName+"#"+method.getName) {
                 method.invoke(serverContext, decodedArgs: _ *)
               }
-              MethodInvocationResult(id, BouncyRMI.encode(r))
+              val encoded = BouncyRMI.encode(r)
+              val duration = System.currentTimeMillis() - start
+              MethodInvocationResult(id, duration, encoded)
             } catch {
               case e: InvocationTargetException => {
                 e.getCause.printStackTrace()

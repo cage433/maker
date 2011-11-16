@@ -23,6 +23,7 @@ class BouncyRMIClientBromptonActivator extends BromptonActivator with Log {
     client.startBlocking
 
     context.registerService(classOf[Publisher], client.remotePublisher)
+    context.registerService(classOf[MethodLogService], client.methodLogService)
 
     val serviceListing = client.proxy(classOf[ServicesListing])
     serviceListing.services.foreach { klass:Class[_] => {

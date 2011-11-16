@@ -15,7 +15,6 @@ import scala.swing.{AbstractButton=> ScalaAbstractButton}
 import java.awt.event._
 import scala.swing.Swing._
 import collection.mutable.ListBuffer
-import starling.bouncyrmi.{BouncyRMIClient}
 import javax.security.auth.login.LoginException
 import starling.utils.{StackTraceToString, Log}
 import starling.gui.LocalCacheKeys._
@@ -41,6 +40,7 @@ import starling.rabbiteventviewer.api.RabbitEventViewerService
 import starling.reports.facility.ReportFacility
 import org.joda.time.DateTime
 import starling.daterange.{Timestamp, Day}
+import starling.bouncyrmi.{MethodLogEvent, BouncyRMIClient}
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -128,6 +128,7 @@ object GuiStart extends Log {
     import LocalCache._
     import StarlingLocalCache._
     try {
+      cacheMap(MethodLogIndex) = 0
       cacheMap(CurrentUser) = starlingServer.whoAmI
       cacheMap(AllUserNames) = starlingServer.allUserNames
       cacheMap(PricingGroups) = fc2Service.pricingGroups
@@ -219,6 +220,7 @@ object GuiStart extends Log {
       case EmailSent(timeSent) => {
         cacheMap(LatestEmailEvent) = timeSent
       }
+      case e:MethodLogEvent => cacheMap(MethodLogIndex) = e.id
     }
   }
 
@@ -281,10 +283,12 @@ object GuiStart extends Log {
 
 object StarlingUtilButtons {
   def create(context:PageContext) = {
+    import StarlingLocalCache._
     def userStatsPage = PageFactory(_ => UserStatsPage(PivotPageState()))
     def runAsUserPage = PageFactory(_ => RunAsUserPage())
     def cannedHomePage = PageFactory(_ => CannedHomePage())
     def eventViewerPage = PageFactory(_ => EventViewerPage())
+    def methodLogViewerPage = PageFactory(_ => MethodLogViewerPage(context.localCache.methodLogIndex))
     def gitLogPage = PageFactory(_ => GitLogPage(PivotPageState()))
 
     val tradesButton = new PageButton(
@@ -315,6 +319,13 @@ object StarlingUtilButtons {
       Some( KeyStroke.getKeyStroke(KeyEvent.VK_E, 0) )
     )
 
+    val methodLogViewerButton = new PageButton(
+      "Method Log Viewer",
+      methodLogViewerPage,
+      StarlingIcons.im("/icons/32x32_event.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_M, 0) )
+    )
+
     val gitLogButton = new PageButton(
       "Git Log",
       gitLogPage,
@@ -322,7 +333,7 @@ object StarlingUtilButtons {
       Some( KeyStroke.getKeyStroke(KeyEvent.VK_G, 0) )
     )
 
-    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton)
+    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, methodLogViewerButton, gitLogButton)
   }
 }
 

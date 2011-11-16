@@ -65,8 +65,8 @@ class BrowserBromptonActivator extends BromptonActivator {
           bundlesByName(bundle.bundleName) = bundle
           cacheMap.addAll(cache)
           bundle.addListeners(cacheMap, bundlesPublisher)
-          pageContextPublisher.publish(BundleAdded(bundle))
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+          pageContextPublisher.publish(BundleAdded(bundle))
         }
       }
       override def serviceRemoved(ref: BromptonServiceReference) {
@@ -76,8 +76,8 @@ class BrowserBromptonActivator extends BromptonActivator {
           bundlesByRef.remove(ref)
           bundlesByName.remove(bundle.bundleName)
           //TODO remove values from localcache?
-          pageContextPublisher.publish(BundleRemoved(bundle))
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+          pageContextPublisher.publish(BundleRemoved(bundle))
         }
       }
     })
