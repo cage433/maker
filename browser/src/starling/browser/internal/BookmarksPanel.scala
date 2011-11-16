@@ -167,18 +167,20 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     }
   }
 
-  reactions += {
-    case BookmarksUpdate(username, _) if username == context.localCache.currentUserName => {
-      val newBookmarks = context.localCache.bookmarks
-      val currentSelectedItem = bookmarksListView.selectedOption
-      bookmarksListView.listData = newBookmarks
-      if (bookmarksListView.listData.isEmpty) {
-        componentsEnabled = false
-      } else {
-        componentsEnabled = true
-      }
-      bookmarksListView.selectedOption = currentSelectedItem
+  def rebuildBookmarks() {
+    val newBookmarks = context.localCache.bookmarks
+    val currentSelectedItem = bookmarksListView.selectedOption
+    bookmarksListView.listData = newBookmarks
+    if (bookmarksListView.listData.isEmpty) {
+      componentsEnabled = false
+    } else {
+      componentsEnabled = true
     }
+    bookmarksListView.selectedOption = currentSelectedItem
+  }
+
+  reactions += {
+    case BookmarksUpdate(username, _) if username == context.localCache.currentUserName => rebuildBookmarks()
     case MouseClicked(`bookmarksListView`,_,m,2,_) => goToBookmark(Modifiers.modifiersEX(m))
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => deleteBookmark()
     case SelectionChanged(`bookmarksListView`) => dayPicker.enabled = valuationDayShouldBeEnabled

@@ -180,15 +180,16 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     add(actionsPanelHolder)
   }
 
-  private def updateButtons() {
+  private def updateBrowserBasedComponents() {
     val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
     buttonPanel.update(homeButtons)
     addButtonActions(homeButtons)
+    bookmarksPanel.rebuildBookmarks
   }
 
   reactions += {
-    case BundleAdded(_) => updateButtons()
-    case BundleRemoved(_) => updateButtons()
+    case BundleAdded(_) => updateBrowserBasedComponents()
+    case BundleRemoved(_) => updateBrowserBasedComponents()
   }
   listenTo(context.remotePublisher)
 
@@ -202,7 +203,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     }}
   }
 
-  updateButtons()
+  updateBrowserBasedComponents()
 
   override def defaultComponentForFocus = Some(bookmarksPanel.bookmarksListView.peer)
 
