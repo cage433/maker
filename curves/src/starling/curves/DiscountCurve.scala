@@ -180,11 +180,11 @@ case class DiscountCurveKey(ccy : UOM) extends NonHistoricalCurveKey[ForwardRate
   def marketDataKey = ForwardRateDataKey(ccy)
 
   def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData): DiscountCurve = {
-    val fixings = forwardRateData.rates(LIBOR).map { case (tenor, rate) => LIBORFixing(ccy, marketDayAndTime.day, tenor, rate) }
-      .toList.sortWith(_ < _)
+    val fixings = forwardRateData.ratesFor(LIBOR, SHIBOR).map
+      { case (tenor, rate) => LIBORFixing(ccy, marketDayAndTime.day, tenor, rate) }.toList.sortWith(_ < _)
 
-    println("maturityDay: " + marketDayAndTime.day)
-    fixings.foreach { fixing => println("%s maturityDay: %s" % (fixing.tenor, fixing.maturityDay)) }
+//    println("maturityDay: " + marketDayAndTime.day)
+//    fixings.foreach { fixing => println("%s maturityDay: %s" % (fixing.tenor, fixing.maturityDay)) }
 
 //    fixings.foldLeft(marketDayAndTime.day)((lastMaturityDay, fixing) => {
 //      println("Maturity Range: " + (lastMaturityDay upto fixing.maturityDay))

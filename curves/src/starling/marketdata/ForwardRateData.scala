@@ -60,6 +60,7 @@ case class ForwardRateSource(value: String) extends NewType[String]
 
 object ForwardRateSource {
   val LIBOR = ForwardRateSource("LIBOR")
+  val SHIBOR = ForwardRateSource("SHIBOR")
 }
 
 case class ForwardRateData(rates: NestedMap[ForwardRateSource, Tenor, Quantity]) extends MarketData {
@@ -68,6 +69,6 @@ case class ForwardRateData(rates: NestedMap[ForwardRateSource, Tenor, Quantity])
   require(rates.allValues.forall(_.isInstanceOf[Quantity]))
 
   def lastDay(fixingDay: Day): Day = fixingDay
-
   def size = rates.nestedSize
+  def ratesFor(sources: ForwardRateSource*): Map[Tenor, Quantity] = sources.toList.flatMapO(rates.get).head
 }
