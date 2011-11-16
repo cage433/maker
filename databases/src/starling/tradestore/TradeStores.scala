@@ -138,7 +138,14 @@ case class TradeStores(
     }
 
     val deskTradeSetsAndTimestamps = tradeSelection.deskAndTimestamp.toList.flatMap {
-      case (desk, ts) => deskDefinitions(desk).tradeSets(tradeSelection.tradePredicate).map((_, ts.timestamp))
+      case (desk, ts) => {
+        val predicate: List[(Field, Selection)] = tradeSelection.deskAndTimestamp.toList.flatMap {
+          case (desk, tradeTimestamp) => {
+            List((Field("Trade Day"), LessThanOrEqualSelection(tradeTimestamp.closeDay)))
+          }
+        }
+        deskDefinitions(desk).tradeSets(TradePredicate(predicate ::: tradeSelection.tradePredicate.filter)).map((_, ts.timestamp))
+      }
     }
 
     intradayTradesetsAndTimestamps ::: deskTradeSetsAndTimestamps
