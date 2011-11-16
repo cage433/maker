@@ -3,17 +3,19 @@ package starling.metals.datasources
 import collection.immutable.List
 
 import starling.calendar.BusinessCalendarSet
+import starling.curves.ForwardForwardDiscountCurve
+import starling.curves.interestrate.{DayCount, DayCountActual365, DayCount30_360}
 import starling.daterange._
 import starling.market._
 import starling.quantity.{Quantity, UOM}
+import starling.utils.ClosureUtil._
 
+import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
+import starling.utils.Pattern._
 import Day._
 import UOM._
-import starling.utils.ImplicitConversions._
-import starling.utils.Pattern._
-import scalaz.Scalaz._
-import starling.curves.ForwardForwardDiscountCurve
-import starling.curves.interestrate.{DayCount, DayCountActual365, DayCount30_360}
+
 
 case class LIBORFixing(currency: UOM, fixingDay: Day, tenor: Tenor, rate: Quantity) extends Ordered[LIBORFixing] {
   private val dayCountConvention = if (currency == UOM.GBP) DayCountActual365 else DayCount30_360
@@ -34,7 +36,9 @@ case class LIBORFixing(currency: UOM, fixingDay: Day, tenor: Tenor, rate: Quanti
     if (valueDay >= lastMaturityDay) rate else {
       assert(maturityDay > lastMaturityDay, "Require maturity days to be strictly increasing")
 
-      val discountCurve = new ForwardForwardDiscountCurve(currency, marketDayAndTime, forwardForwardRates)
+      val discountCurve = decorate("Cannot build forward forward discount curve for: " + this) {
+        new ForwardForwardDiscountCurve(currency, marketDayAndTime, forwardForwardRates)
+      }
       val valueDayDiscount = discountCurve.discount(valueDay)
       val lastMaturityDayDiscount = discountCurve.discount(lastMaturityDay)
       val maturityDayDiscount = valueDayDiscount * forwardDiscount
@@ -61,7 +65,7 @@ case class LIBORCalculator(currency: UOM, fixingDay: Day) {
   def maturityDay(tenor: Tenor = Tenor.ON): Day = maturityDay(valueDay(tenor), tenor)
 
   def maturityDay(theValueDay: Day, tenor: Tenor): Day = {
-    val maturityDay = theValueDay + tenor
+    val maturityDay = tenor + theValueDay
 
     if (tenor.isOneOf(Tenor.ON, Tenor.SN, Tenor.OneWeek, Tenor.TwoWeeks)) {
       maturityDay.thisOrNextBusinessDay(combinedCalendar)
