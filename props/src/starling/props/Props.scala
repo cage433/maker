@@ -5,7 +5,6 @@ import starling.props.PropsHelper._
 import java.io.File
 import scalaz.Scalaz._
 import starling.api.utils.PropertyValue
-import starling.props.ServerTypeLabel
 
 
 class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String, PropertyValue]) extends PropsHelper(starlingProps, trafiguraProps) {
