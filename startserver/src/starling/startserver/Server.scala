@@ -14,7 +14,7 @@ import starling.props.internal.PropsBromptonActivator
 import starling.metals.MetalsBromptonActivator
 import starling.webservice.HttpWebserviceBromptonActivator
 import starling.manager.BromptonActivator
-import starling.props.{ServerTypeInstances, Props, PropsHelper}
+import starling.props.{ServerTypeLabel, Props, PropsHelper}
 
 
 /**
@@ -45,7 +45,7 @@ object Server {
       classOf[MetalsBromptonActivator],
       classOf[RabbitEventViewerServiceBromptonActivator]
     )
-    val activators = baseActivators ::: (if (props.ServerType() == ServerTypeInstances.FC2) metalsActivators else Nil)
+    val activators = baseActivators ::: (if (props.ServerType() == ServerTypeLabel.FC2) metalsActivators else Nil)
     val single = new SingleClasspathManager(false, activators)
     writePIDFile()
     Log.infoWithTime("Launching starling server") {

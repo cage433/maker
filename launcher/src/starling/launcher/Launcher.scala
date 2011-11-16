@@ -6,9 +6,7 @@ import java.net.{ConnectException, Socket, URL}
 import starling.gui.osgi.{MetalsGuiBromptonActivator, GuiBromptonActivator}
 import starling.manager.BromptonActivator
 import starling.bouncyrmi.{GuiLaunchParameters, BouncyRMIClientBromptonActivator}
-import starling.props.ServerTypeInstances
-import starling.props.ServerType
-import starling.props.ServerTypeInstances
+import starling.props.ServerTypeLabel
 
 //Starts the gui without osgi
 object Launcher {
@@ -20,7 +18,7 @@ object Launcher {
     val rmiHost = args(0)
     val rmiPort = args(1).toInt
     val servicePrincipalName = args(2)
-    val serverType = ServerTypeInstances.fromName(args(3))
+    val serverType = ServerTypeLabel.fromName(args(3))
 
     if (args.length == 5) {
       try {
@@ -53,9 +51,9 @@ object Launcher {
   private var rmiHost = ""
   private var rmiPort = -1
   private var servicePrincipalName = ""
-  private var serverType : Option[ServerType] = None
+  private var serverType : Option[ServerTypeLabel] = None
 
-  def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:ServerType, overriddenUser:Option[String] = None) {
+  def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:ServerTypeLabel, overriddenUser:Option[String] = None) {
 
     this.rmiHost = rmiHost
     this.rmiPort = rmiPort
@@ -70,7 +68,7 @@ object Launcher {
       classOf[GuiBromptonActivator]
     )
     val extraActivators = {
-      import ServerTypeInstances._
+      import ServerTypeLabel._
       serverType match {
         case `FC2`|`Dev` => List[Class[_ <: BromptonActivator]](
           classOf[MetalsGuiBromptonActivator], classOf[JettyBromptonActivator])

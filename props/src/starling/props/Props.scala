@@ -5,23 +5,15 @@ import starling.props.PropsHelper._
 import java.io.File
 import scalaz.Scalaz._
 import starling.api.utils.PropertyValue
+import starling.props.ServerTypeLabel
 
-abstract class ServerType(val name : String){
-}
-object ServerTypeInstances {
-  val Dev = new ServerType("Dev"){}
-  val FC2 = new ServerType("FC2"){}
-  val Oil = new ServerType("Oil"){}
-  val instances = List(Dev, FC2, Oil)
-  def fromName(name : String) = instances.find(_.name == name).getOrElse(throw new Exception("Unrecognised server name " + name))
-}
 
 class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String, PropertyValue]) extends PropsHelper(starlingProps, trafiguraProps) {
   object ServerName extends ServerNameStringProperty()
-  object ServerType extends EnumProperty(ServerTypeInstances.instances.map(_.name) : _*){
-    def apply() : ServerType = {
+  object ServerType extends EnumProperty(ServerTypeLabel.instances.map(_.name) : _*){
+    def apply() : ServerTypeLabel = {
       super.validateValue()
-      ServerTypeInstances.fromName(value)
+      ServerTypeLabel.fromName(value)
     }
   }
   object ServerNameOrBlank extends StringProperty(ServerName())
