@@ -13,9 +13,9 @@ abstract class Location(val name: String) extends Serializable {
 
 object Location extends StarlingEnum(classOf[Location], (location:Location) => location.name) {
   object London extends Location("London") {
-    def timeZoneOn(day: Day) = summerTime(day.containingYear).contains(day) ? TimeZone.BST | TimeZone.GMT
+    def timeZoneOn(day: Day) = summerTime(day.containingYear.yearNumber).contains(day) ? TimeZone.BST | TimeZone.GMT
 
-    private def summerTime(year: Year) = Month(year.yearNumber, 3).lastSunday upto Month(year.yearNumber, 10).lastSunday
+    private def summerTime(year: Int) = Month(year, 3).lastSunday upto Month(year, 10).lastSunday
   }
 
   object Shanghai extends Location("Shanghai") {

@@ -29,7 +29,7 @@ class JsonSerializerTests extends WordSpec with ShouldMatchers {
   }
 
   "should be able to serialize a Day" in logException {
-    serializer.serialize(12 Oct 2011) should be === "\"" + ((12 Oct 2011).toString) + "\""
+    serializer.serialize(12 Oct 2011) should be === "\"" + ((12 Oct 2011).toString("yyyy-MM-dd")) + "\""
   }
 
   "should be able to serialize a SpotFXRate" in logException {
@@ -42,7 +42,7 @@ class JsonSerializerTests extends WordSpec with ShouldMatchers {
 
   "should not capitalize map keys" in {
     serializer.serialize(Map("foo" → "bar")) should be === """{"foo":"bar"}"""
-      serializer.serialize(Map("foo" → (12 Oct 2011))) should be === """{"foo":"12Oct2011"}"""
+      serializer.serialize(Map("foo" → (12 Oct 2011))) should be === """{"foo":"2011-10-12"}"""
       }
 
   "should be able to serialize a quantity" in {

@@ -15,7 +15,7 @@ object EDMFormats extends DefaultFormats {
 
   private val localDateSerializer = new Serializer[LocalDate] {
     def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
-      case (localDate: LocalDate) => JString(Day.fromLocalDate(localDate).toString)
+      case (localDate: LocalDate) => JString(Day.fromLocalDate(localDate).toString("yyyy-MM-dd"))
     }
 
     def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), LocalDate] = {
@@ -25,7 +25,7 @@ object EDMFormats extends DefaultFormats {
 
   private val daySerializer = new Serializer[Day] {
     def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
-      case (day: Day) => JString(day.toString)
+      case (day: Day) => JString(day.toString("yyyy-MM-dd"))
     }
 
     def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Day] = {

@@ -1,11 +1,10 @@
 package starling.scheduler
 
 import java.util.{TimerTask, Timer}
-import starling.daterange.Day
 import starling.utils.ImplicitConversions._
-import org.joda.time.Period
 import starling.utils.{Enableable, Log}
 import scalaz.Scalaz._
+import starling.daterange.{Location, Day}
 
 
 case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTask) extends TimerTask with Enableable {
@@ -16,8 +15,8 @@ case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTas
   val cal = time.cal
   def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = task.attribute(name, alternative)
 
-  def schedule(timer: Timer) = log.infoF("%s%s @ %s @ %s, %s" %
-    (isEnabled ? "" | "[DISABLED] ", name, time.prettyTime, time.cal.name, time.description)) { time.schedule(this, timer) }
+  def schedule(timer: Timer) = log.infoF("%s%s @ %s @ %s (%s @ London), %s" % (isEnabled ? "" | "[DISABLED] ", name,
+    time.prettyTime("HH:mm dd MMM"), time.cal.name, time.prettyTime("HH:mm dd MMM", Location.London), time.description)) { time.schedule(this, timer) }
 
   def run = log.logException("Task %s failed" % name) {
     if (!Day.today.isBusinessDay(cal)) {

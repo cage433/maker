@@ -4,17 +4,21 @@ import org.joda.time._
 import org.joda.time.format.DateTimeFormat
 
 import starling.calendar.BusinessCalendar
-import starling.daterange.Day
-
 import starling.utils.ImplicitConversions._
 import java.util.{TimerTask, Timer}
+import starling.daterange.{Location, Day}
 
 
 case class ScheduledTime(description: String, time: LocalTime, period: Period, cal: BusinessCalendar, ignoreMissed: Boolean = true) {
   def schedule(task: TimerTask, timer: Timer) = timer.scheduleAtFixedRate(task, scheduledTime.toDate, periodInSeconds * 1000)
-  val prettyTime = scheduledTime.toString(DateTimeFormat.forPattern("HH:mm [dd MMM]"))
+  val prettyTime: String = prettyTime("HH:mm")
 
-  private def scheduledTime: DateTime = {
+  def prettyTime(format: String, location: Location = cal.location): String =
+    scheduledTime(location).toString(DateTimeFormat.forPattern(format))
+
+  def scheduledTime(location: Location): DateTime = scheduledTime.toDateTime(location.timeZoneOn(Day.today))
+
+  def scheduledTime: DateTime = {
     val scheduledTime = Day.today.atTimeOfDay(time, cal.location)
     val now = cal.now
     val periodsToAdd = if (scheduledTime < now && ignoreMissed) ((now - scheduledTime) / periodInSeconds) + 1 else 0

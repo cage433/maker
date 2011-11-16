@@ -19,7 +19,7 @@ class XmlSerializerMessageBodyWriterTests extends WordSpec with ShouldMatchers {
   "should produce xml with same structure as json" in {
     writer.serialize(classOf[ReferenceInterestRate], referenceInterestRate) should be === Utility.trim(
       <result type={className[ReferenceInterestRate]}>
-        <observation-date type={className[TitanSerializableDate]} value="12Jun2011"></observation-date>
+        <observation-date type={className[TitanSerializableDate]} value="2011-06-12"></observation-date>
         <source type={className[ReferenceRateSource]} name="LIBOR"></source>
         <maturity type={className[NamedMaturity]} name="ON"></maturity>
         <currency type={className[TitanSerializableCurrency]} name="GBP"></currency>
