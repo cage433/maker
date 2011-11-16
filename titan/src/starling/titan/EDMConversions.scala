@@ -125,7 +125,7 @@ object EDMConversions {
      // No idea why this is optional in EDM
     val amount = q.amount match {
       case Some(amt) => amt
-      case None => throw new Exception("Invalid quantity - no amount")
+      case None => throw new Exception("Invalid quantity - no amount in EDM Quantity " + q)
     }
     
     val uom = UOM.fromSymbolMap(q.uomId match {

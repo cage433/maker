@@ -102,7 +102,7 @@ class StarlingInit( val props: Props,
     new SMTPMailSender(props.ExternalHostname(), props.SmtpServerHost(), props.SmtpServerPort()) // just use plain socket SMTP
   lazy val emailService = new PersistingEmailService(rmiBroadcaster, DB(props.StarlingDatabase()), mailSender) with FooterAppendingEmailService {
 
-    val footer = Map("Sent by" → props.ServerType(), "Name" → props.ServerName(), "Host" → props.ExternalHostname())
+    val footer = Map("Sent by" → props.ServerType().name, "Name" → props.ServerName(), "Host" → props.ExternalHostname())
   }
 
   lazy val (fwdCurveAutoImport, marketDataStore, marketDataSources) = log.infoWithTime("Creating Market Data Store") {

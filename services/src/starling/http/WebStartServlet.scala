@@ -28,7 +28,7 @@ object GUICode {
   val libJarNames = Map(
     "scala-library" -> scalaLibraryJar,
     "scala-swing" -> new File("lib/scala/lib_managed/scala-swing-jar-2.9.1.jar"),
-    "jna" -> new File(ivyDir + "sbt/bug/net/java/dev/jna/jna/jars/jna-3.3.0.jar"),
+    "jna" -> new File(ivyDir + "sbt.bug.jna/jna/jars/jna-3.3.0.jar"),
     "platform" -> new File(ivyDir + "net.java.dev.jna/jna/jars/jna-3.3.0-platform.jar"),
     "cglib-nodep" -> new File(ivyDir + "cglib/cglib-nodep/jars/cglib-nodep-2.2.jar"),
     "commons-io" -> new File(ivyDir + "commons-io/commons-io/jars/commons-io-1.3.2.jar"),

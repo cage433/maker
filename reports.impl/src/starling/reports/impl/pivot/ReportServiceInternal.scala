@@ -194,7 +194,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
       val explanation = trade.explain(defaultContext.environment)
       TradeValuation(Right(explanation))
     } catch {
-      case t: Throwable => TradeValuation(Left(StackTraceToString(t)))
+      case t: Throwable => TradeValuation(Left(StackTrace(t)))
     }
   }
 

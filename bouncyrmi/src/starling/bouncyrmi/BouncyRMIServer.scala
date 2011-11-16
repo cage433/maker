@@ -30,6 +30,10 @@ class Users(users0:JMap[UUID,User]) extends UsersMBean {
   def getUserDetails:JSet[String] = new java.util.TreeSet[String](users0.values.map(user => user.name + " (" + user.phoneNumber + ")"))
 }
 
+trait ServicesListing {
+  def services:List[Class[_]]
+}
+
 class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownExceptionClasses:Set[String], registerUserMBean:Boolean=false) {
 
   val users:java.util.Map[UUID,User] = new java.util.concurrent.ConcurrentHashMap[UUID,User]()
@@ -43,7 +47,11 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
   val authHandler = new ServerAuthHandler(auth, users)
 
   lazy val serverTimer = new HashedWheelTimer
-  private val serverContextsMap = new ConcurrentHashMap[String, AnyRef]
+  private val serverContextsMap = new ConcurrentHashMap[Class[_], AnyRef]
+
+  serverContextsMap.put(classOf[ServicesListing], new ServicesListing {
+    def services = serverContextsMap.keySet().toList
+  })
   
   class Binding {
     val group = new DefaultChannelGroup("server")
@@ -115,15 +123,15 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
     serverTimer.stop
   }
 
-  def addInstance(klass:String, instance:AnyRef) {
+  def addInstance(klass:Class[_], instance:AnyRef) {
     serverContextsMap.put(klass, instance)
   }
 
-  def removeInstance(klass:String) {
+  def removeInstance(klass:Class[_]) {
     serverContextsMap.remove(klass)
   }
 
-  def getServerContext(declaringClassName: String): AnyRef = {
+  def getServerContext(declaringClassName: Class[_]): AnyRef = {
     val instance = serverContextsMap.get(declaringClassName)
     if (instance == null) {
       throw new Exception("No instance of type " + declaringClassName + " found " + serverContextsMap.keySet())
@@ -206,7 +214,7 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
             }
 
             val result = try {
-              val serverContext = getServerContext(declaringClassName)
+              val serverContext = getServerContext(Class.forName(declaringClassName))
               val serverContextClass = serverContext.asInstanceOf[AnyRef].getClass
               val paramClasses = params.map(classForNameWithPrimitiveCheck(serverContextClass.getClassLoader, _))
               val method = serverContextClass.getMethod(name, paramClasses: _*)

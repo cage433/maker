@@ -54,8 +54,11 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
 
   private implicit def arbitraryTenor: Arbitrary[Tenor] = Arbitrary { Gen.oneOf(Tenor.ON, Tenor(Week, 1)) }
 
-  "maturity day of O/N == value day" in {
-    check((fixing: LIBORCalculator) => fixing.supportsOvernight ==> (fixing.maturityDay(Tenor.ON) == fixing.valueDay(Tenor.ON)))
+  "maturity day of O/N == value day next biz" in {
+    check((fixing: LIBORCalculator) => fixing.supportsOvernight ==>
+      (fixing.maturityDay(Tenor.ON) == (fixing.valueDay(Tenor.ON).nextBusinessDay(fixing.combinedCalendar))) :|
+        ("maturityDay: %s, valueDay: %s") % (fixing.maturityDay(Tenor.ON), fixing.valueDay(Tenor.ON))
+    )
   }
 
   "1M maturity day  == 1 month from value day" in {

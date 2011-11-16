@@ -107,7 +107,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             val (contractDeliveryDay, benchmarkDeliveryDay) = deliveryDays(detail)
             val contractPricingSpec = EDMPricingSpecConverter(edmMetalByGUID(commodityGUIDs.head), futuresExchangeByID).fromEdmPricingSpec(contractDeliveryDay, deliveryQuantity(detail), detail.pricingSpec)
 
-            val inventoryItems = inventoryByQuotaID.get(NeptuneId(detail.identifier).titanId)
+            val inventoryItems = inventoryByQuotaID.get(trade.identifier)
               .flatten.filter(i => i.status != CancelledInventoryItemStatus).toList.map(i => Inventory(i))
 
             val commodityName = edmMetalByGUID(commodityGUIDs.head)
@@ -235,7 +235,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
         log.error("error converting trade %s".format(trade.identifier), e)
         List(Trade(TradeID(TRADE_PREFIX + trade.identifier.value, TitanTradeSystem),
             TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade, eventID),
-            new ErrorInstrument(e.getMessage)))
+            ErrorInstrument(e)))
       }
     }
   }

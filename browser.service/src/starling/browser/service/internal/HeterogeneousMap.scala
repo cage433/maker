@@ -77,6 +77,10 @@ class HeterogeneousMap[K[_]] extends Serializable {
    */
   def keySet: Set[K[_]] = underlying.keySet
 
+  def addAll(other:HeterogeneousMap[K]) {
+    other.underlying.foreach { case(key,value) => underlying(key) = value }
+  }
+
   /** Creates an iterator for a contained values.
    *
    *  @return an iterator over all values.
