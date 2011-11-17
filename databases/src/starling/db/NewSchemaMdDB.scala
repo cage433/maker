@@ -23,10 +23,14 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
   log.debug("Loaded %s extended keys, %s value keys" % (extendedKeys.size, valueKeys.size))
 
   def checkIntegrity(): Unit = {
-    /*
-    * We cannot (easily?) know we have "duplicates" in the new schema, as the latest value for an observation day's
-    * extended key will be taken to be the one having the greatest commitId.
-    */
+    def queryIds(table: String, column: String): Set[Int] =
+      db.queryWithResult(select("DISTINCT " + column) from(table)) { _.getInt(column) }.toSet
+
+    val danglingExtendedKeys = queryIds("MarketDataValue", "extendedKey").diff(queryIds("MarketDataExtendedKey", "id"))
+    val danglingValueKeys = queryIds("MarketDataValue", "valueKey").diff(queryIds("MarketDataValueKey", "id"))
+
+    danglingExtendedKeys.ensuring(_.isEmpty, "Dangling extended keys: " + danglingValueKeys)
+    danglingValueKeys.ensuring(_.isEmpty, "Dangling value keys: " + danglingValueKeys)
   }
 
   def readAll(): Unit = {
