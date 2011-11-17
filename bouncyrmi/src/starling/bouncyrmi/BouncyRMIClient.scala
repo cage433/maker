@@ -27,7 +27,7 @@ case class MethodLogEvent(id:Int, method:Method, compressedSize:Int, uncompresse
     klassName.substring(klassName.lastIndexOf('.')+1)
   }
   val ioTime = time - serverTime
-  val rate = compressedSize / ioTime
+  lazy val rate = if (ioTime == 0) 0.0 else (compressedSize.toDouble / ioTime)
 }
 
 case class StateChangeEvent(previous: State, current: State) extends Event
