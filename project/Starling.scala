@@ -116,7 +116,7 @@ object StarlingBuild extends Build{
       case _ =>
         Credentials(Path.userHome / ".ivy2" / ".credentials")
     }*/
-    Credentials("Sonatype Nexus Repository Manager", "nexus.global.trafigura.com", "admin", "admin123")
+    Credentials("Sonatype Nexus Repository Manager", "nexus.global.trafigura.com", "deployment", "depl0yment")
   }
 
 
