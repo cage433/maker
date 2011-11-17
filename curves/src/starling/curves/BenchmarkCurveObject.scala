@@ -89,7 +89,7 @@ case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData
       val (days, benchmarks) = countryData((country, grade)).sorted.unzip
       if (benchmarks.isEmpty)
         throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade),
-          long = "No benchmarks for country " + country + ", grade code " + grade)
+          long = "No benchmarks for country %s (%s), grade code %s (%s)" % (refData.countryFor(country), country, refData.gradeFor(grade), grade))
       InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
     }
   }
