@@ -1,7 +1,6 @@
 package starling.props
 
 case class ServerTypeLabel(name : String){
-  override def toString = name
 }
 
 object ServerTypeLabel {

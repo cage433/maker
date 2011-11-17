@@ -54,9 +54,7 @@ class ThetaPivotReport(context: ReportContext, utps: Map[UTPIdentifier, UTP]) ex
 
   def envForSplitting = context.environment
 
-  override def reportSpecificOptions = super.reportSpecificOptions :+ 
-      (atmVega_str -> List(false, true)) :+
-      (lots_str -> List(false, true))
+  override def reportSpecificOptions = super.reportSpecificOptions :+ atmVega :+ lots
 }
 
 case class Theta(

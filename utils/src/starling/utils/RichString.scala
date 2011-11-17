@@ -84,6 +84,7 @@ trait RichString {
       md5.digest().map(0xFF & _).map { "%02x".format(_) }.foldLeft(""){_ + _}
     }
 
+    def ci = new CaseInsensitive(s)
 
     private def fold(nonEmpty: (String) => String, empty: String = s) = if (s == null || s.isEmpty) empty else nonEmpty(s)
 	}

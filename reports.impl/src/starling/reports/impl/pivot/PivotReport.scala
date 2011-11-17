@@ -31,6 +31,7 @@ import collection.immutable.{Map, Set}
  */
 
 
+
 trait PivotReportType {
   type T
 
@@ -59,12 +60,12 @@ trait PivotReport[R <: PivotReportRow] {
   import PivotReport._
   import ReportSpecificChoices._
   def reportSpecificOptions : ReportSpecificOptions = new ReportSpecificOptions(
-    collapseOptions_str -> List(true, false),
-    showEqFutures_str -> List(false, true),
-    futuresAsSpreads_str -> List(false, true),
-    futuresAsSwaps_str -> List(false, true),
-    useSkew_str -> List(true, false),
-    tenor_str -> List(MonthChoiceText, WeekChoiceText, DayChoiceText)
+    collapseOptions,
+    showEqFutures,
+    futuresAsSpreads,
+    futuresAsSwaps,
+    useSkew,
+    tenor
   )
   def zeroFields:Set[Field] = Set()
 }
@@ -94,11 +95,14 @@ trait RiskFactorSplittingPivotReport[R <: RiskPivotReportRow[R] with PivotRowSha
 
 
 object PivotReport{
-  val collapseOptions_str = "Collapse Options"
-  val showEqFutures_str = "Show Eq Futures"
-  val futuresAsSpreads_str = "Futures as spreads"
-  val futuresAsSwaps_str = "Futures as swaps"
-  val useSkew_str = "Skew"
+  import ReportSpecificChoices._
+  val default_str: String = "Default"
+  val position_str: String = "Position"
+  val barrel_str: String = "Barrel"
+  val tonne_str: String = "Tonne"
+  val cubic_metre_str = "<html>m<sup>3</sup></html>"
+  val positionOnly_str = "Position Only"
+  val quoted_str = "Quoted"
   val utp_str: String = "UTP"
   val usd_str: String = "USD"
   val riskType_str: String = "Risk Type"
@@ -107,11 +111,20 @@ object PivotReport{
   val riskPeriod_str: String = "Risk Period"
   val riskVolume_str: String = "Risk Volume"
   val error_str: String = "Error"
-  val tenor_str = "Tenor"
   val strategy_str = "Strategy"
-  val atmVega_str = "ATM Vega"
-  val lots_str: String = "Lots"
-  val price_unit_str = "Price Unit"
+
+
+  val collapseOptions @ (collapseOptions_str, collapseOptionsChoices) = ("Collapse Options", List(true, false))
+  val showEqFutures @ (showEqFutures_str, showEqFuturesChoices) = ("Show Eq Futures", List(false, true))
+  val futuresAsSpreads @ (futuresAsSpreads_str, futuresAsSpreadsChoices) = ("Futures as spreads", List(false, true))
+  val futuresAsSwaps @ (futuresAsSwaps_str, futuresAsSwapsChoices) = ("Futures as swaps", List(false, true))
+  val useSkew @ (useSkew_str, useSkewChoices) = ("Skew", List(true, false))
+  val tenor @ (tenor_str, tenorChoices) = ("Tenor", List(MonthChoiceText, WeekChoiceText, DayChoiceText))
+  val atmVega @ (atmVega_str, atmVegaChoices) = ("ATM Vega", List(false, true))
+  val positionType @ (positionType_str, positonTypeChoices) = ("Position", List(default_str, barrel_str, tonne_str, usd_str)) 
+  val priceUnit @ (price_unit_str, priceUnitChoices) = ("Price Unit", List(position_str, quoted_str))
+  val lots @ (lots_str, lotsChoices) = ("Lots", List(false, true))
+
 
   def spreadMonthsByStrategyAndMarket(utps : Map[UTPIdentifier, UTP]) = {
     var spreadMonths = Map[(Option[String], FuturesMarket), Set[Month]]()

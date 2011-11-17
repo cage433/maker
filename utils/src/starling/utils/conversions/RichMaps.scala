@@ -91,6 +91,7 @@ class RichNestedMap[K1, K2, V](nested: Map[K1, Map[K2, V]]) extends RichMap[K1, 
 
   def mapNested[T](f: (K1, K2, V) => T): Iterable[T] =
     nested.flatMap { case (k1, values) => values.map { case (k2, value) => f(k1, k2, value) } }
+  def mapNestedValues[W](f: (V) => W): NestedMap[K1, K2, W] = mapNested { case (k1, k2, v) => (k1, (k2, f(v))) }.toNestedMap
 
   def mapOuter[K](f: (K1, K2, V) => K): NestedMap[K, K2, V] = mapNested { case (k1, k2, v) => (f(k1, k2, v), (k2, v)) }.toNestedMap
   def mapInner[K](f: (K1, K2, V) => K): NestedMap[K1, K, V] = mapNested { case (k1, k2, v) => (k1, (f(k1, k2, v), v)) }.toNestedMap

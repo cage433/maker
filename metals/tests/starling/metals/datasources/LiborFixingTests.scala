@@ -13,6 +13,7 @@ import org.scalatest.prop.Checkers
 import org.scalacheck.{Gen, Arbitrary, Prop}
 import Prop._
 import org.testng.Assert
+import starling.marketdata.ForwardRateSource
 
 trait RichArbitrary {
   implicit def enrichArbitrary[T](arbitrary: Arbitrary[T]) = new {
@@ -31,11 +32,12 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
   }
 
   private val dodgyFixings = Set(JPY → (21 Dec 2011), JPY → (29 Dec 2011))//, SEK → (29 Dec 2011), DKK → (29 Dec 2011))
+  private val currencies = LIBORCalculator.currencies(ForwardRateSource.LIBOR).toSet
 
   //println("Dodgy fixings: " + dodgyFixings)
 
   "Spot/Next value date matches against file from BBA" in {
-    expectedValueDays("Spot_Next_Fixing_Calendar_2011.txt").filter(_.currency.isOneOf(LIBORCalculator.currencies)).map { fixingEntry =>
+    expectedValueDays("Spot_Next_Fixing_Calendar_2011.txt").filter(_.currency.isOneOf(currencies)).map { fixingEntry =>
       fixingEntry.valueDays.map { case ((tenor, fixingDay), expected) =>
         if (!dodgyFixings.contains(fixingEntry.currency, fixingDay)) {
           val fixing = fixingEntry.fixingFor(fixingDay)
@@ -47,7 +49,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
 
   private implicit def arbitraryFixing: Arbitrary[LIBORCalculator] = Arbitrary {
     for {
-      currency <- Gen.oneOf(LIBORCalculator.currencies.toSeq)
+      currency <- Gen.oneOf(currencies.toSeq)
       fixingDay <- Gen.choose((03 Jan 2011).julianDayNumber, (30 Dec 2011).julianDayNumber)
     } yield LIBORCalculator(currency, Day.fromJulianDayNumber(fixingDay))
   }.filter(fixing => fixing.isBusinessDay)
