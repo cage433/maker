@@ -154,11 +154,7 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
   }
 
   override def reportSpecificOptions : ReportSpecificOptions = {
-    super.reportSpecificOptions :+ 
-      (positionType_str -> List(default_str, barrel_str, tonne_str, usd_str)) :+
-      (price_unit_str -> List(position_str, quoted_str)) :+
-      (lots_str -> List(false, true)) :+
-      (atmVega_str -> List(false, true))
+    super.reportSpecificOptions :+ positionType :+ priceUnit :+ lots :+ atmVega
   }
 
   override def zeroFields = Set(Field(GreekValues.PositionText) /*, Field("Day Change")*/)
@@ -199,16 +195,6 @@ object GreeksPivotReport extends PivotReportType {
   }
 
   override def fields = GreeksPivotReportHelper.fields(bucketPeriods, useSkew)
-
-  val useSkew_str = "Skew"
-  val positionType_str: String = "Position"
-  val position_str: String = "Position"
-  val barrel_str: String = "Barrel"
-  val tonne_str: String = "Tonne"
-  val cubic_metre_str = "<html>m<sup>3</sup></html>"
-  val positionOnly_str = "Position Only"
-  val default_str: String = "Default"
-  val quoted_str = "Quoted"
 }
 
 object GreeksPivotReportHelper {

@@ -217,8 +217,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
   }
 
   override def reportSpecificOptions = {
-    super.reportSpecificOptions :+ 
-      (atmVega_str -> List(false, true))
+    super.reportSpecificOptions :+ atmVega
   }
 }
 
@@ -329,8 +328,7 @@ class TimeChangesPnl(d1:Environment, forwardDayAndTime:DayAndTime, utps : Map[UT
     super.combine(combinedRows, reportSpecificChoices)
   }
   def envForSplitting = d1
-  override def reportSpecificOptions = super.reportSpecificOptions :+ 
-      (atmVega_str -> List(false, true))
+  override def reportSpecificOptions = super.reportSpecificOptions :+ atmVega
 }
 
 object TimeChangesRiskFields extends RiskPivotFields[TimeChangesPnlRow]
