@@ -36,7 +36,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
    * the DB. Any exceptions thrown from f will cause a rollback and then be propagated up the stack
    * as a nested RunTimeException. If no exception happens a commit is done.
    */
-  def inTransaction(f: DBWriter => Unit) {
+  def inTransaction[T](f: DBWriter => T):T = {
     inTransaction(DB.DefaultIsolationLevel)(f)
   }
 
@@ -44,19 +44,18 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
    * Same as above with specific isolationLevel
    */
 
-  def inTransaction(isolationLevel: Int)(f: DBWriter => Unit) {
+  def inTransaction[T](isolationLevel: Int)(f: DBWriter => T): T = {
     withTransaction(isolationLevel, false) {
       f(createWriter)
-      null
     }
   }
 
-  private def withTransaction(isolationLevel: Int, readonly: Boolean)(f: => Object) = {
+  private def withTransaction[T](isolationLevel: Int, readonly: Boolean)(f: => T): T = {
     val tt = new TransactionTemplate(new DataSourceTransactionManager(dataSource))
     tt.setReadOnly(readonly)
     tt.setIsolationLevel(isolationLevel)
     tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED)
-    tt.execute(new TransactionCallback[Object] {
+    tt.execute(new TransactionCallback[T] {
       def doInTransaction(status: TransactionStatus) = log.debugWithTime(status.isNewTransaction ? "TXN" | "OLD TXN") {
         try {
           f

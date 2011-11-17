@@ -24,7 +24,7 @@ import starling.services.EmailService
 
 
 object PriceFixingLimMarketDataSource {
-  val sources = List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates, BalticFixings,
+  val sources = List(LMEFixings, LIBORFixingsSource, BloombergTokyoCompositeFXRates, BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE.fixingLevel),
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all
 }

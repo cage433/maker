@@ -33,7 +33,7 @@ object NewReadAll {
 
     val init = new StarlingInit(props)
 
-    val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(init.dataTypes)
+    val marketDataExtendedKeyHelper = new KeyHelper(init.dataTypes)
     import marketDataExtendedKeyHelper._
 
     Log.infoWithTime("values") {

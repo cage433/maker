@@ -15,7 +15,7 @@ import starling.utils.ClosureUtil._
 import starling.utils.ImplicitConversions._
 import starling.utils.Log
 import starling.quantity.{Percentage, UOM}
-import starling.metals.datasources.{LIBORFixings, LIBORCalculator}
+import starling.metals.datasources.{LIBORFixingsSource, LIBORCalculator}
 
 
 class XRTGenerator(marketDataStore: MarketDataStore) {
