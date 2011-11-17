@@ -43,6 +43,14 @@ case class GreaterThanSelection(selection: Comparable[_]) extends Selection{
   def description = "Greater than: " + selection
 }
 
+case class LessThanOrEqualSelection(selection: Comparable[_]) extends Selection{
+  def matches(fieldDetails:FieldDetails, value: Any) = value match {
+    case c: Comparable[_] => c.asInstanceOf[Comparable[Object]].compareTo(selection.asInstanceOf[Comparable[Object]]) <= 0
+    case _ => throw new Exception("Can't use non-comparable value: " + value)
+  }
+  def description = "Less than or equal: " + selection
+}
+
 case object AllFilterSelection
 
 case class Totals(rowGrandTotal:Boolean, rowSubTotals:Boolean, columnGrandTotal:Boolean, columnSubTotals:Boolean) {

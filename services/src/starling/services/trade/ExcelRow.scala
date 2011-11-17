@@ -201,7 +201,8 @@ case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
     val lots = (marketOption(name), indexOption(name)) match {
       case (Some(market: CommodityMarket), None) => market.lotSize
       case (None, Some(index: SingleIndex)) => index.lotSize
-      case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market == index.market => market.lotSize
+      case (Some(market: CommodityMarket), Some(index: SingleIndex)) if market.lotSize == index.market.lotSize => market.lotSize
+      case (Some(market: CommodityMarket), _) => market.lotSize // make a stab at least
       case _ => throw new Exception("Can't figure out lot size for: " + name)
     }
     lots match {
