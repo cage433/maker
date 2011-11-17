@@ -187,7 +187,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     } else if (path.equals("/app.txt")) {
       val writer =response.getWriter
       response.setContentType("text/plain")
-      writer.println(mainClass + " " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName() + " " + PropsHelper.defaultProps.ServerType())
+      writer.println(mainClass + " " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName() + " " + PropsHelper.defaultProps.ServerType().name)
       val (modules, libJarNames) = GUICode.dependencies
       for ((module, lastModified) <- modules) {writer.println(moduleJarsPrefix + module + ".jar " + lastModified)}
       for ((libName, lastModified) <- libJarNames) {writer.println(externalJarsPrefix + libName + " " + lastModified)}
