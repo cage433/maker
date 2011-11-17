@@ -290,8 +290,6 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     }
   }
 
-  def fromStartOfFinancialYear = startOfFinancialYear upto this
-
   def toListOfMonths = throw new Exception("Day " + this + "Can't be broken into months")
 }
 
