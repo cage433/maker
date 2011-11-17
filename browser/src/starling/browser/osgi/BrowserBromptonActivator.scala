@@ -14,6 +14,7 @@ import swing.event.Event
 import java.io.{File, FileInputStream}
 import java.util.{Hashtable, Properties}
 import starling.manager._
+import management.ManagementFactory
 
 case class BundleAdded(bundle:BrowserBundle) extends StarlingGUIEvent
 case class BundleRemoved(bundle:BrowserBundle) extends StarlingGUIEvent
@@ -67,6 +68,7 @@ class BrowserBromptonActivator extends BromptonActivator {
           bundle.addListeners(cacheMap, bundlesPublisher)
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
           pageContextPublisher.publish(BundleAdded(bundle))
+          println("Bundle started " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000 + "s")
         }
       }
       override def serviceRemoved(ref: BromptonServiceReference) {

@@ -7,6 +7,10 @@ import starling.gui.osgi.{MetalsGuiBromptonActivator, GuiBromptonActivator}
 import starling.manager.BromptonActivator
 import starling.bouncyrmi.{GuiLaunchParameters, BouncyRMIClientBromptonActivator}
 import starling.props.ServerTypeLabel
+import scala.Predef._
+import swing.Publisher
+import starling.utils.StringIO
+import java.io.{File, ByteArrayOutputStream, OutputStream}
 
 //Starts the gui without osgi
 object Launcher {
@@ -14,6 +18,7 @@ object Launcher {
     if (args.length < 4) {
       throw new IllegalArgumentException("You need to specify 4 arguments: hostname, rmi port, servicePrincipalName and serverType")
     }
+    val buffer = teeStdOut
     println("Args: " + args.toList)
     val rmiHost = args(0)
     val rmiPort = args(1).toInt
@@ -26,7 +31,7 @@ object Launcher {
         socket.close()
       } catch {
         case e:ConnectException => {
-          start(rmiHost, rmiPort, servicePrincipalName, serverType)
+          start(buffer, rmiHost, rmiPort, servicePrincipalName, serverType)
         }
       }
       val st = args(3)
@@ -36,15 +41,32 @@ object Launcher {
       val stream = url.openStream()
       stream.close()
     } else {
-      start(rmiHost, rmiPort, servicePrincipalName, serverType)
+      start(buffer, rmiHost, rmiPort, servicePrincipalName, serverType)
     }
   }
 
-  def startWithUser(overriddenUser:String) {
+  def teeStdOut = {
+    //I have found that this must be called before anything is written to std out otherwise it does't capture the events
+    val publishingStream = new PublishingOutputStream
+    System.setOut(new java.io.PrintStream(new TeeOutputStream(System.out, publishingStream)))
+    System.setErr(new java.io.PrintStream(new TeeOutputStream(System.err, publishingStream)))
+    //booter writes to a file, so by reading this file we pick up anything written to std before this call
+    System.getProperty("stdout.logfile") match {
+      case fileName:String => {
+        val logsSoFar = StringIO.readBytesFromFile(new File(fileName))
+        publishingStream.write(logsSoFar)
+        publishingStream.write("============\n".getBytes)
+      }
+      case _ =>
+    }
+    publishingStream
+  }
+
+  /*invoked with reflection*/def startWithUser(overriddenUser:String) {
     if (rmiPort == -1) {
       throw new Exception("You can only run as user once start has been called")
     }
-    start(rmiHost, rmiPort, servicePrincipalName, serverType.get, Some(overriddenUser))
+    start(None, rmiHost, rmiPort, servicePrincipalName, serverType.get, Some(overriddenUser))
   }
 
   // These variables are a big hack so we remember what they are when running the start method when changing users.
@@ -52,20 +74,26 @@ object Launcher {
   private var rmiPort = -1
   private var servicePrincipalName = ""
   private var serverType : Option[ServerTypeLabel] = None
+  private var stdOut : StdOut = _
 
-  def start(rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:ServerTypeLabel, overriddenUser:Option[String] = None) {
+  def start(stdOut:StdOut, rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:ServerTypeLabel) {
+    start(Some(stdOut), rmiHost, rmiPort, servicePrincipalName, serverType, None)
+  }
+  def start(maybeStdOut:Option[StdOut], rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:ServerTypeLabel, overriddenUser:Option[String] = None) {
 
     this.rmiHost = rmiHost
     this.rmiPort = rmiPort
     this.servicePrincipalName = servicePrincipalName
     this.serverType = Some(serverType)
+    maybeStdOut.foreach(b => this.stdOut = b)
 
     val launchParameters = GuiLaunchParameters(rmiHost, rmiPort, servicePrincipalName, overriddenUser)
 
     val baseActivators = List[Class[_ <: BromptonActivator]](
       classOf[BouncyRMIClientBromptonActivator],
       classOf[BrowserBromptonActivator],
-      classOf[GuiBromptonActivator]
+      classOf[GuiBromptonActivator],
+      classOf[LauncherBromptonActivator]
     )
     val extraActivators = {
       import ServerTypeLabel._
@@ -76,7 +104,65 @@ object Launcher {
       }
     }
     val activators = baseActivators ::: extraActivators
-    val single = new SingleClasspathManager(true, activators, List( (classOf[GuiLaunchParameters], launchParameters) ) )
+    val initialServices = List(
+      classOf[GuiLaunchParameters] -> launchParameters,
+      classOf[StdOut] -> stdOut
+    )
+    val single = new SingleClasspathManager(true, activators, initialServices)
     single.start()
+  }
+}
+
+class PublishingOutputStream extends OutputStream with StdOut {
+  val buffer = new ByteArrayOutputStream()
+  val publisher = new Publisher() {}
+
+  def readAll = buffer.toByteArray
+
+  private def broadcast(bytes:Array[Byte]) {
+    publisher.publish(StdOutEvent(bytes))
+  }
+  def write(c: Int) {
+    buffer.write(c)
+    broadcast(Array[Byte](c.asInstanceOf[Byte]))
+  }
+
+  override def write(bytes: Array[Byte]) {
+    buffer.write(bytes)
+    broadcast(bytes)
+  }
+
+  override def write(bytes: Array[Byte], off: Int, len: Int) {
+    buffer.write(bytes, off, len)
+    broadcast(bytes.slice(off, off+len))
+  }
+
+}
+
+class TeeOutputStream(a: OutputStream, b: OutputStream) extends OutputStream {
+
+  def write(c: Int) {
+    a.write(c)
+    b.write(c)
+  }
+
+  override def write(bytes: Array[Byte]) {
+    a.write(bytes)
+    b.write(bytes)
+  }
+
+  override def write(bytes: Array[Byte], off: Int, len: Int) {
+    a.write(bytes, off, len)
+    b.write(bytes, off, len)
+  }
+
+  override def close() {
+    a.close()
+    b.close()
+  }
+
+  override def flush {
+    a.flush
+    b.flush
   }
 }
