@@ -70,6 +70,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
   }
 
   def updateTrade(titanTradeID : String) = {
+    edmTrades --= edmTrades.filter(_.identifier.value == titanTradeID)
     val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
 
     log.info("trade state = " + newTrade.state)
