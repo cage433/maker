@@ -187,8 +187,8 @@ object Commodity extends Log {
     case _ => throw new Exception("Unknown Standard Futures UOM for: " + commodity)
   }
 
-  lazy val CommodityNameToCommodity = all.toMapWithKeys(_.name)
-  def fromName(name:String) = fromNameOption(name).getOrElse(throw new Exception("No such commodity" + name))
-  def fromNameOption(name: String) = CommodityNameToCommodity.get(name)
+  lazy val CommodityNameToCommodity = all.toMapWithKeys(_.name.ci)
+  def fromName(name:String) = fromNameOption(name).getOrElse(throw new Exception("No such commodity: " + name))
+  def fromNameOption(name: String) = CommodityNameToCommodity.get(name.ci)
   def hasStandardFuturesMarket(commodity:Commodity) = succeeds(standardFuturesMarket(commodity))
 }
