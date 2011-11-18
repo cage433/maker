@@ -150,14 +150,15 @@ class ForwardForwardDiscountCurve(
         require(p1.lastDay == p2.firstDay, "Periods must join up first and last days, got " + (p1, p2))
     }
   }
-  val zippedData = rates.keySet.toList.sortWith(_<_).map{
-    p =>
-      val time = DayCountActual365.factor(p)
-      val rate = rates(p).in(UOM.SCALAR).get.value
-      println(rates(p) + ", " + rates(p).in(UOM.SCALAR).get + ", " + rate)
-      val z = math.log(1 + rate * time) / time
-      (p, time, z)
+
+  val zippedData = rates.keySet.toList.sortWith(_<_).map { p =>
+    val time = DayCountActual365.factor(p)
+    val rate = rates(p).in(UOM.SCALAR).get.value
+    val z = math.log(1 + rate * time) / time
+
+    (p, time, z)
   }
+
   def discount(day: Day) : Double = {
     if (day == marketDay)
       1.0
