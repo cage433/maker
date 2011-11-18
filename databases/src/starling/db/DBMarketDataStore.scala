@@ -254,7 +254,6 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
 
   def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataTypeName) = {
     db.latestObservationDaysFor(pricingGroupsDefinitions(pricingGroup), marketDataType)
-      .getOrThrow("No observation days for: " + marketDataType)
   }
 
   private def marketDataSets(marketDataIdentifier: MarketDataIdentifier): List[MarketDataSet] = marketDataSets(marketDataIdentifier.selection)

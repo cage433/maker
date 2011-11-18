@@ -82,6 +82,14 @@ case class MarketDataTypeName(name: String) {
 }
 
 class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
+
+  val manualTypes = List(
+    new GradeAreaBenchmarkDataType(referenceDataLookup),
+    new CountryBenchmarkDataType(referenceDataLookup),
+    new FreightParityDataType(referenceDataLookup),
+    ShanghaiVATDataType
+  )
+
   // This list is used to load MarketDataType-s from the database. (It was indirectly used to populate the drop down
   // list in the market data viewer but is reported not to be anymore).
   val types = List(
@@ -91,12 +99,8 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
     FreightFlatRateDataType,
     SpotFXDataType,
     PriceFixingsHistoryDataType,
-    SpreadStdDevSurfaceDataType,
-    new GradeAreaBenchmarkDataType(referenceDataLookup),
-    new CountryBenchmarkDataType(referenceDataLookup),
-    new FreightParityDataType(referenceDataLookup),
-    ShanghaiVATDataType
-  )
+    SpreadStdDevSurfaceDataType
+  ) ++ manualTypes
 
   val lookup = types.toMapWithKeys(_.name.name)
 

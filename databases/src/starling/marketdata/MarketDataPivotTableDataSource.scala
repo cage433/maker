@@ -4,8 +4,8 @@ import collection.Seq
 import starling.curves.MarketDataSlice
 import starling.pivot._
 import model.UndefinedValue
+import pivotparsers.{ObservationDayPivotParser, DayPivotParser}
 import starling.daterange.{Day, ObservationPoint}
-import starling.pivot.pivotparsers.DayPivotParser
 import starling.richdb.RichDB
 import starling.daterange.Timestamp
 import starling.instrument.utils.StarlingXStream
@@ -30,7 +30,7 @@ import java.lang.IllegalStateException
 
 object MarketDataPivotTableDataSource {
   val observationTimeField = FieldDetails("Observation Time")
-  val observationDayField = FieldDetails("Observation Day", DayPivotParser)
+  val observationDayField = FieldDetails("Observation Day", ObservationDayPivotParser)
 }
 
 class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: MarketDataStore,
