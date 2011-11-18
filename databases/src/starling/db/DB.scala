@@ -84,6 +84,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
   }
 
   def query(sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => Unit): Int = {
+    log.info(sql)
     try {
       val counter = new NonAtomicInteger
       withTransaction(DB.DefaultIsolationLevel, true) {
@@ -106,6 +107,8 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
    * Same as query but results of function f are returned as a List
    */
   def queryWithResult[T](sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => T): List[T] = {
+    log.info(sql + ", " + parameters)
+
     val counter = new NonAtomicInteger
     withTransaction(DB.DefaultIsolationLevel, true) {
       new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[Object]() {
