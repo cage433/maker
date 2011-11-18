@@ -170,7 +170,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
   }
 
   override def stop {
-    super.start
+    super.stop
     eventDemux.shutdown
     rabbitListener.disconnect()
     rabbitEventPublisher.disconnect()
