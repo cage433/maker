@@ -79,6 +79,7 @@ object StarlingBuild extends Build{
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
     resolvers += "titan-cross-stream-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
+    resolvers += "titan-cross-stream-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-releases/",
     resolvers += "tooling-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-snapshots/",
     resolvers += "trademgmt-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-releases/",
     resolvers += "trademgmt-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-snapshots/",
@@ -240,7 +241,7 @@ object StarlingBuild extends Build{
   ) dependsOn(quantity % testDependency, daterange % testDependency)
 
   val starlingApiDependencies = Seq(
-    "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.0",
+    "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.2-SNAPSHOT",
     "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.0",
     "org.slf4j" % "slf4j-api" % "1.6.1",
     "dom4j" % "dom4j" % "1.6.1",
