@@ -15,4 +15,8 @@ class DayTest extends WordSpec with ShouldMatchers  {
     
     (1 Oct 2012 startOfFinancialYear) should be === (1 Oct 2012)
   }
+
+  "(x upto x).toList.tail === Nil" in {
+    ((1 Oct 2011) upto (1 Oct 2011)).toList.tail should be === Nil
+  }
 }
