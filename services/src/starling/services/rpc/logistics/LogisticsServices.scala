@@ -14,6 +14,7 @@ import starling.services.rpc.FileUtils
 import org.codehaus.jettison.json.JSONObject
 import starling.utils.conversions.RichMapWithErrors._
 import starling.props.{PropsHelper, Props}
+import com.trafigura.edm.common.units.TitanId
 
 /**
  * logistics service interface
@@ -128,6 +129,7 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
     def getInventoryByGroupCompanyId(groupCompanyMappingCode : String) = loadedInventory
     def getAllInventory() : LogisticsInventoryResponse = getInventoryByGroupCompanyId("")
     def getAllInventoryItems() : List[InventoryItem] = inventoryMap.values.toList
+    def getInventoryTreeByPurchaseQuotaTitanId(id : TitanId) : LogisticsInventoryResponse = null
   }
 
   def updateInventory(item : InventoryItem) {

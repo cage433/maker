@@ -85,11 +85,15 @@ class FC2Service(marketDataStore: MarketDataStore, marketDataTypes: MarketDataTy
         }
       }
     }
-    if (marketDataIdentifier.selection.pricingGroup == Some(PricingGroup.Metals)) {
-      validate(reader)
-    } else {
-      reader
-    }
+
+    reader
+
+    // TODO: [18 Nov 2011]: Validation adds a massive overhead, reduce.
+//    if (marketDataIdentifier.selection.pricingGroup == Some(PricingGroup.Metals)) {
+//      reader // validate(reader)
+//    } else {
+//      reader
+//    }
   }
 
   private def realTypeFor(label:MarketDataTypeLabel) = {

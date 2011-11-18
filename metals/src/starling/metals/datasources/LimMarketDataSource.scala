@@ -49,6 +49,8 @@ abstract class LimMarketDataSource(service: LIMService, val marketDataType: Mark
     ScheduledTime.daily(cal, bloombergToLimTime.plus(JodaPeriod.minutes(30))) // 5 minutes for Lim import, 25 to allow for the lim team to discover & fix
 
   private def countData(entries: List[MarketDataEntry]) = entries.map(_.data.size).sum
+
+  protected def earliestDayToImport(day: Day) = day - 7 // day.startOfFinancialYear
 }
 
 case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double], observationDay: Day) {

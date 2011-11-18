@@ -120,7 +120,7 @@ trait MarketDataStore {
     v => MarketDataIdentifier(selection, v), latestMarketDataIdentifier(selection))
 
   def latestObservationDayForMarketDataSet(marketDataSet: MarketDataSet): Option[Day]
-  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataTypeName): Day
+  def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataTypeName): Option[Day]
 
   def latestPricingGroupVersions: Map[PricingGroup, Int]
 
@@ -195,6 +195,7 @@ case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKe
   def timedKey = TimedMarketDataKey(observationPoint, key)
 
   def dataIdFor(marketDataSet: MarketDataSet, types: MarketDataTypes) = MarketDataID(timedKey, marketDataSet, types)
+  def copyDay(day: Day) = copy(observationPoint.copyDay(day))
 }
 
 case class MarketDataUpdate(timedKey: TimedMarketDataKey, data: Option[MarketData], existingData: Option[VersionedMarketData],

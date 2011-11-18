@@ -37,7 +37,7 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
   override def description = descriptionFor(sources)
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(day.startOfFinancialYear, day, sources))
+    Map(getValuesForType(earliestDayToImport(day), day, sources))
   }
 
   override def eventSources(marketDataStore: MarketDataStore) = List(

@@ -38,10 +38,10 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
   def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
     val inventoryByQuotaID : Map[TitanId, Traversable[InventoryItem]] = edmInventoryLeaves.flatMap{
       inv : InventoryItem => 
-        val quotaNames = inv.purchaseAssignment.quotaName :: Option(inv.salesAssignment).map(_.quotaName).toList
-        quotaNames.map(TitanId(_) → inv)
+        val quotaNames = inv.purchaseAssignment.quotaTitanId :: Option(inv.salesAssignment).map(_.quotaTitanId).toList
+        quotaNames.map(_ → inv)
     }.groupValues
-    val fullyAllocatedQuotaMap = edmLogisticsQuotas.map(q => TitanId(q.quotaName) -> q.fullyAllocated).toMap
+    val fullyAllocatedQuotaMap = edmLogisticsQuotas.map(q => q.quotaTitanId -> q.fullyAllocated).toMap
     new PhysicalMetalForwardBuilder(refData, inventoryByQuotaID, fullyAllocatedQuotaMap)
   }
   def removeTrade(titanTradeID : String) {
