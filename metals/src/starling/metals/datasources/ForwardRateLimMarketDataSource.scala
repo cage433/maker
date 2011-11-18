@@ -22,7 +22,7 @@ case class ForwardRateLimMarketDataSource(service: LIMService, emailService: Ema
   extends LimMarketDataSource(service, ForwardRateDataType.name) {
 
   def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(day.startOfFinancialYear, day, List(LIBORFixingsSource)))
+    Map(getValuesForType(earliestDayToImport(day), day, List(LIBORFixingsSource)))
   }
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
