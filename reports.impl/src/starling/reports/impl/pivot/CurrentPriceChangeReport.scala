@@ -8,7 +8,7 @@ import starling.quantity.UOM
 import starling.tradestore.TradeAndFields
 import starling.reports.impl.pivot.PivotReport._
 import starling.pivot.{PivotQuantityFieldDetails, SumPivotQuantityFieldDetails, PivotQuantity}
-
+import starling.gui.api.ReportSpecificOptions._
 
 case class CurrentPriceChangeRow(
   utpID : UTPIdentifier,

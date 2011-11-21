@@ -13,6 +13,7 @@ import starling.instrument.TradeAttributes
 import starling.pivot.Field._
 import starling.instrument.{TradeableType}
 import collection.immutable.TreeMap
+import starling.gui.api.Desk
 
 
 case class RefinedFixationTradeAttributes (
@@ -39,6 +40,7 @@ class RefinedFixationTradeStore(db: RichDB, broadcaster:Broadcaster)
   extends TradeStore(db, broadcaster, RefinedFixationTradeSystem)
 {
 
+  def deskOption = Some(Desk.Titan)
   override val tradeAttributeFieldDetails = List(groupCompany_str, exchange_str, contractNo_str, pricingType_str).map(n=>FieldDetails(n))
   private val List(groupCompany_col, exchange_col, contractNo_col, pricingType_col) = tradeAttributeFieldsAsSQLColumnNames
 

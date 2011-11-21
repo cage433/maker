@@ -59,6 +59,7 @@ object UOMType {
     val CLF = create() // Unidad de Fomento (funds code)
     val CLP = create() // Chilean peso
     val CNY = create() // Chinese yuan
+    val CNH = create() // Chinese yuan traded offshore
     val COP = create() // Colombian peso
     val COU = create() // Unidad de Valor Real
     val CRC = create() // Costa Rican colon

@@ -193,6 +193,7 @@ case class TradeTimestamp(timestamp:Timestamp, closeDay: Day, closeNumber: Int, 
 }
 
 case class TradeSelection(desk:Option[Desk], tradePredicate:TradePredicate, intradaySubgroup:Option[IntradayGroups]) {
+  println("Made a selection")
   def withDeskTimestamp(deskTimestamp: TradeTimestamp) = {
     assert(intradaySubgroup.isEmpty, "Can't create timestamped trade selection when using intradaySubgroup")
     new TradeSelectionWithTimestamp(desk.map((_, deskTimestamp)), tradePredicate, None)
@@ -239,6 +240,7 @@ case class ReportParameters(tradeSelectionWithTimestamp:TradeSelectionWithTimest
   def copyWithIntradayTimestamp(timestamp: Timestamp) = {
     copy(tradeSelectionWithTimestamp = tradeSelectionWithTimestamp.copyWithNewIntradaySubgroupTimestamp(timestamp))
   }
+  def desk = tradeSelectionWithTimestamp.deskAndTimestamp.map(_._1)
 }
 
 case class EnvironmentModifierLabel(name:String)

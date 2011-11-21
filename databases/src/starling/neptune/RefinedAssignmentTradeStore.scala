@@ -12,6 +12,7 @@ import starling.instrument.TradeAttributes
 import starling.pivot._
 import starling.pivot.Field._
 import starling.instrument.TradeableType
+import starling.gui.api.Desk
 
 case class RefinedAssignmentTradeAttributes(
   groupCompany : String,
@@ -46,6 +47,7 @@ class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster)
   extends TradeStore(db, broadcaster, RefinedAssignmentTradeSystem)
 {
   val tradeAttributesFactory = RefinedAssignmentTradeAttributes
+  def deskOption = Some(Desk.Titan)
 
   def pivotDrillDownGroups() = {
     List(

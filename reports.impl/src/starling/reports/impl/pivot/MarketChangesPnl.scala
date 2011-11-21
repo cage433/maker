@@ -24,6 +24,7 @@ import starling.reports.pivot.greeks.{VolatilityMeasure, RiskVols, RiskPrices}
 import starling.reports.pivot.OptionalPeriodLabel
 import starling.marketdata.ReferenceDataLookup
 import starling.curves.NullAtomicEnvironment
+import starling.gui.api.ReportSpecificOptions._
 
 object MarketChangesRiskFields extends RiskPivotFields[MarketChangesPnlRow]
 
@@ -132,10 +133,10 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
 //    require(!reportSpecificChoices.getOrElse(futuresAsSpreads_str, false), "Can't do day change report with futures as spreads")
     val ccy = UOM.USD
 
-    val showEqFutures = reportSpecificChoices.getOrElse(showEqFutures_str, false)
-    val useSkew = reportSpecificChoices.getOrElse(useSkew_str, true)
-    val collapseOptions = reportSpecificChoices.getOrElse(collapseOptions_str, true)
-    val atmVega = reportSpecificChoices.getOrElse(atmVega_str, false)
+    val showEqFutures = reportSpecificChoices.getOrElse(showEqFuturesLabel, false)
+    val useSkew = reportSpecificChoices.getOrElse(useSkewLabel, true)
+    val collapseOptions = reportSpecificChoices.getOrElse(collapseOptionsLabel, true)
+    val atmVega = reportSpecificChoices.getOrElse(atmVegaLabel, false)
     val env = if (useSkew) d1EnvFwd else d1EnvFwd.setShiftsCanBeIgnored(true)
     val riskInstruments = new PivotUTPRestructurer(env, reportSpecificChoices, spreadMonthsByStrategyAndMarket, swapIndices).apply(rows.map{r => UTPWithIdentifier(r.utpID, r.utp * r.scale)})
 
@@ -201,7 +202,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
               }
           }
         pnlComponents = pnlComponents.filter(!_.pnl.isAlmostZero)
-        pnlComponents = pnlComponents.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(tenor_str, Month)))
+        pnlComponents = pnlComponents.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(tenorLabel, Month)))
         val pnlComponentsByCashOrNot = pnlComponents.groupBy{
           _.utp match {
             case _ : BankAccount => "CASH"
@@ -297,7 +298,7 @@ class TimeChangesPnl(d1:Environment, forwardDayAndTime:DayAndTime, utps : Map[UT
   }
 
   override def combine(rows : List[TimeChangesPnlRow], reportSpecificChoices : ReportSpecificChoices) = {
-    val atmVega = reportSpecificChoices.getOrElse(atmVega_str, false)
+    val atmVega = reportSpecificChoices.getOrElse(atmVegaLabel, false)
     val changeOnlyTimeAndDiscounts = !atmVega
 
     import starling.concurrent.MP._

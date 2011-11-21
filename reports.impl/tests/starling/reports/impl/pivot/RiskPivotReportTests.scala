@@ -15,6 +15,7 @@ import starling.reports.impl.pivot.PivotReport._
 import org.testng.annotations.Test
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import org.scalatest.testng.TestNGSuite
+import starling.gui.api.ReportSpecificOptions._
 
 class RiskPivotReportTests extends TestMarketTest with TestNGSuite with StarlingTest{
   @Test
@@ -39,7 +40,7 @@ class RiskPivotReportTests extends TestMarketTest with TestNGSuite with Starling
     val volKey = OilAtmVolAtomicDatumKey(market, None, period)
 
     val pivotReport = new GreeksPivotReport(env, (md.day + 1).endOfDay, Map(UTPIdentifier(1) -> option))
-    val rows = pivotReport.combine(pivotReport.rows(UTPIdentifier(1), option), ReportSpecificChoices(showEqFutures_str -> true))
+    val rows = pivotReport.combine(pivotReport.rows(UTPIdentifier(1), option), ReportSpecificChoices(showEqFuturesLabel -> true))
 
     rows.find(r => r.gamma != PivotQuantity.NULL) match {
       case Some(d) => {
@@ -85,7 +86,7 @@ class RiskPivotReportTests extends TestMarketTest with TestNGSuite with Starling
     )
 
     val pivotReport = new GreeksPivotReport(env, (md.day + 1).endOfDay, Map(UTPIdentifier(1) -> option))
-    val greeks = pivotReport.combine(pivotReport.rows(UTPIdentifier(1), option), ReportSpecificChoices(showEqFutures_str -> true))
+    val greeks = pivotReport.combine(pivotReport.rows(UTPIdentifier(1), option), ReportSpecificChoices(showEqFuturesLabel -> true))
 
     val gamma1 = option.gamma(env, PriceDifferentiable(market, nov), USD, List(PriceDifferentiable(market, nov), PriceDifferentiable(market, dec)))
     assertQtyClose(risk(greeks, nov, "gamma"), gamma1)

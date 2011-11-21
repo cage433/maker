@@ -62,6 +62,7 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
 class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, desk:Desk) extends
     TradeStore(db, broadcaster, EAITradeSystem) {
 
+  val deskOption = Some(desk)
   lazy val usedStrategyIDs = new scala.collection.mutable.HashSet[Int]()
   val tableName = "EAITrade_book_" + desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book
 
