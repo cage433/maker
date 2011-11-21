@@ -111,7 +111,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
       publisherForPageContext.publish(e)
     }
-    case e:Event => {
+    case e:StarlingGUIEvent => {
       publisherForPageContext.publish(e)
 
       if (history.nonEmpty) {
