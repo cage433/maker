@@ -2,6 +2,7 @@ package starling.webservice
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.WordSpec
+import scalaz.Scalaz._
 
 
 class QlikViewUpdaterTests extends WordSpec with ShouldMatchers {
@@ -27,7 +28,7 @@ class QlikViewUpdaterTests extends WordSpec with ShouldMatchers {
   </ArrayOfTaskInfo>
 
   "Can find tasks ids by name" in {
-    QlikViewUpdater.taskID("Impala", xml) should be === Some("Impala ID")
-    QlikViewUpdater.taskID("Titan", xml) should be === Some("Titan ID")
+    QlikViewUpdater.taskID("Impala", xml) should be === success("Impala ID")
+    QlikViewUpdater.taskID("Titan", xml) should be === success("Titan ID")
   }
 }
