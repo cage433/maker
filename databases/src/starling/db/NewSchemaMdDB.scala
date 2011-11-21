@@ -99,7 +99,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     innerJoin("MarketDataExtendedKey ek", "ek.id" eql "v.extendedKey")
         where("ek.marketDataType" eql marketDataType.name)
           and("ek.marketDataSet" in marketDataSets.map(_.name))
-    ) { rs => rs.getDay("maxObservationDay") }
+    ) { rs => rs.getDayOption("maxObservationDay") }.flatOpt
   }
 
   def latestVersionForMarketDataSets(): Map[MarketDataSet, Int] = {

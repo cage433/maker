@@ -111,8 +111,8 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
 
     val counter = new NonAtomicInteger
     withTransaction(DB.DefaultIsolationLevel, true) {
-      new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[Object]() {
-        def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs, counter.incrementAndGet)).asInstanceOf[Object]
+      new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[T]() {
+        def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs, counter.incrementAndGet)).asInstanceOf[T]
       })
     }.asInstanceOf[java.util.List[T]].toList
   }
