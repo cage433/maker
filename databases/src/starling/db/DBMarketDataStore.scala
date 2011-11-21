@@ -214,12 +214,32 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
 
   val importLock = new Object
 
-  def importFor(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
+  def importFor(observationDay: Day, marketDataSets: MarketDataSet*) =
+    blockSimultaneousDBAccess(observationDay, marketDataSets: _*)
+    //blockSimultaneousImports(observationDay, marketDataSets: _*)
+
+  private def blockSimultaneousImports(observationDay: Day, marketDataSets: MarketDataSet*) = importLock.synchronized {
     log.infoWithTime("saving market data: " + observationDay) {
       val updates: MultiMap[MarketDataSet, MarketDataUpdate] = importer.getUpdates(observationDay, marketDataSets: _*)
 
       log.infoWithTime("Number of updates: " + updates.mapValues(_.toList.size)) {
         update(updates)
+      }
+    }
+  }
+
+  private def blockSimultaneousDBAccess(observationDay: Day, marketDataSets: MarketDataSet*) = {
+    log.infoWithTime("saving market data: " + observationDay) {
+      val externalData = importer.getExternalData(observationDay, marketDataSets: _*)
+
+      importLock.synchronized {
+        val updates = log.infoWithTime("Calculating updates") {
+          importer.getUpdates(externalData)
+        }
+
+        log.infoWithTime("Applying updates: " + updates.mapKeys(_.name).mapValues(_.toList.size)) {
+          update(updates)
+        }
       }
     }
   }

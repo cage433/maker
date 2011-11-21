@@ -35,10 +35,7 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
   import PriceFixingLimMarketDataSource._
 
   override def description = descriptionFor(sources)
-
-  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(earliestDayToImport(day), day, sources))
-  }
+  def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
   override def eventSources(marketDataStore: MarketDataStore) = {
     List(new PriceFixingDataEventSource(PricingGroup.Metals, ReferenceInterestMarketDataProvider(marketDataStore)))

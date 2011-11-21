@@ -24,7 +24,7 @@ abstract class LimMarketDataSource(service: LIMService, val marketDataType: Mark
 
   protected def getValuesForType(start: Day, end: Day, sources: List[LimSource]): ((Day, Day, MarketDataTypeName), List[MarketDataEntry]) =
     (start, end, marketDataType) → sources.flatMap(source => getValues(source, start, end).toList)
-      .require(containsDistinctTimedKeys, "concatenated sources: %s, produced duplicate MarketDataKeys: " % sources)
+      //.require(containsDistinctTimedKeys, "concatenated sources: %s, produced duplicate MarketDataKeys: " % sources)
 
   protected def getValues(source: LimSource, start: Day, end: Day): List[MarketDataEntry] = service.query { connection =>
     val relations = source.relationsFrom(connection)

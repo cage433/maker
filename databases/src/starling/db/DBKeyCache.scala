@@ -7,12 +7,15 @@ import starling.richdb.RichResultSetRow
 import scala.collection.JavaConversions._
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
+import starling.utils.Log
 
 
-abstract class DBKeyCache[K <: DBKey[K] : Manifest](db: DBTrait[RichResultSetRow]) {
+abstract class DBKeyCache[K <: DBKey[K] : Manifest](db: DBTrait[RichResultSetRow]) extends Log {
   protected val table = manifest[K].erasure.getSimpleName
-  protected lazy val cache = JConcurrentMapWrapper(new java.util.concurrent.ConcurrentHashMap[Int, K](
-    db.queryWithResult("SELECT * FROM " + table) { create(_) }.toMapWithKeys(_.id)))
+  protected lazy val cache = log.infoWithTime("Populating key cache from: " + table) {
+    JConcurrentMapWrapper(new java.util.concurrent.ConcurrentHashMap[Int, K](
+      db.queryWithResult("SELECT * FROM " + table) { create(_) }.toMapWithKeys(_.id)))
+  }
 
   final def apply(id: Int): K = get(id) | findOrUpdate(db.queryWithOneResult(
     "SELECT * FROM %s WHERE id = %d" % (table, id)) { create(_) }.getOrThrow("No %s with id = %d" % (table, id)))

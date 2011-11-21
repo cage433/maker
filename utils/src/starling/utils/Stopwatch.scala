@@ -8,6 +8,7 @@ case class Stopwatch(name : String = ""){
   reset()
   
   def reset() : Long = {val savedMS = ms; startTime = currentTime(); savedMS}
+  def offset(offset: Long) = {startTime = startTime - offset; this}
   def currentTime() = System.nanoTime
   def nanos() = currentTime - startTime
   def ms() : Long = (nanos) / 1000000

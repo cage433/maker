@@ -87,6 +87,7 @@ object StarlingBuild extends Build{
     resolvers += "logistics-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-snapshots/",
     resolvers += "referencedata-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-releases/",
     resolvers += "referencedata-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-snapshots/",
+    //resolvers += Resolver.defaultLocal,
     organizationName := "Trafigura",
     version := starlingVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt

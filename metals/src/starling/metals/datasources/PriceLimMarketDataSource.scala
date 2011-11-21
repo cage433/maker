@@ -56,10 +56,7 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
   import FuturesExchangeFactory._
 
   override def description = descriptionFor(sources)
-
-  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(earliestDayToImport(day), day, sources))
-  }
+  def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
   override def eventSources(marketDataStore: MarketDataStore) = limMetalMarketsForExchanges.map(markets =>
     PriceDataEventSource(PricingGroup.Metals, PriceMarketDataProvider(marketDataStore, markets)))

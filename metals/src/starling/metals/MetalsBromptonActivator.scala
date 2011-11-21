@@ -205,7 +205,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
   private def importLim(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore) = TaskDescription("Import LIM",
     everyFiveMinutes(businessCalendars.LME), new ImportMarketDataTask(marketDataStore, PricingGroup.Metals)
-      .withSource("LIM", marketDataStore.sourcesFor(PricingGroup.Metals).flatMap(_.description): _*))
+      .withSource("LIM", marketDataStore.sourcesFor(PricingGroup.Metals).flatMap(_.description): _*), coolDown = Period.minutes(3))
 
   private def copyBenchmarksAndFreightParity(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore,
     dataTypes: MarketDataTypes) = TaskDescription(
