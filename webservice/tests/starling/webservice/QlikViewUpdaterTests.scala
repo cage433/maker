@@ -10,18 +10,18 @@ class QlikViewUpdaterTests extends WordSpec with ShouldMatchers {
     <TaskInfo>
       <ExtensionData />
       <Enabled>true</Enabled>
-      <ID>23596f40-6152-428c-9712-002d764d80a2</ID>
+      <ID>Impala ID</ID>
       <Name>Reload of Impala.UI.qvw (UAT)</Name>
-      <QDSID>Impala ID</QDSID>
+      <QDSID>Impala QDSID</QDSID>
       <Type>DocumentTask</Type>
     </TaskInfo>
 
     <TaskInfo>
       <ExtensionData />
       <Enabled>true</Enabled>
-      <ID>8feeabaa-8483-4b2a-a8c2-0041054883f0</ID>
+      <ID>Titan ID</ID>
       <Name>Reload of Titan.CostsAndIncomes.MTM-PNL.Model.qvw</Name>
-      <QDSID>Titan ID</QDSID>
+      <QDSID>Titan QDSID</QDSID>
       <Type>DocumentTask</Type>
     </TaskInfo>
   </ArrayOfTaskInfo>
