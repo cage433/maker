@@ -15,7 +15,7 @@ class AdaptingMdDB(adapted: MdDB) extends MdDB {
   def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataTypeName) =
     adapted.latestObservationDaysFor(marketDataSets, marketDataType)
   def latestExcelVersions() = adapted.latestExcelVersions
-  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet) = adapted.store(data, marketDataSet)
+  def store(data: List[MarketDataUpdate], marketDataSet: MarketDataSet) = adapted.store(data, marketDataSet)
   def maxVersionForMarketDataSetNames(names: List[String]) = adapted.maxVersionForMarketDataSetNames(names)
   def marketDataTypes(version: Int, mds: List[MarketDataSet]) = adapted.marketDataTypes(version, mds)
 

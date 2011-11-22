@@ -129,7 +129,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
     }
   }
 
-  def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult = {
+  def store(data: List[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult = {
     var update = false
     var innerMaxVersion = 0
 

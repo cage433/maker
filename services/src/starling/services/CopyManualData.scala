@@ -21,9 +21,9 @@ case class CopyManualData(marketDataStore: MarketDataStore, dataTypes: MarketDat
 
       (lastObservationDay upto today).toList.tail.filter(_.isWeekday)
         .flatMap { dayToCopyTo => previousData.map(_.copyDay(dayToCopyTo)) }
-    } }.toList
+    } }
 
-    marketDataStore.save(MultiMap(MarketDataSet.ManualMetals → entries))
+    if (entries.nonEmpty) marketDataStore.save(MultiMap(MarketDataSet.ManualMetals → entries.toList))
   }
 
   private def queryPreviousData(marketDataType: MarketDataTypeName, observationDay: Day): List[MarketDataEntry] =
