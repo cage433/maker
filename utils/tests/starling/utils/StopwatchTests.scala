@@ -17,11 +17,11 @@ class StopwatchTests extends TestNGSuite with ShouldMatchers {
   }
 
   @Test def testOffsettingToPastIncreasesTimeElapsedAccordingly {
-    frozenStopWatch |> (stopWatch => stopWatch.nanos should be === stopWatch.offset(-60).nanos - 60000000)
+    frozenStopWatch |> (stopWatch => stopWatch.nanos should be === stopWatch.offset(-60).nanos - 60000000000L)
   }
 
   @Test def testOffsettingToFutureDecreasesTimeElapsedAccordingly {
-    frozenStopWatch |> (stopWatch => stopWatch.nanos should be === stopWatch.offset(60).nanos + 60000000)
+    frozenStopWatch |> (stopWatch => stopWatch.nanos should be === stopWatch.offset(60).nanos + 60000000000L)
   }
 
   private def frozenStopWatch = new Stopwatch("frozen") {
