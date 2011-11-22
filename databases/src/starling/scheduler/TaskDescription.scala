@@ -12,8 +12,10 @@ case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTas
   extends TimerTask with Enableable {
 
   private val log = Log.forClass[Scheduler]
-  private val coolDownClock = new Stopwatch().offset(- (coolDown.toStandardSeconds.getSeconds * 1000))
+  private val coolDownClock = new Stopwatch().offset(- coolDown.toStandardSeconds.getSeconds)
   private def coolDownRemaining = coolDown.toStandardSeconds.getSeconds - coolDownClock.s
+
+  require(coolDownRemaining <= 0)
 
   override def enable = task.enable
   override def disable = task.disable
