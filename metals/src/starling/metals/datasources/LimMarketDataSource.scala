@@ -19,8 +19,8 @@ import org.joda.time.{Period => JodaPeriod}
 abstract class LimMarketDataSource(service: LIMService, val marketDataType: MarketDataTypeName) extends MarketDataSource with Log {
   val marketDataSet = MarketDataSet.LimMetals
 
-  protected def descriptionFor(sources: List[LimSource]): List[String] =
-    sources.flatMap { source => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
+  protected def descriptionFor(sources: List[LimSource]) =
+    marketDataType.name.pairWith(sources.flatMap(_.description)).map("%s → %s" % _)
 
   protected def getValuesForType(start: Day, end: Day, sources: List[LimSource]): ((Day, Day, MarketDataTypeName), List[MarketDataEntry]) =
     (start, end, marketDataType) → sources.flatMap(source => getValues(source, start, end).toList)

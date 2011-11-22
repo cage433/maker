@@ -91,6 +91,6 @@ abstract class LimMarketDataSourceTests[DS <: MarketDataSource] extends Starling
   protected final def noData = List.empty[(TimedMarketDataKey, MarketData)]
   protected final def template = Email(from = "<sender>", to = "<recipient")
   protected final def expectBodyWith(tagged: List[(String, AnyRef)]*) = tagged.toList.flatten.map { _.format("%s: %s") }.sorted.mkHtml()
-  protected final def missing(markets: AnyRef*) = "MISSING".pair(markets).toList
-  protected final def present(markets: AnyRef*) = "Present".pair(markets).toList
+  protected final def missing(markets: AnyRef*) = "MISSING".pairWith(markets).toList
+  protected final def present(markets: AnyRef*) = "Present".pairWith(markets).toList
 }
