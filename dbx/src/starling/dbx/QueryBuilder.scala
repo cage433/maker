@@ -19,7 +19,7 @@ case class Query(select:Select, from:From, where: Option[Clause], groupBy:List[S
   def leftJoin(query:Query, alias:String, clause:Clause): Query = join(QueryTable(query, alias), clause, "left")
   def where(clause:Clause): Query = new Query(select, from, Some(clause), groupBy, havingClause, order)
   def where(clauses:List[Clause]): Query = new Query(select, from, Clause.join(clauses), groupBy, havingClause, order)
-  def where(clauses: Clause*): Query = where(clauses.toList)
+  def where(clauses: Clause*): Query = where(clauses.filterNot(_ == TrueClause).toList)
   def groupBy(fields:List[String]) = new Query(select, from, where, fields, havingClause, order)
   def groupBy(field:String) = new Query(select, from, where, List(field), havingClause, order)
   def having(havingClause:Clause): Query = new Query(select, from, where, groupBy, Some(havingClause), order)
@@ -33,7 +33,7 @@ case class Query(select:Select, from:From, where: Option[Clause], groupBy:List[S
   }
   override def toString = {
     val q = new SqlRenderer().render(this)
-  	"Query: " + q.query + "\nParameters: " + q.parameters 
+  	"Query: " + q.query + "\nParameters: " + q.parameters
   }
 
   private def join(table: Table, clause: Clause, joinType: String): Query = {
@@ -84,26 +84,18 @@ object Clause {
   import QueryBuilder._
   import starling.utils.ImplicitConversions._
 
-  def join(clauses:List[Clause]) = {
-    if (clauses.isEmpty) {
-      None
-    } else {
-      Some((clauses.head /: clauses.tail) { _ and _ })
-    }
-  }
-  def joinOr(clauses:List[Clause]) = {
-    if (clauses.isEmpty) {
-      None
-    } else {
-      Some((clauses.head /: clauses.tail) { _ or _ })
-    }
-  }
+  def join(clauses:List[Clause]) = joinWith(clauses, _ and _)
+  def joinOr(clauses:List[Clause]) = joinWith(clauses, _ or _)
+
   def optIn(name: String, values: Iterable[Option[Any]]): Clause = {
     val valuesL = values.toList
     val inClause = In(Field(name), valuesL.somes)
 
     if (valuesL.contains(None)) (inClause or (name isNull)) else inClause
   }
+
+  private def joinWith(clauses: List[Clause], f: (Clause, Clause) => Clause): Option[Clause] =
+    clauses.ifDefined(_ => (clauses.head /: clauses.tail) { f(_, _) })
 }
 
 case class Equals(f: Field, v:Any) extends Clause

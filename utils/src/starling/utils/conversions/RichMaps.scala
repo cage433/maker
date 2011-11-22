@@ -62,6 +62,7 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
 }
 
 class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map) {
+  lazy val multiSize = map.values.map(_.size).sum
   def multiMapValues[W](f: (V) => W): MultiMap[K, W] = map.mapValues(_.map(f))
   def contains(key : K, value : V) : Boolean = map.get(key).map(_.contains(value)).getOrElse(false)
   def contains(pair : (K, V)) : Boolean = contains(pair._1, pair._2)

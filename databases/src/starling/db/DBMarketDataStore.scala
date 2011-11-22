@@ -141,64 +141,69 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
     update(setToUpdates)
   }
 
-  def update(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataUpdate]]): SaveResult = this.synchronized {
-    val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Option[Day]], Int)]()
-    val allChangedDays = new ListBuffer[Day]
+  def update(marketDataSetToData: MultiMap[MarketDataSet, MarketDataUpdate]): SaveResult = {
+    if (marketDataSetToData.multiSize == 0) SaveResult.Null else this.synchronized {
+      val changedMarketDataSets = new scala.collection.mutable.HashMap[MarketDataSet, (Set[Option[Day]], Int)]()
+      val allChangedDays = new ListBuffer[Day]
 
-    val previousLatestPricingGroupVersions = latestPricingGroupVersions
-    var maxVersion = 0
-    for ((marketDataSet, data) <- marketDataSetToData.toList.sortBy(_._1.name)) {
-      maxVersion = scala.math.max(maxVersion, saveActions(data, marketDataSet, changedMarketDataSets))
-    }
-
-    for ((pricingGroup, marketDataSets) <- pricingGroupsDefinitions) {
-      val changesForThisPricingGroup = changedMarketDataSets.filterKeys(marketDataSets)
-      if (changesForThisPricingGroup.nonEmpty) {
-        val changedDays = changesForThisPricingGroup.values.map(_._1).foldRight(Set[Option[Day]]())(_ ++ _).toList.somes
-        val maxVersion = changesForThisPricingGroup.values.maximum(_._2)
-        val previousVersion = previousLatestPricingGroupVersions(pricingGroup)
-        broadcaster.broadcast(PricingGroupMarketDataUpdate(pricingGroup, maxVersion, previousVersion, changedDays))
-
-        val days = observationDaysByPricingGroupCache(pricingGroup)
-        for (day <- changedDays if !days.contains(day)) {
-          days += day
-          broadcaster.broadcast(PricingGroupObservationDay(pricingGroup, day))
-        }
-
-        allChangedDays ++= changedDays
+      val previousLatestPricingGroupVersions = latestPricingGroupVersions
+      var maxVersion = 0
+      for ((marketDataSet, data) <- marketDataSetToData.toList.sortBy(_._1.name)) {
+        maxVersion = scala.math.max(maxVersion, saveActions(data, marketDataSet, changedMarketDataSets))
       }
-    }
 
-    SaveResult(maxVersion, changedMarketDataSets.nonEmpty, Some(allChangedDays.distinct.toList))
+      for ((pricingGroup, marketDataSets) <- pricingGroupsDefinitions) {
+        val changesForThisPricingGroup = changedMarketDataSets.filterKeys(marketDataSets)
+        if (changesForThisPricingGroup.nonEmpty) {
+          val changedDays = changesForThisPricingGroup.values.map(_._1).foldRight(Set[Option[Day]]())(_ ++ _).toList.somes
+          val maxVersion = changesForThisPricingGroup.values.maximum(_._2)
+          val previousVersion = previousLatestPricingGroupVersions(pricingGroup)
+          broadcaster.broadcast(PricingGroupMarketDataUpdate(pricingGroup, maxVersion, previousVersion, changedDays))
+
+          val days = observationDaysByPricingGroupCache(pricingGroup)
+          for (day <- changedDays if !days.contains(day)) {
+            days += day
+            broadcaster.broadcast(PricingGroupObservationDay(pricingGroup, day))
+          }
+
+          allChangedDays ++= changedDays
+        }
+      }
+
+      SaveResult(maxVersion, changedMarketDataSets.nonEmpty, Some(allChangedDays.distinct.toList))
+    }
   }
 
-  private def saveActions(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet,
-                          changedMarketDataSets: scala.collection.mutable.HashMap[MarketDataSet, (Set[Option[Day]], Int)]): Int = {
+  private def saveActions(data: List[MarketDataUpdate], marketDataSet: MarketDataSet,
+    changedMarketDataSets: scala.collection.mutable.HashMap[MarketDataSet, (Set[Option[Day]], Int)]): Int = {
 
-    val SaveResult(innerMaxVersion, update, _) = db.store(data, marketDataSet)
-    if (update) {
-      changedMarketDataSets(marketDataSet) = (data.map(_.observationPoint.day).toSet, innerMaxVersion)
-    }
-
-    MarketDataSet.fromExcel(marketDataSet).map { name =>
-      if (!excelDataSetsCache.get.contains(name)) {
-        excelDataSetsCache.update(name :: _)
-        broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.get))
-      }
-      // TODO [02 Jun 2011] Should this be getOrElseUpdate ? Stacy
-      val days = observationDaysByExcelCache(name)
-
-      data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
-        days += day
-        broadcaster.broadcast(ExcelObservationDay(name, day))
-      })
+    if (data.isEmpty) SaveResult.Null.maxVersion else {
+      val SaveResult(innerMaxVersion, update, _) = db.store(data, marketDataSet)
 
       if (update) {
-        broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
+        changedMarketDataSets(marketDataSet) = (data.map(_.observationPoint.day).toSet, innerMaxVersion)
       }
-    }
 
-    innerMaxVersion
+      MarketDataSet.fromExcel(marketDataSet).map { name =>
+        if (!excelDataSetsCache.get.contains(name)) {
+          excelDataSetsCache.update(name :: _)
+          broadcaster.broadcast(ExcelMarketListUpdate(excelDataSetsCache.get))
+        }
+        // TODO [02 Jun 2011] Should this be getOrElseUpdate ? Stacy
+        val days = observationDaysByExcelCache(name)
+
+        data.flatMap(_.observationPoint.day.toList).filterNot(day => days.contains(day)).foreach(day => {
+          days += day
+          broadcaster.broadcast(ExcelObservationDay(name, day))
+        })
+
+        if (update) {
+          broadcaster.broadcast(ExcelMarketDataUpdate(name, innerMaxVersion))
+        }
+      }
+
+      innerMaxVersion
+    }
   }
 
   def save(marketDataSet: MarketDataSet, timedKey: TimedMarketDataKey, marketData: MarketData): Int = {

@@ -110,6 +110,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
     log.info(sql + ", " + parameters)
 
     val counter = new NonAtomicInteger
+    // TODO: [21 Nov 2011] Is it necessary to use a transaction for every query ?
     withTransaction(DB.DefaultIsolationLevel, true) {
       new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[T]() {
         def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs, counter.incrementAndGet)).asInstanceOf[T]
