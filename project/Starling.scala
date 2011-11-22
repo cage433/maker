@@ -50,12 +50,13 @@ object StarlingBuild extends Build{
     shellPrompt  := ShellPrompt.buildShellPrompt
   )
 
-  class OverrideMakePom extends MakePom {
-    override def isValidIDCharacter(c: Char) = true
-  }
-
   def overrideMakePom(module: IvySbt#Module, configuration: MakePomConfiguration, log: Logger) {
 		import configuration.{allRepositories, moduleInfo, configurations, extra, file, filterRepositories, process}
+
+    class OverrideMakePom extends MakePom(log) {
+      override def isValidIDCharacter(c: Char) = true
+    }
+
 		module.withModule(log) { (ivy, md, default) =>
 			(new OverrideMakePom()).write(ivy, md, moduleInfo, configurations, extra, process, filterRepositories, allRepositories, file)
 			log.info("Wrote " + file.getAbsolutePath)
