@@ -22,6 +22,10 @@ object StarlingBuild extends Build{
     if (r == null) "SNAPSHOT" else r
   }
 
+  val verboseMode = if (Option(System.getProperty("verbose")).isDefined) true else false
+
+  val ivyUpdateLogging = if (verboseMode) ivyLoggingLevel := UpdateLogging.Full else ivyLoggingLevel := UpdateLogging.Quiet
+
   println("")
   println("This is the build number: " + starlingVersion)
   println("")
@@ -88,6 +92,7 @@ object StarlingBuild extends Build{
     resolvers += "logistics-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-snapshots/",
     resolvers += "referencedata-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-releases/",
     resolvers += "referencedata-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-snapshots/",
+    ivyUpdateLogging,
     //resolvers += Resolver.defaultLocal,
     organizationName := "Trafigura",
     version := starlingVersion,
@@ -244,7 +249,7 @@ object StarlingBuild extends Build{
 
   val starlingApiDependencies = Seq(
     "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.2-SNAPSHOT",
-    "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.0",
+    "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.1",
     "org.slf4j" % "slf4j-api" % "1.6.1",
     "dom4j" % "dom4j" % "1.6.1",
     "com.rabbitmq" % "amqp-client" % amqpVersion,
@@ -456,8 +461,8 @@ object StarlingBuild extends Build{
     "org.scannotation" % "scannotation" % "1.0.3",
     "javax.servlet" % "servlet-api" % "2.5",
   
-    "com.trafigura.titan.shared-libs" % "titan-core" % "1.0-SNAPSHOT" notTransitive(),
-    "com.trafigura.titan.shared-libs" % "titan-security" % "1.0-SNAPSHOT" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-core" % "1.1" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-security" % "1.1" notTransitive(),
     "com.trafigura.titan.shared-libs" % "titan-utils" % "1.0-SNAPSHOT" notTransitive()
   )
 
