@@ -38,7 +38,7 @@ else
         echo "Compiling..."
         nohup java \
           -Dhttp.nonProxyHosts=nexus.global.trafigura.com \
-          -jar sbt/sbt-launch-0.11.0.jar "project launcher" ";compile ;deploy-classpath" >> logs/stdouterr.log 2>&1
+          -jar sbt/sbt-launch-0.11.1.jar "project launcher" compile deploy-classpath >> logs/stdouterr.log 2>&1
 
         COMPILE_WORKED=$?
 
