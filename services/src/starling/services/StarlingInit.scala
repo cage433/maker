@@ -119,7 +119,7 @@ class StarlingInit( val props: Props,
       val mddb = new NewSchemaMdDB(starlingRichDB, dataTypes)
       val cached = new CachingMdDB(mddb)
 
-      new DBMarketDataStore(mddb, new MarketDataSnapshots(starlingRichDB),
+      new DBMarketDataStore(cached, new MarketDataSnapshots(starlingRichDB),
         marketDataSources, rmiBroadcaster, dataTypes).asInstanceOf[MarketDataStore]
     }
 
