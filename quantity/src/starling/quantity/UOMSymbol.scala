@@ -19,9 +19,10 @@ object UOMSymbol{
   val zCurrencies2@List(ils, inr, jpy, krw, ltl, lvl, mxn, myr, nad, nok, nzd, php, pln, ron, rub, sek) =
     currencies("ILS", "INR", "JPY", "KRW", "LTL", "LVL", "MXN", "MYR", "NAD", "NOK", "NZD", "PHP", "PLN", "RON", "RUB", "SEK")
 
-  val zCurrencies3@List(sgd, thb, trySymbol, usd, zar) = currencies("SGD", "THB", "TRY", "USD", "ZAR")
+  val zCurrencies3@List(sgd, thb, trySymbol, usd, zar, cnh) = currencies("SGD", "THB", "TRY", "USD", "ZAR", "CNH")
 
   val edmCurrencies = List(aed, eur, cny, gbp, jpy, usd, zar)
+  val currenciesToImportFromLIM = cnh :: edmCurrencies
 
   private def currencies(symbols: String*): List[UOMSymbol] = symbols.toList.map(symbol => UOMSymbol(symbol.split("/").map(new CaseInsensitive(_)) :_*))
 

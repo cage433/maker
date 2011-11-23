@@ -42,7 +42,7 @@ object PivotTableViewHelper {
   import Describable._
 
   def generateReportSpecificPanels(fieldsState:PivotFieldsState, reportSpecificOptions : ReportSpecificOptions, model:starling.pivot.model.PivotTableModel) = {
-    val reportSpecificChoices = ReportSpecificChoices(fieldsState.reportSpecificChoices).withDefaults(reportSpecificOptions)
+    val reportSpecificChoices = ReportSpecificChoices(fieldsState.reportSpecificChoices.filterKeys(reportSpecificOptions.containsKey(_))).withDefaults(reportSpecificOptions)
 
     require(reportSpecificChoices isSubsetOf reportSpecificOptions)
 

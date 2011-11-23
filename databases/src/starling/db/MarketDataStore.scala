@@ -161,6 +161,14 @@ trait MarketDataStore {
   def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType:SnapshotType): SnapshotID
 
   def snapshots(): List[SnapshotID]
+  
+  def snapshots(observationDay : Option[Day]): List[SnapshotID] = snapshots().filter {
+      snapshotID =>
+        observationDay match {
+          case Some(day) => day <= snapshotID.snapshotDay
+          case None => true
+        }
+    }
 
   def snapshotsByMarketDataSelection(): MultiMap[MarketDataSelection, SnapshotIDLabel]
 

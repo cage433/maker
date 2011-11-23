@@ -62,6 +62,7 @@ object InstrumentType {
 trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
 
   def assets(env:Environment):Assets
+  def assets(env:Environment, ccy : UOM):Assets = Assets(assets(env).assets.map(_.inCCY(env, ccy)))
 
   // Return a tree structure describing how mtm was calculated
   def explain(env: Environment, ccy: UOM): NamedQuantity = {

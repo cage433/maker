@@ -289,7 +289,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
         val reports = reportData.reports
         val groupedReports = reports.groupBy(_.slideDetails.stepNumbers)
         val reportTableDataSources = groupedReports.keysIterator.map(stepNums => {
-          (stepNums, new ReportPivotTableDataSource(tradesPivot, groupedReports(stepNums)))
+          (stepNums, new ReportPivotTableDataSource(tradesPivot, groupedReports(stepNums), reportParameters.desk))
         }).toList
         if (reportTableDataSources.size == 1) {
           reportTableDataSources(0)._2

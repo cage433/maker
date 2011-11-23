@@ -23,6 +23,7 @@ import starling.quantity.utils.QuantityTestUtils._
 import starling.reports.impl.pivot.PivotReport._
 import starling.reports.impl.pivot.greeks.GreeksPivotReport._
 import starling.utils.{CollectionUtils, StarlingTest}
+import starling.gui.api.ReportSpecificOptions._
 
 
 class GreeksPivotReportTests extends StarlingTest {
@@ -114,11 +115,11 @@ class GreeksPivotReportTests extends StarlingTest {
       val combinedRows = pivotReport.combine(
         rows,
         ReportSpecificChoices(
-          collapseOptions_str -> collapseOptions,
-          showEqFutures_str -> showEqFutures,
-          futuresAsSpreads_str -> futuresAsSpreads,
-          tenor_str -> tenor.toString,
-          positionOnly_str -> true
+          collapseOptionsLabel -> collapseOptions,
+          showEqFuturesLabel -> showEqFutures,
+          futuresAsSpreadsLabel -> futuresAsSpreads,
+          tenorLabel -> tenor.toString,
+          positionOnlyLabel -> true
         ))
       val sumPosition = combinedRows.map{row => row.position.quantityValue.get * row.scale}.sum
       val diffs = combinedRows.map(_.diff.get).toSet.toList
@@ -140,10 +141,10 @@ class GreeksPivotReportTests extends StarlingTest {
       val pivotReport = new GreeksPivotReport(env, utps)
       val rows = pivotReport.rows(utpID, utp)
       val settings = ReportSpecificChoices(
-          collapseOptions_str -> collapseOptions, 
-          showEqFutures_str -> showEqFutures,
-          tenor_str -> tenor.toString,
-          positionOnly_str -> true
+          collapseOptionsLabel -> collapseOptions,
+          showEqFuturesLabel -> showEqFutures,
+          tenorLabel -> tenor.toString,
+          positionOnlyLabel -> true
         )
       var combinedRows = pivotReport.combine(rows, settings)
       val scale = 9.5;
@@ -187,7 +188,7 @@ class GreeksPivotReportTests extends StarlingTest {
 
     val portfolio = CompositeInstrument(utps.valuesIterator.toList)
     for (futuresAsSpreads <- List(true, false)){
-      val settings = ReportSpecificChoices(futuresAsSpreads_str -> futuresAsSpreads, positionOnly_str -> true)
+      val settings = ReportSpecificChoices(futuresAsSpreadsLabel -> futuresAsSpreads, positionOnlyLabel -> true)
       val combinedRows = pivotReport.combine(rows, settings)
       val combinedUTPs = combinedRows.map{row => (row.utp * row.scale)}
       val combinedPortfolio = CompositeInstrument(combinedUTPs)
@@ -241,7 +242,7 @@ class GreeksPivotReportTests extends StarlingTest {
 
     val portfolio = CompositeInstrument(utps.valuesIterator.toList)
     for (futuresAsSwaps <- List(true)){
-      val settings = ReportSpecificChoices(futuresAsSwaps_str -> futuresAsSwaps, positionOnly_str -> true)
+      val settings = ReportSpecificChoices(futuresAsSwapsLabel -> futuresAsSwaps, positionOnlyLabel -> true)
       val combinedRows = pivotReport.combine(rows, settings)
       if (futuresAsSwaps)
         assert(combinedRows.size < rows.size, "Combining should reduce rows")
@@ -280,7 +281,7 @@ class GreeksPivotReportTests extends StarlingTest {
 
     val rows = pivotReport.rows(utpID, cfd)
     def netPositions(tenor : TenorType) = {
-      val combinedRows = pivotReport.combine(rows, new ReportSpecificChoices(Map(tenor_str -> tenor)))
+      val combinedRows = pivotReport.combine(rows, new ReportSpecificChoices(Map(tenorLabel -> tenor)))
       var positions = SummingMap[(String, Period)]();
       combinedRows.foreach{ row =>
         positions += (row.marketName, row.period.get) -> row.scaledPosition.quantityValue.get
@@ -323,7 +324,7 @@ class GreeksPivotReportTests extends StarlingTest {
     val rows = pivotReport.rows(utpID, swapWithFunnyPeriod)
 
     for (tenor <- List(Month, Day, Week)){
-      val combinedRows = pivotReport.combine(rows, new ReportSpecificChoices(Map(tenor_str -> tenor)))
+      val combinedRows = pivotReport.combine(rows, new ReportSpecificChoices(Map(tenorLabel -> tenor)))
       val position = combinedRows.map(_.scaledPosition.quantityValue.get).sum
       assertQtyEquals(position, swapWithFunnyPeriod.volume, 1e-6)
     }
@@ -356,7 +357,7 @@ class GreeksPivotReportTests extends StarlingTest {
           atmVega <- List(true, false))
     {
       val combinedRows = pivotReport.combine(rows, new ReportSpecificChoices(Map(
-        atmVega_str -> atmVega, showEqFutures_str -> showEqFutures
+        atmVegaLabel -> atmVega, showEqFuturesLabel -> showEqFutures
       )))
       val netVega =  combinedRows.map(_.vega.quantityValue.getOrElse(Quantity.NULL)).sum
       assertQtyEquals(netVega, 0.343(USD), 1e-3)

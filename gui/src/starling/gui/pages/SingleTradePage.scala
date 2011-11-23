@@ -127,22 +127,23 @@ object SingleTradePageComponent {
     }
   }
 
+  import ReportSpecificOptions._
   val DefaultReportSpecificChoices = TreeMap(
-    "Lots" -> false,
-    "Position" -> "Default",
-    "Tenor" -> "M",
-    "Futures as swaps" -> false,
-    "Show Eq Futures" -> false,
-    "Skew" -> true,
-    "Futures as spreads" -> false,
-    "ATM Vega" -> false,
-    "Collapse Options" -> true)
+    lotsLabel -> false,
+    positionLabel-> "Default",
+    tenorLabel -> "M",
+    futuresAsSwapsLabel-> false,
+    showEqFuturesLabel-> false,
+    useSkewLabel-> true,
+    futuresAsSpreadsLabel-> false,
+    atmVegaLabel-> false,
+    collapseOptionsLabel-> true)
 
   val GreeksLayout = new PivotFieldsState(
     rowFields=List(
-      Field("Trade ID"),
-      Field("Risk Market"),
-      Field("Risk Period")
+      Field(tradeIDLabel),
+      Field(riskMarketLabel),
+      Field(riskPeriodLabel)
     ),
     columns = ColumnTrees(List(
     ColumnTree(Field("Instrument"), false,

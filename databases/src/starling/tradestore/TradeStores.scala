@@ -144,7 +144,7 @@ case class TradeStores(
             List((Field("Trade Day"), LessThanOrEqualSelection(tradeTimestamp.closeDay)))
           }
         }
-        deskDefinitions(desk).tradeSets(TradePredicate(predicate ::: tradeSelection.tradePredicate.filter)).map((_, ts.timestamp))
+        deskDefinitions(desk).tradeSets(TradePredicate(predicate ::: tradeSelection.tradePredicate.filter, tradeSelection.tradePredicate.selection)).map((_, ts.timestamp))
       }
     }
 
@@ -154,7 +154,7 @@ case class TradeStores(
 
 class TradeSet(
         val tradeSystem:TradeSystem,
-        tradeStore:TradeStore,
+        val tradeStore:TradeStore,
         val tradePredicate:TradePredicate) {
   val key = (tradeSystem, tradePredicate)
   

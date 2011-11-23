@@ -12,6 +12,7 @@ import starling.reports.pivot._
 import starling.instrument.UTP
 import starling.gui.api.{ReportSpecificChoices, ReportSpecificOptions, UTPIdentifier}
 import starling.reports.impl.pivot._
+import starling.gui.api.ReportSpecificOptions._
 
 class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : DayAndTime, val utps: Map[UTPIdentifier, UTP]) extends PivotReport[GreeksPivotReport.T] with Serializable {
   def this(environment : Environment, utps : Map[UTPIdentifier, UTP]) = this(environment, environment.marketDay + 1, utps)
@@ -24,10 +25,10 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
   val swapIndices = PivotReport.swapIndicesByStrategy(utps)
 
   private def addGreeks(utp : UTP, reportSpecificChoices : ReportSpecificChoices) : List[GreekValues] = {
-      val useSkew = reportSpecificChoices.getOrElse(useSkew_str, true)
-      val positionOnly = reportSpecificChoices.getOrElse(positionOnly_str, false)
-      val collapseOptions = reportSpecificChoices.getOrElse(collapseOptions_str, true)
-      val atmVega = reportSpecificChoices.getOrElse(atmVega_str, false)
+      val useSkew = reportSpecificChoices.getOrElse(useSkewLabel, true)
+      val positionOnly = reportSpecificChoices.getOrElse(positionOnlyLabel, false)
+      val collapseOptions = reportSpecificChoices.getOrElse(collapseOptionsLabel, true)
+      val atmVega = reportSpecificChoices.getOrElse(atmVegaLabel, false)
       val (priceDiffs, volDiffs) = PivotReportUtils.priceAndVolKeys(utp, environment, reportSpecificChoices)
 
       val actualEnv = if (useSkew)
@@ -127,18 +128,18 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
               deltaBleed = convertQuantity(row.deltaBleed, uom),
               gammaBleed = convertQuantity(row.gammaBleed, uom)
             )
-            if (priceUnits == quoted_str) {
+            if (priceUnits == quotedLabel) {
               rowWithGreeksConverted
             } else {
               rowWithGreeksConverted.copy(price = convertQuantity(row.price, uom))
             }
           }
           uomStr match {
-            case `default_str` => row
-            case `barrel_str` => convertQuantities(BBL)
-            case `tonne_str` => convertQuantities(MT)
-            case `cubic_metre_str` => convertQuantities(M3)
-            case `usd_str` => {
+            case `defaultLabel` => row
+            case `barrelLabel` => convertQuantities(BBL)
+            case `tonneLabel` => convertQuantities(MT)
+            case `cubicMetreLabel` => convertQuantities(M3)
+            case `usdLabel` => {
               (row.price.quantityValue, row.position.quantityValue) match {
                 case (Some(priceQty), Some(volumeQty)) => row.copy(
                   position = PQ(priceQty * volumeQty)
@@ -169,13 +170,13 @@ class GreeksPivotReport(@transient environment : Environment, thetaDayAndTime : 
       }
     }
 
-    combinedRows = convertUOM(combinedRows, reportSpecificChoices.getOrElse(positionType_str, default_str), reportSpecificChoices.getOrElse(price_unit_str, position_str))
-    if (reportSpecificChoices.getOrElse(lots_str, false))
+    combinedRows = convertUOM(combinedRows, reportSpecificChoices.getOrElse(positionTypeLabel, defaultLabel), reportSpecificChoices.getOrElse(priceUnitLabel, positionLabel))
+    if (reportSpecificChoices.getOrElse(lotsLabel, false))
       combinedRows = LotConverter.convertGreeks(combinedRows)
     combinedRows = combinedRows.filterNot{
       row => row.position.isAlmostZero && row.gamma.isAlmostZero && row.vega.isAlmostZero
     }
-    combinedRows = combinedRows.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(tenor_str, Month)))
+    combinedRows = combinedRows.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(tenorLabel, Month)))
 
     combinedRows
   }

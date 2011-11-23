@@ -84,6 +84,7 @@ class IntradayTradeStore(
 
   import IntradayTradeAttributes._
 
+  def deskOption : Option[Desk] = None
   def createTradeAttributes(row: RichInstrumentResultSetRow) = {
     val strategyID = row.isNull(strategyID_str) match {
       case true => None

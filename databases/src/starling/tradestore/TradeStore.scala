@@ -153,6 +153,7 @@ case class TradeChanges(
  */
 abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: TradeSystem) {
 
+  def deskOption : Option[Desk]
   lazy val cachedLatestTimestamp:AtomicReference[Timestamp] = new AtomicReference(maxTimestamp())
 
   val tradeAttributeFieldDetails:List[FieldDetails] = List()

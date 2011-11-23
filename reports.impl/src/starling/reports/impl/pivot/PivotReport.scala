@@ -57,15 +57,15 @@ trait PivotReport[R <: PivotReportRow] {
 
   def fields: List[PivotReportField[R]]
 
-  import PivotReport._
-  import ReportSpecificChoices._
+  import ReportSpecificOptions._
   def reportSpecificOptions : ReportSpecificOptions = new ReportSpecificOptions(
     collapseOptions,
     showEqFutures,
     futuresAsSpreads,
     futuresAsSwaps,
     useSkew,
-    tenor
+    tenor,
+    valuationCurrency
   )
   def zeroFields:Set[Field] = Set()
 }
@@ -83,54 +83,31 @@ trait PivotReport[R <: PivotReportRow] {
 trait RiskFactorSplittingPivotReport[R <: RiskPivotReportRow[R] with PivotRowShareableByRiskFactor[R]] extends PivotReport[R]{
   def envForSplitting : Environment
   override def combine(rows : List[R], reportSpecificChoices : ReportSpecificChoices) = {
-    val collapseOptions = reportSpecificChoices.getOrElse(PivotReport.collapseOptions_str, true)
+    val collapseOptions = reportSpecificChoices.getOrElse(ReportSpecificOptions.collapseOptionsLabel, true)
     var combinedRows = rows.flatMap{row => 
       row.splitByEnvironmentDifferentiable(envForSplitting, reportSpecificChoices)
     }
     combinedRows = combinedRows.map(_.setCollapseOptions(collapseOptions).asOriginalType)
-    combinedRows = combinedRows.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(PivotReport.tenor_str, Month)))
+    combinedRows = combinedRows.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(ReportSpecificOptions.tenorLabel, Month)))
     combinedRows
   }
 }
 
 
 object PivotReport{
-  import ReportSpecificChoices._
-  val default_str: String = "Default"
-  val position_str: String = "Position"
-  val barrel_str: String = "Barrel"
-  val tonne_str: String = "Tonne"
-  val cubic_metre_str = "<html>m<sup>3</sup></html>"
-  val positionOnly_str = "Position Only"
-  val quoted_str = "Quoted"
-  val utp_str: String = "UTP"
-  val usd_str: String = "USD"
-  val riskType_str: String = "Risk Type"
-  val riskCommodity_str: String = "Risk Commodity"
-  val riskMarket_str: String = "Risk Market"
-  val riskPeriod_str: String = "Risk Period"
-  val riskVolume_str: String = "Risk Volume"
-  val error_str: String = "Error"
-  val strategy_str = "Strategy"
-
-
-  val collapseOptions @ (collapseOptions_str, collapseOptionsChoices) = ("Collapse Options", List(true, false))
-  val showEqFutures @ (showEqFutures_str, showEqFuturesChoices) = ("Show Eq Futures", List(false, true))
-  val futuresAsSpreads @ (futuresAsSpreads_str, futuresAsSpreadsChoices) = ("Futures as spreads", List(false, true))
-  val futuresAsSwaps @ (futuresAsSwaps_str, futuresAsSwapsChoices) = ("Futures as swaps", List(false, true))
-  val useSkew @ (useSkew_str, useSkewChoices) = ("Skew", List(true, false))
-  val tenor @ (tenor_str, tenorChoices) = ("Tenor", List(MonthChoiceText, WeekChoiceText, DayChoiceText))
-  val atmVega @ (atmVega_str, atmVegaChoices) = ("ATM Vega", List(false, true))
-  val positionType @ (positionType_str, positonTypeChoices) = ("Position", List(default_str, barrel_str, tonne_str, usd_str)) 
-  val priceUnit @ (price_unit_str, priceUnitChoices) = ("Price Unit", List(position_str, quoted_str))
-  val lots @ (lots_str, lotsChoices) = ("Lots", List(false, true))
-
+  import ReportSpecificOptions._ 
+  def validReportSpecificChoices(desk : Option[Desk]) = desk match {
+    case Some(Desk.Titan) => List(valuationCurrency)
+    case Some(Desk(_, _, Some(_ : EAIDeskInfo))) => List(collapseOptions, showEqFutures, futuresAsSpreads, futuresAsSwaps, useSkew, tenor, atmVega, positionType, priceUnit, lots)
+    case None => Nil
+    case _ => throw new Exception("Unexpected desk " + desk)
+  }
 
   def spreadMonthsByStrategyAndMarket(utps : Map[UTPIdentifier, UTP]) = {
     var spreadMonths = Map[(Option[String], FuturesMarket), Set[Month]]()
     utps.foreach{
       case (id, SingleCalendarSpreadOption(mkt, _, mth1, mth2, _, _, _)) => {
-        val key = (id.getAttribute(strategy_str), mkt)
+        val key = (id.getAttribute(strategyLabel), mkt)
         spreadMonths += (key ->  (Set(mth1, mth2) ++ spreadMonths.getOrElse(key, Set())))
       }
       case _ =>
@@ -141,7 +118,7 @@ object PivotReport{
   def swapIndicesByStrategy(utps : Map[UTPIdentifier, UTP]) = {
     var map = Map[Option[String], Set[FuturesFrontPeriodIndex]]()
     def addIndex(id : UTPIdentifier, idx : FuturesFrontPeriodIndex){
-      val key = id.getAttribute(strategy_str)
+      val key = id.getAttribute(strategyLabel)
       map += (key -> (map.getOrElse(key, Set[FuturesFrontPeriodIndex]()) + idx))
     }
     utps.foreach{

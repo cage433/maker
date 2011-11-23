@@ -10,6 +10,7 @@ import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuo
 import starling.marketdata._
 import starling.pivot._
 import starling.tradestore.{TradeableFields, TradeRow, TradeStore}
+import starling.gui.api.Desk
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -37,6 +38,7 @@ object TitanTradeStore {
 class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem, refDataLookup : ReferenceDataLookup)
         extends TradeStore(db, broadcaster, tradeSystem) {
   val tableName = "TitanTrade"
+  def deskOption = Some(Desk.Titan)
   def createTradeAttributes(row:RichInstrumentResultSetRow) = {
     val quotaID = row.getString("quotaID")
     val quotaQuantity = row.getQuantity("quotaQuantity")
