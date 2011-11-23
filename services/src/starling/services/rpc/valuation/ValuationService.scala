@@ -57,14 +57,7 @@ class ValuationService(
    * Return all snapshots that are valid for a given observation day, ordered from most recent to oldest
    */
   def marketDataSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
-    environmentProvider.metalsValuationSnapshots().filter {
-      snapshotID =>
-
-        observationDay match {
-          case Some(day) => day <= snapshotID.snapshotDay
-          case None => true
-        }
-    }.sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
+    environmentProvider.metalsValuationSnapshots(observationDay).sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
   }
 
 }
