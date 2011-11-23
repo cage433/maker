@@ -502,7 +502,7 @@ case class TradeSelectionPage(
   override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = {
     val today = Day.today
     val isLatestLiveOn = tpp.expiry.exp == today
-    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk))}
+    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk0, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk0))}
     val isLatestBookClose = latestTimestamp match {
       case Some((t1,t2)) => t1 == t2
       case _ => true

@@ -101,7 +101,7 @@ case class MarketDataPage(
 
   override def latestPage(localCache:LocalCache) = {
     marketDataIdentifier match {
-      case StandardMarketDataPageIdentifier(mi) => {
+      case StandardMarketDataPageIdentifier(mi@MarketDataIdentifier(_,SpecificMarketDataVersion(_))) => {
         localCache.latestMarketDataVersionIfValid(mi.selection) match {
           case Some(v) => copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)))
           case _ => this
