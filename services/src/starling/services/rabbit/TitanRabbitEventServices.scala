@@ -18,6 +18,7 @@ import com.trafigura.services.TitanSerializableCurrency
 import starling.titan.EDMConversions._
 import starling.db.SnapshotID
 import starling.gui.api._
+import starling.titan.TitanStringLiterals
 
 /**
  * Titan RabbitMQ event module
@@ -34,6 +35,7 @@ object Payloads extends PayloadFactory {
   def forObservationDay(observationDay: Day) = createPayload(Event.StarlingObservationDay, observationDay.toString) // ddMMMyyyy ok ?
   def forReferenceRateSource(source: String) = createPayload(Event.StarlingReferenceRateSource, source)
   def forTitanTradeId(id:String) = createPayload(Event.RefinedMetalTradeIdPayload, id)
+  def forIsValuationSnapshot(isValuationSnapshot : Boolean) = createPayload(TitanStringLiterals.isValuationSnapshot, isValuationSnapshot.toString)
 
   private def createPayload(payloadType: String, keyId: String): Payload = createPayload(payloadType, Event.StarlingSource, keyId)
 }
@@ -57,7 +59,7 @@ case class TitanRabbitIdBroadcaster(
           Payloads.forObservationDay(observationDay) ::
           Payloads.forSnapshotId(snapshotID) :: changedTrades.toList.map(Payloads.forTitanTradeId))
       }
-      case MarketDataSnapshot(snapshotID) => createEvents(subject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Nil)
+      case MarketDataSnapshot(snapshotID, isValuationSnapshot) => createEvents(subject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Payloads.forIsValuationSnapshot(isValuationSnapshot) :: Nil)
       case SpotFXDataEvent(observationDay, currencies, snapshotIDLabel, isCorrection) => {
         createEvents("SpotFXData", verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) ::

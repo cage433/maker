@@ -188,7 +188,7 @@ case class MarketDataPage(
 
           listenTo(context.remotePublisher)
           reactions += {
-            case MarketDataSnapshot(snapshotID) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
+            case MarketDataSnapshot(snapshotID, _) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
               snapshotsComboBoxModel.insertElementAt(SnapshotComboValue(Some(snapshotID)), 1)
             }
           }

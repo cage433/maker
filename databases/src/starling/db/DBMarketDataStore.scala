@@ -255,7 +255,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
     val (snapshotID, justCreated) = tags.snapshot(version, marketDataIdentifier.selection, snapshotType)
 
     if (justCreated) {
-      broadcaster.broadcast(MarketDataSnapshot(snapshotID.label))
+      broadcaster.broadcast(MarketDataSnapshot(snapshotID.label, snapshotType == SnapshotType.Valuation))
     }
     snapshotID
   }

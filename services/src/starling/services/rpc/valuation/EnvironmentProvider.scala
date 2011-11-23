@@ -20,6 +20,9 @@ trait EnvironmentProvider {
   def metalsValuationSnapshots(observationDay : Option[Day]) = snapshots(observationDay).filter(ss =>
     ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) &&  ss.snapshotType == SnapshotType.Valuation
   )
+  def metalsSnapshots(observationDay : Option[Day]) = snapshots(observationDay).filter(ss =>
+    ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
+  )
   def snapshots(observationDay : Option[Day]) : List[SnapshotID]
   def environment(snapshotID : SnapshotID, marketDay : Day) : Environment
   def environment(marketDataVersion:MarketDataVersion, observationDay:Day):Environment
