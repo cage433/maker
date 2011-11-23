@@ -44,7 +44,7 @@ class ValuationService(
   
   def latestSnapshotID() : TitanSnapshotIdentifier = environmentProvider.latestMetalsValuationSnapshot.toSerializable
 
-  def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier]) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
+  def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier] = None) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
 
     val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse(bestValuationIdentifier())
     log.info("valueAllTradeQuotas called with market identifier %s".format(marketDataIdentifier))
@@ -81,7 +81,7 @@ class ValuationService(
   /**
    * Return all snapshots that are valid for a given observation day, ordered from most recent to oldest
    */
-  def marketDataSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
+  def marketDataValuationSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
     environmentProvider.metalsValuationSnapshots(observationDay).sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
   }
 

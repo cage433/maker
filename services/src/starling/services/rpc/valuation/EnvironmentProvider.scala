@@ -63,7 +63,7 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDat
 
   def environment(snapshotID: SnapshotID, marketDay : Day): Environment = {
     val env = environment(SnapshotMarketDataVersion(snapshotID.label), snapshotID.snapshotDay)
-      val marketDayToUse = List(marketDay.startOfDay, env.marketDay).sortWith(_>_).head
+    val marketDayToUse = List(marketDay.startOfDay, env.marketDay).sortWith(_>_).head
     env.forwardState(marketDayToUse)
   }
 
