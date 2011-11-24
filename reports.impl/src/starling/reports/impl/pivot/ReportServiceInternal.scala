@@ -106,7 +106,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 
   // time doesn't work so I've removed it as an available slide. we'll have to fix it if someone asks for it.
   val availableSlideParameters = List(priceSlideParameters, priceCommoditySlideParameters, stressCommoditySlideParameters, volsSlideParameters, volsCommoditySlideParameters, stdDevSlideParameters/*, timeSlideParameters*/)
-  val reportTypes: List[PivotReportType] = List(GreeksPivotReport, ThetaPivotReport, MtmPivotReport, CostAndIncomeValuationReport)
+  val reportTypes: List[PivotReportType] = List(GreeksPivotReport, ThetaPivotReport, MtmPivotReport)
   val reportOptionsAvailable = ReportOptionsAvailable(reportTypes.map(_.label), availableSlideParameters)
 
   def runReport(curveIdentifier: CurveIdentifier, reportOptions: ReportOptions, utps : Map[UTPIdentifier, UTP]): ReportData = {
