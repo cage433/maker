@@ -43,15 +43,6 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.trafigura.titan.shared-libs/titan-utils/jars/titan-utils-1.0-SNAPSHOT.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -178,6 +169,15 @@
       <library>
         <CLASSES>
           <root url="jar://$USER_HOME$/.ivy2/cache/com.trafigura.titan.shared-libs/titan-core/jars/titan-core-1.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trafigura.titan.shared-libs/trademgmt-lib/jars/trademgmt-lib-1.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
