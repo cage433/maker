@@ -26,11 +26,8 @@ cd starling
 
 IVY_DIR=$HOME/.ivy2
 
-if [ ! -d $IVY_DIR ]; then
-   echo "HERE WE ARE"
-   tar xfz misc/ivy-preload.tgz
-   mv .ivy2 $HOME
-fi
+mkdir -p $IVY_DIR
+tar xfz misc/ivy-preload-sbt-0.11.1.tgz -C $IVY_DIR
 
 sbt/sbt "project launcher" update
 
