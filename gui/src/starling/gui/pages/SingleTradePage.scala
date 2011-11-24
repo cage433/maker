@@ -10,7 +10,6 @@ import starling.tradestore.TradePredicate
 import org.jdesktop.swingx.decorator.{ColorHighlighter, HighlightPredicate}
 import java.awt.event.{MouseEvent, MouseAdapter}
 import collection.mutable.ListBuffer
-import starling.utils.{SColumn, STable}
 import collection.immutable.TreeMap
 import starling.quantity.Quantity
 import starling.daterange.{Day, TimeOfDay, Timestamp}
@@ -20,8 +19,10 @@ import starling.gui.StarlingLocalCache._
 import starling.browser.common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.browser._
 import java.awt.{Dimension, Color}
+import starling.utils.{Log, SColumn, STable}
 
 case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends StarlingServerPage {
+  Log.info("Created single trade page")
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
   def build(reader:StarlingServerContext) = TradeData(tradeID, reader.tradeService.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
@@ -327,7 +328,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
       tooltip = "Show the parameters that were used to value this trade"
 
       reactions += {
-        case ButtonClickedEx(b, e) => context.goTo(ValuationParametersPage(tradeID, reportParameters0), Modifiers.modifiers(e.getModifiers))
+        case ButtonClickedEx(b, e) => context.goTo(ValuationParametersPage(tradeID, reportParameters0, ReportSpecificChoices()), Modifiers.modifiers(e.getModifiers))
       }
     }
     valuationParametersButton :: buttons

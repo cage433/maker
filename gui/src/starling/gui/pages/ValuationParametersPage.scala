@@ -12,7 +12,7 @@ import swing.{Component, TextArea, ScrollPane, Label}
 import java.awt.{Dimension, Color}
 import swing.event.MouseClicked
 
-case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters) extends StarlingServerPage {
+case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:ReportParameters, reportSpecificChoices : ReportSpecificChoices) extends StarlingServerPage {
   def text = "Valuation Parameters for " + tradeID.id
   def icon = StarlingIcons.im("/icons/16x16_valuation_parameters.png")
   def build(reader:StarlingServerContext) = {
@@ -26,7 +26,7 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
       }
     }
     ValuationParametersPageData(
-      reader.reportService.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse),
+      reader.reportService.tradeValuation(tradeID, reportParameters.curveIdentifier, timestampToUse, reportSpecificChoices),
       reportParameters, tradeID)
   }
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = {
@@ -50,7 +50,7 @@ case class ValuationParametersBookmark(tradeID:TradeIDLabel, userReportData:User
       case Some(d) => d
     }
     val reportParameters = serverContext.reportService.createReportParameters(userReportData, dayToUse)
-    ValuationParametersPage(tradeID, reportParameters)
+    ValuationParametersPage(tradeID, reportParameters, ReportSpecificChoices())
   }
 }
 

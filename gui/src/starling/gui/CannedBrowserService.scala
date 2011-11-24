@@ -1,5 +1,7 @@
 package starling.gui
 
+import api.ReportSpecificChoices
+import api.ReportSpecificChoices._
 import java.lang.String
 import pages.{AbstractPivotPage, PivotPageState}
 import starling.pivot.model._
@@ -105,7 +107,7 @@ case class SlowCannedPivotReportPage(pivotPageState:PivotPageState) extends Abst
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = SlowCannedPivotReportPage(pivotPageState)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 }
 
 case class DiffCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractCannedPivotPage(pivotPageState) {
@@ -123,7 +125,7 @@ case class CannedPivotReportPage(pivotPageState:PivotPageState) extends Abstract
     PivotTableModel.createPivotData(new CannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits) = CannedPivotReportPage(pivotPageState)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 }
 
 case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends AbstractCannedPivotPage(pivotPageState) {
@@ -132,7 +134,7 @@ case class EditableCannedPivotReportPage(pivotPageState:PivotPageState) extends 
     PivotTableModel.createPivotData(new EditableCannedDataSource, pivotPageState.pivotFieldParams)
   }
   def selfPage(pPS:PivotPageState, edits:PivotEdits) = copy(pivotPageState = pPS)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 }
 
 case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null) extends AbstractCannedPivotPage(pivotPageState, edits) {
@@ -142,7 +144,7 @@ case class EditableSpecifiedCannedPivotReportPage(pivotPageState:PivotPageState,
     PivotTableModel.createPivotData(ds, pivotPageState.pivotFieldParams)
   }
   def selfPage(pPS:PivotPageState, edits0:PivotEdits) = copy(pivotPageState = pPS, edits = edits0)
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) {pageContext.goTo(CannedDrilldownPage(fields), modifiers)}
 
   override def save(starlingServer:ServerContext, edits:PivotEdits) = {
     println("EditableSpecifiedCannedPivotReportPage saved these " + " edits " + edits)

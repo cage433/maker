@@ -193,10 +193,14 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     ytd.clearCache
   }
 
-  def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
+  def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier, reportSpecificChoices : ReportSpecificChoices): TradeValuation = {
     try {
       val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
-      val explanation = trade.explain(defaultContext.environment)
+      import ReportSpecificOptions._
+      val explanation = reportSpecificChoices.getOrElse(valuationCurrencyLabel, defaultLabel) match {
+        case `defaultLabel` => trade.explain(defaultContext.environment)
+        case UOM.Currency(ccy) => trade.explain(defaultContext.environment, ccy)
+      }
       TradeValuation(Right(explanation))
     } catch {
       case t: Throwable => TradeValuation(Left(StackTrace(t)))

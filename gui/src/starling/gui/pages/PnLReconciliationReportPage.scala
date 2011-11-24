@@ -17,7 +17,7 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
     pageBuildingContext.reportService.pnlReconciliation(tradeSelectionWithTimestamp, curveIdentifier, expiryDay, pivotPageState.pivotFieldParams)
   }
 
-  override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, modifiers:Modifiers) = {
+  override def finalDrillDownPage(fields: Seq[(Field, Selection)], pageContext: PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) = {
     val selection = fields.find(f=>f._1.name == "Trade ID" && (f._2 match {
       case SomeSelection(vs) if vs.size == 1 => true
       case _ => false

@@ -15,7 +15,7 @@ trait ReportFacility {
   def diffReportPivot(tradeSelection:TradeSelection, curveIdentifierDm1:CurveIdentifierLabel, curveIdentifierD:CurveIdentifierLabel, reportOptions:ReportOptions, expiryDay:Day,fromTimestamp:TradeTimestamp, toTimestamp:TradeTimestamp, pivotFieldParams:PivotFieldParams):PivotData
   def pnlReconciliation(tradeSelection: TradeSelectionWithTimestamp, curveIdentifier: CurveIdentifierLabel, expiryDay:Day, pivotFieldParams: PivotFieldParams): PivotData
   def reportErrors(reportParameters:ReportParameters):ReportErrors
-  def tradeValuation(tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails
+  def tradeValuation(tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp, reportSpecificChoices : ReportSpecificChoices):TradeValuationAndDetails
   @DoNotCache def createReportParameters(userReportData:UserReportData, observationDay:Day):ReportParameters
   @DoNotCache def createUserReport(reportParameters:ReportParameters):UserReportData
   @DoNotCache def deleteUserReport(reportName:String)

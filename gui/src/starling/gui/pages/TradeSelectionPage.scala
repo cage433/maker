@@ -53,7 +53,7 @@ case class TradeSelectionPage(
     Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), pivotPageState))
   }
 
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) = {
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) = {
     val selection = fields.find(f=>f._1.name == "Trade ID" && (f._2 match {
       case SomeSelection(vs) if vs.size == 1 => true
       case _ => false
