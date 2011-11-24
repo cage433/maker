@@ -19,9 +19,10 @@ object UOMSymbol{
   val zCurrencies2@List(ils, inr, jpy, krw, ltl, lvl, mxn, myr, nad, nok, nzd, php, pln, ron, rub, sek) =
     currencies("ILS", "INR", "JPY", "KRW", "LTL", "LVL", "MXN", "MYR", "NAD", "NOK", "NZD", "PHP", "PLN", "RON", "RUB", "SEK")
 
-  val zCurrencies3@List(sgd, thb, trySymbol, usd, zar) = currencies("SGD", "THB", "TRY", "USD", "ZAR")
+  val zCurrencies3@List(sgd, thb, trySymbol, usd, zar, cnh) = currencies("SGD", "THB", "TRY", "USD", "ZAR", "CNH")
 
   val edmCurrencies = List(aed, eur, cny, gbp, jpy, usd, zar)
+  val currenciesToImportFromLIM = cnh :: edmCurrencies
 
   private def currencies(symbols: String*): List[UOMSymbol] = symbols.toList.map(symbol => UOMSymbol(symbol.split("/").map(new CaseInsensitive(_)) :_*))
 
@@ -83,6 +84,9 @@ object UOMSymbol{
   val NYMEX_NATGAS_LOTS_SYMBOL = UOMSymbol("Nymex NatGas Lots")
   val DUBAI_CRUDE_LOTS_SYMBOL = UOMSymbol("Dubai Crude Lots")
 
+  val BYTES_SYMBOL = UOMSymbol("bytes")
+  val KILOBYTES_SYMBOL = UOMSymbol("kb")
+  val SECONDS_SYMBOL = UOMSymbol("s")
   val MILLISECONDS_SYMBOL = UOMSymbol("ms")
 
   val PERCENT_SYMBOL = UOMSymbol("%")
@@ -139,9 +143,12 @@ object UOMSymbol{
     BUSHEL_WHEAT_SYMBOL,
     SHORT_TON_SYMBOL,
     MILLISECONDS_SYMBOL,
+    SECONDS_SYMBOL,
     SHARE_SYMBOL,
     US_CENT_SYMBOL,
-    PERCENT_SYMBOL
+    PERCENT_SYMBOL,
+    BYTES_SYMBOL,
+    KILOBYTES_SYMBOL
   ) ++ zCurrencies ++ zCurrencies2 ++ zCurrencies3
 
   // Map of name and altname to symbol

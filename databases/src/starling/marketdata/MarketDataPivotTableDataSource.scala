@@ -4,8 +4,8 @@ import collection.Seq
 import starling.curves.MarketDataSlice
 import starling.pivot._
 import model.UndefinedValue
+import pivotparsers.{ObservationDayPivotParser, DayPivotParser}
 import starling.daterange.{Day, ObservationPoint}
-import starling.pivot.pivotparsers.DayPivotParser
 import starling.richdb.RichDB
 import starling.daterange.Timestamp
 import starling.instrument.utils.StarlingXStream
@@ -30,7 +30,7 @@ import java.lang.IllegalStateException
 
 object MarketDataPivotTableDataSource {
   val observationTimeField = FieldDetails("Observation Time")
-  val observationDayField = FieldDetails("Observation Day", DayPivotParser)
+  val observationDayField = FieldDetails("Observation Day", ObservationDayPivotParser)
 }
 
 class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: MarketDataStore,
@@ -204,7 +204,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
           val keyFilterForTimedKey = keyFilter.retain(inMemoryFields)
           val matchingTimedKeys = observationDayAndMarketDataKeyRows.filterKeys(keyFilterForTimedKey.matches).values
 
-          matchingTimedKeys.pair((keyFilter.remove(inMemoryFields), keyEdit))
+          matchingTimedKeys.pairWith((keyFilter.remove(inMemoryFields), keyEdit))
         } }.groupBy(_._1).mapValues(_.map(_._2))
 
         val newRowsWithAllFieldsPresent = edits.newRows.map(marketDataType.defaultValue + _).filter { row =>
@@ -306,8 +306,15 @@ class MarketDataPivotTableDataSource(preBuilt:PrebuiltMarketDataPivotData, edits
 
   def data(pfs : PivotFieldsState):PivotResult = {
 
-    val missingKeyFields = preBuilt.editable.get.keyFields -- pfs.allFieldsUsed.toSet
-    val pfsWithAddedKeyFields = pfs.copy(filters = missingKeyFields.toList.map(f => f -> AllSelection) ::: pfs.filters)
+    val pfsWithAddedKeyFields = {
+      preBuilt.editable match {
+        case Some(editPivot) => {
+          val missingKeyFields = editPivot.keyFields -- pfs.allFieldsUsed.toSet
+          pfs.copy(filters = missingKeyFields.toList.map(f => f -> AllSelection) ::: pfs.filters)
+        }
+        case None => pfs
+      }
+    }
 
     val (initialPossibleValues, data) = preBuilt.dataWithoutEdits(pfsWithAddedKeyFields)
 

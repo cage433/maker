@@ -45,7 +45,7 @@ mvn -e deploy:deploy-file \
     -Dversion=$1 \
     -Dpackaging=gz \
     -DuniqueVersion=false \
-    -Dfile=$FILE_NAME
+    -Dfile=$FILE_NAME || exit 3
 
 mvn -e deploy:deploy-file \
     -Durl=$REPO_URL \
@@ -56,6 +56,6 @@ mvn -e deploy:deploy-file \
     -Dversion=$1 \
     -Dpackaging=sh \
     -DuniqueVersion=false \
-    -Dfile=starling/bin/deploy.sh
+    -Dfile=starling/bin/deploy.sh || exit 4
 
 rm $FILE_NAME

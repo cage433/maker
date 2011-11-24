@@ -12,7 +12,7 @@ import starling.marketdata._
 import starling.quantity.{Quantity, UOM}
 import starling.utils.ImplicitConversions._
 
-object LIBORFixings extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
+object LIBORFixingsSource extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
   type Relation = LIBORRelation
 
   case class LIBORRelation(source: ForwardRateSource, currency: UOM, tenor: Tenor)

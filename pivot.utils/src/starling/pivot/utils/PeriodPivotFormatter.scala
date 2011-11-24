@@ -69,3 +69,9 @@ object TimestampPivotFormatter extends PivotFormatter {
     }
   }
 }
+
+object TenorPivotParser extends PivotParser {
+  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = text match {
+    case Tenor.Parse(tenor) => (tenor, text)
+  }
+}

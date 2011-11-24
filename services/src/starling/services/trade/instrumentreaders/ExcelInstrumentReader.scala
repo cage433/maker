@@ -94,6 +94,7 @@ object ExcelInstrumentReader {
    */
   val indexAliases: Map[String, Index] = Map(
     "gas oil crack" -> Index.IPE_GAS_OIL_VS_IPE_BRENT,
+    "rb brent cracks" -> Index.NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH,
     "nymex rbob 1st month vs ipe brent 1st month" -> Index.NYMEX_WTI_VS_IPE_BRENT
   ) ++ Index.all.map(i => i.name.toLowerCase -> i).toMap
 

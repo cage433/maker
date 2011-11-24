@@ -11,6 +11,8 @@ import java.io.File
 
 object StarlingBuild extends Build{
 
+  val projectName = "starling"
+  val scalaVer = "2.9.1"
   val amqpVersion = "1.7.2"
 
   import Utils._
@@ -19,6 +21,10 @@ object StarlingBuild extends Build{
     val r = System.getProperty("build.number")
     if (r == null) "SNAPSHOT" else r
   }
+
+  val verboseMode = if (Option(System.getProperty("verbose")).isDefined) true else false
+
+  val ivyUpdateLogging = if (verboseMode) ivyLoggingLevel := UpdateLogging.Full else ivyLoggingLevel := UpdateLogging.Quiet
 
   println("")
   println("This is the build number: " + starlingVersion)
@@ -36,24 +42,26 @@ object StarlingBuild extends Build{
     unmanagedJars in Test <++= (baseDirectory) map lib_managed_jars,
     unmanagedJars in Runtime <++= (baseDirectory) map lib_managed_jars,
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>, 
-    scalaVersion := "2.9.1",
+    scalaVersion := scalaVer,
     showLibsTask,
     writeClasspathScriptTask,
     credentialsSetting,
     publishSetting,
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
+    ivyUpdateLogging,
     organizationName := "Trafigura",
     version := starlingVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt
   )
 
-  class OverrideMakePom extends MakePom {
-    override def isValidIDCharacter(c: Char) = true
-  }
-
   def overrideMakePom(module: IvySbt#Module, configuration: MakePomConfiguration, log: Logger) {
 		import configuration.{allRepositories, moduleInfo, configurations, extra, file, filterRepositories, process}
+
+    class OverrideMakePom extends MakePom(log) {
+      override def isValidIDCharacter(c: Char) = true
+    }
+
 		module.withModule(log) { (ivy, md, default) =>
 			(new OverrideMakePom()).write(ivy, md, moduleInfo, configurations, extra, process, filterRepositories, allRepositories, file)
 			log.info("Wrote " + file.getAbsolutePath)
@@ -68,7 +76,7 @@ object StarlingBuild extends Build{
     unmanagedResourceDirectories in Compile <+= baseDirectory(_/"resources"),
     unmanagedClasspath in Test <+= (baseDirectory) map { bd => Attributed.blank(bd / "resources") },
     ivyXML := <dependencies><exclude artifact="jcl-over-slf4j"/><exclude artifact="junit"/></dependencies>,
-    scalaVersion := "2.9.1",
+    scalaVersion := scalaVer,
     showLibsTask,
     writeClasspathScriptTask,
     deployClasspathTask,
@@ -77,6 +85,7 @@ object StarlingBuild extends Build{
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
     resolvers += "titan-cross-stream-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-snapshots/",
+    resolvers += "titan-cross-stream-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/titan-cross-stream-releases/",
     resolvers += "tooling-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-snapshots/",
     resolvers += "trademgmt-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-releases/",
     resolvers += "trademgmt-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/trademgmt-bindeps-snapshots/",
@@ -84,24 +93,29 @@ object StarlingBuild extends Build{
     resolvers += "logistics-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-snapshots/",
     resolvers += "referencedata-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-releases/",
     resolvers += "referencedata-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-snapshots/",
+    ivyUpdateLogging,
+    //resolvers += Resolver.defaultLocal,
     organizationName := "Trafigura",
     version := starlingVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt
   )
 
   lazy val publishSetting = publishTo <<= (version) {
-    version: String =>
+
+    val isSnapshot = starlingVersion.trim.toLowerCase.endsWith("snapshot")
+
+    version : String =>
       def repo(name: String) = {
-        if (starlingVersion.trim.toLowerCase == "snapshot") {
+        if (isSnapshot) {
           name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/" + name
         } else {
           name at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-releases/" + name
         }
       }
-//      val isSnapshot = version.trim.endsWith("SNAPSHOT")
-//      val repoName   = if(isSnapshot) "snapshots" else "releases"
-//      Some(repo(repoName))
-     Some(repo("starling-releases"))
+
+    val repoName = projectName + (if (isSnapshot) /* "-snapshots" */ "-releases" else "-releases")
+
+    Some(repo(repoName))
   }
 
   lazy val credentialsSetting = credentials += {
@@ -111,7 +125,7 @@ object StarlingBuild extends Build{
       case _ =>
         Credentials(Path.userHome / ".ivy2" / ".credentials")
     }*/
-    Credentials("Sonatype Nexus Repository Manager", "nexus.global.trafigura.com", "admin", "admin123")
+    Credentials("Sonatype Nexus Repository Manager", "nexus.global.trafigura.com", "deployment", "depl0yment")
   }
 
 
@@ -235,8 +249,8 @@ object StarlingBuild extends Build{
   ) dependsOn(quantity % testDependency, daterange % testDependency)
 
   val starlingApiDependencies = Seq(
-    "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.0",
-    "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.0",
+    "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.2-SNAPSHOT",
+    "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.1",
     "org.slf4j" % "slf4j-api" % "1.6.1",
     "dom4j" % "dom4j" % "1.6.1",
     "com.rabbitmq" % "amqp-client" % amqpVersion,
@@ -262,7 +276,7 @@ object StarlingBuild extends Build{
 
   val authDependencies = Seq(
 //    "net.java.dev.jna" % "jna" % "3.3.0", Put this back in once sbt can handle classifiers properly
-    "sbt/bug/net/java/dev/jna" % "jna" % "3.3.0",
+    "sbt.bug.jna" % "jna" % "3.3.0",
     "net.java.dev.jna" % "jna" % "3.3.0" classifier "platform"
   
   )
@@ -448,8 +462,8 @@ object StarlingBuild extends Build{
     "org.scannotation" % "scannotation" % "1.0.3",
     "javax.servlet" % "servlet-api" % "2.5",
   
-    "com.trafigura.titan.shared-libs" % "titan-core" % "1.0-SNAPSHOT" notTransitive(),
-    "com.trafigura.titan.shared-libs" % "titan-security" % "1.0-SNAPSHOT" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-core" % "1.1" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-security" % "1.1" notTransitive(),
     "com.trafigura.titan.shared-libs" % "titan-utils" % "1.0-SNAPSHOT" notTransitive()
   )
 

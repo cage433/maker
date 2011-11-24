@@ -15,6 +15,7 @@ object UOMType {
   val VOLUME = create()
   val OIL_VOLUME = create() // can't convert oil volumes to other volumes: http://en.wikipedia.org/wiki/Oil_barrel#Conversion_to_metric_units
   val TIME = create()
+  val BYTES = create()
   val HEAT_ENERGY = create()
 
   /**
@@ -58,6 +59,7 @@ object UOMType {
     val CLF = create() // Unidad de Fomento (funds code)
     val CLP = create() // Chilean peso
     val CNY = create() // Chinese yuan
+    val CNH = create() // Chinese yuan traded offshore
     val COP = create() // Colombian peso
     val COU = create() // Unidad de Valor Real
     val CRC = create() // Costa Rican colon

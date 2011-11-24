@@ -36,7 +36,7 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
   private val costs = ((select("tradeType =  " + COST + ",*") from ("tblPlutoCosts t")), ("1" eql "1"))
 
   private def queries = generateQueriesWithCosts(List(swaps, clearportSwaps, otcOptions, etOptions, futures, cfds, swapSpreads, ffas)) :::
-    generateQueries(List(cargos, costs))
+    generateQueries(List(/*cargos, */costs))
 
   private def generateQueriesWithCosts(list: List[(Query, Clause)]): List[Query] = {
     list.map {

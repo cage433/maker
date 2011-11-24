@@ -58,16 +58,18 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def withDefault(f : K => V) = new MapProxy[K, V]{val self = thisMap.map; override def default(k : K) = f(k)}
   def innerJoin[W](other: Map[V, W]): Map[K, W] = >>>(other)
   def >>>[W](other: Map[V, W]): Map[K, W] = map.collectValuesO(other.get)
+  def combine(other: Map[K, V], combiner: (List[V]) => V): Map[K, V] = (map.toSeq ++ other.toSeq).toMultiMap.mapValues(combiner)
 }
 
 class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map) {
+  lazy val multiSize = map.values.map(_.size).sum
   def multiMapValues[W](f: (V) => W): MultiMap[K, W] = map.mapValues(_.map(f))
   def contains(key : K, value : V) : Boolean = map.get(key).map(_.contains(value)).getOrElse(false)
   def contains(pair : (K, V)) : Boolean = contains(pair._1, pair._2)
   def allValues: List[V] = map.values.flatten.toList
   def union(k: K, v: List[V]): Map[K, List[V]] = map.getOrUpdate(k, old => (old ++ v).distinct)
   def union(kv: (K, List[V])): Map[K, List[V]] = union(kv._1, kv._2)
-  def union(other: Map[K, List[V]]): Map[K, List[V]] = (map ++ other).mapValues(_.distinct)
+  def union(other: Map[K, List[V]]): Map[K, List[V]] = map.combine(other, _.reverse.flatten.distinct)
   def flatMultiMap[W](f: ((K, V)) => W): Iterable[W] = map.flatMap(kvs => kvs._2.map(v => f(kvs._1, v)))
 }
 
@@ -90,6 +92,7 @@ class RichNestedMap[K1, K2, V](nested: Map[K1, Map[K2, V]]) extends RichMap[K1, 
 
   def mapNested[T](f: (K1, K2, V) => T): Iterable[T] =
     nested.flatMap { case (k1, values) => values.map { case (k2, value) => f(k1, k2, value) } }
+  def mapNestedValues[W](f: (V) => W): NestedMap[K1, K2, W] = mapNested { case (k1, k2, v) => (k1, (k2, f(v))) }.toNestedMap
 
   def mapOuter[K](f: (K1, K2, V) => K): NestedMap[K, K2, V] = mapNested { case (k1, k2, v) => (f(k1, k2, v), (k2, v)) }.toNestedMap
   def mapInner[K](f: (K1, K2, V) => K): NestedMap[K1, K, V] = mapNested { case (k1, k2, v) => (k1, (f(k1, k2, v), v)) }.toNestedMap

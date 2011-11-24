@@ -101,7 +101,7 @@ case class MarketDataPage(
 
   override def latestPage(localCache:LocalCache) = {
     marketDataIdentifier match {
-      case StandardMarketDataPageIdentifier(mi) => {
+      case StandardMarketDataPageIdentifier(mi@MarketDataIdentifier(_,SpecificMarketDataVersion(_))) => {
         localCache.latestMarketDataVersionIfValid(mi.selection) match {
           case Some(v) => copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)))
           case _ => this
@@ -114,10 +114,7 @@ case class MarketDataPage(
   override def subClassesPageData(serverContext:ServerContext) = {
     val fc2Service = serverContext.lookup(classOf[FC2Facility])
     val avaliableMarketDataTypes = fc2Service.marketDataTypeLabels(marketDataIdentifier)
-    val selected = pageState.marketDataType match {
-      case Some(mdt) => Some(mdt)
-      case None => avaliableMarketDataTypes.headOption
-    }
+    val selected = pageState.marketDataType.orElse(avaliableMarketDataTypes.headOption)
     Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
   }
 
@@ -179,7 +176,7 @@ case class MarketDataPage(
           }
         }
 
-        val pricingGroupSelector = new MarketDataSelectionComponent(context, None, marketDataIdentifier.selection)
+        val pricingGroupSelector = new MarketDataSelectionComponent(context, None, marketDataIdentifier.selection, scala.swing.Orientation.Vertical)
 
         val snapshotsComboBoxModel = new DefaultComboBoxModel
         val snapshotsComboBox = new ComboBox[SnapshotComboValue](List(SnapshotComboValue(None))) { // Got to pass a list in - not very good but we remove it straight away.
@@ -191,7 +188,7 @@ case class MarketDataPage(
 
           listenTo(context.remotePublisher)
           reactions += {
-            case MarketDataSnapshot(snapshotID) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
+            case MarketDataSnapshot(snapshotID, _) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
               snapshotsComboBoxModel.insertElementAt(SnapshotComboValue(Some(snapshotID)), 1)
             }
           }
@@ -215,13 +212,13 @@ case class MarketDataPage(
         }
         val snapshotsPanel = new MigPanel("insets 0") {
           add(new Label("as of:") {tooltip = "Market data as of selected date or current"})
-          add(snapshotsComboBox)
+          add(snapshotsComboBox, "pushx, grow")
         }
 
         private val snapshotButton = new Button {
           enabled = !marketDataIdentifier.selection.isNull
           tooltip = "Snapshot this market data"
-          icon = StarlingIcons.icon("/icons/14x14_download_data.png")
+          icon = StarlingIcons.icon("/icons/14x14_camera_lens.png")
           reactions += {
             case ButtonClicked(_) => {
               context.submit(SnapshotMarketDataRequest(marketDataIdentifier.marketDataIdentifier))
@@ -229,9 +226,9 @@ case class MarketDataPage(
           }
         }
 
-        add(importButton)
-        add(pricingGroupSelector)
-        add(snapshotsPanel)
+        add(pricingGroupSelector, "grow")
+        add(importButton, "ay top, wrap")
+        add(snapshotsPanel, "gapleft unrel, grow")
         add(snapshotButton)
       }
 
@@ -251,6 +248,13 @@ case class MarketDataPage(
           minimumSize = new Dimension(100, preferredSize.height)
         }
 
+        add(typeLabel)
+        add(dataTypeCombo, "pushx, grow")
+      }
+
+      val extraPanel2 = new MigPanel {
+        border = RoundedBorder(colour = PivotTableBackgroundColour)
+        visible = marketDataIdentifier.filteredMarketData
         val filterDataCheckbox = new CheckBox("Filter Market Data For Report") {
           if (marketDataIdentifier.filteredMarketData) {
             selected = true
@@ -260,45 +264,45 @@ case class MarketDataPage(
           }
         }
 
-        add(typeLabel)
-        add(dataTypeCombo)
-        add(filterDataCheckbox, "gapleft unrel")
+        add(filterDataCheckbox)
       }
 
-      add(pricingGroupPanel, "wrap")
-      add(extraPanel)
+      add(pricingGroupPanel)
+      add(extraPanel, "ay top, growx, split, spany 2, flowy")
+      add(extraPanel2, "ay top, growx, hidemode 3")
 
       override def revert() {
-        this.suppressing(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel.filterDataCheckbox) {
+        this.suppressing(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel2.filterDataCheckbox) {
           data.selection match {
             case Some(mdt) => extraPanel.dataTypeCombo.selection.item = mdt
             case None =>
           }
           pricingGroupPanel.pricingGroupSelector.selection = marketDataIdentifier.selection
           pricingGroupPanel.snapshotsComboBox.initialize()
-          extraPanel.filterDataCheckbox.selected = marketDataIdentifier.filteredMarketData
+          extraPanel2.filterDataCheckbox.selected = marketDataIdentifier.filteredMarketData
         }
       }
 
       reactions += {
         case SelectionChanged(extraPanel.dataTypeCombo) => {
-          val days = pageState.pivotPageState.pivotFieldParams.pivotFieldState.flatMap {
-            _.fieldSelection(Field("Observation Day")).asInstanceOf[Option[Set[Day]]]
-          }
-
-          MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), days)
+          MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), observationDays)
         }
         case SelectionChanged(pricingGroupPanel.snapshotsComboBox) =>
           context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value)), pageState = pageState.copy(edits = PivotEdits.Null)))
-        case MarketDataSelectionChanged(selection) => context.goTo(
-          copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))), pageState = pageState.copy(edits = PivotEdits.Null))
+        case MarketDataSelectionChanged(selection) => MarketDataPage.goTo(context,
+          StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))),
+          None, observationDays
         )
-        case ButtonClicked(extraPanel.filterDataCheckbox) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
+        case ButtonClicked(extraPanel2.filterDataCheckbox) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
       }
-      listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel.filterDataCheckbox)
+      listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel2.filterDataCheckbox)
     }
 
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
+  }
+
+  private def observationDays: Option[Set[Day]] = pageState.pivotPageState.pivotFieldParams.pivotFieldState.flatMap {
+    _.fieldSelection(Field("Observation Day")).asInstanceOf[Option[Set[Day]]]
   }
 }
 
@@ -506,12 +510,13 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
   listenTo(pricingGroupCheckBox, pricingGroupCombo.selection, excelCheckBox, excelCombo.selection)
 
   val layoutInfo = orientation match {
-    case scala.swing.Orientation.Vertical => "wrap"
-    case scala.swing.Orientation.Horizontal => "gapright rel"
+    case scala.swing.Orientation.Vertical => "grow, wrap"
+    case scala.swing.Orientation.Horizontal => "grow, gapright rel"
   }
   add(pricingGroupCheckBox)
   add(pricingGroupCombo, layoutInfo)
-  add(excelCheckBox, excelCombo)
+  add(excelCheckBox)
+  add(excelCombo, "pushx, grow")
 }
 
 case class SnapshotComboValue(maybeSnapshot:Option[SnapshotIDLabel]) {

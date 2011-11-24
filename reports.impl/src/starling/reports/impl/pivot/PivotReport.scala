@@ -31,6 +31,7 @@ import collection.immutable.{Map, Set}
  */
 
 
+
 trait PivotReportType {
   type T
 
@@ -56,15 +57,15 @@ trait PivotReport[R <: PivotReportRow] {
 
   def fields: List[PivotReportField[R]]
 
-  import PivotReport._
-  import ReportSpecificChoices._
+  import ReportSpecificOptions._
   def reportSpecificOptions : ReportSpecificOptions = new ReportSpecificOptions(
-    collapseOptions_str -> List(true, false),
-    showEqFutures_str -> List(false, true),
-    futuresAsSpreads_str -> List(false, true),
-    futuresAsSwaps_str -> List(false, true),
-    useSkew_str -> List(true, false),
-    tenor_str -> List(MonthChoiceText, WeekChoiceText, DayChoiceText)
+    collapseOptions,
+    showEqFutures,
+    futuresAsSpreads,
+    futuresAsSwaps,
+    useSkew,
+    tenor,
+    valuationCurrency
   )
   def zeroFields:Set[Field] = Set()
 }
@@ -82,42 +83,31 @@ trait PivotReport[R <: PivotReportRow] {
 trait RiskFactorSplittingPivotReport[R <: RiskPivotReportRow[R] with PivotRowShareableByRiskFactor[R]] extends PivotReport[R]{
   def envForSplitting : Environment
   override def combine(rows : List[R], reportSpecificChoices : ReportSpecificChoices) = {
-    val collapseOptions = reportSpecificChoices.getOrElse(PivotReport.collapseOptions_str, true)
+    val collapseOptions = reportSpecificChoices.getOrElse(ReportSpecificOptions.collapseOptionsLabel, true)
     var combinedRows = rows.flatMap{row => 
       row.splitByEnvironmentDifferentiable(envForSplitting, reportSpecificChoices)
     }
     combinedRows = combinedRows.map(_.setCollapseOptions(collapseOptions).asOriginalType)
-    combinedRows = combinedRows.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(PivotReport.tenor_str, Month)))
+    combinedRows = combinedRows.map(_.setPeriodForDisplay(reportSpecificChoices.getOrElse(ReportSpecificOptions.tenorLabel, Month)))
     combinedRows
   }
 }
 
 
 object PivotReport{
-  val collapseOptions_str = "Collapse Options"
-  val showEqFutures_str = "Show Eq Futures"
-  val futuresAsSpreads_str = "Futures as spreads"
-  val futuresAsSwaps_str = "Futures as swaps"
-  val useSkew_str = "Skew"
-  val utp_str: String = "UTP"
-  val usd_str: String = "USD"
-  val riskType_str: String = "Risk Type"
-  val riskCommodity_str: String = "Risk Commodity"
-  val riskMarket_str: String = "Risk Market"
-  val riskPeriod_str: String = "Risk Period"
-  val riskVolume_str: String = "Risk Volume"
-  val error_str: String = "Error"
-  val tenor_str = "Tenor"
-  val strategy_str = "Strategy"
-  val atmVega_str = "ATM Vega"
-  val lots_str: String = "Lots"
-  val price_unit_str = "Price Unit"
+  import ReportSpecificOptions._ 
+  def validReportSpecificChoices(desk : Option[Desk]) = desk match {
+    case Some(Desk.Titan) => List(valuationCurrency)
+    case Some(Desk(_, _, Some(_ : EAIDeskInfo))) => List(collapseOptions, showEqFutures, futuresAsSpreads, futuresAsSwaps, useSkew, tenor, atmVega, positionType, priceUnit, lots)
+    case None => Nil
+    case _ => throw new Exception("Unexpected desk " + desk)
+  }
 
   def spreadMonthsByStrategyAndMarket(utps : Map[UTPIdentifier, UTP]) = {
     var spreadMonths = Map[(Option[String], FuturesMarket), Set[Month]]()
     utps.foreach{
       case (id, SingleCalendarSpreadOption(mkt, _, mth1, mth2, _, _, _)) => {
-        val key = (id.getAttribute(strategy_str), mkt)
+        val key = (id.getAttribute(strategyLabel), mkt)
         spreadMonths += (key ->  (Set(mth1, mth2) ++ spreadMonths.getOrElse(key, Set())))
       }
       case _ =>
@@ -128,7 +118,7 @@ object PivotReport{
   def swapIndicesByStrategy(utps : Map[UTPIdentifier, UTP]) = {
     var map = Map[Option[String], Set[FuturesFrontPeriodIndex]]()
     def addIndex(id : UTPIdentifier, idx : FuturesFrontPeriodIndex){
-      val key = id.getAttribute(strategy_str)
+      val key = id.getAttribute(strategyLabel)
       map += (key -> (map.getOrElse(key, Set[FuturesFrontPeriodIndex]()) + idx))
     }
     utps.foreach{

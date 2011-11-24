@@ -3,6 +3,8 @@ package starling.utils.conversions
 import starling.utils.{ImplicitConversions, Log}
 import ImplicitConversions._
 import scalaz.Scalaz._
+import collection.generic.CanBuildFrom
+import collection.{Traversable, TraversableLike}
 
 trait RichAnys {
   implicit def enrichAny[T](value: T) = new RichAny(value)
@@ -47,8 +49,9 @@ class RichAny[T](protected val value: T) {
   def cast[V: Manifest]: V = implicitly[Manifest[V]].cast(value)
   def castOrElse[V: Manifest](alternative: T => V): V = implicitly[Manifest[V]].safeCast(value).getOrElse(alternative(value))
   def pair[V](f: T => V): (T, V) = value → f(value)
-  def pairWithTraversable[V](f: T => Traversable[V]): scala.Traversable[(T, V)] = pair(f(value))
-  def pair[V](t: Traversable[V]) = t.pair(value).swap
+  def pairWithTraversable[V](f: T => Traversable[V]): scala.Traversable[(T, V)] = pairWith(f(value))
+  def pairWith[Repr, V, That](tl: TraversableLike[V, Repr])(implicit cbf: CanBuildFrom[Repr, (T, V), That]): That = tl.inversePairWith(value)
+
   def optPair[V](option: Option[V]): Option[(T, V)] = option.map(value → _)
   def optPair[V](f: T => Option[V]): Option[(T, V)] = value.optPair(f(value))
 

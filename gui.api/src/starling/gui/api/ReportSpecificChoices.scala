@@ -37,13 +37,13 @@ class ReportSpecificChoices(protected val choices : Map[String, Any] = Map()) {
   }
 
   override def toString = "ReportSpecificChoices: " + choices
+
 }
 
 
 object ReportSpecificChoices {
-  val MonthChoiceText = "M"
-  val WeekChoiceText = "W"
-  val DayChoiceText = "D"
+  
+  import ReportSpecificOptions._
 
   def apply(choices : (String, Any)*): ReportSpecificChoices = create(choices.toMap)
   def apply(choices : scala.collection.Map[String, Any]) = new ReportSpecificChoices(choices.toMap)

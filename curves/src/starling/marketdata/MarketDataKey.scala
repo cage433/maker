@@ -58,11 +58,17 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
   def copyDay(other: Day) = copy(observationPoint.copyDay(other))
 }
 
-case class MarketDataValueKey(id: Int, row: Row) {
+trait DBKey[K <: DBKey[K]] {
+  val id: Int
+  def sameValuesAs(that: K): Boolean
+}
+
+case class MarketDataValueKey(id: Int, row: Row) extends DBKey[MarketDataValueKey] {
   lazy val dbMap: Map[String, Any] = Map("valueKey" → row.dbValue)
   def sameValuesAs(that: MarketDataValueKey) = that.copy(id = id) == this
   def fields = row.fields
 }
+
 object MarketDataValueKey {
-  def apply(dbMap: Map[String, Any]): MarketDataValueKey = MarketDataValueKey(-1, Row.create(dbMap))
+  def apply(dbMap: Map[String, Any], id: Int = -1): MarketDataValueKey = MarketDataValueKey(id, Row.create(dbMap))
 }

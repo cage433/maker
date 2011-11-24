@@ -1,7 +1,6 @@
 package starling.instrument.physical
 
 import starling.richdb.RichInstrumentResultSetRow
-import starling.curves.Environment
 import starling.daterange._
 import starling.instrument._
 import starling.utils.sql.PersistAsBlob
@@ -15,6 +14,7 @@ import starling.market.Aluminium
 import starling.utils.Log
 import starling.titan.valuation.AssignmentValuation
 import starling.quantity.UOM._
+import starling.curves.{MissingMarketDataException, Environment}
 
 
 object PhysicalMetalAssignmentOrUnassignedSalesQuota{
@@ -448,7 +448,7 @@ object CostsAndIncomeValuation{
     try {
       Right(build(env, quantity, pricingSpec))
     } catch {
-      case e =>
+      case e : MissingMarketDataException =>
         Left(e.getMessage)
     }
   }

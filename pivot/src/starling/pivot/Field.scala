@@ -5,8 +5,7 @@ import java.io.Serializable
 import model.{UndefinedValueNew, UndefinedValue}
 import starling.quantity._
 import starling.utils.ImplicitConversions._
-import starling.utils.{StarlingEnum}
-import starling.utils.Pattern.Extractor
+
 
 class Field(val name: String) extends Serializable {
   override val hashCode = name.hashCode
@@ -95,6 +94,7 @@ object TextPivotParser extends PivotParser {
 object IntPivotParser extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text.toInt, text)
 }
+
 object PivotQuantityPivotParser extends PivotParser {
   def parse(text:String, extraFormatInfo:ExtraFormatInfo) = typedParse(text, extraFormatInfo)
 

@@ -1,7 +1,5 @@
 package starling.metals.datasources
 
-import collection.immutable.List
-
 import starling.daterange._
 import starling.market._
 import starling.marketdata._
@@ -12,18 +10,19 @@ import starling.lim.LIMService
 import scalaz.Scalaz._
 import starling.services.EmailService
 import starling.scheduler.{EmailingScheduledTask, TaskDescription}
-import starling.quantity.{Percentage, UOM}
-import starling.pivot.MarketValue
 import starling.utils.ClosureUtil._
 import starling.db.{NormalMarketDataReader, MarketDataStore}
+import starling.quantity.{Quantity, UOM}
+import collection.immutable.{Map, List}
+import org.joda.time.Period
 
 
 case class ForwardRateLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
   extends LimMarketDataSource(service, ForwardRateDataType.name) {
+  private val sources = List(LIBORFixingsSource)
 
-  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(day.startOfFinancialYear, day, List(LIBORFixings)))
-  }
+  override def description = descriptionFor(sources)
+  def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     TaskDescription("Verify SIBOR Available", limDaily(LME.calendar, 4 H 30), notImplemented),
@@ -51,12 +50,13 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailServ
   extends EmailingScheduledTask(emailService, template) {
 
   import LIBORCalculator._
+  private val currencies = LIBORCalculator.currencies(ForwardRateSource.LIBOR)
 
   protected def emailFor(observationDay: Day) = {
-    val liborFixings: NestedMap[UOM, Tenor, (Percentage, Day)] = latestLiborFixings(marketDataStore, observationDay)
+    val liborFixings: NestedMap[UOM, Tenor, (Quantity, Day)] = latestLiborFixings(marketDataStore, observationDay)
     val tenorsByCurrency = liborFixings.mapValues(_.keys.toList).withDefaultValue(Nil)
-    val missingTenorsByCurrency = currencies.toMapWithValues(currency => tenorsFor(currency) \\ tenorsByCurrency(currency))
-      .filterValuesNot(_.isEmpty).sortKeysBy(_.toString)
+    val missingTenorsByCurrency = currencies.toMapWithValues(currency =>
+      tenorsFor(currency) \\ tenorsByCurrency(currency)).filterValuesNot(_.isEmpty).sortKeysBy(_.toString)
 
     (missingTenorsByCurrency.size > 0).option {
       template.copy(subject = "Missing Libor Maturities in LIM, observation day: " + observationDay,
@@ -71,20 +71,15 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailServ
     }
   }
 
-  def latestLiborFixings(marketDataStore: MarketDataStore, observationDay: Day): NestedMap[UOM, Tenor, (Percentage, Day)] = {
-    liborFixingsHistoryData(marketDataStore, observationDay).mapValues(_.fixingsFor(periods).collect {
-      case ((Level.Close, StoredFixingPeriod.Tenor(tenor)), MarketValue.Percentage(percentage)) => {
-        tenor → (percentage, observationDay)
-      }
-    })
-  }
+  def latestLiborFixings(marketDataStore: MarketDataStore, observationDay: Day): NestedMap[UOM, Tenor, (Quantity, Day)] =
+    liborFixingsHistoryData(marketDataStore, observationDay).mapNestedValues((_, observationDay))
 
-  private def liborFixingsHistoryData(marketDataStore: MarketDataStore, observationDay: Day): Map[UOM, PriceFixingsHistoryData] =
-    currencies.toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, currency)).toOption)
+  private def liborFixingsHistoryData(marketDataStore: MarketDataStore, observationDay: Day): NestedMap[UOM, Tenor, Quantity] =
+    currencies.toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, currency)).toOption.flatOpt)
 
-  private def read(marketDataStore: MarketDataStore, observationDay: Day, currency: UOM) =
-    latestLimOnlyMarketDataReader(marketDataStore).readAs[PriceFixingsHistoryData](TimedMarketDataKey(
-      observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose), PriceFixingsHistoryDataKey(currency.toString, Some("LIBOR"))))
+  private def read(marketDataStore: MarketDataStore, observationDay: Day, currency: UOM): Option[Map[Tenor, Quantity]] =
+    latestLimOnlyMarketDataReader(marketDataStore).readAs[ForwardRateData](TimedMarketDataKey(
+      observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose), ForwardRateDataKey(currency))).rates.get(ForwardRateSource.LIBOR)
 
   private def latestLimOnlyMarketDataReader(marketDataStore: MarketDataStore) = new NormalMarketDataReader(
     marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals))))

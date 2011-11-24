@@ -15,7 +15,6 @@ import scala.swing.{AbstractButton=> ScalaAbstractButton}
 import java.awt.event._
 import scala.swing.Swing._
 import collection.mutable.ListBuffer
-import starling.bouncyrmi.{BouncyRMIClient}
 import javax.security.auth.login.LoginException
 import starling.utils.{StackTraceToString, Log}
 import starling.gui.LocalCacheKeys._
@@ -41,6 +40,7 @@ import starling.rabbiteventviewer.api.RabbitEventViewerService
 import starling.reports.facility.ReportFacility
 import org.joda.time.DateTime
 import starling.daterange.{Timestamp, Day}
+import starling.bouncyrmi.{MethodLogEvent, BouncyRMIClient}
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -123,7 +123,41 @@ object GuiStart extends Log {
     )
   }
 
-  def initCacheMap(   cacheMap:HeterogeneousMap[LocalCacheKey],
+  def initCache(starlingServer:StarlingServer, fc2Service:FC2Facility, reportService:ReportFacility, tradeService:TradeFacility) = {
+    val cacheMap = new HeterogeneousMap[LocalCacheKey]
+    import LocalCache._
+    import StarlingLocalCache._
+    try {
+      cacheMap(MethodLogIndex) = 0
+      cacheMap(CurrentUser) = starlingServer.whoAmI
+      cacheMap(AllUserNames) = starlingServer.allUserNames
+      cacheMap(PricingGroups) = fc2Service.pricingGroups
+      cacheMap(ExcelDataSets) = fc2Service.excelDataSets
+      cacheMap(Snapshots) = fc2Service.snapshots
+      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2Service.observationDays
+      cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
+      cacheMap(ObservationDaysForExcel) = observationDaysForExcel
+      cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
+      cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
+      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
+      cacheMap(DeskCloses) = tradeService.deskCloses
+      cacheMap(IntradayLatest) = tradeService.intradayLatest
+      cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
+      cacheMap(Desks) = tradeService.desks
+      cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
+      cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
+      cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
+      cacheMap(CurveTypes) = fc2Service.curveTypes
+      cacheMap(LatestEmailEvent) = new Timestamp
+    } catch {
+      case e : Throwable =>
+        e.printStackTrace()
+        throw e
+    }
+    cacheMap
+  }
+
+  def addListeners(   cacheMap:HeterogeneousMap[LocalCacheKey],
                       starlingServer:StarlingServer,
                       reportService:ReportFacility,
                       fc2Service:FC2Facility,
@@ -186,36 +220,8 @@ object GuiStart extends Log {
       case EmailSent(timeSent) => {
         cacheMap(LatestEmailEvent) = timeSent
       }
+      case e:MethodLogEvent => cacheMap(MethodLogIndex) = e.id
     }
-
-    import LocalCache._
-    try {
-      cacheMap(CurrentUser) = starlingServer.whoAmI
-      cacheMap(AllUserNames) = starlingServer.allUserNames
-      cacheMap(PricingGroups) = fc2Service.pricingGroups
-      cacheMap(ExcelDataSets) = fc2Service.excelDataSets
-      cacheMap(Snapshots) = fc2Service.snapshots
-      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2Service.observationDays
-      cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
-      cacheMap(ObservationDaysForExcel) = observationDaysForExcel
-      cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
-      cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
-      cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
-      cacheMap(DeskCloses) = tradeService.deskCloses
-      cacheMap(IntradayLatest) = tradeService.intradayLatest
-      cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-      cacheMap(Desks) = tradeService.desks
-      cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
-      cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
-      cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
-      cacheMap(CurveTypes) = fc2Service.curveTypes
-      cacheMap(LatestEmailEvent) = new Timestamp
-    } catch {
-      case e : Throwable =>
-        e.printStackTrace()
-        throw e
-    }
-    cacheMap
   }
 
 
@@ -273,37 +279,16 @@ object GuiStart extends Log {
       }
     }
   }
-
-  def auth(servicePrincipalName: String): Client = {
-    try {
-      val subject = new ClientLogin().login
-      new RealClient(servicePrincipalName, subject)
-    } catch {
-      case l: LoginException => {
-        import starling.utils.Utils._
-        os match {
-          case Linux => {
-            log.error("Failed to initialise kerberos, either it isn't used on this system or the ticket cache is stale (try krenew). Skipping kerberos.")
-            Client.Null
-          }
-          case _: Windows => {
-            throw new Exception("Windows: Failed to initialise kerberos for Starling log in.", l)
-          }
-          case u: UnknownOS => {
-            throw new Exception(u + ": Failed to initialise kerberos for Starling log in.", l)
-          }
-        }
-      }
-    }
-  }
 }
 
 object StarlingUtilButtons {
   def create(context:PageContext) = {
+    import StarlingLocalCache._
     def userStatsPage = PageFactory(_ => UserStatsPage(PivotPageState()))
     def runAsUserPage = PageFactory(_ => RunAsUserPage())
     def cannedHomePage = PageFactory(_ => CannedHomePage())
     def eventViewerPage = PageFactory(_ => EventViewerPage())
+    def methodLogViewerPage = PageFactory(_ => MethodLogViewerPage(context.localCache.methodLogIndex))
     def gitLogPage = PageFactory(_ => GitLogPage(PivotPageState()))
 
     val tradesButton = new PageButton(
@@ -334,6 +319,13 @@ object StarlingUtilButtons {
       Some( KeyStroke.getKeyStroke(KeyEvent.VK_E, 0) )
     )
 
+    val methodLogViewerButton = new PageButton(
+      "Method Log Viewer",
+      methodLogViewerPage,
+      StarlingIcons.im("/icons/32x32_event.png"),
+      Some( KeyStroke.getKeyStroke(KeyEvent.VK_M, 0) )
+    )
+
     val gitLogButton = new PageButton(
       "Git Log",
       gitLogPage,
@@ -341,7 +333,7 @@ object StarlingUtilButtons {
       Some( KeyStroke.getKeyStroke(KeyEvent.VK_G, 0) )
     )
 
-    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, gitLogButton)
+    List(tradesButton, runAsUserButton, cannedButton, eventViewerButton, methodLogViewerButton, gitLogButton)
   }
 }
 

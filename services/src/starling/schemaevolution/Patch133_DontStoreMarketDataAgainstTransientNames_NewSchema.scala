@@ -8,5 +8,5 @@ import system.Patch
 
 class Patch133_DontStoreMarketDataAgainstTransientNames_NewSchema extends Patch {
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) =
-    MarketDataPatchUtil(writer).deleteMarketData(typeNames = List("FreightParity", "CountryBenchmark", "GradeAreaBenchmark"))
+    MarketDataPatchUtil(starling, writer).deleteMarketData(typeNames = List("FreightParity", "CountryBenchmark", "GradeAreaBenchmark"))
 }

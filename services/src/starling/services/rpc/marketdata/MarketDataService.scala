@@ -22,7 +22,7 @@ class MarketDataService(marketDataStore: MarketDataStore)
 
 
   /** Return all snapshots for a given observation day, or every snapshot if no day is supplied */
-  def marketDataSnapshotIDs(observationDay: Option[Day] = None) : List[TitanSnapshotIdentifier] = marketDataStore.snapshots.filter(ss =>
+  def marketDataSnapshotIDs(observationDay: Option[Day] = None) : List[TitanSnapshotIdentifier] = marketDataStore.snapshots(observationDay).filter(ss =>
       ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) 
     ).toList.sortWith(_>_).map(_.toSerializable)
 

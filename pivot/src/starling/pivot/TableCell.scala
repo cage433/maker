@@ -29,6 +29,7 @@ case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterT
     value match {
       case pq:PivotQuantity => pq.doubleValue
       case d:Double => Some(d)
+      case l:Long => Some(l.doubleValue)
       case i:Int => Some(i.doubleValue)
       case p:Percentage => Some(p.decimalValue)
       case _ => None
@@ -39,6 +40,7 @@ case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterT
       case pq:PivotQuantity => pq.doubleValueIgnoringErrors
       case q:Quantity => Some(q.value)
       case d:Double => Some(d)
+      case l:Long => Some(l.doubleValue)
       case i:Int => Some(i.doubleValue)
       case p:Percentage => Some(p.decimalValue)
       case _ => None

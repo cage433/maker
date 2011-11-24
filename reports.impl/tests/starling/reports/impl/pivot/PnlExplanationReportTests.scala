@@ -16,6 +16,7 @@ import starling.reports.impl.pivot.PivotReport._
 import starling.market._
 import starling.models.{American, European, Call}
 import starling.utils.{ StarlingTest}
+import starling.gui.api.ReportSpecificOptions._
 
 class PnlExplanationReportTests extends JonTestEnv {
   def noChoices = ReportSpecificChoices()
@@ -242,7 +243,7 @@ class PnlExplanationReportTests extends JonTestEnv {
       }
     ).ignoreSwapRounding
     val marketChangesPnl = new MarketChangesPnl(env1.atomicEnv, env2.atomicEnv, Map(UTPIdentifier(1) -> swap))
-      val choices = ReportSpecificChoices(Map(showEqFutures_str -> false))
+      val choices = ReportSpecificChoices(Map(showEqFuturesLabel -> false))
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), swap), choices)
     val components = pnlExplanation.map(_.componentName).toSet
     // Should only have price change and fixing components - nothing unexplained
@@ -277,7 +278,7 @@ class PnlExplanationReportTests extends JonTestEnv {
     ).undiscounted
 
     val marketChangesPnl = new MarketChangesPnl(env1.atomicEnv, env2.atomicEnv, Map(UTPIdentifier(1) -> swap))
-    val choices = ReportSpecificChoices(Map(showEqFutures_str -> false))
+    val choices = ReportSpecificChoices(Map(showEqFuturesLabel -> false))
     val pnlExplanation = marketChangesPnl.combine(marketChangesPnl.rows(UTPIdentifier(1), swap), choices)
     val components = pnlExplanation.map(_.componentName).toSet
     // Should only have price change and fixing components - nothing unexplained
@@ -310,7 +311,7 @@ class PnlExplanationReportTests extends JonTestEnv {
     val utps = Map(UTPIdentifier(1) -> option)
     val marketChangesPnl = new MarketChangesPnl(d1Fwd, d2, utps)
 
-    val choices = ReportSpecificChoices(Map[String, Any](atmVega_str -> false))
+    val choices = ReportSpecificChoices(Map[String, Any](atmVegaLabel -> false))
 
     val rows = marketChangesPnl.rows(UTPIdentifier(1), option)
     val pnlExplanation = marketChangesPnl.combine(rows, choices)

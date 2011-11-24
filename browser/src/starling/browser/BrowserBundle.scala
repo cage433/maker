@@ -42,8 +42,8 @@ trait BrowserBundle {
   def marshal(obj:AnyRef):String
   def unmarshal(text:String):AnyRef
 
-  def initCache(cache:HeterogeneousMap[LocalCacheKey], publisher:Publisher)
-
+  def initCache():HeterogeneousMap[LocalCacheKey] = new HeterogeneousMap
+  def addListeners(cache:HeterogeneousMap[LocalCacheKey], publisher:Publisher) {}
   def settings(pageContext:PageContext):List[Component] = Nil
   def utilButtons(pageContext:PageContext):List[PageButton] = Nil
   def homeButtons(pageContext:PageContext):List[PageButton] = Nil

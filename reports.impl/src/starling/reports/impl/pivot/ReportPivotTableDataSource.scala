@@ -6,6 +6,7 @@ import scala.collection.mutable.{Map => MutableMap}
 import collection.Seq
 import collection.immutable.TreeMap
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import starling.gui.api.Desk
 
 /**
  * Joins a list of PivotReportData to a PivotTableDataSource (which must have InstrumentID and UTPVolume fields)
@@ -13,7 +14,7 @@ import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 class ReportField(val name:String, val pivotReport:PivotReportData[_ <: PivotReportRow], val pivotReportField:PivotReportField[_]) {
   def fieldDetails:FieldDetails = pivotReportField.pivotFieldDetails
 }
-class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:List[PivotReportData[_ <: PivotReportRow]]) extends PivotTableDataSource {
+class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:List[PivotReportData[_ <: PivotReportRow]], desk : Option[Desk]) extends PivotTableDataSource {
   type FieldValues = Seq[Any]
   type FieldBindings = scala.collection.Map[Field, Any]
 
@@ -175,14 +176,15 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
     PivotResult(result.data, result.possibleValues ++ tradePossibleValues )
   }
 
+  private def mergedReportOptions = reports.map(_.report.reportSpecificOptions).reduceLeft(_++_).distinct.filter(PivotReport.validReportSpecificChoices(desk))
   override def availablePages = reports.flatMap(_.availablePages).toSet.toList
 
-  override def reportSpecificOptions = reports.map(_.report.reportSpecificOptions).reduceLeft(_++_).distinct.stringValues
+  override def reportSpecificOptions: List[(String, List[Any])] = mergedReportOptions.distinct.stringValues
 
   override def zeroFields = reports.flatMap(_.report.zeroFields).toSet
 
   override def initialState = {
-    val initialReportSpecificChoices = reports.map(_.report.reportSpecificOptions.default).reduceLeft(_++_)
+    val initialReportSpecificChoices = mergedReportOptions.default
     PivotFieldsState(reportSpecificChoices = TreeMap(initialReportSpecificChoices.toArray:_*))
   }
 }

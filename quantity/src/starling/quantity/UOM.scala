@@ -30,6 +30,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   val BRL = UOM(Currencies.BRL, brl, 1.0)
   val CAD = UOM(Currencies.CAD, cad, 1.0)
   val CHF = UOM(Currencies.CHF, chf, 1.0)
+  val CNH = UOM(Currencies.CNH, cnh, 1.0)
   val CNY = UOM(Currencies.CNY, cny, 1.0)
   val CZK = UOM(Currencies.CZK, czk, 1.0)
   val DKK = UOM(Currencies.DKK, dkk, 1.0)
@@ -88,6 +89,11 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   // Time
   val MILLISECONDS = UOM(UOMType.TIME, MILLISECONDS_SYMBOL, 1.0)
+  val SECONDS = UOM(UOMType.TIME, SECONDS_SYMBOL, 1000.0)
+
+  //Data
+  val BYTES = UOM(UOMType.BYTES, BYTES_SYMBOL, 1)
+  val KILOBYTES = UOM(UOMType.BYTES, BYTES_SYMBOL, 1000)
 
   // Heat energy
   val THERMS = UOM(UOMType.HEAT_ENERGY, THERMS_SYMBOL, 1)

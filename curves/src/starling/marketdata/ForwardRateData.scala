@@ -5,17 +5,9 @@ import starling.utils.ImplicitConversions._
 import starling.pivot._
 import starling.quantity.{Quantity, UOM}
 import starling.daterange.{Day, Tenor}
-import starling.metals.datasources.LIBORCalculator
-import starling.utils.ImplicitConversions
-import collection.immutable.Map
 import scalaz.NewType
+import utils.TenorPivotParser
 
-
-object TenorPivotParser extends PivotParser {
-  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = text match {
-    case Tenor.Parse(tenor) => (tenor, text)
-  }
-}
 
 object ForwardRateDataType extends MarketDataType {
   type dataType = ForwardRateData
@@ -68,6 +60,7 @@ case class ForwardRateSource(value: String) extends NewType[String]
 
 object ForwardRateSource {
   val LIBOR = ForwardRateSource("LIBOR")
+  val SHIBOR = ForwardRateSource("SHIBOR")
 }
 
 case class ForwardRateData(rates: NestedMap[ForwardRateSource, Tenor, Quantity]) extends MarketData {
@@ -76,9 +69,6 @@ case class ForwardRateData(rates: NestedMap[ForwardRateSource, Tenor, Quantity])
   require(rates.allValues.forall(_.isInstanceOf[Quantity]))
 
   def lastDay(fixingDay: Day): Day = fixingDay
-
   def size = rates.nestedSize
+  def ratesFor(sources: ForwardRateSource*): Map[Tenor, Quantity] = sources.toList.flatMapO(rates.get).head
 }
-
-
-

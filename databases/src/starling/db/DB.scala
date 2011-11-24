@@ -36,7 +36,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
    * the DB. Any exceptions thrown from f will cause a rollback and then be propagated up the stack
    * as a nested RunTimeException. If no exception happens a commit is done.
    */
-  def inTransaction(f: DBWriter => Unit) {
+  def inTransaction[T](f: DBWriter => T):T = {
     inTransaction(DB.DefaultIsolationLevel)(f)
   }
 
@@ -44,19 +44,18 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
    * Same as above with specific isolationLevel
    */
 
-  def inTransaction(isolationLevel: Int)(f: DBWriter => Unit) {
+  def inTransaction[T](isolationLevel: Int)(f: DBWriter => T): T = {
     withTransaction(isolationLevel, false) {
       f(createWriter)
-      null
     }
   }
 
-  private def withTransaction(isolationLevel: Int, readonly: Boolean)(f: => Object) = {
+  private def withTransaction[T](isolationLevel: Int, readonly: Boolean)(f: => T): T = {
     val tt = new TransactionTemplate(new DataSourceTransactionManager(dataSource))
     tt.setReadOnly(readonly)
     tt.setIsolationLevel(isolationLevel)
     tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_NESTED)
-    tt.execute(new TransactionCallback[Object] {
+    tt.execute(new TransactionCallback[T] {
       def doInTransaction(status: TransactionStatus) = log.debugWithTime(status.isNewTransaction ? "TXN" | "OLD TXN") {
         try {
           f
@@ -85,6 +84,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
   }
 
   def query(sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => Unit): Int = {
+    log.info(sql)
     try {
       val counter = new NonAtomicInteger
       withTransaction(DB.DefaultIsolationLevel, true) {
@@ -107,10 +107,13 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
    * Same as query but results of function f are returned as a List
    */
   def queryWithResult[T](sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => T): List[T] = {
+    log.info(sql + ", " + parameters)
+
     val counter = new NonAtomicInteger
+    // TODO: [21 Nov 2011] Is it necessary to use a transaction for every query ?
     withTransaction(DB.DefaultIsolationLevel, true) {
-      new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[Object]() {
-        def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs, counter.incrementAndGet)).asInstanceOf[Object]
+      new NamedParameterJdbcTemplate(dataSource).query(sql, convertTypes(parameters), new RowMapper[T]() {
+        def mapRow(rs: ResultSet, rowNum: Int) = f(resultSetFactory.create(rs, counter.incrementAndGet)).asInstanceOf[T]
       })
     }.asInstanceOf[java.util.List[T]].toList
   }

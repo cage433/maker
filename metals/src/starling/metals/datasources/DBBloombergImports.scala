@@ -26,7 +26,7 @@ object DBBloombergImports {
     }.flatten
   })
 
-  private def getTimeZones(eai: DB) = eai.lookupTable("tblTimezones", "ID", "WindowsID").mapKeys(_.toInt) >>> Map(
+  private def getTimeZones(eai: DB) = eai.lookupTable("tblTimezones", "ID", "WindowsID").mapKeys(_.toInt) innerJoin Map(
     "UTC"                      → TimeZone.UTC,
     "GMT Standard Time"        → TimeZone.GMT,
     "China Standard Time"      → TimeZone.Shanghai,

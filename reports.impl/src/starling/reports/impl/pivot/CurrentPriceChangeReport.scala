@@ -8,7 +8,7 @@ import starling.quantity.UOM
 import starling.tradestore.TradeAndFields
 import starling.reports.impl.pivot.PivotReport._
 import starling.pivot.{PivotQuantityFieldDetails, SumPivotQuantityFieldDetails, PivotQuantity}
-
+import starling.gui.api.ReportSpecificOptions._
 
 case class CurrentPriceChangeRow(
   utpID : UTPIdentifier,
@@ -65,8 +65,7 @@ class CurrentPriceChangeReport(d1:Environment, d2:Environment, utps : Map[UTPIde
     super.combine(combinedRows, reportSpecificChoices)
   }
   def envForSplitting = d1
-  override def reportSpecificOptions = super.reportSpecificOptions :+
-      (atmVega_str -> List(false, true))
+  override def reportSpecificOptions = super.reportSpecificOptions :+ atmVega
 }
 
 object CurrentPriceChangeRowFields extends RiskPivotFields[CurrentPriceChangeRow]

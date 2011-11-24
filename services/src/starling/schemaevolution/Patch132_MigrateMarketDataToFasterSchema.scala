@@ -213,7 +213,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
     if (rows > 0) log.info("Updated %d row(s) for commitId: %d to version: %d\n" % (rows, commitId, version))
   }
 
-  val marketDataExtendedKeyHelper = new MarketDataExtendedKeyHelper(dataTypes)
+  val marketDataExtendedKeyHelper = new KeyHelper(dataTypes)
   import marketDataExtendedKeyHelper._
 
   private def migrateSchema: Int = {

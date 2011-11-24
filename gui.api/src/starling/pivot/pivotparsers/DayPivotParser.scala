@@ -4,9 +4,17 @@ import starling.daterange.{Month, TenorType, Day}
 import starling.pivot.{ExtraFormatInfo, PivotParser}
 import starling.pivot.utils.PeriodPivotFormatter
 object DayPivotParser extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = typedParse(text)
+
+  def typedParse(text: String): (Day, String) = {
     val day = Day.parse(text)
     (day, day.toShortString)
+  }
+}
+
+object ObservationDayPivotParser extends PivotParser {
+  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
+    DayPivotParser.typedParse(text).ensuring(_._1 <= Day.today)
   }
 }
 

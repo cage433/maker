@@ -30,6 +30,7 @@ import starling.lim.LIMService
 import starling.gui.api.Email._
 import starling.gui.api.{Email, MarketDataSelection, PricingGroup}
 import starling.metals.tasks.{UploadCurveToTrinityTask, TrinityUploader}
+import starling.props.ServerTypeLabel._
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -127,7 +128,9 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
         context.registerService(classOf[MarketDataSource], factory(limService, emailService, template)))
     }
 
-    registerScheduler(context, broadcaster)
+    val dataTypes = new MarketDataTypes(referenceDataLookup)
+
+    registerScheduler(context, broadcaster, dataTypes)
 
     Map(
       "Bloomberg → LIM"    → new BloombergImportsReferenceData(bloombergImports),
@@ -160,8 +163,6 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       import starling.daterange.ObservationTimeOfDay._
       import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
-      val dataTypes = new MarketDataTypes(referenceDataLookup)
-
       val metalRules = List(
         ClosesEnvironmentRule(referenceDataLookup),
         ClosesEnvironmentRule(referenceDataLookup, allowOldPricesToBeUsed = true),
@@ -175,7 +176,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
   }
 
   // TODO [19 Oct 2011] Reuse scheduler for oil tasks
-  private def registerScheduler(context: BromptonContext, broadcaster: Broadcaster) {
+  private def registerScheduler(context: BromptonContext, broadcaster: Broadcaster, dataTypes: MarketDataTypes) {
     val props = context.awaitService(classOf[starling.props.Props])
     val scheduler = new Scheduler(props)
     val jmx = new StarlingJMX(scheduler)
@@ -188,15 +189,15 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       }
     })
 
-    if (props.ServerType() == "FC2" && props.ImportMarketDataAutomatically()) registerFC2Tasks(context, broadcaster)
+    if (props.ServerType() == FC2 && props.ImportMarketDataAutomatically()) registerFC2Tasks(context, broadcaster, dataTypes)
   }
 
-  private def registerFC2Tasks(context: BromptonContext, broadcaster: Broadcaster) {
+  private def registerFC2Tasks(context: BromptonContext, broadcaster: Broadcaster, dataTypes: MarketDataTypes) {
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
 
     context.registerService(classOf[TaskDescription], importLim(businessCalendars, marketDataStore))
-    context.registerService(classOf[TaskDescription], copyBenchmarksAndFreightParity(businessCalendars, marketDataStore))
+    context.registerService(classOf[TaskDescription], copyBenchmarksAndFreightParity(businessCalendars, marketDataStore, dataTypes))
 
     registerDataValidationTasks(context, broadcaster)
     registerTrinityTask(context)
@@ -204,10 +205,11 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
   private def importLim(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore) = TaskDescription("Import LIM",
     everyFiveMinutes(businessCalendars.LME), new ImportMarketDataTask(marketDataStore, PricingGroup.Metals)
-      .withSource("LIM", marketDataStore.sourcesFor(PricingGroup.Metals).flatMap(_.description): _*))
+      .withSource("LIM", marketDataStore.sourcesFor(PricingGroup.Metals).flatMap(_.description): _*), coolDown = Period.minutes(3))
 
-  private def copyBenchmarksAndFreightParity(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore) =
-    TaskDescription("Copy Freight Parity & Benchmarks", hourly(businessCalendars.weekDay()), CopyManualData(marketDataStore))
+  private def copyBenchmarksAndFreightParity(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore,
+    dataTypes: MarketDataTypes) = TaskDescription(
+      "Copy Freight Parity & Benchmarks", hourly(businessCalendars.weekDay()), CopyManualData(marketDataStore, dataTypes))
 
   private def registerDataValidationTasks(context: BromptonContext, broadcaster: Broadcaster) {
     val marketDataStore = context.awaitService(classOf[MarketDataStore])

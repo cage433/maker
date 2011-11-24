@@ -2,18 +2,21 @@ package starling.metals.datasources
 
 import collection.immutable.List
 
-import starling.calendar.BusinessCalendarSet
+import starling.curves.ForwardForwardDiscountCurve
+import starling.curves.interestrate.{DayCount, DayCountActual365, DayCount30_360}
 import starling.daterange._
 import starling.market._
 import starling.quantity.{Quantity, UOM}
+import starling.utils.ClosureUtil._
 
+import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
+import starling.utils.Pattern._
 import Day._
 import UOM._
-import starling.utils.ImplicitConversions._
-import starling.utils.Pattern._
-import scalaz.Scalaz._
-import starling.curves.ForwardForwardDiscountCurve
-import starling.curves.interestrate.{DayCount, DayCountActual365, DayCount30_360}
+import starling.calendar.{BusinessCalendars, BusinessCalendarSet}
+import starling.marketdata.ForwardRateSource
+
 
 case class LIBORFixing(currency: UOM, fixingDay: Day, tenor: Tenor, rate: Quantity) extends Ordered[LIBORFixing] {
   private val dayCountConvention = if (currency == UOM.GBP) DayCountActual365 else DayCount30_360
@@ -34,7 +37,9 @@ case class LIBORFixing(currency: UOM, fixingDay: Day, tenor: Tenor, rate: Quanti
     if (valueDay >= lastMaturityDay) rate else {
       assert(maturityDay > lastMaturityDay, "Require maturity days to be strictly increasing")
 
-      val discountCurve = new ForwardForwardDiscountCurve(currency, marketDayAndTime, forwardForwardRates)
+      val discountCurve = decorate("Cannot build forward forward discount curve for: " + this) {
+        new ForwardForwardDiscountCurve(currency, marketDayAndTime, forwardForwardRates)
+      }
       val valueDayDiscount = discountCurve.discount(valueDay)
       val lastMaturityDayDiscount = discountCurve.discount(lastMaturityDay)
       val maturityDayDiscount = valueDayDiscount * forwardDiscount
@@ -61,7 +66,7 @@ case class LIBORCalculator(currency: UOM, fixingDay: Day) {
   def maturityDay(tenor: Tenor = Tenor.ON): Day = maturityDay(valueDay(tenor), tenor)
 
   def maturityDay(theValueDay: Day, tenor: Tenor): Day = {
-    val maturityDay = theValueDay + tenor
+    val maturityDay = tenor + theValueDay
 
     if (tenor.isOneOf(Tenor.ON, Tenor.SN, Tenor.OneWeek, Tenor.TwoWeeks)) {
       maturityDay.thisOrNextBusinessDay(combinedCalendar)
@@ -74,7 +79,6 @@ case class LIBORCalculator(currency: UOM, fixingDay: Day) {
 
   def supportsOvernight = overnightCalendars.contains(currency)
   def isBusinessDay = fixingDay.isBusinessDay(combinedCalendar)
-//  def format(format: DecimalFormat) = value.format(format)
 
   private val ONCurrency = Extractor.from[UOM](supportsOvernight.option(_))
 
@@ -98,7 +102,7 @@ object LIBORCalculator {
     EUR → BusinessCalendarSet("EUR LIBOR", Location.Unknown, Set(22 Apr 2011, 25 Apr 2011, 29 Aug 2011, 26 Dec 2011, 27 Dec 2011, 02 Jan 2012)),
     GBP → BusinessCalendarSet("GBP LIBOR", Location.Unknown, Set(3 Jan 2011, 22 Apr 2011, 25 Apr 2011, 29 Apr 2011, 2 May 2011, 30 May 2011, 29 Aug 2011, 26 Dec 2011, 27 Dec 2011, 2 Jan 2012)),
     USD → BusinessCalendarSet("USD LIBOR", Location.Unknown, Set(17 Jan 2011, 21 Feb 2011, 4 Jul 2011, 5 Sep 2011, 10 Oct 2011, 11 Nov 2011, 24 Nov 2011))
-  )
+  ) ++ Map(CNY → FuturesExchangeFactory.SHFE.calendar.copy(name = "CNY SHIBOR"))
 
   val spotNextCalendars = Map(
     AUD → BusinessCalendarSet("AUD LIBOR", Location.Unknown, Set(26 Jan 2011, 13 Jun 2011, 1 Aug 2011, 3 Oct 2011)),
@@ -109,11 +113,12 @@ object LIBORCalculator {
     //SEK → BusinessCalendarSet("SEK LIBOR", Location.Unknown, Set(6 Jan 2011, 2 Jun 2011, 24 Jun 2011))
   )
 
+  val currencies = Map(ForwardRateSource.LIBOR ->> (CAD, EUR, GBP, USD, AUD, CHF, JPY, NZD), ForwardRateSource.SHIBOR ->> CNY)
+
   val calendars = overnightCalendars ++ spotNextCalendars
-  val currencies = calendars.keySet
   def firstTenorFor(currency: UOM) = if (overnightCalendars.contains(currency)) ON else SN
 
-  def tenorsFor(currency: UOM) = LIBORCalculator.firstTenorFor(currency) :: commonTenors
+  def tenorsFor(currency: UOM) = firstTenorFor(currency) :: commonTenors
   private val commonTenors = List(OneWeek, TwoWeeks, OneMonth, TwoMonths, ThreeMonths, SixMonths, NineMonths, TwelveMonths)
-  val periods = (ON :: SN :: commonTenors).map(tenor => (Level.Close, StoredFixingPeriod.tenor(tenor)))
+  val tenors = ON :: SN :: commonTenors
 }

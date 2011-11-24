@@ -35,6 +35,14 @@ class RichMapTests extends TestNGSuite with ShouldMatchers with RichMaps {
   }
 }
 
+class RichMultiMapTests extends TestNGSuite with ShouldMatchers with RichMaps with RichAnys {
+  @Test def canFormUnionOfTwoMultiMaps {
+    Map(1 ->> (1, 2, 3), 2 ->> (2, 3, 4)) union Map(1 ->> (4, 5, 6), 3 ->> (3, 4, 5)) should be ===
+      Map(1 ->> (1, 2, 3, 4, 5, 6), 2 ->> (2, 3, 4), 3 ->> (3, 4, 5))
+  }
+}
+
+
 class BidirectionalMapTests extends TestNGSuite with ShouldMatchers {
   val bimap = BidirectionalHashMap.empty[Int, String]
   val counter = new AtomicInteger(0)

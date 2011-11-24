@@ -115,6 +115,10 @@ object CacheFactory extends Log {
      */
     def memoizeX[K, V](key: K, f: => V): V = memoize(key, f)
 
+    // Written so that the type of the input to f can be inferred
+    // TODO [23 Nov 2011] Get rid of all other memoize methods !
+    def memoizeZ[K, V](key: K)(f: K => V) = memoize(key, f(key))
+
     /**
      * Returns the value for the key if the cache contains it
      *

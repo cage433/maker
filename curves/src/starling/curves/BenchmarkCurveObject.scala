@@ -56,8 +56,11 @@ case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCount
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
-  def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = {
+  def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = try {
     originalAtomicEnv.apply(this)
+  } catch {
+    case e: MissingMarketDataException => throw new MissingMarketDataException(e.shortMessage + ", commodity: " + commodity,
+      e.longMessage.map(_ + ", commodity: " + commodity))
   }
 }
 
@@ -85,7 +88,8 @@ case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData
     case (country: NeptuneCountryCode, grade : GradeCode, day: Day) => {
       val (days, benchmarks) = countryData((country, grade)).sorted.unzip
       if (benchmarks.isEmpty)
-        throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade))
+        throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade),
+          long = "No benchmarks for country %s (%s), grade code %s (%s)" % (refData.countryFor(country), country, refData.gradeFor(grade), grade))
       InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
     }
   }

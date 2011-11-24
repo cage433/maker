@@ -32,6 +32,7 @@ class Booter {
         File cacheDir = new File(parentCacheDir, cacheDirName.replaceAll("/", "-"));
         if (!cacheDir.exists()) cacheDir.mkdir();
         File logFile = new File(cacheDir, "log.txt");
+        System.setProperty("stdout.logfile", logFile.getPath());
         System.setOut(new java.io.PrintStream(new TeeOutputStream(System.out, new FileOutputStream(logFile))));
         System.setErr(new java.io.PrintStream(new TeeOutputStream(System.err, new FileOutputStream(logFile))));
         System.out.println("Cachdir: " + cacheDir.getAbsolutePath());
@@ -143,7 +144,8 @@ class Booter {
 
         Long maxTimestamp = new TreeSet<Long>(remoteJarsToTimestamps.values()).last();
         System.setProperty("starling.codeversion.timestamp", maxTimestamp.toString());
-
+        System.out.flush();
+        System.err.flush();
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
             SwingUtilities.invokeAndWait(new Runnable() {

@@ -27,6 +27,7 @@
     <orderEntry type="module" module-name="singleclasspathmanager" exported="" />
     <orderEntry type="module" module-name="startserver" exported="" />
     <orderEntry type="module" module-name="services" />
+    <orderEntry type="module" module-name="bouncyrmi" />
   </component>
 </module>
 

@@ -27,7 +27,7 @@ case class VersionTransformingMdDB(adapted: MdDB, db: DBTrait[RichResultSetRow],
 
   override def latestVersionForMarketDataSets() = super.latestVersionForMarketDataSets.mapValuesEagerly(out)
   override def latestExcelVersions() = super.latestExcelVersions.mapValuesEagerly(out)
-  override def store(data: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet) = out(super.store(data.map(in), marketDataSet))
+  override def store(data: List[MarketDataUpdate], marketDataSet: MarketDataSet) = out(super.store(data.map(in), marketDataSet))
   override def maxVersionForMarketDataSetNames(names: List[String]) = super.maxVersionForMarketDataSetNames(names).map(out)
   override def marketDataTypes(version: Int, mds: List[MarketDataSet]) = super.marketDataTypes(in(version), mds)
 

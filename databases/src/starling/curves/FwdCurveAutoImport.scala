@@ -11,7 +11,7 @@ import starling.utils.{Log}
 import starling.calendar.BusinessCalendar
 
 class FwdCurveAutoImport(runEvery: Int, marketDataStore: MarketDataStore, marketDataSources: Set[MarketDataSet], businessCalendar: BusinessCalendar)
-  extends RepeatingTask(runEvery, "EAIAutoImport") {
+  extends RepeatingTask(runEvery, "FwdCurveAutoImport") {
 
   def task = {
     try {

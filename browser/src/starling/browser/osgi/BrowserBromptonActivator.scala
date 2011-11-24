@@ -14,6 +14,7 @@ import swing.event.Event
 import java.io.{File, FileInputStream}
 import java.util.{Hashtable, Properties}
 import starling.manager._
+import management.ManagementFactory
 
 case class BundleAdded(bundle:BrowserBundle) extends StarlingGUIEvent
 case class BundleRemoved(bundle:BrowserBundle) extends StarlingGUIEvent
@@ -57,14 +58,17 @@ class BrowserBromptonActivator extends BromptonActivator {
     var bookmarks = serverContext.browserService.bookmarks
     context.createServiceTracker(Some(classOf[BrowserBundle]), ServiceProperties(), new BromptonServiceCallback[BrowserBundle] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, bundle: BrowserBundle) {
+        val cache = bundle.initCache()
         onEDT {
           val bundlesPublisher = new Publisher() {}
           bundlesPublisher.listenTo(localCachePublisher)
           bundlesByRef(ref) = (bundle, bundlesPublisher)
           bundlesByName(bundle.bundleName) = bundle
-          bundle.initCache(cacheMap, bundlesPublisher)
-          pageContextPublisher.publish(BundleAdded(bundle))
+          cacheMap.addAll(cache)
+          bundle.addListeners(cacheMap, bundlesPublisher)
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+          pageContextPublisher.publish(BundleAdded(bundle))
+          println("Bundle started " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000 + "s")
         }
       }
       override def serviceRemoved(ref: BromptonServiceReference) {
@@ -74,8 +78,8 @@ class BrowserBromptonActivator extends BromptonActivator {
           bundlesByRef.remove(ref)
           bundlesByName.remove(bundle.bundleName)
           //TODO remove values from localcache?
-          pageContextPublisher.publish(BundleRemoved(bundle))
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
+          pageContextPublisher.publish(BundleRemoved(bundle))
         }
       }
     })

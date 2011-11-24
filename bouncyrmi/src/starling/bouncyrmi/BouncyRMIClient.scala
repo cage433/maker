@@ -11,20 +11,56 @@ import org.jboss.netty.channel._
 import java.net.InetSocketAddress
 import org.jboss.netty.handler.ssl.SslHandler
 import javax.net.ssl.SSLHandshakeException
-import java.util.concurrent._
-import atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHandler}
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
 import java.lang.reflect.{InvocationHandler, Method}
 import starling.auth.Client
 import starling.utils.NamedDaemonThreadFactory
+import java.util.concurrent._
+import scala.collection.JavaConversions._
 
+case class MethodLogEvent(id:Int, method:Method, compressedSize:Int, uncompressedSize:Int, time:Long, serverTime:Long) extends Event {
+  def shortName = method.getName + " " + compressedSize+ " bytes (" + uncompressedSize + " uncompressed) " + time + "ms"
+  val serviceName = {
+    val klassName = method.getDeclaringClass.getName
+    klassName.substring(klassName.lastIndexOf('.')+1)
+  }
+  val ioTime = time - serverTime
+  lazy val rate = if (ioTime == 0) 0.0 else (compressedSize.toDouble / ioTime)
+}
 
 case class StateChangeEvent(previous: State, current: State) extends Event
+
+object ChannelMessageSize {
+  private val channelLocal = new ChannelLocal[(Int,Int)]()
+
+  def set(channel:Channel, compressed:Int, uncompressed:Int) { channelLocal.set(channel, (compressed,uncompressed))}
+  def get(channel:Channel) = channelLocal.get(channel)
+}
+
+trait MethodLogService {
+  def methodInvocations(upTo:Int):List[MethodLogEvent]
+}
 
 class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
+
+  def methodLogService = new MethodLogService {
+    def methodInvocations(upTo:Int) = methodLog.toList.take(upTo)
+  }
+
+  val methodLog = new java.util.concurrent.ConcurrentLinkedQueue[MethodLogEvent]()
+
+  private def logMethodInvocation(method:Method, compressed:Int, uncompressed:Int, duration:Long, serverDuration:Long) {
+    methodLog synchronized {
+      val id = methodLog.size + 1
+      val logEvent = new MethodLogEvent(id, method, compressed, uncompressed, duration, serverDuration)
+      methodLog.add(logEvent)
+      publisher.publish(logEvent)
+    }
+  }
 
   def start: Future[Option[scala.Throwable]] = {
     println("BouncyRMIClient connecting to %s:%d".format(host, port))
@@ -221,7 +257,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
         case _ => stop()
       }
 
-      val waiting = new Waiting(klass)
+      val waiting = new Waiting(klass, method, System.currentTimeMillis())
       waitingFor.put(id, waiting)
       try {
         state match {
@@ -361,13 +397,11 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
           }
           case StdOutMessage(_, line) => println("S: " + line)
           case ServerException(t: Throwable) => killAllWaitingFors(t)
-          case MethodInvocationResult(id, result) => {
+          case MethodInvocationResult(id, serverDuration, result) => {
             val waiting = waitingFor.get(id)
-//            println("Method invocation result on client: " + waiting.method)
-//            println("Method invocation result on client Class : " + waiting.method.getClass)
-//            println("Method invocation result on client CL : " + waiting.method.getClass.getClassLoader)
-//            val k = waiting.method.getClass
-//            val cl = waiting.method.getClass.getClassLoader
+            val duration = System.currentTimeMillis - waiting.startTime
+            val (compressed, uncompressed) = ChannelMessageSize.get(ctx.getChannel)
+            logMethodInvocation(waiting.method, compressed, uncompressed, duration, serverDuration)
             waiting.setResult(BouncyRMI.decode(waiting.klass.getClassLoader, result))
           }
           case MethodInvocationException(id, t) => waitingFor.get(id).exception(t)
@@ -454,7 +488,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
   val reactions = publisher.reactions
   val remotePublisher = publisher.publisher
 
-  class Waiting(val klass:Class[_]) {
+  class Waiting(val klass:Class[_], val method:Method, val startTime:Long) {
     private val lock = new Object
     private var completed = false
     private var result: AnyRef = null

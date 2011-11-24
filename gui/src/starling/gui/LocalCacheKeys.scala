@@ -29,5 +29,6 @@ object LocalCacheKeys {
   val CurrentUser                         = new LocalCacheKey[User]("currentUser")
   val LatestRabbitEvent                   = new LocalCacheKey[Long]("LatestRabbitEvent")
   val LatestEmailEvent                    = new LocalCacheKey[Timestamp]("LatestEmailEvent")
+  val MethodLogIndex                      = new LocalCacheKey[Int]("MethodLogIndex")
 }
 

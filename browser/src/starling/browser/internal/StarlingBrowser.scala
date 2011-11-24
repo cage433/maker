@@ -12,7 +12,7 @@ import org.jdesktop.animation.timing.{TimingTargetAdapter, Animator}
 import scala.ref.SoftReference
 import net.miginfocom.swing.MigLayout
 import swing._
-import event.{MouseClicked, ButtonClicked}
+import event.{Event, MouseClicked, ButtonClicked}
 import javax.swing.{JComponent, AbstractAction, KeyStroke, JPanel, JPopupMenu, Timer, ImageIcon}
 import java.awt.{RenderingHints, Graphics, Color, KeyboardFocusManager, Graphics2D, Component => AWTComp}
 import java.lang.reflect.UndeclaredThrowableException
@@ -95,7 +95,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  reactions += {
+  val publisherX = new Publisher {}
+  publisherX.reactions += {
     case e@BundleAdded(bundle) => {
       if (current != -1 && bundle.bundleName == history(current).bundle) {
         val currentPageInfo = history(current)
@@ -111,7 +112,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
       publisherForPageContext.publish(e)
     }
-    case e:StarlingGUIEvent => {
+    case e:Event => {
       publisherForPageContext.publish(e)
 
       if (history.nonEmpty) {
@@ -130,7 +131,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
     }
   }
-  listenTo(pageBuilder.remotePublisher)
+  publisherX.listenTo(pageBuilder.remotePublisher)
 
   val pageContext = {
     new PageContext {

@@ -24,7 +24,7 @@ import starling.services.EmailService
 
 
 object PriceFixingLimMarketDataSource {
-  val sources = List(LMEFixings, LIBORFixings, BloombergTokyoCompositeFXRates, BalticFixings,
+  val sources = List(LMEFixings, BloombergTokyoCompositeFXRates, BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE.fixingLevel),
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all
 }
@@ -35,10 +35,7 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
   import PriceFixingLimMarketDataSource._
 
   override def description = descriptionFor(sources)
-
-  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(day.startOfFinancialYear, day, sources))
-  }
+  def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
   override def eventSources(marketDataStore: MarketDataStore) = {
     List(new PriceFixingDataEventSource(PricingGroup.Metals, ReferenceInterestMarketDataProvider(marketDataStore)))
@@ -60,7 +57,7 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
 
 object LMEFixings extends LimSource(List(Ask, Bid)) {
   type Relation = LMEFixingRelation
-  def description = List("%s/TRAF.LME.<commodity>.<ring>.<tenor> %s" % (Trafigura.Bloomberg.Currencies.Lme, levelDescription))
+  def description = List("%s/TRAF.LME.<commodity>.<ring>.<tenor> %s" % (Trafigura.Bloomberg.Metals.Lme, levelDescription))
 
   case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor: Tenor)
 

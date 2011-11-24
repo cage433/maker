@@ -42,20 +42,21 @@ object Asset {
 }
 
 case class Asset(known:Boolean, assetType:AnyRef, settlementDay:Day, amount:Quantity, mtm:Quantity) {
-  def *(volume:Double) = Asset(known, assetType, settlementDay, amount*volume, mtm*volume)
-  def copyMtm(m:Quantity) = copy(mtm=m)
+  def *(volume:Double) = copy(amount = amount*volume, mtm = mtm*volume)
+  def inCCY(env : Environment, ccy : UOM) = {
+    val mtmInCCY = mtm in ccy match {
+      case Some(mtmInCCY) => mtmInCCY
+      case None => {
+        val fXRate = env.spotFXRate(ccy, mtm.uom)
+        (mtm * fXRate) inUOM ccy
+      }
+    }
+    copy(mtm = mtmInCCY)
+  }
 }
 
 case class Assets(assets:List[Asset]) {
-  def mtm(env: Environment, ccy: UOM) = Quantity.sum(Quantity(0, ccy) :: assets.map(asset => {
-    asset.mtm in ccy match {
-      case Some(mtm) => mtm
-      case None => {
-        val fXRate = env.spotFXRate(ccy, asset.mtm.uom)
-        (asset.mtm * fXRate) inUOM ccy
-      }
-    }
-  }))
+  def mtm(env: Environment, ccy: UOM) = Quantity.sum(Quantity(0, ccy) :: assets.map(_.inCCY(env, ccy).mtm))
   def ++ (other:Assets) = Assets(assets ::: other.assets)
   def * (volume:Double) = Assets(assets.map(_ * volume))
 }

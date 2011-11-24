@@ -11,6 +11,7 @@ import starling.instrument._
 import starling.market.FuturesMarket
 import starling.daterange._
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import starling.gui.api.ReportSpecificOptions._
 
 /**
  * The pivot reports transform the UTPs (via collapseOptions, equivalentFutures and recombining
@@ -21,7 +22,7 @@ case class UTPWithIdentifier(
   id : UTPIdentifier,
   utp : UTP
 ){
-  def strategy = id.getAttribute(strategy_str)
+  def strategy = id.getAttribute(strategyLabel)
 }
 
 class PivotUTPRestructurer(
@@ -163,9 +164,9 @@ class PivotUTPRestructurer(
   }
 
   def apply(utps : List[UTPWithIdentifier]) : List[UTPWithIdentifier] = {
-    val futuresAsSpreads = reportSpecificChoices.getOrElse(futuresAsSpreads_str, false)
-    val futuresAsSwaps = reportSpecificChoices.getOrElse(futuresAsSwaps_str, false)
-    val useSkew = reportSpecificChoices.getOrElse(useSkew_str, true)
+    val futuresAsSpreads = reportSpecificChoices.getOrElse(futuresAsSpreadsLabel, false)
+    val futuresAsSwaps = reportSpecificChoices.getOrElse(futuresAsSwapsLabel, false)
+    val useSkew = reportSpecificChoices.getOrElse(useSkewLabel, true)
 
     var result = utps
 
@@ -200,7 +201,7 @@ object PivotReportUtils{
     : (
       Set[EnvironmentDifferentiable with PriceKey], Set[EnvironmentDifferentiable with VolKey]
       ) = {
-      UTP.priceAndVolKeys(utp, env, reportSpecificChoices.getOrElse(showEqFutures_str, true), reportSpecificChoices.getOrElse(tenor_str, Month))
+      UTP.priceAndVolKeys(utp, env, reportSpecificChoices.getOrElse(showEqFuturesLabel, true), reportSpecificChoices.getOrElse(tenorLabel, Month))
   }
 
 

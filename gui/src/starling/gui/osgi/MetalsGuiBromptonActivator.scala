@@ -27,11 +27,7 @@ import java.awt.event.KeyEvent
 
 class MetalsGuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
-    val client = context.awaitService(classOf[BouncyRMIClient])
-    val rabbitEventViewerService = client.proxy(classOf[RabbitEventViewerService])
-    val emailService = client.proxy(classOf[EmailService])
-    context.registerService(classOf[RabbitEventViewerService], rabbitEventViewerService)
-    context.registerService(classOf[EmailService], emailService)
+    val rabbitEventViewerService = context.awaitService(classOf[RabbitEventViewerService])
     context.registerService(classOf[BrowserBundle], new MetalsBrowserBundle(rabbitEventViewerService))
   }
 }
@@ -40,18 +36,16 @@ class MetalsBrowserBundle(rabbitEventService:RabbitEventViewerService) extends B
   def bundleName = "Metals"
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   def unmarshal(text: String) = GuiStarlingXStream.read(text).asInstanceOf[AnyRef]
-  def initCache(cache: HeterogeneousMap[LocalCacheKey], publisher: Publisher) {
+  override def initCache() = {
+    val cache = new HeterogeneousMap[LocalCacheKey]
     import LocalCacheKeys._
     cache(LatestRabbitEvent) = rabbitEventService.latestRabbitEvent
-
-    val localCacheUpdatePublisher = new scala.swing.Publisher() {}
+    cache
+  }
+  override def addListeners(cache:HeterogeneousMap[LocalCacheKey], publisher: Publisher) {
     publisher.reactions += {
-      case e => localCacheUpdatePublisher.publish(e)
-    }
-
-    localCacheUpdatePublisher.reactions += {
       case RabbitEventReceived(latestTimestamp) => {
-        cache(LatestRabbitEvent) = latestTimestamp
+        cache(LocalCacheKeys.LatestRabbitEvent) = latestTimestamp
       }
     }
   }

@@ -10,7 +10,7 @@ import starling.marketdata.ForwardRateDataType
 class Patch141_StoreInterestRatesAsForwardRates extends Patch {
   protected def runPatch(init: StarlingInit, db: RichDB, writer: DBWriter) = {
     // The existing forward rates can be deleted
-    val patchUtil = MarketDataPatchUtil(writer)
+    val patchUtil = MarketDataPatchUtil(db, writer)
     patchUtil.deleteMarketData(removeOrphaned = false, types = ForwardRateDataType.name)
 
     writer.update("DELETE FROM MarketDataValue WHERE extendedKey IN (" +

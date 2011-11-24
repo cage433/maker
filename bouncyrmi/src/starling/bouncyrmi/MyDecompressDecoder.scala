@@ -24,6 +24,8 @@ class MyDecompressDecoder(maxSize: Int, logger:(String)=>Unit) extends LengthFie
       inflater.inflate(uncompressedArray)
       inflater.end
 
+      ChannelMessageSize.set(channel, avail, originalByteArrayLength)
+
       logger("Received compressed length: " + originalByteArrayLength)
 
       ChannelBuffers.wrappedBuffer(uncompressedArray)

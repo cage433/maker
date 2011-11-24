@@ -59,8 +59,8 @@ object ValuationServicePerformanceTest extends App {
     BouncyRMIServiceApi().using { valuationServiceRMI : ValuationServiceApi =>
       val snapshotID = mds.marketDataSnapshotIDs(Some(Day.today)).head
       val marketDataID = TitanMarketDataIdentifier(snapshotID, Day.today)
-      val directQuotaResults = run("Quota (direct)", () => vs.valueAllTradeQuotas(marketDataID))
-      val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllTradeQuotas(marketDataID))
+      val directQuotaResults = run("Quota (direct)", () => vs.valueAllTradeQuotas(Some(marketDataID)))
+      val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllTradeQuotas(Some(marketDataID)))
 
       val output = new File("valuation-service-timings.csv")
       val w = new PrintWriter(output)
@@ -68,13 +68,13 @@ object ValuationServicePerformanceTest extends App {
       def printHeaders() = w.println("Run number, time (ms), total record count, successfully valued record count\n")
 
       printHeaders()
-      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.values.size, r._3.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3._2.values.size, r._3._2.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
       w.println("\nDirect quota results (average time = %dms)".format(average(directQuotaResults.map(_._2).toList)))
       printHeaders()
-      w.println(directQuotaResults.map(r => List(r._1, r._2, r._3.values.size, r._3.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println(directQuotaResults.map(r => List(r._1, r._2, r._3._2.values.size, r._3._2.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
 
       printHeaders()
-      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3.values.size, r._3.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
+      w.println(rmiQuotaResults.map(r => List(r._1, r._2, r._3._2.values.size, r._3._2.values.partition(_.isRight)._1.size).mkString(", ")).mkString("\n"))
       printHeaders()
 
       w.flush

@@ -9,7 +9,7 @@ cd $BUILD_PATH
 NAME=$(dirname $(dirname $(pwd)))
 cd ..
 
-#assertEquals 'Java(TM) SE Runtime Environment (build 1.6.0_25-b06)', "`java -version 2>&1 | grep Env`", 'Invalid Java version'
+assertEquals 'Java(TM) SE Runtime Environment (build 1.6.0_25-b06)', "`java -version 2>&1 | grep Env`", 'Invalid Java version'
 
 if [ -f pid.txt ]; then
     echo
@@ -34,18 +34,34 @@ else
 
     SERVERNAME=`cat props.conf | grep -i ServerName | sed -r 's/ServerName\s*=\s*//i'`
 
-    echo "Starting..."
-    nohup java \
-       -DserverName=$SERVERNAME \
-       -server \
-       -Xmx6000m \
-      -XX:MaxPermSize=256m \
-      -XX:+HeapDumpOnOutOfMemoryError \
-      -Dcom.sun.management.jmxremote.port=$JMX_PORT \
-      -Dcom.sun.management.jmxremote.authenticate=false \
-      -Dcom.sun.management.jmxremote.ssl=false \
-      -Dhttp.nonProxyHosts=nexus.global.trafigura.com \
-      -jar sbt/sbt-launch-0.11.0.jar "project launcher" "run-main starling.startserver.Server" >> logs/stdouterr.log 2>&1 &
+    echo `java -version`
+        echo "Compiling..."
+        nohup java \
+          -Dhttp.nonProxyHosts=nexus.global.trafigura.com \
+          -jar sbt/sbt-launch-0.11.1.jar "project launcher" compile deploy-classpath >> logs/stdouterr.log 2>&1
 
-    #Note: OutputPIDToFile.scala is used to write pid.txt
+        COMPILE_WORKED=$?
+
+        if [ $COMPILE_WORKED -eq 0 ]; then
+            echo "Starling Starling..."
+
+            . bin/deploy-classpath.sh
+
+            nohup java \
+               -DserverName=$SERVERNAME \
+               -server \
+               -Xmx6000m \
+               -XX:MaxPermSize=512m \
+               -XX:+HeapDumpOnOutOfMemoryError \
+               -Dcom.sun.management.jmxremote.port=$JMX_PORT \
+               -Dcom.sun.management.jmxremote.authenticate=false \
+               -Dcom.sun.management.jmxremote.ssl=false \
+               -Dhttp.nonProxyHosts=nexus.global.trafigura.com \
+               starling.startserver.Server >> logs/stdouterr.log 2>&1 &
+
+        else
+
+            echo "There was an error compiling starling - COMPILATION FAILED"
+
+        fi
 fi

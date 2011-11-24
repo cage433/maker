@@ -97,10 +97,12 @@ class StarlingInit( val props: Props,
   lazy val referenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
   lazy val dataTypes = new MarketDataTypes(referenceDataLookup)
 
-  lazy val emailService = new PersistingEmailService(
-    rmiBroadcaster, DB(props.StarlingDatabase()), props.SmtpServerHost(), props.SmtpServerPort()) with FooterAppendingEmailService {
+  private lazy val mailSender =
+    //new JavaMailMailSender(props.SmtpServerHost(), props.SmtpServerPort()) hopeless fiddly
+    new SMTPMailSender(props.ExternalHostname(), props.SmtpServerHost(), props.SmtpServerPort()) // just use plain socket SMTP
+  lazy val emailService = new PersistingEmailService(rmiBroadcaster, DB(props.StarlingDatabase()), mailSender) with FooterAppendingEmailService {
 
-    val footer = Map("Sent by" → props.ServerType(), "Name" → props.ServerName(), "Host" → props.ExternalHostname())
+    val footer = Map("Sent by" → props.ServerType().name, "Name" → props.ServerName(), "Host" → props.ExternalHostname())
   }
 
   lazy val (fwdCurveAutoImport, marketDataStore, marketDataSources) = log.infoWithTime("Creating Market Data Store") {
@@ -114,7 +116,10 @@ class StarlingInit( val props: Props,
     )
 
     lazy val mds = Log.infoWithTime("Creating DBMarketDataStore") {
-      new DBMarketDataStore(new NewSchemaMdDB(starlingRichDB, dataTypes), new MarketDataSnapshots(starlingRichDB),
+      val mddb = new NewSchemaMdDB(starlingRichDB, dataTypes)
+      val cached = new CachingMdDB(mddb)
+
+      new DBMarketDataStore(cached, new MarketDataSnapshots(starlingRichDB),
         marketDataSources, rmiBroadcaster, dataTypes).asInstanceOf[MarketDataStore]
     }
 

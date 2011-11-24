@@ -8,11 +8,12 @@ import starling.api.utils.{PropertyValue, PropertiesMapBuilder}
 
 object DevLauncher {
   def main(args:Array[String]) {
+    val buffer = Launcher.teeStdOut
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = propsWithUnusedPort()
     Server.run()
     //System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
-    Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
+    Launcher.start(buffer, props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
   }
 
   private def rmiPortAvailable(props:Props) = {
@@ -48,16 +49,18 @@ object DevLauncher {
 
 object LauncherAlone{
   def main(args: Array[String]) {
+    val buffer = Launcher.teeStdOut
     val props = PropsHelper.defaultProps
-    Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
+    Launcher.start(buffer, props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
   }
 }
 
 object DevRMILauncher {
   def main(args:Array[String]) {
+    val buffer = Launcher.teeStdOut
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = PropsHelper.defaultProps
     System.setProperty("starling.codeversion.timestamp", GUICode.latestTimestamp.toString())
-    Launcher.start(props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
+    Launcher.start(buffer, props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
   }
 }
