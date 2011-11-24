@@ -126,8 +126,8 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
       val changedTitanTradeIds = (existingFwds.keySet ++ updatedFwds.keySet).flatMap{
         titanTradeId =>
           (existingFwds.get(titanTradeId), updatedFwds.get(titanTradeId)) match {
-            case (Some(Right(oldFwd)), Some(Right(newFwd))) if oldFwd.costsAndIncomeQuotaValueBreakdown(env) != newFwd.costsAndIncomeQuotaValueBreakdown(env) => Some(titanTradeId)
-            case _ => None
+            case (Some(Right(oldFwd)), Some(Right(newFwd))) if oldFwd.costsAndIncomeQuotaValueBreakdown(env) == newFwd.costsAndIncomeQuotaValueBreakdown(env) => None
+            case _ => Some(titanTradeId)
           }
       }.toList
 

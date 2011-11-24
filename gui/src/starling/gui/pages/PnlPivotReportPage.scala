@@ -19,7 +19,7 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
     pageBuildingContext.tradeService.tradeChanges(tradeSelection, from.timestamp, to.timestamp, from.timestamp.day.startOfFinancialYear, pivotPageState.pivotFieldParams)
   }
 
-  override def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers):Unit = {
+  override def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices):Unit = {
     val selection = fields.find(f=>f._1.name == "Trade ID" && (f._2 match {
       case SomeSelection(vs) if vs.size == 1 => true
       case _ => false
