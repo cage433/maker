@@ -9,7 +9,8 @@ class ConsoleErrorAppender extends org.apache.log4j.WriterAppender {
   private lazy val err = new ConsoleAppender(getLayout, ConsoleAppender.SYSTEM_ERR)
 
   override def append(event: LoggingEvent) = {
-    if (event == Level.WARN || event == Level.ERROR || event == Level.FATAL)
+    val level = event.getLevel
+    if (level == Level.WARN || level == Level.ERROR || level == Level.FATAL)
       err.append(event)
     else
       out.append(event)
