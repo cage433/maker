@@ -58,7 +58,7 @@ object StarlingBuild extends Build{
   def overrideMakePom(module: IvySbt#Module, configuration: MakePomConfiguration, log: Logger) {
 		import configuration.{allRepositories, moduleInfo, configurations, extra, file, filterRepositories, process}
 
-    class OverrideMakePom extends MakePom(log) {
+    class OverrideMakePom extends MakePom() {
       override def isValidIDCharacter(c: Char) = true
     }
 
