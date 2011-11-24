@@ -9,10 +9,12 @@ import starling.lim.{LIMService, LimNode}
 import starling.utils.Pattern.Extractor
 import scalaz._
 import Scalaz._
+import com.lim.mimapi.RelType
 
 trait LIMRelation extends Log {
   val exchange: FuturesExchange
   val node: LimNode
+  val relTypes: Set[RelType] = Set(RelType.CATEGORY)
 
   def parse(childRelation: String): Option[LimPrice] = try {
     extractor.unapply(childRelation).flatOpt

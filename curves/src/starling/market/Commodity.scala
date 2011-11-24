@@ -22,6 +22,7 @@ trait Commodity {
   override def equals(obj: Any) = obj.equalTo[Commodity](_.name == name)
   override def hashCode = name.hashCode
   lazy val name = getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$")
+  lazy val limName = name
   override def toString = name
 }
 
@@ -69,6 +70,7 @@ object Tin extends NeptuneCommodity{
 object Steel extends NeptuneCommodity{
   val neptuneName = "Steel"
   val neptuneCode = "STL"
+  override lazy val limName = "SteelBillet"
 }
 
 object NeptuneCommodity{

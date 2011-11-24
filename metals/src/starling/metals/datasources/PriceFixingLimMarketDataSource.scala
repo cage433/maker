@@ -10,7 +10,7 @@ import FuturesExchangeFactory._
 import ObservationTimeOfDay._
 import starling.utils.ImplicitConversions._
 import starling.gui.api._
-import starling.utils.Pattern
+import starling.utils.{Log, Pattern}
 import starling.scheduler.TaskDescription
 import starling.quantity.UOM
 import starling.db.{MarketDataStore, MarketDataEntry}
@@ -21,11 +21,17 @@ import LIMService.TopRelation._
 import Pattern._
 import scalaz.Scalaz._
 import starling.services.EmailService
+import com.lim.mimapi.RelType
 
 
 object PriceFixingLimMarketDataSource {
   val sources = List(LMEFixings, BloombergTokyoCompositeFXRates, BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE.fixingLevel),
+    new MonthlyFuturesFixings(Futures.Shfe, Level.Close, Set(RelType.FUTURES), "") {
+      val leadAndSteel = Set(Market.SHANGHAI_LEAD, Market.STEEL_REBAR_SHANGHAI)
+      override protected def getMarket(exchange: String, limSymbol: String) = super.getMarket(exchange, limSymbol)
+        .filter(_.isOneOf(leadAndSteel)) // Don't want to overwrite bloomberg prices
+    },
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all
 }
 
@@ -105,15 +111,21 @@ object BloombergTokyoCompositeFXRates extends HierarchicalLimSource(List(Trafigu
   private def keyGroup(fixing: Prices[Rate]) = (fixing.relation.currency, fixing.observationDay.atTimeOfDay(SHFEClose))
 }
 
-class MonthlyFuturesFixings(parentNodes: List[LimNode], levels: List[Level]) extends HierarchicalLimSource(parentNodes, levels) {
-  def this(node: LimNode, level: Level) = this(List(node), List(level))
+class MonthlyFuturesFixings(override val parentNodes: List[LimNode], override val levels: List[Level],
+  relationTypes: Set[RelType], prefix: String) extends HierarchicalLimSource(parentNodes, levels, relationTypes) with Log {
+
+  def this(node: LimNode, level: Level, relationTypes: Set[RelType] = Set(RelType.CATEGORY), prefix: String = """TRAF\.""") =
+    this(List(node), List(level), relationTypes, prefix)
 
   type Relation = MonthlyFuturesRelation
 
   case class MonthlyFuturesRelation(market: FuturesMarket, month: Month)
 
-  def relationExtractor = Extractor.regex("""TRAF\.(\w+)\.(\w+)_(\w+)""") { case List(exchange, limSymbol, deliveryMonth) => {
-    val optMarket = Market.fromExchangeAndLimSymbol(exchange, limSymbol)
+  protected def getMarket(exchange: String, limSymbol: String): Option[FuturesMarket] =
+    Market.fromExchangeAndLimSymbol(exchange, limSymbol)
+
+  def relationExtractor = Extractor.regex(prefix + """(\w+)\.(\w+)_(\w+)""") { case List(exchange, limSymbol, deliveryMonth) => {
+    val optMarket = getMarket(exchange, limSymbol)
     val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
     (optMarket, optMonth) partialMatch { case (Some(market), Some(month)) => MonthlyFuturesRelation(market, month) }
