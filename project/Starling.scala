@@ -464,7 +464,7 @@ object StarlingBuild extends Build{
   
     "com.trafigura.titan.shared-libs" % "titan-core" % "1.1" notTransitive(),
     "com.trafigura.titan.shared-libs" % "titan-security" % "1.1" notTransitive(),
-    "com.trafigura.titan.shared-libs" % "titan-utils" % "1.0-SNAPSHOT" notTransitive()
+    "com.trafigura.titan.shared-libs" % "trademgmt-lib" % "1.0" notTransitive()
   )
 
   lazy val services = Project(
