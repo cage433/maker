@@ -186,7 +186,12 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
 
   private val cache = CacheFactory.getCache("StarlingServerImpl", unique = true)
 
-  def clearCache() {cache.clear}
+  private val ytd = new YearToDateReport(reportContextBuilder, curveIdentifierFactory)
+
+  def clearCache() {
+    cache.clear
+    ytd.clearCache
+  }
 
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
     try {
@@ -343,8 +348,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
       }
     }
     val yearToDates = if (reportParameters.runReports) {
-      val ytd = new YearToDateReport
-      ytd.report(reportContextBuilder, curveIdentifierFactory, tradeSets, reportParameters)
+      ytd.report(tradeSets, reportParameters)
     } else {
       Nil
     }

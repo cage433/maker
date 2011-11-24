@@ -1,6 +1,7 @@
 package starling.daterange
 
 import starling.utils.StringToDouble
+import starling.utils.cache.CacheFactory
 
 trait Period extends Ordered[Period] {
   def toList: List[DateRange]
@@ -13,7 +14,8 @@ object Period {
 
   implicit def stripToPeriod[T <: Period](strip: Strip[T]) = StripPeriod(strip.first, strip.last)
 
-  def unapply(a: Any): Option[Period] = a match {
+  private val parseCache = CacheFactory.getCache("PeriodParseCache")
+  def unapply(a: Any): Option[Period] = parseCache.memoize(a, (a: Any) => a match {
     case d: Double => Some(Day.fromExcel(d))
     case StringToDouble(d) => Some(Day.fromExcel(d))
     case a => a.toString match {
@@ -23,7 +25,7 @@ object Period {
       case TenorType(t) => Some(t)
       case Day(d) => Some(d)
       case _ => None
-    }}
+    }})
 }
 
 case class DateRangePeriod(period: DateRange) extends Period {
