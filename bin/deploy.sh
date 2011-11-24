@@ -29,7 +29,5 @@ IVY_DIR=$HOME/.ivy2
 mkdir -p $IVY_DIR
 tar xfz misc/ivy-preload-sbt-0.11.1.tgz -C $HOME
 
-export http_proxy=http://dave-linux:3128
-
 sbt/sbt "project launcher" update
 
