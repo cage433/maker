@@ -60,7 +60,6 @@ object DevRMILauncher {
     val buffer = Launcher.teeStdOut
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = PropsHelper.defaultProps
-    System.setProperty("starling.codeversion.timestamp", GUICode.latestTimestamp.toString())
     Launcher.start(buffer, props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
   }
 }

@@ -53,7 +53,7 @@ class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String
     override def validate(value: String) = Set("localhost", "127.0.0.1").contains(value.trim.toLowerCase).option("is not valid")
   }
 
-  object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
+  object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ".global.trafigura.com:" + HttpPort())
   object HttpServiceExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
