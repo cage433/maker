@@ -80,6 +80,7 @@ object ExcelInstrumentReader {
       GO_CRACKS -> "go cracks",
       GO_CRACKS -> "ipe gas oil vs ipe brent",
       ICE_WTI_BRENT -> "wti brent",
+      HO_BRENT -> "ho vs brent",
       ICE_WTI_BRENT -> "ice wti vs ice brent",
       NYMEX_WTI_BRENT -> "ny wti brent",
       RB_BRENT_CRACKS -> "nymex rbob 1st month vs ipe brent 1st month"
@@ -95,6 +96,7 @@ object ExcelInstrumentReader {
   val indexAliases: Map[String, Index] = Map(
     "gas oil crack" -> Index.IPE_GAS_OIL_VS_IPE_BRENT,
     "rb brent cracks" -> Index.NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH,
+    "ho vs brent" -> Index.NYMEX_HEAT_1ST_MONTH_VS_ICE_BRENT_1ST_MONTH,
     "nymex rbob 1st month vs ipe brent 1st month" -> Index.NYMEX_WTI_VS_IPE_BRENT
   ) ++ Index.all.map(i => i.name.toLowerCase -> i).toMap
 

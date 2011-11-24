@@ -57,6 +57,7 @@ object FuturesSpreadMarket {
   lazy val RBHO = futuresMarketFromName("Nymex RBOB vs Nymex Heat")
   lazy val GO_CRACKS = futuresMarketFromName("IPE Gas Oil (Settlement) vs IPE Brent")
   lazy val ICE_WTI_BRENT = futuresMarketFromName("ICE WTI 1st month vs ICE Brent 1st month")
+  lazy val HO_BRENT = futuresMarketFromName("NYMEX Heat 1st Month vs ICE Brent 1st Month")
   lazy val NYMEX_WTI_BRENT = futuresMarketFromName("NYMEX WTI vs IPE Brent")
 
   def futuresMarketFromName(marketName: String): FuturesSpreadMarket = futuresMarketFromNameOption(marketName).getOrElse(throw new Exception("No market with name: " + marketName))
