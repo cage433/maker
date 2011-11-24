@@ -155,8 +155,8 @@ object DateRange {
   }
 
   private val RangeRegex = """(?i)([a-z0-9 \/]+) ?->? ?([a-z0-9 \/]+)""".r
-
-  def parse(text: String): DateRange = text.trim match {
+  private val parseCache = CacheFactory.getCache("DRParseCache")
+  def parse(text: String): DateRange = parseCache.memoize (text, text.trim match {
     case RangeRegex(start, end) if start.trim.isInt => { // Allows 10-15Oct2011
       val last = Day.parse(end.trim)
       val first = Day(last.year, last.month, start.trim.toInt)
@@ -167,7 +167,7 @@ object DateRange {
       new SimpleDateRange(Day.parse(start.trim), Day.parse(end.trim))
     }
     case _ => TenorType.parseTenor(text)
-  }
+  })
 
   implicit object ordering extends Ordering[DateRange]{
     def compare(lhs : DateRange, rhs : DateRange) : Int = {
