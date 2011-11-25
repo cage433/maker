@@ -249,7 +249,7 @@ object StarlingBuild extends Build{
   ) dependsOn(quantity % testDependency, daterange % testDependency)
 
   val starlingApiDependencies = Seq(
-    "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.2-SNAPSHOT",
+    "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.4",
     "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.1",
     "org.slf4j" % "slf4j-api" % "1.6.1",
     "dom4j" % "dom4j" % "1.6.1",
