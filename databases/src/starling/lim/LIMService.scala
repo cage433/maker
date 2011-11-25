@@ -23,7 +23,7 @@ object LIMService {
 
     private object NullConnection extends LIMConnection {
       def close() {}
-      def getAllRelChildren(relation: String) = Nil
+      def getAllRelationChildren(relation: String, relationType: Set[RelType]) = Nil
       def getPrices(childRelation: String, level: Level, from: Day, to: Day) = Map()
       def getData(query: String) = Map()
     }
@@ -39,6 +39,9 @@ object LIMService {
     }
     val ForeignExchange = new LimNode(this) {
       val Ecb = new LimNode(this)
+    }
+    val Futures = new LimNode(this) {
+      val Shfe = new LimNode(this)
     }
     val Trafigura = new LimNode(this) {
       val Bloomberg = new LimNode(this) {
@@ -67,8 +70,10 @@ object LIMService {
 trait LIMConnection {
   def close()
 
-  def getAllRelChildren(relations: LimNode*): List[String] = relations.flatMap(relation => getAllRelChildren(relation.name)).toList
-  def getAllRelChildren(relation: String): List[String]
+  def getAllRelChildren(relations: List[LimNode], relationTypes: Set[RelType] = Set(RelType.CATEGORY)): List[String] =
+    relations.flatMap(relation => getAllRelationChildren(relation.name, relationTypes)).toList
+
+  def getAllRelationChildren(relation: String, relationTypes: Set[RelType] = Set(RelType.CATEGORY)): List[String]
 
   def getPrice(childRelation: String, level: Level, day: Day): Option[Double] =
     getPrices(childRelation, level, from = day, to = day).get(day)

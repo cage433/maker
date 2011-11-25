@@ -361,6 +361,7 @@ object Index {
   lazy val MOGAS_95_UNL_10PPM_NWE_BARGES_VS_IPE_BRENT = formulaIndexFromName("Mogas 95 Unl 10ppm NWE Barges (Argus) vs IPE Brent")
   lazy val NYMEX_WTI_VS_IPE_BRENT = formulaIndexFromName("NYMEX WTI vs IPE Brent")
   lazy val NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH = formulaIndexFromName("nymex rbob 1st month vs ipe brent 1st month (bbls)")
+  lazy val NYMEX_HEAT_1ST_MONTH_VS_ICE_BRENT_1ST_MONTH = formulaIndexFromName("NYMEX Heat 1st Month vs ICE Brent 1st Month")
 
   lazy val TC6_CROSS_MEDITERRANEAN_30KT_BALTIC = publishedIndexFromName("TC6 Cross Mediterranean 30KT (Baltic)")
   lazy val NAPHTHA_CFR_JAPAN = publishedIndexFromName("Naphtha CFR Japan")

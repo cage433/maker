@@ -14,7 +14,7 @@ import starling.db.SnapshotID
 /**
  * Valuation service implementations
  */
-class ValuationService(
+case class ValuationService(
   environmentProvider : EnvironmentProvider,
   titanTradeStore : TitanTradeStore
 )
@@ -30,15 +30,17 @@ class ValuationService(
    * it is possible that the environment corresponding to that snapshot (and snapshot day) may have
    * its market day moved forward.
    */
-  private def bestValuationIdentifier() : TitanMarketDataIdentifier = {
+  def bestValuationIdentifier() : TitanMarketDataIdentifier = {
     val today = Day.today
-    val (snapshotID, observationDay) : (SnapshotID, Day) = environmentProvider.metalsValuationSnapshots(Some(today)).headOption match {
-      case Some(s : SnapshotID) if (s.snapshotDay >= today) => (s, today)
-      case _ => {
-        val snapshotID = environmentProvider.metalsSnapshots(None).filterNot(_.snapshotDay >= today).headOption.getOrElse(throw new Exception("No metals snapshots found"))
-        (snapshotID, today.previousWeekday)
-      }
-    }
+    val observationDay = today.previousWeekday
+    //    val (snapshotID, observationDay) : (SnapshotID, Day) = environmentProvider.metalsValuationSnapshots(Some(today)).headOption match {
+//      case Some(s : SnapshotID) if (s.snapshotDay >= today) => (s, today)
+//      case _ => {
+//        val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= today).headOption.getOrElse(throw new Exception("No metals snapshots found"))
+//        (snapshotID, today.previousWeekday)
+//      }
+//    }
+    val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= observationDay).headOption.getOrElse(throw new Exception("No metals snapshots found"))
     TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay)
   }
   

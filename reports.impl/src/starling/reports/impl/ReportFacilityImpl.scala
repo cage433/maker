@@ -63,14 +63,14 @@ class ReportFacilityImpl(
   val reportOptionsAvailable = reportService.pivotReportRunner.reportOptionsAvailable
 
 
-  def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp):TradeValuationAndDetails = {
+  def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp, reportSpecificChoices : ReportSpecificChoices):TradeValuationAndDetails = {
     val tradeID = unLabel(tradeIDLabel)
     val stores = tradeStores.storesFor(tradeID.tradeSystem)
     stores.foreach { tradeStore => {
       tradeStore.readTrade(tradeID, Some(timestamp)) match {
         case None =>
         case Some(trade) => {
-          val tradeValuation = reportService.singleTradeReport(trade, curveIdentifierFactory.unLabel(curveIdentifier))
+          val tradeValuation = reportService.singleTradeReport(trade, curveIdentifierFactory.unLabel(curveIdentifier), reportSpecificChoices)
 
           val (stable, fieldDetailsGroups, _) = tradeStores.readTradeVersions(tradeID)
           val cols = stable.columns

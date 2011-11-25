@@ -297,6 +297,7 @@ object Market {
   lazy val SHANGHAI_COPPER = futuresMarketFromName("Shanghai Copper")
   lazy val SHANGHAI_ALUMINUIUM = futuresMarketFromName("Shanghai Aluminium")
   lazy val SHANGHAI_GOLD = futuresMarketFromName("Shanghai Gold")
+  lazy val SHANGHAI_LEAD = futuresMarketFromName("Shanghai Lead")
   lazy val STEEL_REBAR_SHANGHAI = futuresMarketFromName("SHFE Steel Rebar")
 
   lazy val NYMEX_WTI = futuresMarketFromName("NYMEX WTI")

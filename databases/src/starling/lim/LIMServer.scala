@@ -9,6 +9,7 @@ import starling.utils.ClosureUtil._
 import starling.utils.{MathUtil, Log}
 import starling.curves.MissingMarketDataException
 import scalaz.Scalaz._
+import collection.immutable.Map
 
 
 private[lim] object LIMServer {
@@ -66,12 +67,13 @@ private[lim] class LIMServer(hostname: String, port: Int) extends LIMService {
 
     def close() = connection.disconnect
 
-    def getAllRelChildren(relation: String): List[String] = {
+    def getAllRelationChildren(relation: String, relationTypes: Set[RelType]): List[String] = {
       try {
         def recurse(relation: String): List[RelationChildInfo] = {
           val children = schema.getRelChildren(relation).toList
-          children.filter(_.`type` == RelType.CATEGORY).flatMap(child => recurse(relation + ":" + child.childName)) :::
-          children.filterNot(_.`type` == RelType.CATEGORY)
+
+          children.filter(_.`type`.isOneOf(relationTypes)).flatMap(child => recurse(relation + ":" + child.childName)) :::
+          children.filterNot(_.`type`.isOneOf(relationTypes))
         }
 
         recurse(relation).map(_.childName)

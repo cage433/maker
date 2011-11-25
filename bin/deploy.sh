@@ -27,9 +27,7 @@ cd starling
 IVY_DIR=$HOME/.ivy2
 
 mkdir -p $IVY_DIR
-tar xfz misc/ivy-preload-sbt-0.11.1.tgz -C $HOME
-
-export http_proxy=http://dave-linux:3128
+tar xfz misc/ivy-preload-sbt-0.11.0.tgz -C $HOME
 
 sbt/sbt "project launcher" update
 

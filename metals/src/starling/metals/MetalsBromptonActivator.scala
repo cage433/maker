@@ -130,7 +130,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val dataTypes = new MarketDataTypes(referenceDataLookup)
 
-    registerScheduler(context, broadcaster, dataTypes)
+    registerScheduler(context, osgiBroadcaster, dataTypes)
 
     Map(
       "Bloomberg → LIM"    → new BloombergImportsReferenceData(bloombergImports),

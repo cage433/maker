@@ -6,7 +6,7 @@ import ImplicitConversions._
 import scalaz.Scalaz._
 
 
-class ReportSpecificChoices(protected val choices : Map[String, Any] = Map()) {
+case class ReportSpecificChoices(val choices : Map[String, Any] = Map()) {
   def getOrElse[T](name : String, default : => T): T = choices.getOrElse(name, default).asInstanceOf[T]
 
   def apply(key : String) = choices(key)

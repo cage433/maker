@@ -14,6 +14,7 @@ import starling.calendar.BusinessCalendar
 import org.joda.time.LocalTime
 import starling.scheduler.{ScheduledTime, SimpleScheduledTask}
 import org.joda.time.{Period => JodaPeriod}
+import com.lim.mimapi.RelType
 
 
 abstract class LimMarketDataSource(service: LIMService, val marketDataType: MarketDataTypeName) extends MarketDataSource with Log {
@@ -66,9 +67,11 @@ abstract class LimSource(val levels: List[Level]) {
   protected def levelDescription = "(" + levels.map(_.name).mkString(", ") + ")"
 }
 
-abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) with Log {
+abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level],
+  relationTypes: Set[RelType] = Set(RelType.CATEGORY)) extends LimSource(levels) {
+
   def description = parentNodes.map(node => node.name + " " + levelDescription)
-  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeRelationFrom)
+  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes, relationTypes).flatMap(safeRelationFrom)
   def relationExtractor: Extractor[String, Option[Relation]]
 
   private def safeRelationFrom(childRelation: String): Option[(Relation, String)] = try {

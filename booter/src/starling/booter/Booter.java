@@ -2,11 +2,13 @@ package starling.booter;
 
 import javax.swing.*;
 import java.io.*;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
 import java.security.*;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Downloads
@@ -18,6 +20,7 @@ class Booter {
             Thread.sleep(5000);
             System.exit(1);
         }
+
         URL appBaseURL = new URL(args[0]);
         String appName = args[1];
         File tmp = new File(System.getProperty("java.io.tmpdir"));
@@ -35,22 +38,56 @@ class Booter {
         System.setProperty("stdout.logfile", logFile.getPath());
         System.setOut(new java.io.PrintStream(new TeeOutputStream(System.out, new FileOutputStream(logFile))));
         System.setErr(new java.io.PrintStream(new TeeOutputStream(System.err, new FileOutputStream(logFile))));
+        Proxy proxy = Proxy.NO_PROXY;//detectClosestHost(appBaseURL);
+
         System.out.println("Cachdir: " + cacheDir.getAbsolutePath());
-        run(cacheDir, appBaseURL, Arrays.copyOfRange(args, 2, args.length));
+        run(cacheDir, proxy, appBaseURL, Arrays.copyOfRange(args, 2, args.length));
     }
 
-    public static void run(File cacheDir, URL baseURL, String[] args) throws Exception {
+//   Takes about 1second
+//    private static Proxy detectClosestHost(URL appBaseURL) throws Exception {
+//        final LinkedBlockingQueue<Proxy> proxyList = new LinkedBlockingQueue<Proxy>();
+//        final InetAddress[] hosts = { InetAddress.getByName(appBaseURL.getHost()), InetAddress.getByName("172.20.15.205") };
+//        final Proxy[] proxies = { Proxy.NO_PROXY, new Proxy(Proxy.Type.HTTP, new InetSocketAddress("172.20.15.205", 3128)) };
+//        for (int i = 0; i < hosts.length; i++) {
+//            final InetAddress host = hosts[i];
+//            final Proxy proxy = proxies[i];
+//            new Thread(new Runnable() { public void run() {
+//                try {
+//                    long start = System.nanoTime();
+//                    long startX = System.currentTimeMillis();
+//                    boolean reachable = host.isReachable(2000);
+//                    if (reachable) {
+//                        long pingTime = System.nanoTime() - start;
+//                        long pingTimeX = System.currentTimeMillis() - startX;
+//                        System.out.println("Ping time for " + host + " " + pingTime + " " + pingTimeX);
+//                        proxyList.put(proxy);
+//                    }
+//                } catch (Exception e) {
+//                    System.out.println("Ping to " + host + " failed:" + e);
+//                }
+//            } }).start();
+//        }
+//        return proxyList.take();
+//    }
+
+    private static InputStream open(URL url, Proxy proxy) throws Exception {
+        return url.openConnection(proxy).getInputStream();
+    }
+
+    public static void run(File cacheDir, Proxy proxy, URL baseURL, String[] args) throws Exception {
 
         //HACK this should probably be specified in app.txt
         System.setProperty("log4j.configuration", "utils/resources/log4j.properties");
 
         URL appURL = new URL(baseURL + "/webstart/app.txt");
+        File appFile = new File(cacheDir, "app.txt");
 
-
-        BufferedReader reader;
+        java.util.List<String> lines;
         try {
-            reader = new BufferedReader(new InputStreamReader(appURL.openStream()));
+            lines = readLines(open(appURL, proxy));
         } catch (final Throwable t) {
+            t.printStackTrace();
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
@@ -61,13 +98,7 @@ class Booter {
             });
             return;
         }
-        java.util.List<String> lines = new LinkedList<String>();
-        {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                lines.add(line);
-            }
-        }
+
         String[] firstLine = lines.get(0).split(" ");
         String mainClass = firstLine[0];
         String[] appTxtArgs = Arrays.copyOfRange(firstLine, 1, firstLine.length);
@@ -80,52 +111,51 @@ class Booter {
                 applicationArgs[i] = args[i - appTxtArgs.length];
             }
         }
-        Map<String, Long> remoteJarsToTimestamps = new HashMap<String, Long>();
-        for (String line : lines.subList(1, lines.size())) {
-            String jar = line.split(" ")[0];
-            Long timestamp = new Long(line.split(" ")[1]);
-            remoteJarsToTimestamps.put(jar, timestamp);
+        Map<String, String> remoteJarsWithMd5 = jarsWithMD5(lines);
+        Map<String, String> localJarsWithMD5 = new HashMap<String,String>();
+        if (appFile.exists()) {
+            localJarsWithMD5 = jarsWithMD5(readLines(new FileInputStream(appFile)));
         }
 
-        Map<String, Long> localJarsToTimestamps = new HashMap<String, Long>();
-        for (File file : cacheDir.listFiles()) {
-            localJarsToTimestamps.put(file.getName(), file.lastModified());
-        }
+        Map<String, String> missingOrOutOfDateJars = new HashMap<String, String>();
 
-        Map<String, Long> missingOrOutOfDateJars = new HashMap<String, Long>();
-
-        for (Map.Entry<String, Long> entry : remoteJarsToTimestamps.entrySet()) {
+        for (Map.Entry<String, String> entry : remoteJarsWithMd5.entrySet()) {
             String jar = entry.getKey();
-            Long timestamp = entry.getValue();
-            if (!localJarsToTimestamps.containsKey(jar) || !timestamp.equals(localJarsToTimestamps.get(jar))) {
-                missingOrOutOfDateJars.put(jar, timestamp);
+            String md5 = entry.getValue();
+            if (!localJarsWithMD5.containsKey(jar) || !md5.equals(localJarsWithMD5.get(jar))) {
+                missingOrOutOfDateJars.put(jar, md5);
             }
         }
 
-        for (Map.Entry<String, Long> entry : missingOrOutOfDateJars.entrySet()) {
+        for (Map.Entry<String, String> entry : missingOrOutOfDateJars.entrySet()) {
             String jar = entry.getKey();
-            Long timestamp = entry.getValue();
+            String md5 = entry.getValue();
             File file = new File(cacheDir, jar);
-            URL url = new URL(baseURL + "/webstart/" + jar);
+            URL url = new URL(baseURL + "/webstart/" + jar + "?md5=" + md5);
             System.out.println("downloading " + url);
-            InputStream inputStream = url.openStream();
+            InputStream inputStream = open(url, proxy);
             OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file));
             copy(inputStream, outputStream);
             inputStream.close();
             outputStream.flush();
             outputStream.close();
-            file.setLastModified(timestamp);
         }
 
-        Set<String> unnecessaryJars = new HashSet<String>(localJarsToTimestamps.keySet());
-        unnecessaryJars.removeAll(remoteJarsToTimestamps.keySet());
+        Set<String> unnecessaryJars = new HashSet<String>(localJarsWithMD5.keySet());
+        unnecessaryJars.removeAll(remoteJarsWithMd5.keySet());
         for (String jar : unnecessaryJars) {
             new File(cacheDir, jar).delete();
         }
         List<URL> urlsToLocalJars = new LinkedList<URL>();
-        for (String jar : remoteJarsToTimestamps.keySet()) {
+        for (String jar : remoteJarsWithMd5.keySet()) {
             urlsToLocalJars.add(new File(cacheDir, jar).toURI().toURL());
         }
+
+        FileWriter app = new FileWriter(appFile);
+        for (String line : lines) {
+            app.append(line + "\n");
+        }
+        app.close();
 
         final URLClassLoader classLoader = new URLClassLoader(urlsToLocalJars.toArray(new URL[urlsToLocalJars.size()]));
 
@@ -142,8 +172,7 @@ class Booter {
             }
         });
 
-        Long maxTimestamp = new TreeSet<Long>(remoteJarsToTimestamps.values()).last();
-        System.setProperty("starling.codeversion.timestamp", maxTimestamp.toString());
+        System.out.println("Booter ready " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000 + "s");
         System.out.flush();
         System.err.flush();
         try {
@@ -161,6 +190,28 @@ class Booter {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static java.util.List<String> readLines(InputStream in) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        java.util.List<String> lines = new LinkedList<String>();
+        {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+        }
+        return lines;
+    }
+
+    private static Map<String,String> jarsWithMD5(List<String> lines) {
+        Map<String, String> jarsToMd5s = new HashMap<String, String>();
+        for (String line : lines.subList(1, lines.size())) {
+            String jar = line.split(" ")[0];
+            String md5 = line.split(" ")[1];
+            jarsToMd5s.put(jar, md5);
+        }
+        return jarsToMd5s;
     }
 
     private static long copy(InputStream input, OutputStream output) throws IOException {
