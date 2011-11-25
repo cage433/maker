@@ -123,7 +123,7 @@ class GreeksPivotReportTests extends StarlingTest {
         ))
       val sumPosition = combinedRows.map{row => row.position.quantityValue.get * row.scale}.sum
       val diffs = combinedRows.map(_.diff.get).toSet.toList
-      val sumPosition2 = diffs.map(utp.position(env, _)).sum
+      val sumPosition2 = diffs.map{ diff => utp.position(env, diff.asInstanceOf[EnvironmentDifferentiable with PriceKey])}.sum
       assertQtyClose(sumPosition, sumPosition, 5e-3)
 
     }

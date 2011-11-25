@@ -1,19 +1,14 @@
 package starling.instrument
 
-import starling.curves.Environment
-import starling.curves.EnvironmentDifferentiable
 import starling.quantity.UOM._
 import starling.quantity.Quantity
 import starling.quantity.Quantity._
-import starling.curves.ForwardPriceKey
-import starling.curves.FuturesSpreadPrice
-import starling.curves.PriceDifferentiable
-import starling.curves.SwapPrice
 import starling.daterange._
 import starling.utils.CollectionUtils
 import starling.daterange._
 import starling.market.{Index, FuturesFrontPeriodIndex, FuturesMarket}
 import starling.quantity.utils.SummingMap
+import starling.curves._
 
 object Hedge{
   private def calcHedge(
@@ -160,7 +155,7 @@ object Hedge{
               val swap = SinglePeriodSwap(index, strike, Quantity(1, market.uom), m, cleared = true)
               val swapDelta = swap.firstOrderDerivative(env, k._1, swap.valuationCCY)
               val swapUndiscountedDelta = swap.firstOrderDerivative(env.undiscounted, k._1, swap.valuationCCY)
-              val swapPosition = swap.position(env, k._1)
+              val swapPosition = swap.position(env, k._1.asInstanceOf[EnvironmentDifferentiable with PriceKey]) // Shouldn't need this cast but compiler disagrees
               val swapDiscountedPosition = swapPosition * swapDelta / swapUndiscountedDelta
               (swap, volume.checkedValue(index.uom) / swapDiscountedPosition.checkedValue(index.uom))
           }
