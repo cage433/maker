@@ -538,7 +538,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     predicate: TradePredicate,
     utpPartitioningFields: List[PField],
     addRows : Boolean //Before the user has pressed run we just show the fields
-  ) = pivot(timestamp, Some(marketDay), expiryDay, predicate, utpPartitioningFields, addRows)
+  ): PivotTableDataSource = pivot(timestamp, Some(marketDay), expiryDay, predicate, utpPartitioningFields, addRows)
 
 
   def pivot(
@@ -571,12 +571,13 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
   protected def addExtraInstrumentFieldDetails(list : List[FieldDetails]) = list
 
   private def createPivot(
-                           timestamp : Timestamp,
-                           marketDay : Option[Day],
-                           expiryDay : Day,
-                           predicate : TradePredicate,
-                           utpPartitioningFields : List[PField],
-                           addRows : Boolean) : PivotTableDataSource = {
+    timestamp : Timestamp,
+    marketDay : Option[Day],
+    expiryDay : Day,
+    predicate : TradePredicate,
+    utpPartitioningFields : List[PField],
+    addRows : Boolean
+  ) : PivotTableDataSource = {
     updateTradeHistories(timestamp, Some(expiryDay))
 
     val filter = fromPredicate(predicate)

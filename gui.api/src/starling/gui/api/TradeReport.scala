@@ -213,6 +213,8 @@ case class TradeSelectionWithTimestamp(deskAndTimestamp:Option[(Desk, TradeTimes
   def copyWithNewIntradaySubgroupTimestamp(timestamp: Timestamp) = {
     copy(intradaySubgroupAndTimestamp = Some((intradaySubgroupAndTimestamp.get._1, timestamp)))
   }
+
+  def isTitanTrades = desk == Some(Desk.Titan)
 }
 
 case class TradePageParameters(deskAndTimestamp:Option[(Desk, TradeTimestamp)],

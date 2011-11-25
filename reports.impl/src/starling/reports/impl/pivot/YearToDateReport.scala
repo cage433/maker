@@ -37,7 +37,7 @@ class YearToDateReport(reportContextBuilder: ReportContextBuilder, curveIdentifi
     cache.clear
   }
 
-  def report(tradeSets: List[(TradeSet, Timestamp)], reportParameters: ReportParameters) = {
+  def report(tradeSets: List[(TradeSet, Timestamp)], reportParameters: ReportParameters): List[PivotTableDataSource] = {
     val yearToDateField = new SumPivotQuantityFieldDetails("Ytd")
     val aspectCOY = new SumPivotQuantityFieldDetails("Aspect Close Of Year")
     val aspectCOYC = new SumPivotQuantityFieldDetails("Aspect Close Of Year Costs")
