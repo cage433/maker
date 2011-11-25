@@ -1,6 +1,6 @@
 package starling.utils
 
-import org.apache.commons.io.IOUtils
+import org.apache.commons.io.{IOUtils => ApacheIOUtils}
 import java.lang.reflect.Modifier
 import scala.collection.JavaConversions._
 
@@ -12,7 +12,7 @@ object Reflection {
     def isT(someClass: Class[_]) = klass.isAssignableFrom(someClass) && !Modifier.isAbstract(someClass.getModifiers)
 
     val packagePath = "/" + packageName.replace('.', '/') + "/"
-    val lines = IOUtils.readLines(getClass.getResourceAsStream(packagePath), "UTF-8").toList.asInstanceOf[List[String]]
+    val lines = ApacheIOUtils.readLines(getClass.getResourceAsStream(packagePath), "UTF-8").toList.asInstanceOf[List[String]]
     lines.collect { case line if line.endsWith(".class") => Class.forName(packageName + "." + line.stripSuffix(".class")) }
          .collect { case someClass if isT(someClass) => someClass.asInstanceOf[Class[T]]
     }

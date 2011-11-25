@@ -128,14 +128,14 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
   val swapIndices = PivotReport.swapIndicesByStrategy(utps)
 
   private val calcAssetsCache = CacheFactory.getCache("MtmPivotReport.calcAssets", unique = true)
-  private def calcAssets(utp : UTP) : List[Either[Asset, Throwable]] = calcAssetsCache.memoize(
-    (utp),
-    (tuple : (UTP)) => {
+  private def calcAssets(utp : UTP, ccy : Option[UOM]) : List[Either[Asset, Throwable]] = calcAssetsCache.memoize(
+    (utp, ccy),
+    (tuple : (UTP, Option[UOM])) => {
       try {
-        utp.assets(environment).assets.map(Left(_))
-        //.map{asset => {
-          //Left(asset.copyMtm(asset.mtm * environment.spotFXRate(UOM.USD, asset.mtm.uom)))
-          //}}
+        (ccy match {
+          case None => utp.assets(environment)
+          case Some(ccy) => utp.assets(environment, ccy)
+        }).assets.map(Left(_))
       } catch {
         case e => List(Right(e))
       }
@@ -144,6 +144,11 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
 
   override def combine(rows : List[Mtm], reportSpecificChoices : ReportSpecificChoices) : List[Mtm] = {
     import starling.concurrent.MP._
+    import starling.gui.api.ReportSpecificOptions._
+    val mtmCCY = reportSpecificChoices.getOrElse(valuationCurrencyLabel, defaultLabel) match {
+      case `defaultLabel` => None
+      case UOM.Currency(ccy) => Some(ccy)
+    }
 
     val combinedRows = new PivotUTPRestructurer(environment, reportSpecificChoices, spreadMonthsByStrategyAndMarket, swapIndices).transformUTPs(rows).mpFlatMap{
       case UTPWithIdentifier(utpID, utp) => {
@@ -155,7 +160,7 @@ class MtmPivotReport(@transient environment:Environment, @transient utps : Map[U
             case Right(_) => None
           }
         }
-        calcAssets(unitUTP).map{
+        calcAssets(unitUTP, mtmCCY).map{
           asset=> {
             utp match {
               case ci: CashInstrument if CashInstrumentType.isCost(ci.cashInstrumentType) => {

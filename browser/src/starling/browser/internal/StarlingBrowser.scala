@@ -95,7 +95,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  reactions += {
+  val publisherX = new Publisher {}
+  publisherX.reactions += {
     case e@BundleAdded(bundle) => {
       if (current != -1 && bundle.bundleName == history(current).bundle) {
         val currentPageInfo = history(current)
@@ -130,7 +131,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
     }
   }
-  listenTo(pageBuilder.remotePublisher)
+  publisherX.listenTo(pageBuilder.remotePublisher)
 
   val pageContext = {
     new PageContext {

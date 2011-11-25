@@ -33,7 +33,8 @@ object Permission {
   private val devGroupToDesksMap0: Map[CaseInsensitive, Set[Desk]] = productionGroupToDesksMap0 ++
     Map(
       StarlingDevelopers -> Desk.values.toSet,
-      StarlingTesters -> Desk.values.toSet
+      StarlingTesters -> Desk.values.toSet,
+      StarlingBusinessUsers -> Desk.values.toSet
     )
 }
 

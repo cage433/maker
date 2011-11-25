@@ -244,7 +244,10 @@ case class Environment(
    */
   def discount(ccy : UOM, forwardDate : Day) : Quantity = {
     assert(ccy.isCurrency, "'" + ccy + "' is not a currency")
-    instrumentLevelEnv.discount(ccy, forwardDate)
+    ccy match {
+      case UOM.CNH => discount(UOM.CNY, forwardDate)   // As we have no discount rates for CNH yet
+      case _ => instrumentLevelEnv.discount(ccy, forwardDate)
+    }
   }
 
   /**Returns a forward rate using the appropriate daycount convention.

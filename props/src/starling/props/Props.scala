@@ -53,7 +53,7 @@ class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String
     override def validate(value: String) = Set("localhost", "127.0.0.1").contains(value.trim.toLowerCase).option("is not valid")
   }
 
-  object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpPort())
+  object ExternalUrl extends StringProperty("http://" + ExternalHostname() + ".global.trafigura.com:" + HttpPort())
   object HttpServiceExternalUrl extends StringProperty("http://" + ExternalHostname() + ":" + HttpServicePort())
   object XLLoopUrl extends StringProperty(ExternalHostname() + ":" + XLLoopPort())
 
@@ -102,7 +102,8 @@ class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String
    )
 
   object QlikViewServerUrl extends StringProperty("http://qvdev:8080/qmsb/Task.asmx")
-  object QlikViewSpotFXTask extends StringProperty("Reload of Spot FX")
+  object QlikViewSpotFXTask extends StringProperty("Reload of Titan.PricingAndRisk.FXRates.Extract.qvw (UAT)")
+  object QlikViewEnabled extends BooleanProperty(false)
 
   // Titan related configuration
   object ServiceInternalAdminUser extends StringProperty("refined.metalsadm") // admin user for service to service access (permission requirements here for service calls TBD)

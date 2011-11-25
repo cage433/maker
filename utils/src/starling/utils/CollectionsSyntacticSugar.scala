@@ -39,6 +39,9 @@ trait CollectionsSyntacticSugar {
 
       (lbuilder.result, rbuilder.result)
     }
+
+    def pairWith[B, That](b: B)(implicit cbf: CanBuildFrom[Repr, (A, B), That]): That = tl.map(_ → b)
+    def inversePairWith[B, That](b: B)(implicit cbf: CanBuildFrom[Repr, (B, A), That]): That = tl.map(b → _)
   }
 
   implicit def collectionExtras[A](xs: Iterable[A]) = new {

@@ -51,7 +51,7 @@ case class MethodLogViewerPage(index:Int, pivotPageState:PivotPageState=PivotPag
             method → entry.method.getName,
             uncompressedSize → pq(entry.uncompressedSize, UOM.BYTES),
             compressedSize → pq(entry.compressedSize, UOM.BYTES),
-            rate -> Quantity(entry.rate, UOM.BYTES / UOM.MILLISECONDS).pq,
+            rate -> Quantity(entry.rate, UOM.BYTES / UOM.MILLISECONDS).in(UOM.KILOBYTES/UOM.SECONDS).get.pq,
             totalTime → pq(entry.time, UOM.MILLISECONDS),
             ioTime → pq(entry.ioTime, UOM.MILLISECONDS),
             serverTime → pq(entry.serverTime, UOM.MILLISECONDS)

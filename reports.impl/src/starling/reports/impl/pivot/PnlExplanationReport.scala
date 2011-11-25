@@ -19,6 +19,8 @@ object PnlExplanationReport {
           t: Timestamp,
           expiryDay: Day, addRows: Boolean) = {
 
+    val desk = tradeSet.tradeStore.deskOption
+
     val marketAndTimePivot = if (d1.marketDay == d2.marketDay) {
       NullPivotTableDataSource
     } else {
@@ -34,7 +36,7 @@ object PnlExplanationReport {
         PivotReportData.run(timeChanges, utps, SlideDetails.Null, List(), referenceDataLookup)
       )
       val tradePivot = tradeSet.reportPivot(curveIdentifierDm1.tradesUpToDay, expiryDay, t, addRows)
-      new ReportPivotTableDataSource(tradePivot, list)
+      new ReportPivotTableDataSource(tradePivot, list, desk)
     }
     val newTradesPivot = {
       val newTradesTradeSet = tradeSet.forTradeDays((d1.marketDay.day upto d2.marketDay.day).toSet - d1.marketDay.day)
@@ -42,7 +44,7 @@ object PnlExplanationReport {
       val newTradesReport = new NewTradesPivotReport(Environment(d2), UOM.USD, utps)
       val list = List(PivotReportData.run(newTradesReport, utps, SlideDetails.Null, List(), d1.referenceDataLookup))
       val tradePivot = newTradesTradeSet.reportPivot(curveIdentifierD.tradesUpToDay, expiryDay, t, addRows)
-      new ReportPivotTableDataSource(tradePivot, list) {
+      new ReportPivotTableDataSource(tradePivot, list, desk) {
         val dayChangeText = "Day Change"
 
         override def initialState = PivotFieldsState(

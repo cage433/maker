@@ -13,7 +13,7 @@ import starling.quantity.{Quantity, UOM}
 import scalaz.Scalaz._
 import starling.auth.User
 import starling.richdb.RichResultSetRow
-import starling.pivot.{Row, Field => PField}
+import starling.pivot.Row
 import collection.immutable._
 import collection.mutable.{ListBuffer, Map => MMap}
 
@@ -99,7 +99,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     innerJoin("MarketDataExtendedKey ek", "ek.id" eql "v.extendedKey")
         where("ek.marketDataType" eql marketDataType.name)
           and("ek.marketDataSet" in marketDataSets.map(_.name))
-    ) { rs => rs.getDay("maxObservationDay") }
+    ) { rs => rs.getDayOption("maxObservationDay") }.flatOpt
   }
 
   def latestVersionForMarketDataSets(): Map[MarketDataSet, Int] = {
@@ -133,18 +133,18 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 //    }
   }
 
-  def store(marketDataUpdates: Iterable[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult = {
-    var update = false
-    var innerMaxVersion = 0//updates.flatMap(_.existingVersion).
-    val cacheChanges = ListBuffer[(String, Day)]()
+  def store(marketDataUpdates: List[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult = {
+    if (marketDataUpdates.isEmpty) SaveResult.Null else db.inTransaction(writer => {
+      var update = false
+      var innerMaxVersion = 0//updates.flatMap(_.existingVersion).
+      val cacheChanges = ListBuffer[(String, Day)]()
 
-    db.inTransaction(writer => {
       lazy val commitID: Int = writer.insertAndReturnKey("MarketDataCommit", "id",
         Map("timestamp" → Clock.timestamp, "username" → User.optLoggedOn.map(_.username).orNull)).toInt
 
       def nextCommitId(): Int = commitID
 
-      val updates: Iterable[Map[String, Any]] = marketDataUpdates.flatMap { marketDataUpdate =>
+      val updates: List[Map[String, Any]] = marketDataUpdates.flatMap { marketDataUpdate =>
         updateIt(writer, nextCommitId _, marketDataUpdate, marketDataSet).map(result => {
           cacheChanges ++= result.removeRealTime.cacheChanges
           if (result.changed) update = true
@@ -153,12 +153,12 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
         } ).getOrElse(Nil)
       }
 
-      writer.insert("MarketDataValue", updates.toSeq)
+      writer.insert("MarketDataValue", updates)
+
+      if (cacheChanges.nonEmpty) observationDaysByMarketDataSetCache.update(_ union cacheChanges.toMultiMap)
+
+      SaveResult(innerMaxVersion, update)
     } )
-
-    observationDaysByMarketDataSetCache.update(_ union cacheChanges.toMultiMap)
-
-    SaveResult(innerMaxVersion, update)
   }
 
   def maxVersionForMarketDataSetNames(names: List[String]): Option[Int] = {
@@ -368,22 +368,21 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
         log.debug("Old data: %s has higher commitId than: %s" % (fieldValue, this))
 
       case oldData => log.debugF("Old data: %s has lower commitId (or lower priority) than: %s" % (oldData, this)) {
-        map.update(combinedKey, combinedValue)
+        map.update(combinedKey, (marketDataSet, row, commitId))
       }
     }
-    def checkConsistency() = {
-      if (extendedKey.marketDataType.valueKeyFields == valueKey.fields) None else {
-        Some("" + extendedKey.marketDataType.valueKeyFields + " != x" + valueKey.fields)
-      }
-    }
+
+    def checkConsistency = (extendedKey.marketDataType.valueKeyFields != valueKey.fields).option(
+      "" + extendedKey.marketDataType.valueKeyFields + " != x" + valueKey.fields
+    )
+
+    val timedKey = TimedMarketDataKey(
+      observationDay.fold(d => ObservationPoint(d, extendedKey.time), ObservationPoint.RealTime), extendedKey.marketDataKey)
+
     def isSave = row.isDefined
-    val marketDataSet = extendedKey.marketDataSet
-    val timedKey = TimedMarketDataKey(observationDay.fold(d => ObservationPoint(d, extendedKey.time), ObservationPoint.RealTime), extendedKey.marketDataKey)
-    val valueFields = extendedKey.marketDataType.valueFields
-    val marketDataTypeValueKey: PField = extendedKey.marketDataType.valueFields.head
-    val combinedKey = (timedKey, valueKey)
-    val combinedValue = (marketDataSet, row, commitId)
-    lazy val usePercentage = dataTypes.typesUsingPercentage.contains(extendedKey.marketDataType)
+    def marketDataSet = extendedKey.marketDataSet
+    def valueFields = extendedKey.marketDataType.valueFields
+    def combinedKey = (timedKey, valueKey)
 
     lazy val row = if (value==null || uom == null) {
       None
@@ -397,7 +396,8 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
       }) +? comment.map(valueFields.tail.head → _))
     }
 
-    def convertToPercentage(quantity: Quantity) = if (quantity.isPercent && usePercentage) quantity.toPercentage else quantity
+    private def convertToPercentage(quantity: Quantity) = if (quantity.isPercent && usePercentage) quantity.toPercentage else quantity
+    private def usePercentage = dataTypes.typesUsingPercentage.contains(extendedKey.marketDataType)
   }
 }
 

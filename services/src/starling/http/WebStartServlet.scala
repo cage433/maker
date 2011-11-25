@@ -10,13 +10,23 @@ import java.util.UUID
 import starling.utils.cache.CacheFactory
 import starling.props.PropsHelper
 import starling.utils.ImplicitConversions._
-import starling.daterange.Timestamp
+import starling.utils.IOUtils
+import starling.daterange.{Day, Timestamp}
 
 
 object GUICode {
 
   val dirPrefix = ""//if (getClass.getClassLoader.toString.charAt(0).isDigit) "../" else ""
   val scalaLibraryJar = new File(dirPrefix + "lib/scala/lib_managed/scala-library-jar-2.9.1.jar")
+
+  val classesPath = "/target/scala-2.9.1/classes/"
+  val externalJarsPrefix = "library-"
+  val moduleJarsPrefix = "module-"
+
+
+  val fileCacheDir = new File("modulejarcache")
+  if (!fileCacheDir.exists) fileCacheDir.mkdir()
+
 
   // The order of this list matters. It is the order things are attempted to be loaded so ensure it is optimised.
   val modules = List("daterange", "quantity", "utils", "auth", "bouncyrmi", "gui", "gui.api",
@@ -58,12 +68,12 @@ object GUICode {
   )
 
   def dependencies = {
-    (modules.map { module => module -> lastModifiedForModule(module) }, libJarNames.mapValues(file=>file.lastModified))
+    (modules.map { module => module -> md5ForModule(module) }, libJarNames.mapValues(file=>md5(file)))
   }
 
-  def latestTimestamp : Long = {
-    val (modules, libraries) = dependencies
-    (modules ++ libraries).maximum(_._2)
+  def md5ForModule(module:String) = {
+    val file = getOrGenerateModule(module)
+    md5(file)
   }
 
   def lastModifiedForModule(module:String) = {
@@ -101,6 +111,67 @@ object GUICode {
     })
   }
   
+  val md5Cache = new java.util.concurrent.ConcurrentHashMap[File,(Long,String)]()
+  def md5(file:File) = {
+    val cached = md5Cache.get(file)
+    if (cached == null || cached._1 != file.lastModified()) {
+      val md5 = IOUtils.md5(file)
+      md5Cache.put(file, (file.lastModified, md5))
+      md5
+    } else {
+      cached._2
+    }
+  }
+
+  val fileCache = CacheFactory.getCache("jarFileCache", soft = false)
+
+  def memoize(file:String, f:()=>File) = fileCache.memoize(file, f())
+
+  def getOrGenerateModule(module:String) = {
+    val lastModified = GUICode.lastModifiedForModule(module)
+
+    val moduleJarName = module + "_" + lastModified + ".jar"
+
+    def getOrGenerateFile = {
+      val moduleJarFile = new File(fileCacheDir, moduleJarName)
+      if (moduleJarFile.exists) {
+        moduleJarFile
+      } else {
+        val outputPath = new File(module + GUICode.classesPath)
+        generateJar(moduleJarFile, outputPath)
+        moduleJarFile.setLastModified(lastModified)
+        moduleJarFile
+      }
+    }
+
+    fileCache.memoize(moduleJarName, getOrGenerateFile)
+  }
+
+  def generateJar(jarFile:File, outputPath:File, main:Option[String] = None) {
+    val jarOutputStream = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(jarFile)))
+    if (outputPath.exists) {
+      val files = GUICode.findMatchingFiles(outputPath).map(_.getPath)
+      for (outputFile <- files) {
+        jarOutputStream.putNextEntry(new JarEntry(outputFile.substring(outputPath.getPath.length+1)))
+        val inputStream = new BufferedInputStream(new FileInputStream(outputFile))
+        IO.copy(inputStream, jarOutputStream)
+        inputStream.close
+      }
+    }
+    main match {
+      case Some(klass) => {
+        jarOutputStream.putNextEntry(new JarEntry("META-INF/MANIFEST.MF"))
+        val manifest =
+"""Manifest-Version: 1.0
+Created-By: Starling
+Main-Class: """ + klass + "\n"
+        IO.copy(new ByteArrayInputStream(manifest.getBytes), jarOutputStream)
+      }
+      case None =>
+    }
+    jarOutputStream.flush
+    jarOutputStream.close
+  }
 }
 
 /**
@@ -112,17 +183,8 @@ object GUICode {
 class WebStartServlet(prefix:String, serverName:String, externalURL:String, mainClass:String, mainArguments:List[String],
                       xlloopUrl:String) extends HttpServlet {
 
-  val externalJarsPrefix = "library-"
-  val moduleJarsPrefix = "module-"
-
-
-  val fileCacheDir = new File("modulejarcache")
-  if (!fileCacheDir.exists) fileCacheDir.mkdir()
-
-  val fileCache = CacheFactory.getCache("jarFileCache", soft = false)
-
   override def doGet(request: HttpServletRequest, response:HttpServletResponse) = {
-    println("do GET")
+    println("do GET " + request.getRequestURI)
 
     val excelPluginIniName = "excel_plugin-" + serverName + ".ini"
     val excelPluginXllName = "excel_plugin-" + serverName + ".xll"
@@ -131,7 +193,6 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     val kerberosName = "kerberos.reg"
     val starlingInstallerName = "Starling-" + serverName + "-InstallScript.nsi"
     val createInstallerName = "CreateInstallerInstructions.txt"
-    val classesPath = "/target/scala-2.9.1/classes/"
 
     var url = request.getRequestURI
     var path = url.substring(prefix.length + 1)
@@ -189,59 +250,44 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
       response.setContentType("text/plain")
       writer.println(mainClass + " " + PropsHelper.defaultProps.ExternalHostname() + " " + PropsHelper.defaultProps.RmiPort() + " " + PropsHelper.defaultProps.ServerPrincipalName() + " " + PropsHelper.defaultProps.ServerType().name)
       val (modules, libJarNames) = GUICode.dependencies
-      for ((module, lastModified) <- modules) {writer.println(moduleJarsPrefix + module + ".jar " + lastModified)}
-      for ((libName, lastModified) <- libJarNames) {writer.println(externalJarsPrefix + libName + " " + lastModified)}
-    } else if (path.startsWith("/" + moduleJarsPrefix)) {
-      println("Asking for module Jar: " + path)
+      for ((module, md5) <- modules) {writer.println(GUICode.moduleJarsPrefix + module + ".jar " + md5)}
+      for ((libName, md5) <- libJarNames) {writer.println(GUICode.externalJarsPrefix + libName + ".jar " + md5)}
+    } else if (path.startsWith("/" + GUICode.moduleJarsPrefix)) {
+      println("Asking for module Jar: " + path + " " + request.getParameter("md5"))
       val module = {
-        val p = path.replaceFirst("/" + moduleJarsPrefix, "")
+        val p = path.replaceFirst("/" + GUICode.moduleJarsPrefix, "")
         p.substring(0, p.size-4)
       }
-      val lastModified = GUICode.lastModifiedForModule(module)
-
-      val moduleJarName = module + "_" + lastModified + ".jar"
-
-      def getOrGenerateFile = {
-        val moduleJarFile = new File(fileCacheDir, moduleJarName)
-        if (moduleJarFile.exists) {
-          moduleJarFile
-        } else {
-          val outputPath = new File(module + classesPath)
-          generateJar(moduleJarFile, outputPath)
-          moduleJarFile.setLastModified(lastModified)
-          moduleJarFile
-        }
-      }
-
-      val moduleJarFile = fileCache.memoize(moduleJarName, getOrGenerateFile)
-      writeFileToStream(moduleJarFile, response)
-    } else if (path.startsWith("/" + externalJarsPrefix)) {
-      println("Asking for library Jar: " + path)
-      val jarName = path.substring(1+externalJarsPrefix.length)
-      val jarFile = GUICode.libJarNames(jarName)
-      writeFileToStream(jarFile, response)
+      val moduleJarFile =GUICode.getOrGenerateModule(module)
+      writeFileToStream(moduleJarFile, response, Some(request.getParameter("md5")))
+    } else if (path.startsWith("/" + GUICode.externalJarsPrefix)) {
+      println("Asking for library Jar: " + path + " " + request.getParameter("md5"))
+      val jarName = path.substring(1+GUICode.externalJarsPrefix.length)
+      val jarFile = GUICode.libJarNames(jarName.substring(0, jarName.size-4))
+      writeFileToStream(jarFile, response, Some(request.getParameter("md5")))
     } else if (path.equals("/icon.png")) {
       response.setContentType("image/png")
       IO.copy(classOf[WebStartServlet].getClassLoader.getResourceAsStream("icons/webstart.png"), response.getOutputStream)
     } else if (path == "/" + booterName) {
       println("Asking for booter.jar")
       val (booterJarFile, _) = generateBooterJar
+      println("TS " + booterJarFile.lastModified())
       writeFileToStream(booterJarFile, response)
     } else if (path == "/" + starlingExeName) {
       val iconFile = new File("project/deployment/starling.ico")
       val splashFile = new File("project/deployment/splash_screen.bmp")
       val (booterJarFile,booterTimestamp) = generateBooterJar
-      val timestamp = math.max(booterTimestamp, new File("services" + classesPath + "starling/http/InstallationHelper.class").lastModified())
+      val timestamp = math.max(booterTimestamp, new File("services" + GUICode.classesPath + "starling/http/InstallationHelper.class").lastModified())
       val exeName = "Starling-" + serverName + "_" + timestamp + ".exe"
 
       def getOrGenerateFile = {
-        val exeFile = new File(fileCacheDir, exeName)
+        val exeFile = new File(GUICode.fileCacheDir, exeName)
         if (exeFile.exists) {
           println("Returning the exe")
           exeFile
         } else {
           println("Generating the exe")
-          val configFile = new File(fileCacheDir, "launch4j.xml")
+          val configFile = new File(GUICode.fileCacheDir, "launch4j.xml")
           val configXML = InstallationHelper.generateL4JXML(externalURL, serverName, booterJarFile.getAbsolutePath, iconFile.getAbsolutePath, splashFile.getAbsolutePath, timestamp).toString
           val bufferedWriter = new BufferedWriter(new FileWriter(configFile))
           bufferedWriter.write(configXML)
@@ -251,21 +297,22 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
           exeFile
         }
       }
-      val exeFile = fileCache.memoize(exeName, getOrGenerateFile)
+      val exeFile = GUICode.memoize(exeName, getOrGenerateFile _)
+      response.setHeader("Content-Disposition:", "attachment; filename="+starlingExeName + "\"")
       writeFileToStream(exeFile, response)
     } else if (path == "/" + kerberosName) {
       val kerberosFile = new File("project/deployment/kerberos.reg")
       writeFileToStream(kerberosFile, response)
     } else if (path == "/" + excelPluginIniName) {
       def generateFile = {
-        val iniFile = new File(fileCacheDir, excelPluginIniName + "-" + new Timestamp().toString)
+        val iniFile = new File(GUICode.fileCacheDir, excelPluginIniName + "-" + new Timestamp().toString)
         val bufferedWriter = new BufferedWriter(new FileWriter(iniFile))
         bufferedWriter.write("server=" + xlloopUrl + "\r\n") // I'm using windows carriage return + line feed on purpose here!
         bufferedWriter.write("send.user.info=true\r\n")
         bufferedWriter.close
         iniFile
       }
-      val iniFile = fileCache.memoize(excelPluginIniName, generateFile)
+      val iniFile = GUICode.memoize(excelPluginIniName, generateFile _)
       writeFileToStream(iniFile, response)
     } else if (path == "/" + excelPluginXllName) {
       val xlloopFile = new File("project/deployment/xlloop-0.3.1.xll")
@@ -273,14 +320,14 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     } else if (path == "/" + starlingInstallerName) {
       val installationFileName = starlingInstallerName
       def generateFile = {
-        val installationFile = new File(fileCacheDir, installationFileName + "-" + new Timestamp().toString)
+        val installationFile = new File(GUICode.fileCacheDir, installationFileName + "-" + new Timestamp().toString)
         val text = InstallationHelper.generateNSISText(serverName)
         val bufferedWriter = new BufferedWriter(new FileWriter(installationFile))
         bufferedWriter.write(text)
         bufferedWriter.close()
         installationFile
       }
-      val installationFile = fileCache.memoize(installationFileName, generateFile)
+      val installationFile = GUICode.fileCache.memoize(installationFileName, generateFile)
       writeFileToStream(installationFile, response)
     } else if (path == "/" + createInstallerName) {
       val readMeFile = new File("project/deployment/InstallationCreator_READ_ME.txt")
@@ -295,27 +342,46 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
       val booterJarName = "booter_" + timestamp + ".jar"
 
       def getOrGenerateBooterFile = {
-        val booterJarFile = new File(fileCacheDir, booterJarName)
+        val booterJarFile = new File(GUICode.fileCacheDir, booterJarName)
         if (booterJarFile.exists) {
           booterJarFile
         } else {
-          generateJar(booterJarFile, classes, Some("starling.booter.Booter"))
+          GUICode.generateJar(booterJarFile, classes, Some("starling.booter.Booter"))
           signJar(booterJarFile)
           booterJarFile.setLastModified(timestamp)
           booterJarFile
         }
       }
-      (fileCache.memoize(booterJarName, getOrGenerateBooterFile), timestamp)
+      (GUICode.memoize(booterJarName, getOrGenerateBooterFile _), timestamp)
     }
 
-    def writeFileToStream(jarFile:File, response:HttpServletResponse) {
-      response.setDateHeader("Last-Modified", jarFile.lastModified)
-      response.setContentType("application/octet-stream")
-      val inputStream = new BufferedInputStream(new FileInputStream(jarFile))
-      IO.copy(inputStream, response.getOutputStream)
-      inputStream.close
-      response.getOutputStream.flush()
-      response.getOutputStream.close()
+    def writeFileToStream(file:File, response:HttpServletResponse, maybeRequestedMD5:Option[String]=None) {
+      def writeFile() {
+        val inputStream = new BufferedInputStream(new FileInputStream(file))
+        IO.copy(inputStream, response.getOutputStream)
+        inputStream.close
+        response.getOutputStream.flush()
+        response.getOutputStream.close()
+      }
+      val actualMD5 = GUICode.md5(file)
+      maybeRequestedMD5 match {
+        case None => {
+          response.setContentType("application/octet-stream")
+          response.setDateHeader("Last-Modified", file.lastModified) //without this webstart will always use the old version
+          writeFile()
+        }
+        case Some(requestedMD5) => {
+          if (actualMD5 != requestedMD5) {
+            response.setStatus(404)
+            response.setContentType("text/plain")
+            response.getWriter.write("Requested " + file.getName + " with md5 " + requestedMD5 + " but the current md5 is " + actualMD5)
+          } else {
+            response.setContentType("application/octet-stream")
+            response.setDateHeader("Expires", Day(1, 1, 2020).millis)
+            writeFile()
+          }
+        }
+      }
     }
   }
 
@@ -350,32 +416,5 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     }
     bufferedReader.close
     errorBufferedReader.close
-  }
-
-
-  private def generateJar(jarFile:File, outputPath:File, main:Option[String] = None) {
-    val jarOutputStream = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(jarFile)))
-    if (outputPath.exists) {
-      val files = GUICode.findMatchingFiles(outputPath).map(_.getPath)
-      for (outputFile <- files) {
-        jarOutputStream.putNextEntry(new JarEntry(outputFile.substring(outputPath.getPath.length+1)))
-        val inputStream = new BufferedInputStream(new FileInputStream(outputFile))
-        IO.copy(inputStream, jarOutputStream)
-        inputStream.close
-      }
-    }
-    main match {
-      case Some(klass) => {
-        jarOutputStream.putNextEntry(new JarEntry("META-INF/MANIFEST.MF"))
-        val manifest =
-"""Manifest-Version: 1.0
-Created-By: Starling
-Main-Class: """ + klass + "\n"                
-        IO.copy(new ByteArrayInputStream(manifest.getBytes), jarOutputStream)
-      }
-      case None =>
-    }
-    jarOutputStream.flush
-    jarOutputStream.close
   }
 }

@@ -53,7 +53,7 @@ case class TradeSelectionPage(
     Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), pivotPageState))
   }
 
-  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers) = {
+  override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) = {
     val selection = fields.find(f=>f._1.name == "Trade ID" && (f._2 match {
       case SomeSelection(vs) if vs.size == 1 => true
       case _ => false
@@ -502,7 +502,7 @@ case class TradeSelectionPage(
   override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = {
     val today = Day.today
     val isLatestLiveOn = tpp.expiry.exp == today
-    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk))}
+    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk0, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk0))}
     val isLatestBookClose = latestTimestamp match {
       case Some((t1,t2)) => t1 == t2
       case _ => true

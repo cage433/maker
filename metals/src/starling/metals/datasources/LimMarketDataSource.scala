@@ -14,17 +14,18 @@ import starling.calendar.BusinessCalendar
 import org.joda.time.LocalTime
 import starling.scheduler.{ScheduledTime, SimpleScheduledTask}
 import org.joda.time.{Period => JodaPeriod}
+import com.lim.mimapi.RelType
 
 
 abstract class LimMarketDataSource(service: LIMService, val marketDataType: MarketDataTypeName) extends MarketDataSource with Log {
   val marketDataSet = MarketDataSet.LimMetals
 
-  protected def descriptionFor(sources: List[LimSource]): List[String] =
-    sources.flatMap { source => marketDataType.name.pair(sources.flatMap(_.description)).map("%s → %s" % _) }
+  protected def descriptionFor(sources: List[LimSource]) =
+    marketDataType.name.pairWith(sources.flatMap(_.description)).map("%s → %s" % _)
 
   protected def getValuesForType(start: Day, end: Day, sources: List[LimSource]): ((Day, Day, MarketDataTypeName), List[MarketDataEntry]) =
     (start, end, marketDataType) → sources.flatMap(source => getValues(source, start, end).toList)
-      .require(containsDistinctTimedKeys, "concatenated sources: %s, produced duplicate MarketDataKeys: " % sources)
+      //.require(containsDistinctTimedKeys, "concatenated sources: %s, produced duplicate MarketDataKeys: " % sources)
 
   protected def getValues(source: LimSource, start: Day, end: Day): List[MarketDataEntry] = service.query { connection =>
     val relations = source.relationsFrom(connection)
@@ -66,9 +67,11 @@ abstract class LimSource(val levels: List[Level]) {
   protected def levelDescription = "(" + levels.map(_.name).mkString(", ") + ")"
 }
 
-abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level]) extends LimSource(levels) with Log {
+abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level],
+  relationTypes: Set[RelType] = Set(RelType.CATEGORY)) extends LimSource(levels) {
+
   def description = parentNodes.map(node => node.name + " " + levelDescription)
-  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes : _*).flatMap(safeRelationFrom)
+  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes, relationTypes).flatMap(safeRelationFrom)
   def relationExtractor: Extractor[String, Option[Relation]]
 
   private def safeRelationFrom(childRelation: String): Option[(Relation, String)] = try {

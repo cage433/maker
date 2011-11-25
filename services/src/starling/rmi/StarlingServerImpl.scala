@@ -34,7 +34,8 @@ class StarlingServerImpl(
       User.currentlyLoggedOn.groups.contains(Groups.StarlingProductionAdmin)
     } else {
       val groups = User.currentlyLoggedOn.groups
-      groups.contains(Groups.StarlingDevelopers) || groups.contains(Groups.StarlingTesters) || groups.contains(Groups.StarlingProductionAdmin)
+      import Groups._
+      List(StarlingDevelopers, StarlingTesters, StarlingProductionAdmin, StarlingBusinessUsers).exists(groups.contains(_))
     }
   }
 

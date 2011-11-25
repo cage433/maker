@@ -30,6 +30,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
   val BRL = UOM(Currencies.BRL, brl, 1.0)
   val CAD = UOM(Currencies.CAD, cad, 1.0)
   val CHF = UOM(Currencies.CHF, chf, 1.0)
+  val CNH = UOM(Currencies.CNH, cnh, 1.0)
   val CNY = UOM(Currencies.CNY, cny, 1.0)
   val CZK = UOM(Currencies.CZK, czk, 1.0)
   val DKK = UOM(Currencies.DKK, dkk, 1.0)

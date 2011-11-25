@@ -204,7 +204,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
           val keyFilterForTimedKey = keyFilter.retain(inMemoryFields)
           val matchingTimedKeys = observationDayAndMarketDataKeyRows.filterKeys(keyFilterForTimedKey.matches).values
 
-          matchingTimedKeys.pair((keyFilter.remove(inMemoryFields), keyEdit))
+          matchingTimedKeys.pairWith((keyFilter.remove(inMemoryFields), keyEdit))
         } }.groupBy(_._1).mapValues(_.map(_._2))
 
         val newRowsWithAllFieldsPresent = edits.newRows.map(marketDataType.defaultValue + _).filter { row =>

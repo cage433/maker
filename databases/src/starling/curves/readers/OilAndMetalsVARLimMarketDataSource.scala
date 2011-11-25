@@ -85,7 +85,7 @@ class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marke
     }
     val pricesByObservationPoint = service.query {
       connection =>
-        val relationToDeliveryMonth = connection.getAllRelChildren(limSymbol.name).flatMapO(parseRelation).toMap
+        val relationToDeliveryMonth = connection.getAllRelationChildren(limSymbol.name).flatMapO(parseRelation).toMap
 
         val prices = connection.getPrices(relationToDeliveryMonth.keys, level, lastObservationDay - daysInThePast, lastObservationDay)
           .groupInto {

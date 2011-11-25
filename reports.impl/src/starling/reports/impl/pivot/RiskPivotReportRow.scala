@@ -15,6 +15,7 @@ import starling.quantity.Quantity._
 import starling.market.rules.CommonPricingRule
 import starling.market._
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import starling.gui.api.ReportSpecificOptions._
 import starling.marketdata.{PeriodComparator, PeriodFieldDetails}
 import starling.reports.pivot.OptionalPeriodLabel
 
@@ -158,7 +159,7 @@ trait RiskPivotFields[T <: RiskPivotReportRow[T]]{
       }
     },
 
-    new PivotReportField[T](riskMarket_str) {
+    new PivotReportField[T](riskMarketLabel) {
       def value(reportRow: T) = {
         val market = reportRow.marketName 
         if (market != "" && !reportRow.collapseOptions && reportRow.utp.riskMarketExtra != "")

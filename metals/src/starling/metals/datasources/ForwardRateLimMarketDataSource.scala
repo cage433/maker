@@ -10,20 +10,19 @@ import starling.lim.LIMService
 import scalaz.Scalaz._
 import starling.services.EmailService
 import starling.scheduler.{EmailingScheduledTask, TaskDescription}
-import starling.pivot.MarketValue
 import starling.utils.ClosureUtil._
 import starling.db.{NormalMarketDataReader, MarketDataStore}
-import starling.quantity.{Quantity, Percentage, UOM}
+import starling.quantity.{Quantity, UOM}
 import collection.immutable.{Map, List}
-import starling.utils.ImplicitConversions
+import org.joda.time.Period
 
 
 case class ForwardRateLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
   extends LimMarketDataSource(service, ForwardRateDataType.name) {
+  private val sources = List(LIBORFixingsSource)
 
-  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(earliestDayToImport(day), day, List(LIBORFixingsSource)))
-  }
+  override def description = descriptionFor(sources)
+  def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     TaskDescription("Verify SIBOR Available", limDaily(LME.calendar, 4 H 30), notImplemented),

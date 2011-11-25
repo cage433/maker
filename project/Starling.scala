@@ -22,6 +22,10 @@ object StarlingBuild extends Build{
     if (r == null) "SNAPSHOT" else r
   }
 
+  val verboseMode = if (Option(System.getProperty("verbose")).isDefined) true else false
+
+  val ivyUpdateLogging = if (verboseMode) ivyLoggingLevel := UpdateLogging.Full else ivyLoggingLevel := UpdateLogging.Quiet
+
   println("")
   println("This is the build number: " + starlingVersion)
   println("")
@@ -45,17 +49,19 @@ object StarlingBuild extends Build{
     publishSetting,
     resolvers += "Non-Trafigura Public Repositories" at "http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/",
     resolvers += "trafigura" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/",
+    ivyUpdateLogging,
     organizationName := "Trafigura",
     version := starlingVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt
   )
 
-  class OverrideMakePom extends MakePom {
-    override def isValidIDCharacter(c: Char) = true
-  }
-
   def overrideMakePom(module: IvySbt#Module, configuration: MakePomConfiguration, log: Logger) {
 		import configuration.{allRepositories, moduleInfo, configurations, extra, file, filterRepositories, process}
+
+    class OverrideMakePom extends MakePom() {
+      override def isValidIDCharacter(c: Char) = true
+    }
+
 		module.withModule(log) { (ivy, md, default) =>
 			(new OverrideMakePom()).write(ivy, md, moduleInfo, configurations, extra, process, filterRepositories, allRepositories, file)
 			log.info("Wrote " + file.getAbsolutePath)
@@ -87,6 +93,8 @@ object StarlingBuild extends Build{
     resolvers += "logistics-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/logistics-bindeps-snapshots/",
     resolvers += "referencedata-bindeps-releases" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-releases/",
     resolvers += "referencedata-bindeps-snapshots" at "http://nexus.global.trafigura.com:8081/nexus/content/repositories/referencedata-bindeps-snapshots/",
+    ivyUpdateLogging,
+    //resolvers += Resolver.defaultLocal,
     organizationName := "Trafigura",
     version := starlingVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt
@@ -242,7 +250,7 @@ object StarlingBuild extends Build{
 
   val starlingApiDependencies = Seq(
     "com.trafigura.titan" % "model-logistics-public-scala-bindings" % "1.2-SNAPSHOT",
-    "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.0",
+    "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.1",
     "org.slf4j" % "slf4j-api" % "1.6.1",
     "dom4j" % "dom4j" % "1.6.1",
     "com.rabbitmq" % "amqp-client" % amqpVersion,
@@ -453,10 +461,15 @@ object StarlingBuild extends Build{
     "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
     "org.scannotation" % "scannotation" % "1.0.3",
     "javax.servlet" % "servlet-api" % "2.5",
+    "net.databinder" %% "dispatch-http" % "0.8.6" withSources(),
+    "net.databinder" %% "dispatch-core" % "0.8.6" withSources(),
+    "org.apache.httpcomponents" % "httpclient" % "4.1.2",
+    "org.apache.httpcomponents" % "httpcore" % "4.1.2",
+    "commons-logging" % "commons-logging" % "1.1.1",
   
-    "com.trafigura.titan.shared-libs" % "titan-core" % "1.0-SNAPSHOT" notTransitive(),
-    "com.trafigura.titan.shared-libs" % "titan-security" % "1.0-SNAPSHOT" notTransitive(),
-    "com.trafigura.titan.shared-libs" % "titan-utils" % "1.0-SNAPSHOT" notTransitive()
+    "com.trafigura.titan.shared-libs" % "titan-core" % "1.1" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "titan-security" % "1.1" notTransitive(),
+    "com.trafigura.titan.shared-libs" % "trademgmt-lib" % "1.0" notTransitive()
   )
 
   lazy val services = Project(
@@ -502,12 +515,7 @@ object StarlingBuild extends Build{
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
-    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
-    "net.databinder" %% "dispatch-http" % "0.8.6" withSources(),
-    "net.databinder" %% "dispatch-core" % "0.8.6" withSources(),
-    "org.apache.httpcomponents" % "httpclient" % "4.1.2",
-    "org.apache.httpcomponents" % "httpcore" % "4.1.2",
-    "commons-logging" % "commons-logging" % "1.1.1"
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA"
   )
 
   lazy val webservice = Project(

@@ -329,7 +329,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
   }
 
   reactions += {
-    case MarketDataSnapshot(_) => updateRunButton
+    case _ : MarketDataSnapshot => updateRunButton
   }
   listenTo(context.remotePublisher)
 

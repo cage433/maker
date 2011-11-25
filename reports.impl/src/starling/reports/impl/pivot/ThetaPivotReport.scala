@@ -9,6 +9,7 @@ import starling.reports.impl.pivot.PivotReport._
 import starling.utils.cache.CacheFactory
 import starling.concurrent.MP._
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
+import starling.gui.api.ReportSpecificOptions._
 
 class ThetaPivotReport(context: ReportContext, utps: Map[UTPIdentifier, UTP]) extends RiskFactorSplittingPivotReport[ThetaPivotReport.T] {
 
@@ -27,8 +28,8 @@ class ThetaPivotReport(context: ReportContext, utps: Map[UTPIdentifier, UTP]) ex
   }
 
   override def combine(rows : List[Theta], reportSpecificChoices : ReportSpecificChoices) = {
-    val showInLots = reportSpecificChoices.getOrElse(lots_str, false)
-    val atmVega = reportSpecificChoices.getOrElse(atmVega_str, false)
+    val showInLots = reportSpecificChoices.getOrElse(lotsLabel, false)
+    val atmVega = reportSpecificChoices.getOrElse(atmVegaLabel, false)
     val changeOnlyTimeAndDiscounts = !atmVega
     // hack - if not using atmVega (i.e. using interpolated vols), we also change theta so that the
     // change in day doesn't affect interpolated vols. This sucks but is being done to emulate

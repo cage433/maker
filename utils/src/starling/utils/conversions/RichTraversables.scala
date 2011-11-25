@@ -37,7 +37,6 @@ class RichTraversable[A](traversable: Traversable[A]) {
 
   def pair[B](f: A => B): Traversable[(A, B)] = traversable.map(_.pair(f))
   def pairWithTraversable[B](f: A => Traversable[B]): Traversable[(A, B)] = traversable.flatMap(_.pairWithTraversable(f))
-  def pair[B](b: B): Traversable[(A, B)] = traversable.map(_ → b)
   def optPair[B](f: A => Option[B]): Traversable[(A, B)] = traversable.flatMap(_.optPair(f))
 
   def groupInto[B, C](keyF: A => B, valueF: A => C): Map[B, Traversable[C]] = {

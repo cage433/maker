@@ -156,11 +156,19 @@ trait MarketDataStore {
 
   def saveAll(marketDataSet: MarketDataSet, observationPoint: ObservationPoint, data: Map[MarketDataKey, MarketData]): SaveResult
 
-  def update(marketDataSetToData: Map[MarketDataSet, Iterable[MarketDataUpdate]]): SaveResult
+  def update(marketDataSetToData: MultiMap[MarketDataSet, MarketDataUpdate]): SaveResult
 
   def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType:SnapshotType): SnapshotID
 
   def snapshots(): List[SnapshotID]
+  
+  def snapshots(observationDay : Option[Day]): List[SnapshotID] = snapshots().filter {
+      snapshotID =>
+        observationDay match {
+          case Some(day) => day <= snapshotID.snapshotDay
+          case None => true
+        }
+    }
 
   def snapshotsByMarketDataSelection(): MultiMap[MarketDataSelection, SnapshotIDLabel]
 
@@ -172,6 +180,10 @@ trait MarketDataStore {
 }
 
 case class SaveResult(maxVersion: Int, anythingChanged: Boolean, affectedObservationDays: Option[List[Day]] = None)
+
+object SaveResult {
+  val Null = SaveResult(0, false, None)
+}
 
 case class VersionedMarketData(version: Int, data: Option[MarketData])
 

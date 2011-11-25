@@ -26,7 +26,7 @@ import scalaz.Scalaz._
 object SpotFXLimMarketDataSource {
   val sources = List(BloombergGenericFXRates, CFETSSpotFXFixings)
 
-  val titanCurrencies = UOMSymbol.edmCurrencies.map(UOM.asUOM(_)).filter(_ != UOM.USD)
+  val titanCurrencies = UOMSymbol.currenciesToImportFromLIM.map(UOM.asUOM(_)).filter(_ != UOM.USD)
 }
 
 case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
@@ -35,10 +35,7 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
   import SpotFXLimMarketDataSource._
 
   override def description = descriptionFor(sources)
-
-  def read(day: Day) = log.infoWithTime("Getting data from LIM") {
-    Map(getValuesForType(earliestDayToImport(day), day, sources))
-  }
+  def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
   override def eventSources(marketDataStore: MarketDataStore) = List(
     SpotFXDataEventSource(PricingGroup.Metals, SpotFXMarketDataProvider(marketDataStore))

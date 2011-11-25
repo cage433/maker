@@ -18,6 +18,7 @@ import com.trafigura.services.TitanSerializableCurrency
 import starling.titan.EDMConversions._
 import starling.db.SnapshotID
 import starling.gui.api._
+import starling.titan.TitanStringLiterals
 
 /**
  * Titan RabbitMQ event module
@@ -29,42 +30,41 @@ trait TitanRabbitEventServices extends Stopable with Log {
 }
 
 object Payloads extends PayloadFactory {
-  def forSnapshotId(snapshotId: SnapshotIDLabel) = createPayload(Event.StarlingSnapshotIdPayload, snapshotId.id.toString)
-  def forSpotFXCurrency(currency: TitanSerializableCurrency) = createPayload(Event.StarlingSpotFXCurrency, currency.toString)
-  def forObservationDay(observationDay: Day) = createPayload(Event.StarlingObservationDay, observationDay.toString) // ddMMMyyyy ok ?
-  def forReferenceRateSource(source: String) = createPayload(Event.StarlingReferenceRateSource, source)
+  def forSnapshotId(snapshotId: SnapshotIDLabel) = createPayload(TitanStringLiterals.starlingSnapshotIdPayload, snapshotId.id.toString)
+  def forSpotFXCurrency(currency: TitanSerializableCurrency) = createPayload(TitanStringLiterals.starlingSpotFXCurrency, currency.toString)
+  def forObservationDay(observationDay: Day) = createPayload(TitanStringLiterals.starlingObservationDay, observationDay.toString) // ddMMMyyyy ok ?
+  def forReferenceRateSource(source: String) = createPayload(TitanStringLiterals.starlingReferenceRateSource, source)
   def forTitanTradeId(id:String) = createPayload(Event.RefinedMetalTradeIdPayload, id)
+  def forIsValuationSnapshot(isValuationSnapshot : Boolean) = createPayload(TitanStringLiterals.isValuationSnapshot, isValuationSnapshot.toString)
 
-  private def createPayload(payloadType: String, keyId: String): Payload = createPayload(payloadType, Event.StarlingSource, keyId)
+  private def createPayload(payloadType: String, keyId: String): Payload = createPayload(payloadType, TitanStringLiterals.starlingSource, keyId)
 }
 
 case class TitanRabbitIdBroadcaster(
     publisher : Publisher,
-    source : String = Event.StarlingSource,
-    subject : String = Event.StarlingMarketDataSnapshotIDSubject,
-    payloadType : String = Event.StarlingSnapshotIdPayload) extends Broadcaster with Log {
+    source : String = TitanStringLiterals.starlingSource,
+    subject : String = TitanStringLiterals.starlingMarketDataSnapshotIDSubject,
+    payloadType : String = TitanStringLiterals.starlingSnapshotIdPayload) extends Broadcaster with Log {
 
   def toTitan(list: List[UOM]): List[TitanSerializableCurrency] = list.flatMapO(_.serializableCurrency)
 
   def verbFor(isCorrection: Boolean): EventVerbEnum = if (isCorrection) UpdatedEventVerb else CreatedEventVerb
 
-  import Event._
-
   def broadcast(event: swing.event.Event) = try {
     val events: Option[JSONArray] = event partialMatch {
       case RefinedMetalsValuationChanged(observationDay, snapshotID, changedTrades) => {
-        createEvents(StarlingValuationServiceSubject, UpdatedEventVerb,
+        createEvents(TitanStringLiterals.starlingValuationServiceSubject, UpdatedEventVerb,
           Payloads.forObservationDay(observationDay) ::
           Payloads.forSnapshotId(snapshotID) :: changedTrades.toList.map(Payloads.forTitanTradeId))
       }
-      case MarketDataSnapshot(snapshotID) => createEvents(subject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Nil)
+      case MarketDataSnapshot(snapshotID, isValuationSnapshot) => createEvents(subject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Payloads.forIsValuationSnapshot(isValuationSnapshot) :: Nil)
       case SpotFXDataEvent(observationDay, currencies, snapshotIDLabel, isCorrection) => {
-        createEvents("SpotFXData", verbFor(isCorrection),
+        createEvents(TitanStringLiterals.starlingSpotFXDataServiceSubject, verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) ::
           Payloads.forSnapshotId(snapshotIDLabel) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
       }
       case ReferenceInterestRateDataEvent(observationDay, exchangeName, currencies, snapshotIDLabel, isCorrection) => {
-        createEvents("ReferenceSomething", verbFor(isCorrection),
+        createEvents(TitanStringLiterals.starlingReferenceInterestRateServiceSubject, verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) :: Payloads.forReferenceRateSource(exchangeName) ::
           Payloads.forSnapshotId(snapshotIDLabel) :: toTitan(currencies).map(Payloads.forSpotFXCurrency))
       }

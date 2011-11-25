@@ -106,7 +106,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
 
   // time doesn't work so I've removed it as an available slide. we'll have to fix it if someone asks for it.
   val availableSlideParameters = List(priceSlideParameters, priceCommoditySlideParameters, stressCommoditySlideParameters, volsSlideParameters, volsCommoditySlideParameters, stdDevSlideParameters/*, timeSlideParameters*/)
-  val reportTypes: List[PivotReportType] = List(GreeksPivotReport, ThetaPivotReport, MtmPivotReport, CostAndIncomeValuationReport)
+  val reportTypes: List[PivotReportType] = List(GreeksPivotReport, ThetaPivotReport, MtmPivotReport)
   val reportOptionsAvailable = ReportOptionsAvailable(reportTypes.map(_.label), availableSlideParameters)
 
   def runReport(curveIdentifier: CurveIdentifier, reportOptions: ReportOptions, utps : Map[UTPIdentifier, UTP]): ReportData = {
@@ -186,12 +186,21 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
 
   private val cache = CacheFactory.getCache("StarlingServerImpl", unique = true)
 
-  def clearCache() {cache.clear}
+  private val ytd = new YearToDateReport(reportContextBuilder, curveIdentifierFactory)
 
-  def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier): TradeValuation = {
+  def clearCache() {
+    cache.clear
+    ytd.clearCache
+  }
+
+  def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier, reportSpecificChoices : ReportSpecificChoices): TradeValuation = {
     try {
       val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
-      val explanation = trade.explain(defaultContext.environment)
+      import ReportSpecificOptions._
+      val explanation = reportSpecificChoices.getOrElse(valuationCurrencyLabel, defaultLabel) match {
+        case `defaultLabel` => trade.explain(defaultContext.environment)
+        case UOM.Currency(ccy) => trade.explain(defaultContext.environment, ccy)
+      }
       TradeValuation(Right(explanation))
     } catch {
       case t: Throwable => TradeValuation(Left(StackTrace(t)))
@@ -280,7 +289,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
 
   def createReportPivotDataSource(reportData:ReportData, reportParameters: ReportParameters): (Set[(ObservationPoint, MarketDataKey, MarketData)], PivotTableDataSource) = {
     val tradeSets: List[(TradeSet, Timestamp)] = tradeStores.toTradeSets(reportParameters.tradeSelectionWithTimestamp)
-    val pivots = if (reportParameters.reportOptions.isEmpty) List() else tradeSets.map {
+    val pivots: List[PivotTableDataSource] = if (reportParameters.reportOptions.isEmpty) List() else tradeSets.map {
       case (tradeSet, timestamp) => {
         val tradesPivot = tradeSet.reportPivot(
           reportParameters.curveIdentifier.tradesUpToDay, reportParameters.expiryDay,
@@ -289,7 +298,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
         val reports = reportData.reports
         val groupedReports = reports.groupBy(_.slideDetails.stepNumbers)
         val reportTableDataSources = groupedReports.keysIterator.map(stepNums => {
-          (stepNums, new ReportPivotTableDataSource(tradesPivot, groupedReports(stepNums)))
+          (stepNums, new ReportPivotTableDataSource(tradesPivot, groupedReports(stepNums), reportParameters.desk))
         }).toList
         if (reportTableDataSources.size == 1) {
           reportTableDataSources(0)._2
@@ -342,14 +351,13 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
         }
       }
     }
-    val yearToDates = if (reportParameters.runReports) {
-      val ytd = new YearToDateReport
-      ytd.report(reportContextBuilder, curveIdentifierFactory, tradeSets, reportParameters)
+    val yearToDates = if (reportParameters.runReports && !reportParameters.tradeSelectionWithTimestamp.isTitanTrades) {
+      ytd.report(tradeSets, reportParameters)
     } else {
       Nil
     }
     val allRecorded = reportData.recorded ++ pnlRecordedPlusPivots.flatMap(_._1)
-    val allPivots = pivots ::: pnlRecordedPlusPivots.map(_._2) ::: yearToDates
+    val allPivots: List[PivotTableDataSource] = pivots ::: pnlRecordedPlusPivots.map(_._2) ::: yearToDates
     if (allPivots.isEmpty)
       (allRecorded, NullPivotTableDataSource)
     else
@@ -362,7 +370,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     curveIdentifierD: CurveIdentifier,
     tM1: Timestamp,
     t: Timestamp,
-    expiryDay: Day, addRows:Boolean) = {
+    expiryDay: Day, addRows:Boolean): (Set[(ObservationPoint, MarketDataKey, MarketData)], PivotTableDataSource) = {
 
     def op = {
       val c1 = reportContextBuilder.contextFromCurveIdentifier(curveIdentifierDm1)

@@ -3,6 +3,7 @@ package starling.gui.pages
 import scala.swing._
 import event.ButtonClicked
 import starling.gui._
+import api.ReportSpecificChoices
 import starling.pivot.view.swing._
 import starling.pivot._
 import controller.{PivotTable, PivotTableConverter}
@@ -39,7 +40,7 @@ abstract class AbstractPivotPage(pivotPageState:PivotPageState, edits:PivotEdits
   def postSave(i:Int, context:PageContext) {throw new Exception("No implementation of postSave for this page")}
   def selfPage(pivotPageState:PivotPageState, edits:PivotEdits=PivotEdits.Null):Page
   def subClassesPageData(pageBuildingContext:SC):Option[PageData] = None
-  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers) {}
+  def finalDrillDownPage(fields:Seq[(Field,Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) {}
   def toolbarButtons(pageContext: PageContext, data:PageData):List[Button] = List()
   def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection):Option[ConfigPanels] = None
   def createComponent(pageContext:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) : PageComponent = {
@@ -93,7 +94,7 @@ object PivotComponent {
         pageContext:PageContext,
         toolbarButtons:List[Button],
         configPanel:(PageContext, PageData, () => TableSelection)=>Option[ConfigPanels],
-        finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers)=>Unit,
+        finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers, ReportSpecificChoices)=>Unit,
         selfPage:((PivotPageState,PivotEdits)=>Page),
         pageData:PageData,
         pivotPageState:PivotPageState,
@@ -133,7 +134,7 @@ class PivotTablePageComponent(
         pageContext:PageContext,
         toolbarButtons:List[Button],
         configPanel:(PageContext, PageData, () => TableSelection)=>Option[ConfigPanels],
-        finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers)=>Unit,
+        finalDrillDown:(Seq[(Field,Selection)],PageContext,Modifiers, ReportSpecificChoices)=>Unit,
         selfPage:((PivotPageState,PivotEdits)=>Page),
         pivotTablePageData:PivotTablePageData,
         pivotPageState:PivotPageState,
@@ -444,7 +445,7 @@ class PivotTablePageComponent(
         val newPPS = pivotPageState.copy(pivotFieldParams = pivotPageState.pivotFieldParams.copy(pivotFieldState = Some(newFieldState)))
         pageContext.goTo(selfPage(newPPS, edits), modifiers)
       } else {
-        finalDrillDown(filterFields ++ drillDownFields, pageContext, modifiers)
+        finalDrillDown(filterFields ++ drillDownFields, pageContext, modifiers, ReportSpecificChoices(currentFieldState.reportSpecificChoices))
       }
     }
     case FullScreenSelectedEvent(currentState, newState, currentFrozen) => {
