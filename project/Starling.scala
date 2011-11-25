@@ -461,6 +461,11 @@ object StarlingBuild extends Build{
     "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
     "org.scannotation" % "scannotation" % "1.0.3",
     "javax.servlet" % "servlet-api" % "2.5",
+    "net.databinder" %% "dispatch-http" % "0.8.6" withSources(),
+    "net.databinder" %% "dispatch-core" % "0.8.6" withSources(),
+    "org.apache.httpcomponents" % "httpclient" % "4.1.2",
+    "org.apache.httpcomponents" % "httpcore" % "4.1.2",
+    "commons-logging" % "commons-logging" % "1.1.1",
   
     "com.trafigura.titan.shared-libs" % "titan-core" % "1.1" notTransitive(),
     "com.trafigura.titan.shared-libs" % "titan-security" % "1.1" notTransitive(),
@@ -510,12 +515,7 @@ object StarlingBuild extends Build{
     "org.mortbay.jetty" % "jetty" % "6.1.26",
     "org.mortbay.jetty" % "jetty-util" % "6.1.26",
     "com.thoughtworks.paranamer" % "paranamer" % "2.3",
-    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
-    "net.databinder" %% "dispatch-http" % "0.8.6" withSources(),
-    "net.databinder" %% "dispatch-core" % "0.8.6" withSources(),
-    "org.apache.httpcomponents" % "httpclient" % "4.1.2",
-    "org.apache.httpcomponents" % "httpcore" % "4.1.2",
-    "commons-logging" % "commons-logging" % "1.1.1"
+    "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA"
   )
 
   lazy val webservice = Project(

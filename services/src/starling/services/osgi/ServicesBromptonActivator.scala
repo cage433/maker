@@ -4,7 +4,6 @@ import starling.auth.AuthHandler
 import starling.fc2.api.FC2Facility
 import starling.browser.service.BrowserService
 import starling.manager._
-import starling.utils.Broadcaster
 import starling.calendar.BusinessCalendars
 import starling.services.excel.ExcelLoopReceiver
 import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRules, CurveViewer}
@@ -13,8 +12,9 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
 import javax.servlet.http.HttpServlet
 import starling.rmi._
-import starling.services.{EmailService, ReferenceData, StarlingInit}
 import starling.db.{MarketDataSource, MarketDataStore}
+import starling.utils.{Receiver, Broadcaster}
+import starling.services.{QlikViewUpdater, EmailService, ReferenceData, StarlingInit}
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -97,6 +97,10 @@ class ServicesBromptonActivator extends BromptonActivator {
       }
     })
     excelLoopReceiver.start
+
+    if (props.QlikViewEnabled()) {
+      context.registerService(classOf[Receiver], new QlikViewUpdater(props.QlikViewServerUrl(), props.QlikViewSpotFXTask()))
+    }
 
     starlingInit.start
     starlingInit.servlets.foreach { case (name, servlet) => context.registerService(classOf[HttpServlet], servlet, ServiceProperties(HttpContext(name))) }
