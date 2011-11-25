@@ -18,6 +18,8 @@ import starling.utils.{Log, Broadcaster}
 import starling.pivot.MarketValue
 import org.boris.xlloop.reflect.XLFunction._
 import starling.daterange._
+import scalaz.Scalaz._
+import starling.utils.ImplicitConversions._
 
 class MarketDataHandler(broadcaster : Broadcaster,
                    starlingServer : StarlingServerImpl,
@@ -166,6 +168,47 @@ class MarketDataHandler(broadcaster : Broadcaster,
   }
 
   @ExcelMethod
+  @XLFunction(category = "Starling", name = "bulkUploadFixings",
+    args = Array("label", "observationDate", "data"),
+    argHelp = Array(
+      "The name for this data (will be shown in the starling dropdown menu)",
+      "The observation day to store this data against",
+      "A range containing market name at the top and date range on the left. Can include blank columns"
+    )
+  )
+  def bulkUploadPriceFixings(label: String, observationDate: Object, headerAndData: Array[Array[Object]]) = {
+    assert(label.nonEmpty, "Can't have an empty label for the market data")
+    val observationPoint = ObservationPoint.parse(observationDate)
+
+    val header = headerAndData.head.map(item => (item ?? "").toString.toLowerCase).toList
+    val data = headerAndData.tail.toList.map(_.toList)
+
+    if (header != List("market", "period", "price")) throw new Exception("Missing header: market, period, price")
+
+    val allMarketData: Map[MarketDataKey, MarketData] = {
+      val pricesByMarket = data.safeMap { row =>
+          val marketName = row(0).asInstanceOf[String].trim
+          if (marketName.isEmpty) Nil else {
+            val market = Market.fromName(marketName)
+            val period = objectToDateRange(observationPoint, row(1), market.tenor).getOrThrow("Can't parse " + row(1))
+            val price = row(2).asInstanceOf[Double]
+            (market, (period, price)) :: Nil
+          }
+        }.flatten.toMultiMap
+        pricesByMarket.map { case (market, prices) => {
+          val ppp = prices.map {
+            case(period,price) => (Level.Settle, StoredFixingPeriod.parse(period)) → MarketValue.quantity(price, market.priceUOM)
+          }.toMap.sorted
+
+          (PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(ppp))
+        }}.toMap
+    }
+
+    val result = marketDataStore.saveAll(MarketDataSet.excel(label), observationPoint, allMarketData)
+    "OK:" + result.maxVersion
+  }
+
+  @ExcelMethod
   @XLFunction(category = "Starling", name = "bulkUploadPrices",
     args=Array("label", "observationDate", "data"),
     argHelp = Array(
@@ -174,38 +217,34 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "A range containing market name at the top and date range on the left. Can include blank columns"
     )
   )
-  def bulkUploadPrices(label: String, observationDate: Object, data: Array[Array[Object]]) = {
+  def bulkUploadPrices(label: String, observationDate: Object, headerAndData: Array[Array[Object]]) = {
     assert(label.nonEmpty, "Can't have an empty label for the market data")
     val observationPoint = ObservationPoint.parse(observationDate)
     //look at header to decide on behaviour
 
-    val header = data.head.map {
-      case null => ""
-      case a => a
-    }
+    val header = headerAndData.head.map(_ ?? "")
+    val data = headerAndData.tail
 
-    val allPrices: Map[MarketDataKey, PriceData] = {
+    val allMarketData: Map[MarketDataKey, MarketData] = {
       if (header.toList.map(_.toString.toLowerCase) == List("market", "period", "price")) {
-        val pricesByMarket = data.tail.flatMap { row =>
+        val pricesByMarket = data.flatMap { row =>
           val marketName = row(0).asInstanceOf[String].trim
-          if (!marketName.isEmpty) {
+          if (marketName.isEmpty) Nil else {
             val market = Market.fromName(marketName)
-            val period = objectToDateRange(observationPoint, row(1), market.tenor).getOrElse(throw new Exception("Can't parse " + row(1)))
+            val period = objectToDateRange(observationPoint, row(1), market.tenor).getOrThrow("Can't parse " + row(1))
             val price = row(2).asInstanceOf[Double]
-            (market, period, price) :: Nil
-          } else {
-            Nil
+            (market, (period, price)) :: Nil
           }
-        }.groupBy(_._1)
+        }.toList.toMultiMap
         pricesByMarket.map { case (market, prices) => {
-          val ppp = prices.map { case(_,period,price) => period->price }
+          val ppp = prices.map { case(period,price) => period->price }
           (PriceDataKey(market), PriceData.create(ppp, market.priceUOM))
         }}.toMap
       } else {
         val markets = header
-        val prices = data.tail
+        val prices = data
         (for ((marketName, index) <- markets.zipWithIndex
-              if marketName != null && marketName.isInstanceOf[String] && !marketName.toString.trim().isEmpty) yield {
+              if marketName.isInstanceOf[String] && !marketName.toString.trim().isEmpty) yield {
           val marketStr = marketName.asInstanceOf[String].trim
           val market = ExcelInstrumentReader.commodityMarketOption(marketStr) match {
             case Some(m) => m
@@ -219,7 +258,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
       }
     }
 
-    val result = marketDataStore.saveAll(MarketDataSet.excel(label), observationPoint, allPrices)
+    val result = marketDataStore.saveAll(MarketDataSet.excel(label), observationPoint, allMarketData)
     "OK:" + result.maxVersion
   }
 
