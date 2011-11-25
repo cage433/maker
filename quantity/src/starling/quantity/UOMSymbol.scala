@@ -8,7 +8,6 @@ object UOMSymbol{
 
   def apply(names: CaseInsensitive*) : UOMSymbol = {
     val prime = primesIterator.next()
-    println("Prime for " + names + " = " + prime)
     new UOMSymbol(prime, names.toList)
   }
   val SHARE_SYMBOL = UOMSymbol("Share")
