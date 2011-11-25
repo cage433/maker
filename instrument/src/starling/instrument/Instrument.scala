@@ -139,7 +139,7 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
    * For EnvironmentDifferentiables that have no standard hedge (e.g. vols) we simple
    * return the derivative
    */
-  def position(env : Environment, diff : EnvironmentDifferentiable) : Quantity = {
+  def position(env : Environment, diff : EnvironmentDifferentiable with PriceKey) : Quantity = {
     val hedge = hedgingInstrument(env, diff)
     val delta = firstOrderDerivative(env, diff, valuationCCY)
     val hedgeDelta = hedge match{
@@ -147,7 +147,7 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
       case None => 1.0(delta.uom)
     }
     val hedgeRatio = if (delta.isZero && hedgeDelta.isZero) 0.0 else (delta / hedgeDelta).checkedValue(UOM.SCALAR)
-    hedgeRatio (delta.uom)
+    hedgeRatio (diff.market.uom)
   }
 
   def hedgingInstrument(env: Environment, diff: EnvironmentDifferentiable): Option[UTP] = {

@@ -26,7 +26,14 @@ object PriceLimMarketDataSource extends scalaz.Options {
   val sources = List(
     new PriceLimSource(new LMELIMRelation(Bloomberg.Metals.Lme, FuturesExchangeFactory.LME)),
     new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX)),
-    new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SHFE, "", Set(RelType.FUTURES))),
+
+    // Import from LIM based source (i.e. not Bloomberg) temporarily,
+    // Futures.Shfe.(Lead or Steel).Close is actually a settlement price (see reasoning in PriceFixingLimMarketDataSource) but
+    // this is intended just for UAT.
+    new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SHFE, "", Set(RelType.FUTURES)) {
+      override def marketPredicate(market: FuturesMarket) = market.isOneOf(Market.STEEL_REBAR_SHANGHAI, Market.SHANGHAI_LEAD)
+    }),
+
     new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE)))
 
   class LMELIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
@@ -42,10 +49,12 @@ object PriceLimMarketDataSource extends scalaz.Options {
 
     def this(node: LimNode, exchange: FuturesExchange) = this(node, exchange, "TRAF.", Set(RelType.CATEGORY))
 
+    def marketPredicate(market: FuturesMarket) = true
+
     val extractor = Extractor.regex[Option[LimPrice]](prefix + """%s\.([^_]+)_(\d\d\d\d\D)""" % exchange.name) {
       case List(lim, deliveryMonth) =>
 
-      val optMarket = exchange.markets.find(_.limSymbol.map(_.name) == Some(lim))
+      val optMarket = exchange.markets.find(_.limSymbol.map(_.name) == Some(lim)).filter(marketPredicate)
       val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
       (optMarket, optMonth) match {

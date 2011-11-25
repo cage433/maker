@@ -1,7 +1,6 @@
 package starling.curves
 
 import starling.marketdata.MarketData
-import starling.quantity.Quantity
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.utils.conversions.RichColtMatrices._
 import cern.colt.matrix.linalg.Algebra
@@ -12,6 +11,7 @@ import starling.daterange.DayAndTime
 import starling.daterange.TimeOfDay._
 import starling.calendar.BusinessCalendar
 import starling.market.{Index, PublishedIndex, CommodityMarket}
+import starling.quantity.{UOM, Quantity}
 
 trait EnvironmentDifferentiable{
   def curveKey : CurveKey
