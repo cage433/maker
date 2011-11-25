@@ -62,9 +62,10 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDat
   private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
 
   def environment(snapshotID: SnapshotID, marketDay : Day): Environment = {
-    val env = environment(SnapshotMarketDataVersion(snapshotID.label), snapshotID.snapshotDay)
-    val marketDayToUse = List(marketDay.startOfDay, env.marketDay).sortWith(_>_).head
-    env.forwardState(marketDayToUse)
+    environment(SnapshotMarketDataVersion(snapshotID.label), marketDay)
+//    val env = environment(SnapshotMarketDataVersion(snapshotID.label), snapshotID.snapshotDay)
+//    val marketDayToUse = List(marketDay.startOfDay, env.marketDay).sortWith(_>_).head
+//    env.forwardState(marketDayToUse)
   }
 
   def environment(marketDataVersion:MarketDataVersion, observationDay:Day):Environment = {
