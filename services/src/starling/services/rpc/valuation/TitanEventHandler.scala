@@ -9,6 +9,8 @@ import starling.tradestore.TradeStore.StoreResults
 import starling.utils.{Broadcaster, Log}
 import starling.gui.api.{SnapshotIDLabel, RefinedMetalsValuationChanged}
 import com.trafigura.edm.common.units.TitanId
+import starling.curves.Environment
+import starling.db.SnapshotID
 
 /**
  * top level received event handler for Titan Rabbit events
@@ -72,6 +74,16 @@ class TitanEventHandler(broadcaster:Broadcaster,
   }
 
   /**
+   * C&I have a bug whereby they only picked up the first trade id. No idea now why we published a 
+   * list of trade ids. They'll fix eventually but for now we'll publish seperate events
+   */
+  private def publishManyChangedValueEvents(env : Environment, snapshotID : SnapshotIDLabel, changedIDs : List[String]){
+    changedIDs.distinct.foreach{
+      id => 
+        publishedChangedValueEvents(env.marketDay.day, snapshotID, Set(id))
+    }
+  }
+  /**
    * handler for trademgmt trade events
    */
   def tradeMgmtTradeEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
@@ -93,8 +105,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
             if (completed) {
               val results = tradeIds.map(id => titanTradeStoreManager.updateTrade(env, id, eventId))
               val changedIDs = results.flatMap(_.changedValueTitanTradeIds)
-              if (changedIDs != Nil)
-                publishedChangedValueEvents(env.marketDay.day, snapshotID, changedIDs.toSet)
+              publishManyChangedValueEvents(env, snapshotID, changedIDs)
 
               log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedIDs.size))
               Some(results)
@@ -136,10 +147,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
 
         val results = inventoryIds.map(id => titanTradeStoreManager.updateInventory(env, id, eventId))
         val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
-
-        if (changedForwardIDs != Nil) {
-          publishedChangedValueEvents(env.marketDay.day, snapshotID, changedForwardIDs.toSet)
-        }
+        publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
 
         log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedForwardIDs.size))
         Some(results)
@@ -151,9 +159,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
             val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
             val results = inventoryIds.map(id => titanTradeStoreManager.updateInventory(env, id, eventId))
             val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
-            if (changedForwardIDs != Nil) {
-              publishedChangedValueEvents(env.marketDay.day, snapshotID, changedForwardIDs.toSet)
-            }
+            publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
             Some(results)
           }
           case _ => None
