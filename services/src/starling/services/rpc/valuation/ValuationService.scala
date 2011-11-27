@@ -54,7 +54,6 @@ case class ValuationService(
     val forwards : List[PhysicalMetalForward] = titanTradeStore.getAllForwards().collect{case (_, Right(fwd)) => fwd}.toList
     log.info("Got Edm Trade results, trade result count = " + forwards.size)
     val env = environmentProvider.environment(marketDataIdentifier)
-    println("Market day = " + env.marketDay)
     val valuations = forwards.map{
       fwd =>
         (fwd.titanTradeID, fwd.costsAndIncomeQuotaValueBreakdown(env))
