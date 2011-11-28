@@ -86,11 +86,20 @@ case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData
 
   def apply(point : AnyRef) = point match {
     case (country: NeptuneCountryCode, grade : GradeCode, day: Day) => {
-      val (days, benchmarks) = countryData((country, grade)).sorted.unzip
-      if (benchmarks.isEmpty)
-        throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade),
-          long = "No benchmarks for country %s (%s), grade code %s (%s)" % (refData.countryFor(country), country, refData.gradeFor(grade), grade))
-      InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
+      try {
+        countryData((country, grade)).keys.toList.sortWith(_ > _).find(_ >= day) match {
+          case None =>
+            throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade),
+              long = "No benchmark for country %s (%s), grade code %s (%s), day %s" %(refData.countryFor(country), country, refData.gradeFor(grade), grade, day))
+        }
+        val (days, benchmarks) = countryData((country, grade)).sorted.unzip
+        if (benchmarks.isEmpty)
+          throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade),
+            long = "No benchmarks for country %s (%s), grade code %s (%s)" %(refData.countryFor(country), country, refData.gradeFor(grade), grade))
+        InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
+      } catch {
+        case _ : MissingMarketDataException => Quantity.NULL
+      }
     }
   }
 }
