@@ -327,12 +327,12 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   import NamedQuantity._
   def format(level : Int) : String
   def name : String = format(0)
-  override def * (rhs: Double)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
-  override def * (rhs: Percentage) = guard(isAlmostOne(rhs), BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
-  override def * (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("*", this, asNamedQuantity(rhs), quantity * rhs))
-  override def / (rhs: Double)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("/", this, asNamedQuantity(rhs), quantity / rhs))
-  override def / (rhs: Percentage)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("/", this, asNamedQuantity(rhs), quantity / rhs))
-  override def / (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("/", this, asNamedQuantity(rhs), quantity / rhs))
+  override def * (rhs: Double)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("×", this, asNamedQuantity(rhs), quantity * rhs))
+  override def * (rhs: Percentage) = guard(isAlmostOne(rhs), BinOpNamedQuantity("×", this, asNamedQuantity(rhs), quantity * rhs))
+  override def * (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("×", this, asNamedQuantity(rhs), quantity * rhs))
+  override def / (rhs: Double)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("÷", this, asNamedQuantity(rhs), quantity / rhs))
+  override def / (rhs: Percentage)     = guard(isAlmostOne(rhs), BinOpNamedQuantity("÷", this, asNamedQuantity(rhs), quantity / rhs))
+  override def / (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("÷", this, asNamedQuantity(rhs), quantity / rhs))
   override def + (rhs: Quantity)   = BinOpNamedQuantity("+", this, asNamedQuantity(rhs), quantity + rhs)
   override def - (rhs: Quantity)   = BinOpNamedQuantity("-", this, asNamedQuantity(rhs), quantity - rhs)
   override def unary_-             = NegateNamedQuantity(this)
