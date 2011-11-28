@@ -109,5 +109,5 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
   def fromName(name: String): MarketDataType = lookup.getOrElse(name,
     throw new Exception("No market data type found for name: " + name + ", available: " + types.map(_.name).mkString(", ")))
 
-  def typesUsingPercentage = types -- List(PriceDataType, ShanghaiVATDataType, ForwardRateDataType)
+  def typesUsingPercentage = types filterNot (List(PriceDataType, ShanghaiVATDataType, ForwardRateDataType) contains)
 }

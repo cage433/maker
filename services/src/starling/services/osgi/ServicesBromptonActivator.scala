@@ -61,7 +61,7 @@ class ServicesBromptonActivator extends BromptonActivator {
         }
       })
 
-      val everythingButMetals = PricingGroup.values - PricingGroup.Metals
+      val everythingButMetals = PricingGroup.values filterNot(_ == PricingGroup.Metals)
       val Default = new VanillaEnvironmentRule(_.atTimeOfDay(ObservationTimeOfDay.Default), TimeOfDay.EndOfDay,
         EnvironmentRuleLabel.COB, everythingButMetals, starlingInit.referenceDataLookup, starlingInit.dataTypes)
 
