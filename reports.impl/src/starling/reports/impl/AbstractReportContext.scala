@@ -14,10 +14,10 @@ abstract class AbstractReportContext(
 
   def recorded:Set[(ObservationPoint, MarketDataKey, MarketData)]
 
-  val baseEnvironment = environmentFor(ObservationDay(curveIdentifier.tradesUpToDay))
+  val baseEnvironment = environmentFor(ObservationDay(curveIdentifier.observationDay))
 
   val environment = {
-    if (curveIdentifier.valuationDayAndTime.day < curveIdentifier.tradesUpToDay) {
+    if (curveIdentifier.valuationDayAndTime.day < curveIdentifier.observationDay) {
       throw new Exception("The valuation day can not be moved backwards")
     }
     if (curveIdentifier.valuationDayAndTime == baseEnvironment.marketDay) {

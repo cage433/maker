@@ -15,7 +15,7 @@ h1. 30 second help
 
 * You use the application is like a web browser (forward, back, stop)
 * Trades, market data and reports are presented like excel pivot tables (drag fields around to change the view)
-* To run a report: click "Trades" -> choose the trades -> "Advanced Olap" -> select market data and valuation params then click -> "Run"
+* To run a report: click "Trades" -> choose the trades -> "Configure Report" -> select market data and valuation params then click -> "Run"
 * Drag fields around to change the layout and grouping. You can also set the layout before clicking "Run".
 * Double clicking on cells in the pivot table usually provides a drill down
 * Definition: Pricing Group - a complete set of market data (price,fx,vols,...) for all days (today and the past) (can include market data from more than one system)
@@ -27,8 +27,8 @@ h1. Report params
 * Execl Market data: Excel can be used to provide the input curves to a report.
 * Zero interet rates: Select to see the report without the effect of discounting, dummy market data provides zero interest rates anyway so in that case this button is redundant.
 * Zero vols: Select for intrinsic valuation, dummy market data provides zero vols anyway so in that case this button is redundant.
-* Observation day: The day the trades are observed. So any trades with a trade day after this day will not be included in the report.
-* Forward observation: Usually the same as 'Observation day' but can be moved forward. This day is used as the trade valuation date.
+* Observation day: The day the amrket data is observed.
+* Forward observation: Usually the same as 'Observation day' but can be moved forward. This has the effect of changing some market data - e.g. spot fx - so as to avoid arbitrage.  This day is also used to determine the set of trades used. So any trades with a trade day after this day will not be included in the report.
 * EoD/SoD: Start of day or end of day. At the start of the day prices have not fixed and expiry has not happened (for the 'forward observation' day). At the 'end of day' both have happened.
 * Market data: This specifies to use market data for the given day and pricing group (or dummy if no pricing group is selected). The refresh button next to it updates the market data for that day.
 * Theta to: Calculates theta between 'forward observation' and this day. This day is also used for delta and gamma bleed. End of Day is assumed.

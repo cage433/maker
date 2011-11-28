@@ -28,11 +28,12 @@ import starling.reports.impl.{MarketDataStoreReportContext, AbstractReportContex
 case class CurveIdentifier(
         marketDataIdentifier:MarketDataIdentifier,
         environmentRule:EnvironmentRule,
-        tradesUpToDay:Day,
-        valuationDayAndTime:DayAndTime, //Typically the same as tradesUpToDay but can be moved forward
+        observationDay:Day,             // The market data is observed on this day,
+                                        // HOWEVER trades are filtered on trade day using the valuation day field
+        valuationDayAndTime:DayAndTime, //Typically the same as observationDay but can be moved forward
         thetaDayAndTime:DayAndTime,
         zeroInterestRates:Boolean, zeroVols:Boolean) {
-  override def toString = marketDataIdentifier + " " + tradesUpToDay
+  override def toString = marketDataIdentifier + " " + observationDay
 }
 
 class CurveIdentifierFactory(environmentRules: EnvironmentRules) {
@@ -116,7 +117,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
     val reports: List[PivotReportData[_ <: PivotReportRow]] = selectedReportTypes.flatMap( reportType => {
       for ((context, slideDetails) <- contextAndSideDetails) yield {
 
-        val singleReportData: PivotReportData[_ <: PivotReportRow] = runSingleReport(reportType, curveIdentifier.tradesUpToDay, context, slideDetails, utps)
+        val singleReportData: PivotReportData[_ <: PivotReportRow] = runSingleReport(reportType, curveIdentifier.observationDay, context, slideDetails, utps)
 
         if (reportType == MtmPivotReport) {
           val mtmReportData = singleReportData.asInstanceOf[PivotReportData[Mtm]]
@@ -198,7 +199,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
       val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
       import ReportSpecificOptions._
       val explanation = reportSpecificChoices.getOrElse(valuationCurrencyLabel, defaultLabel) match {
-        case `defaultLabel` => trade.explain(defaultContext.environment)
+        case `defaultLabel` => trade.explain(defaultContext.environment, trade.valuationCCY)
         case UOM.Currency(ccy) => trade.explain(defaultContext.environment, ccy)
       }
       TradeValuation(Right(explanation))
@@ -228,7 +229,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
 
   def readUTPs(reportParameters:ReportParameters) = {
 
-    val tradesUpToDay = reportParameters.curveIdentifier.tradesUpToDay
+    val tradesUpToDay = reportParameters.curveIdentifier.valuationDayAndTime.day
     val tradeSets: List[(TradeSet, Timestamp)] = if (reportParameters.runReports) {
       tradeStores.toTradeSets(reportParameters.tradeSelectionWithTimestamp)
     } else {
@@ -292,7 +293,8 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     val pivots: List[PivotTableDataSource] = if (reportParameters.reportOptions.isEmpty) List() else tradeSets.map {
       case (tradeSet, timestamp) => {
         val tradesPivot = tradeSet.reportPivot(
-          reportParameters.curveIdentifier.tradesUpToDay, reportParameters.expiryDay,
+          reportParameters.curveIdentifier.valuationDayAndTime.day,
+          reportParameters.expiryDay,
           timestamp,
           reportParameters.runReports)
         val reports = reportData.reports

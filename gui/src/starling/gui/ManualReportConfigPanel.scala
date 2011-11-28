@@ -259,7 +259,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val bookClose = day2Panel.bookCloseChooser.selectedTimestamp
     val tradeLiveOnDay = day2Panel.liveOnDayChooser.day
     val pnlFromDayAndTime = day1Panel.pnlFromDayAndTimeChooser.dayAndTime
-    val valuationDay = observationDayChooser.day
+    val observationDay = observationDayChooser.day
     val environmentRule = day2Panel.environmentRule.rule
     val forwardValuationDayAndTime = day2Panel.forwardObservationDayAndTimeChooser.dayAndTime
     val thetaDayAndTime: DayAndTime = day2Panel.thetaToDayChooser.day.endOfDay
@@ -302,7 +302,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val cIDTo = CurveIdentifierLabel(
       marketIDTo,
       environmentRule,
-      valuationDay,
+      observationDay,
       forwardValuationDayAndTime,
       thetaDayAndTime,
       envMods)
