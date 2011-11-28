@@ -4,11 +4,17 @@ import org.testng.Assert._
 import starling.quantity.{Quantity, UOM}
 import starling.pivot.PivotQuantity
 
-object QuantityTestUtils{
+object QuantityTestUtils {
   /** Assert that UOMs match and that values are within tolerance
    */
   def assertQtyEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = ""){
     if(!actual.isAlmostEqual(expected, tol)) {
+      throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual.toStringAllDecimalPlaces() + " != " + expected.toStringAllDecimalPlaces() + " )")
+    }
+  }
+
+  def assertQtyNotEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = ""){
+    if(actual.isAlmostEqual(expected, tol)) {
       throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual.toStringAllDecimalPlaces() + " != " + expected.toStringAllDecimalPlaces() + " )")
     }
   }
