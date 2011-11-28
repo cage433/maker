@@ -73,6 +73,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   def isPurchase : Boolean
   def valuationCurrency : UOM = contractPricingSpec.valuationCCY
 
+  def inventoryQuantity = quantity // default to "quantity" but expect overridden value from inventory for allocations
 
   import PhysicalMetalAssignmentOrUnassignedSalesQuota._
 
@@ -119,8 +120,8 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   private def discount(env: Environment, spec : TitanPricingSpec) = env.discount(valuationCCY, spec.settlementDay(env.marketDay)).named("Discount")
 
 
-  private def timesVolume(price : NamedQuantity) : NamedQuantity = {
-    val volume = quantity.named("Volume")
+  private def timesVolume(price : NamedQuantity, qty : Quantity) : NamedQuantity = {
+    val volume = qty.named("Volume")
     if (quantity.uom != price.denominatorUOM){
       val volumeConversion = quantity.inUOM(price.denominatorUOM) / quantity
       price * volumeConversion.named("Volume Conversion") * volume
@@ -142,7 +143,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   private def contractPaymentExplained(env : Environment) : NamedQuantity = {
     val price = contractPricingSpec.priceExcludingVAT(env)
     var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
-    exp = timesVolume(exp)
+    exp = timesVolume(exp, quantity)
     discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
   }
 
@@ -150,7 +151,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     val spec = benchmarkPricingSpec(env)
     val price = spec.priceExcludingVAT(env)
     var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
-    exp = timesVolume(exp)
+    exp = timesVolume(exp, inventoryQuantity)
     discounted(env, exp, spec.settlementDay(env.marketDay))
   }
 
@@ -198,7 +199,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
         known = false,
         assetType = commodity.neptuneName,
         settlementDay = benchmarkPricingSpec(env).settlementDay(env.marketDay),
-        amount = quantity,
+        amount = inventoryQuantity,
         mtm = benchmarkPaymentExplained(env)
       )
     //val freightParityAsset = Asset(
@@ -284,7 +285,7 @@ case class PhysicalMetalAssignment( assignmentID : String,
                                     benchmarkIncoTermCode : Option[IncotermCode],
                                     isPurchase: Boolean,
                                     inventoryID: String,
-                                    inventoryQuantity : Quantity,
+                                    override val inventoryQuantity : Quantity,
                                     grade : GradeCode
                                     ) extends PhysicalMetalAssignmentOrUnassignedSalesQuota with UTP with Tradeable {
 

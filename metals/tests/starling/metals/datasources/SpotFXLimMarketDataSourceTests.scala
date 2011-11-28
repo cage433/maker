@@ -20,7 +20,7 @@ class SpotFXLimMarketDataSourceTests extends LimMarketDataSourceTests[SpotFXLimM
       dataStore.queryLatestReturns(ratesForEveryCurrencyExcept(GBP))
 
       oneOf(emailService).send(withArg(equal(template.copy(subject = "Missing Spot FX for: Bloomberg Generic Rate on 27Oct2011",
-        body = expectBodyWith(missing(GBP), present(titanCurrencies -- List(CNY, GBP) : _*))))))
+        body = expectBodyWith(missing(GBP), present(titanCurrencies filterNot (List(CNY, GBP) contains): _*))))))
     }
 
     whenExecuting {
@@ -33,7 +33,7 @@ class SpotFXLimMarketDataSourceTests extends LimMarketDataSourceTests[SpotFXLimM
 
   protected def expectEmailsForNoData(emailService: EmailService) = {
     oneOf(emailService).send(withArg(equal(template.copy(subject = "No Spot FX for: Bloomberg Generic Rate on 27Oct2011",
-      body = expectBodyWith(missing(titanCurrencies - CNY : _*))))))
+      body = expectBodyWith(missing(titanCurrencies filterNot(_ == CNY) : _*))))))
 
     oneOf(emailService).send(withArg(equal(template.copy(subject = "No Spot FX for: CFETS on 27Oct2011",
       body = expectBodyWith(missing(CNY))))))
@@ -46,5 +46,5 @@ class SpotFXLimMarketDataSourceTests extends LimMarketDataSourceTests[SpotFXLimM
       SpotFXData(Quantity(1.0, ccy)))
   }
 
-  private def ratesForEveryCurrencyExcept(uom: UOM) = (titanCurrencies - uom).map(rateFor(_)).toList
+  private def ratesForEveryCurrencyExcept(uom: UOM) = (titanCurrencies filterNot (_ == uom)).map(rateFor(_)).toList
 }

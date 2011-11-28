@@ -125,8 +125,8 @@ object NewSchemaMdDBTest extends Checkers with Log {
     val slow = slowMdDB.observationDaysByMarketDataSet
     val fast = newSchemaMdDB.observationDaysByMarketDataSet
 
-    val missingFast = slow.zipMap(fast).mapValues(pair => pair._1 -- pair._2).filterValuesNot(_.isEmpty)
-    val missingSlow = fast.zipMap(slow).mapValues(pair => pair._1 -- pair._2).filterValuesNot(_.isEmpty)
+    val missingFast = slow.zipMap(fast).mapValues(pair => pair._1 filterNot (pair._2 contains)).filterValuesNot(_.isEmpty)
+    val missingSlow = fast.zipMap(slow).mapValues(pair => pair._1 filterNot (pair._2 contains)).filterValuesNot(_.isEmpty)
 
     assertTrue(missingFast.isEmpty, "items missing in fast: " + missingFast)
     assertTrue(missingSlow.isEmpty, "items missing in slow: " + missingSlow)

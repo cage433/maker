@@ -42,7 +42,7 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
   )
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
-    task("Bloomberg Generic Rate", limDaily(LME.calendar, 18 H 00), (titanCurrencies - UOM.CNY), marketDataStore),
+    task("Bloomberg Generic Rate", limDaily(LME.calendar, 18 H 00), (titanCurrencies filterNot(_ == UOM.CNY)), marketDataStore),
     task("CFETS", limDaily(SHFE.calendar, 15 H 30), List(UOM.CNY), marketDataStore)
   )
 

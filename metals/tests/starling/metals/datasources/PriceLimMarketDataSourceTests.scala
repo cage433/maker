@@ -87,7 +87,7 @@ class PriceLimMarketDataSourceTests extends LimMarketDataSourceTests[PriceLimMar
   }.toList
 
   private def pricesForEveryCommodityExcept(missing: FuturesMarket*) = missing.toMultiMapWithKeys(_.exchange).flatMap {
-    case (exchange, missingMarketsForExchange) => pricesFor((exchange.limMetalMarkets -- missingMarketsForExchange) : _*)
+    case (exchange, missingMarketsForExchange) => pricesFor((exchange.limMetalMarkets filterNot (missingMarketsForExchange contains)) : _*)
   }.toList
 
 }

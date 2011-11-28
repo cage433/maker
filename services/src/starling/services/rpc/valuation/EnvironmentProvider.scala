@@ -5,7 +5,6 @@ import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.utils.cache.CacheFactory
 import starling.quantity.Quantity
 import com.trafigura.services.{TitanSerializableDate}
-import starling.daterange.Day
 import starling.utils.Log
 import starling.marketdata.ReferenceDataLookup
 import starling.curves.NullAtomicEnvironment._
@@ -15,6 +14,7 @@ import starling.gui.api.MarketDataIdentifier._
 import starling.gui.api._
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
+import starling.daterange.{TimeOfDay, Day}
 
 trait EnvironmentProvider {
   def metalsValuationSnapshots(observationDay : Option[Day]) = snapshots(observationDay).filter(ss =>
@@ -24,7 +24,7 @@ trait EnvironmentProvider {
     ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
   )
   def snapshots(observationDay : Option[Day]) : List[SnapshotID]
-  def environment(snapshotID : SnapshotID, marketDay : Day) : Environment
+  def environment(snapshotID : SnapshotID, observationDay : Day) : Environment
   def environment(marketDataVersion:MarketDataVersion, observationDay:Day):Environment
   def makeValuationSnapshot(version:Int):SnapshotID
 

@@ -7,9 +7,9 @@ import starling.utils.{Log, Stopwatch}
 import starling.instrument.physical.PhysicalMetalForward
 import valuation.QuotaValuation
 import com.trafigura.services.TitanSnapshotIdentifier
-import starling.daterange.Day
 import starling.titan.EDMConversions._
 import starling.db.SnapshotID
+import starling.daterange.{TimeOfDay, Day}
 
 /**
  * Valuation service implementations
@@ -53,7 +53,7 @@ case class ValuationService(
     val sw = new Stopwatch()
     val forwards : List[PhysicalMetalForward] = titanTradeStore.getAllForwards().collect{case (_, Right(fwd)) => fwd}.toList
     log.info("Got Edm Trade results, trade result count = " + forwards.size)
-    val env = environmentProvider.environment(marketDataIdentifier)
+    val env = environmentProvider.environment(marketDataIdentifier).forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay))
     val valuations = forwards.map{
       fwd =>
         (fwd.titanTradeID, fwd.costsAndIncomeQuotaValueBreakdown(env))
@@ -69,7 +69,7 @@ case class ValuationService(
 
     val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse(bestValuationIdentifier())
     log.info("valueSingleTradeQuotas called for %s with market data identifier %s".format(tradeID, marketDataIdentifier))
-    val env = environmentProvider.environment(marketDataIdentifier)
+    val env = environmentProvider.environment(marketDataIdentifier).forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay))
     (marketDataIdentifier, valueSingleTradeQuotas(tradeID, env))
   }
 
