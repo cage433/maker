@@ -209,7 +209,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
   private def copyBenchmarksAndFreightParity(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore,
     dataTypes: MarketDataTypes) = TaskDescription(
-      "Copy Freight Parity & Benchmarks", hourly(BusinessCalendar.NONE), CopyManualData(marketDataStore, dataTypes))
+      "Copy Freight Parity & Benchmarks", hourly(businessCalendars.everyDay()), CopyManualData(marketDataStore, dataTypes))
 
   private def registerDataValidationTasks(context: BromptonContext, broadcaster: Broadcaster) {
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
