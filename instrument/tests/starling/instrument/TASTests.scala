@@ -64,15 +64,15 @@ class TASTests extends TestMarketTest with TestNGSuite {
     val tas = TAS(market, period, maturityDay, v)
 
     val explainBefore = tas.explanation(environment(maturityDay.startOfDay))
-    assertEquals(explainBefore.name, "((F - Floating(Fixes.01Jan2008)) * Volume)")
-    assertEquals(explainBefore.format(1), "((NYMEX WTI.JAN 2009 - NYMEX WTI.JAN 2009) * 1,000.00 bbl)")
-    assertEquals(explainBefore.format(2), "((110.00 USD/bbl - 110.00 USD/bbl) * 1,000.00 bbl)")
+    assertEquals(explainBefore.name, "((F - Floating(Fixes.01Jan2008)) × Volume)")
+    assertEquals(explainBefore.format(1), "((NYMEX WTI.JAN 2009 - NYMEX WTI.JAN 2009) × 1,000.00 bbl)")
+    assertEquals(explainBefore.format(2), "((110.00 USD/bbl - 110.00 USD/bbl) × 1,000.00 bbl)")
     assertEquals(explainBefore.format(2), explainBefore.format(3))
 
     val explainAfter = tas.explanation(environment(maturityDay.endOfDay))
-    assertEquals(explainAfter.name, "((F - K) * Volume)")
-    assertEquals(explainAfter.format(1), "((NYMEX WTI.JAN 2009 - NYMEX WTI.JAN 2009(Fixed.01Jan2008)) * 1,000.00 bbl)")
-    assertEquals(explainAfter.format(2), "((110.00 USD/bbl - 100.00 USD/bbl) * 1,000.00 bbl)")
+    assertEquals(explainAfter.name, "((F - K) × Volume)")
+    assertEquals(explainAfter.format(1), "((NYMEX WTI.JAN 2009 - NYMEX WTI.JAN 2009(Fixed.01Jan2008)) × 1,000.00 bbl)")
+    assertEquals(explainAfter.format(2), "((110.00 USD/bbl - 100.00 USD/bbl) × 1,000.00 bbl)")
     assertEquals(explainAfter.format(2), explainAfter.format(3))
   }
 }

@@ -18,15 +18,36 @@ import Quantity._
  * Commenting out until everything settles down - AMc 29/9/11
  */
 class PhysicalMetalAssignmentTests extends StarlingTest {
-  val marketDay = Day(2011, 8, 10).endOfDay
+//  val marketDay = Day(2011, 8, 10).endOfDay
+//  val env = UnitTestingEnvironment(
+//      marketDay,
+//      {
+//        case _: ForwardPriceKey => Quantity(97, USD/MT)
+//        case _: IndexFixingKey => Quantity(98, USD/MT)
+//        case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
+//      }
+//    )
+
+  val marketDay = Day(2011, 10, 17).endOfDay
+  import Quantity._
+  val fxRates = Map(
+    EUR → 1.1(USD/EUR),
+    GBP → 0.8(USD/GBP),
+    CNY → 0.1(USD/CNY)
+  )
   val env = UnitTestingEnvironment(
-      marketDay, 
-      {
-        case _: ForwardPriceKey => Quantity(97, USD/MT)
-        case _: IndexFixingKey => Quantity(98, USD/MT)
-        case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
-      }
-    )
+    marketDay,
+    {
+      case ForwardPriceKey(mkt, _, _) => Quantity(97, mkt.priceUOM)
+      case IndexFixingKey(index, _) => Quantity(98, index.priceUOM)
+      case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
+      case USDFXRateKey(ccy) => fxRates(ccy)
+      case _ : CountryBenchmarkAtomicKey => Quantity(115, GBP / G)
+      case _ : AreaBenchmarkAtomicKey => Quantity(0, GBP / G)
+      case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
+
+    }
+  )
 
   @Test
   def testMixedCurrenciesAndVolumes{
@@ -35,26 +56,6 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       Month(2012, 1),
       Quantity(1.5, EUR/KG),
       EUR
-    )
-    val marketDay = Day(2011, 10, 17).endOfDay
-    import Quantity._
-    val fxRates = Map(
-      EUR → 1.1(USD/EUR),
-      GBP → 0.8(USD/GBP),
-      CNY → 0.1(USD/CNY)
-    )
-    val env = UnitTestingEnvironment(
-      marketDay, 
-      {
-        case ForwardPriceKey(mkt, _, _) => Quantity(97, mkt.priceUOM)
-        case IndexFixingKey(index, _) => Quantity(98, index.priceUOM)
-        case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
-        case USDFXRateKey(ccy) => fxRates(ccy)
-        case _ : CountryBenchmarkAtomicKey => Quantity(115, GBP / G)
-        case _ : AreaBenchmarkAtomicKey => Quantity(0, GBP / G)
-        case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
-
-      }
     )
     val pma = PhysicalMetalAssignment(
       "Assignment ID",
@@ -169,5 +170,10 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
 
     // and that the weight/loss gain reflects the difference of quantity vs. (current) inventory quantity
     assertQtyEquals(pma2.weightGain, currentInventoryQty2 - actualQuantity, 1e-6)
+  }
+
+  @Test
+  def testValuationSnapshots{
+
   }
 }

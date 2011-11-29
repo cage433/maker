@@ -127,9 +127,9 @@ class FXForwardTests extends StarlingTest {
     )
     val forwardFX = FXForward(Quantity(1.25, EUR/GBP), Quantity(1000, GBP), Day(2012, 12, 1))
     val explanation = forwardFX.explanation(env)
-    assertEquals(explanation.name, "(((Rec * ((((1/USD per EUR spot) * USD per GBP spot) * GBP.01Dec2012) / EUR.01Dec2012)) + Pay) * Discount)")
-    assertEquals(explanation.format(1), "(((1,000.00 GBP * ((((1/1.20 USD per EUR) * 1.50 USD per GBP) * 1.40) / 1.36)) + (1,250.00) EUR) * EUR.01Dec2012)")
-    val lastExplanation = "(((1,000.00 GBP * ((((1/1.20 USD per EUR) * 1.50 USD per GBP) * 1.40) / 1.36)) + (1,250.00) EUR) * 1.36)"
+    assertEquals(explanation.name, "(((Rec × ((((1/USD per EUR spot) × USD per GBP spot) × GBP.01Dec2012) ÷ EUR.01Dec2012)) + Pay) × Discount)")
+    assertEquals(explanation.format(1), "(((1,000.00 GBP × ((((1/1.20 USD per EUR) × 1.50 USD per GBP) × 1.40) ÷ 1.36)) + (1,250.00) EUR) × EUR.01Dec2012)")
+    val lastExplanation = "(((1,000.00 GBP × ((((1/1.20 USD per EUR) × 1.50 USD per GBP) × 1.40) ÷ 1.36)) + (1,250.00) EUR) × 1.36)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
   }

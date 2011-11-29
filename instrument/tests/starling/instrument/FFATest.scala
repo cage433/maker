@@ -29,7 +29,7 @@ class FFATest extends JonTestEnv {
     (21, 156.3300),
     (24, 154.7200),
     (25, 153.3300))
-
+  
   def makeEnv(md: DayAndTime) = {
     UnitTestingEnvironment(md, {
       key => key match {
@@ -68,7 +68,7 @@ class FFATest extends JonTestEnv {
     val env = makeEnv(Day(2011, 10, 25).endOfDay)
     val explanation = ffa.explanation(env)
 
-    assertEquals(explanation.format(0), "((F - K) * V)")
-    assertEquals(explanation.format(1), "((Round((Average(TC6 Cross Mediterranean 30KT (Baltic).OCTOBER 2011) * Floating WSC Y2011), 4) - Round((Fixed * Fixed Rate), 4)) * (12,000.00) MT)")
+    assertEquals(explanation.format(0), "((F - K) × V)")
+    assertEquals(explanation.format(1), "((Round((Average(TC6 Cross Mediterranean 30KT (Baltic).OCTOBER 2011) × Floating WSC Y2011), 4) - Round((Fixed × Fixed Rate), 4)) × (12,000.00) MT)")
   }
 }
