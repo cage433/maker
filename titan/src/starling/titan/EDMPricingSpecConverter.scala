@@ -144,13 +144,13 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           FixedPricingSpec(
             market,
             settlementDay,
-            spec.comps.map{
+            spec.comps.filterNot{comp => comp.price == null || comp.quantity == null}.map{
               case comp => {
                 val fraction = (fromTitanQuantity(comp.quantity) / deliveryQuantity).checkedValue(UOM.SCALAR)
-                (fraction, fromTitanQuantity(comp.price) - fromTitanQuantity(spec.premium)) // comps already included premiums - this prevents double counting
+                (fraction, fromTitanQuantity(comp.price))
               }
             },
-            spec.premium,
+            Quantity.NULL,  // Customer price = hedge price + premium - however premium can be in a different currency. Need trade management to send hedge as well as customer price
             valuationCurrency.getOrElse(spec.currency)
           )
         }

@@ -4,29 +4,18 @@ import starling.utils.StarlingTest
 import org.testng.annotations._
 import org.testng.Assert._
 import starling.quantity.UOM._
-import starling.market.LmeSingleIndices
 import starling.daterange.{Month, Day}
 import starling.quantity.Quantity
-import starling.market.Copper
 import starling.quantity.utils.QuantityTestUtils._
 import starling.marketdata._
 import starling.curves._
 import Quantity._
-
+import starling.market._
 
 /**
  * Commenting out until everything settles down - AMc 29/9/11
  */
 class PhysicalMetalAssignmentTests extends StarlingTest {
-//  val marketDay = Day(2011, 8, 10).endOfDay
-//  val env = UnitTestingEnvironment(
-//      marketDay,
-//      {
-//        case _: ForwardPriceKey => Quantity(97, USD/MT)
-//        case _: IndexFixingKey => Quantity(98, USD/MT)
-//        case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
-//      }
-//    )
 
   val marketDay = Day(2011, 10, 17).endOfDay
   import Quantity._
@@ -96,27 +85,6 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       EUR
     )
 
-    val marketDay = Day(2011, 10, 17).endOfDay
-
-    val fxRates = Map(
-      EUR → 1.1(USD/EUR),
-      GBP → 0.8(USD/GBP),
-      CNY → 0.1(USD/CNY)
-    )
-
-    val env = UnitTestingEnvironment(
-      marketDay,
-      {
-        case ForwardPriceKey(mkt, _, _) => Quantity(97, mkt.priceUOM)
-        case IndexFixingKey(index, _) => Quantity(98, index.priceUOM)
-        case DiscountRateKey(_, day, _) => new Quantity(math.exp(- 0.1 * day.endOfDay.timeSince(marketDay)))
-        case USDFXRateKey(ccy) => fxRates(ccy)
-        case _ : CountryBenchmarkAtomicKey => Quantity(115, GBP / G)
-        case _ : AreaBenchmarkAtomicKey => Quantity(0, GBP / G)
-        case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
-      }
-    )
-
     val pma1 = PhysicalMetalAssignment(
       "Assignment ID",
       Quantity(1000, KG),
@@ -175,5 +143,39 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
   @Test
   def testValuationSnapshots{
 
+    val specs = List(
+      FixedPricingSpec(Market.LME_COPPER, Day(2013, 1, 1), List((0.3, Quantity(20, USD/MT)), (0.7, Quantity(25, USD/MT))), Quantity(1.5, USD/MT), EUR),
+      UnknownPricingSpecification(LmeCashSettlementIndex(Market.LME_NICKEL, Level.Ask), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (USD/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
+      AveragePricingSpec(LmeThreeMonthIndex(Market.LME_ALUMINIUM, Level.Bid), Month(2012, 5), 1.5 (USD/MT), GBP)
+    )
+
+    val commodities = List(Copper, Nickel, Aluminium)
+    val assignments = specs.zip(commodities).zipWithIndex.map{
+      case ((spec, commodity), i) =>
+        PhysicalMetalAssignment(
+          i.toString,
+          (110.0 + i) (MT),
+          commodity,
+          spec.expiryDay,
+          spec,
+          ContractualLocationCode("lc"),
+          IncotermCode("CIF"),
+          Some(spec.expiryDay),
+          Some(NeptuneCountryCode("Texas")),
+          Some(IncotermCode("CIF")),
+          true,
+          "Inv id" + i,
+          (110.0 + i + 1) (MT),
+          GradeCode("Ok-ish")
+        )
+    }
+    val expectedMtms : List[Quantity] = List(
+      8,186,616,434.30(EUR),
+      8,833,857,520.12(EUR),
+      12,138,054,020.56(GBP)
+    )
+
+
+//    assignments.zip(expectedMtms).foreach{case (ass, expMtm) => assertQtyEquals(ass.mtm(env), expMtm, 1e-6)}
   }
 }
