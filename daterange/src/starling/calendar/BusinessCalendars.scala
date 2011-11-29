@@ -6,6 +6,7 @@ class BusinessCalendars(val holidayTables : HolidayTables) {
   def financialHolidaysOption(code: String)= holidayTables.financialHolidaysOption(code)
 
   def weekDay(location: Location = Location.London) = new WeekdayBusinessCalendar(location)
+  def everyDay(location: Location = Location.London) = BusinessCalendarSet("None", location, Set())
 
   // Countries
   lazy val UK = holidayTables.UK
