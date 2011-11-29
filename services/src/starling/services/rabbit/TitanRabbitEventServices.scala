@@ -139,7 +139,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
     rabbitmq_basicPropertiesDefault)
 
   val baseQueueName = ""
-  val serviceName = "Starling"
+  val serviceName = ".Starling." + props.ServerName // durable server queue based on starling name
 
   val rabbitListener = new RabbitListener(
     rabbitEventConnector,
@@ -151,7 +151,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
     rabbitmq_publisher_autoDelete)
 
   // the demux for listener clients...
-  lazy val eventDemux : EventDemultiplexer = ||> { new EventDemultiplexer(serviceName, rabbitListener)} { r => r.startup }
+  lazy val eventDemux : EventDemultiplexer = ||> { new EventDemultiplexer(serviceName, rabbitListener)} { _.startup }
 
   val clients = new scala.collection.mutable.ArrayBuffer[DemultiplexerClient]()
 

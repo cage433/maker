@@ -59,8 +59,9 @@ case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCount
   def forwardStateValue(originalAtomicEnv: AtomicEnvironment, forwardDayAndTime: DayAndTime) = try {
     originalAtomicEnv.apply(this)
   } catch {
-    case e: MissingMarketDataException => throw new MissingMarketDataException(e.shortMessage + ", commodity: " + commodity,
-      e.longMessage.map(_ + ", commodity: " + commodity))
+    case e: MissingMarketDataException => Quantity.NULL  // Hack until UAT is over
+//      throw new MissingMarketDataException(e.shortMessage + ", commodity: " + commodity,
+//      e.longMessage.map(_ + ", commodity: " + commodity))
   }
 }
 

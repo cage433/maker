@@ -24,9 +24,9 @@ class CashInstrumentTest extends StarlingTest {
 
     val explan = cashInstrument.explanation(env)
 
-    assertEquals(explan.name, "(Volume * Discount)")
-    assertEquals(explan.format(1), "(100.00 USD * USD.20Jan2011)")
-    assertEquals(explan.format(2), "(100.00 USD * 0.95)")
-    assertEquals(explan.format(3), "(100.00 USD * 0.95)")
+    assertEquals(explan.name, "(Volume × Discount)")
+    assertEquals(explan.format(1), "(100.00 USD × USD.20Jan2011)")
+    assertEquals(explan.format(2), "(100.00 USD × 0.95)")
+    assertEquals(explan.format(3), "(100.00 USD × 0.95)")
   }
 }

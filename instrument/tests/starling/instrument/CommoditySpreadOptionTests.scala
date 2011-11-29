@@ -90,9 +90,9 @@ class CommoditySpreadOptionTests extends JonTestEnv with TestNGSuite{
     val volume = 10.0(mkt.uom)
     val cso = new CommoditySpreadOption(mkt, june, K(mkt.priceUOM), volume, Put)
     val explanation = cso.explanation(env)
-    assertEquals(explanation.name, "((SpreadOption-Put(Spread Price, Std Dev, K) * Volume) * Discount)")
-    assertEquals(explanation.format(1), "((SpreadOption-Put((ICE WTI.JUN 2010 - IPE Brent.JUN 2010), 0.50 USD/bbl, 0.23 USD/bbl) * 10.00 bbl) * USD.28May2010)")
-    val lastExplanation = "((SpreadOption-Put((101.00 USD/bbl - 111.00 USD/bbl), 0.50 USD/bbl, 0.23 USD/bbl) * 10.00 bbl) * 0.96)"
+    assertEquals(explanation.name, "((SpreadOption-Put(Spread Price, Std Dev, K) × Volume) × Discount)")
+    assertEquals(explanation.format(1), "((SpreadOption-Put((ICE WTI.JUN 2010 - IPE Brent.JUN 2010), 0.50 USD/bbl, 0.23 USD/bbl) × 10.00 bbl) × USD.28May2010)")
+    val lastExplanation = "((SpreadOption-Put((101.00 USD/bbl - 111.00 USD/bbl), 0.50 USD/bbl, 0.23 USD/bbl) × 10.00 bbl) × 0.96)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
   }

@@ -4,13 +4,13 @@ import starling.daterange.Day
 import starling.gui.api._
 import starling.pivot.model.PivotTableModel
 import starling.marketdata._
-import starling.fc2.api.FC2Facility
 import starling.db._
 import starling.utils.ImplicitConversions._
 import starling.manager.BromptonContext
 import starling.curves.{EnvironmentRules, CurveViewer}
 import starling.utils.cache.CacheFactory
 import starling.pivot.{PivotTableDataSource, NullPivotTableDataSource, PivotFieldParams, PivotEdits}
+import starling.fc2.api.{FC2InitialData, FC2Facility}
 
 
 trait MarketDataPageIdentifierReaderProvider {
@@ -114,23 +114,31 @@ class FC2FacilityImpl(service: FC2Service,
 
 
   val cache = CacheFactory.getCache("FC2")
-  def pricingGroups = {
+
+  private def excelLatestMarketDataVersions = marketDataStore.latestExcelVersions.mapKeys(_.stripExcel)
+  private def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
+
+  private def pricingGroups() = {
     //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
     marketDataStore.pricingGroups//.filter(allPricingGroups.contains(_))
   }
-  def excelDataSets() = marketDataStore.excelDataSets
+  private def excelDataSets() = marketDataStore.excelDataSets
 
-  def environmentRuleLabels = pricingGroups.toMapWithValues(environmentRules.forPricingGroup(_).map(_.label))
+  private def environmentRuleLabels = pricingGroups.toMapWithValues(environmentRules.forPricingGroup(_).map(_.label))
 
-  val curveTypes = curveViewer.curveTypes
+  private val curveTypes = curveViewer.curveTypes
 
-  def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]] = {
+  private def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]] = {
     marketDataStore.snapshotsByMarketDataSelection
   }
 
-  def observationDays():(Map[PricingGroup,Set[Day]],Map[String,Set[Day]]) = {
+  private def observationDays():(Map[PricingGroup,Set[Day]],Map[String,Set[Day]]) = {
     (Map() ++ marketDataStore.observationDaysByPricingGroup(), Map() ++ marketDataStore.observationDaysByExcel())
   }
+
+  def init() = FC2InitialData(
+    snapshots(), observationDays(), pricingGroups, environmentRuleLabels,
+    excelDataSets(), excelLatestMarketDataVersions, pricingGroupLatestMarketDataVersions, curveTypes)
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams: PivotFieldParams) = {
     PivotTableModel.createPivotData(curveViewer.curve(curveLabel), pivotFieldParams)
@@ -154,9 +162,6 @@ class FC2FacilityImpl(service: FC2Service,
     val saveResult = marketDataStore.importData(marketDataSelection, observationDay)
     SpecificMarketDataVersion(saveResult.maxVersion)
   }
-
-  def excelLatestMarketDataVersions = marketDataStore.latestExcelVersions.mapKeys(_.stripExcel)
-  def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier) = {
     sortMarketDataTypes(service.marketDataReaderFor(marketDataIdentifier).availableMarketDataTypes).map(t=>MarketDataTypeLabel(t.name.name))

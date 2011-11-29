@@ -24,13 +24,13 @@ import com.trafigura.services.ResteasyServiceApi
 import org.joda.time.Period
 import starling.scheduler.{TaskDescription, Scheduler}
 import starling.services._
-import starling.calendar.{BusinessCalendars}
 import starling.db._
 import starling.lim.LIMService
 import starling.gui.api.Email._
 import starling.gui.api.{Email, MarketDataSelection, PricingGroup}
 import starling.metals.tasks.{UploadCurveToTrinityTask, TrinityUploader}
 import starling.props.ServerTypeLabel._
+import starling.calendar.{BusinessCalendar, BusinessCalendars}
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -204,12 +204,12 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
   }
 
   private def importLim(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore) = TaskDescription("Import LIM",
-    everyFiveMinutes(businessCalendars.LME), new ImportMarketDataTask(marketDataStore, PricingGroup.Metals)
+    everyFiveMinutes(businessCalendars.everyDay()), new ImportMarketDataTask(marketDataStore, PricingGroup.Metals)
       .withSource("LIM", marketDataStore.sourcesFor(PricingGroup.Metals).flatMap(_.description): _*), coolDown = Period.minutes(3))
 
   private def copyBenchmarksAndFreightParity(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore,
     dataTypes: MarketDataTypes) = TaskDescription(
-      "Copy Freight Parity & Benchmarks", hourly(businessCalendars.weekDay()), CopyManualData(marketDataStore, dataTypes))
+      "Copy Freight Parity & Benchmarks", hourly(businessCalendars.everyDay()), CopyManualData(marketDataStore, dataTypes))
 
   private def registerDataValidationTasks(context: BromptonContext, broadcaster: Broadcaster) {
     val marketDataStore = context.awaitService(classOf[MarketDataStore])

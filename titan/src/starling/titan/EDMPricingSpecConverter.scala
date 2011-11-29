@@ -125,7 +125,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           UnknownPricingSpecification(
              index,
              qpMonth,
-             spec.fixations.map{
+             spec.fixations.filterNot(_.observedPrice == null)/* The non-real fixing has no price and should be ignored */.map{
                case fixation =>
                  val fraction = (fromTitanQuantity(fixation.fixedQuantity) / deliveryQuantity).checkedValue(UOM.SCALAR)
                  UnknownPricingFixation(fraction, fromTitanQuantity(fixation.observedPrice))
@@ -137,20 +137,20 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
         }
         case spec : FixedPricingSpecification => {
           assert(spec.comps.nonEmpty, "Fixed pricing spec with no fixed prices")
-          val exchangeName = spec.hedges.map(_.market).uniqueElement("Hedges should all have the same exchange")
+          val exchangeName = spec.hedges.map(_.market).filter(_ != null)/*ignore fx hedge requests*/.uniqueElement("Hedges should all have the same exchange")
           val market = getFuturesMarket(exchangeName)
           // Reasonable guess - The settlement day should live in trade management but doesn't yet
           val settlementDay = spec.comps.flatMap{comp => if (comp.date == null) None else Some(Day.fromLocalDate(comp.date))}.sortWith(_>_).headOption.getOrElse(deliveryDay).addWeekdays(2)
           FixedPricingSpec(
             market,
             settlementDay,
-            spec.comps.map{
+            spec.comps.filterNot{comp => comp.price == null || comp.quantity == null}.map{
               case comp => {
                 val fraction = (fromTitanQuantity(comp.quantity) / deliveryQuantity).checkedValue(UOM.SCALAR)
-                (fraction, fromTitanQuantity(comp.price) - fromTitanQuantity(spec.premium)) // comps already included premiums - this prevents double counting
+                (fraction, fromTitanQuantity(comp.price))
               }
             },
-            spec.premium,
+            Quantity.NULL,  // Customer price = hedge price + premium - however premium can be in a different currency. Need trade management to send hedge as well as customer price
             valuationCurrency.getOrElse(spec.currency)
           )
         }

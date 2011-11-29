@@ -49,7 +49,15 @@ object Server {
     val single = new SingleClasspathManager(false, activators)
     writePIDFile()
     Log.infoWithTime("Launching starling server") {
-      single.start()
+      try {
+        single.start()
+      } catch {
+        case e =>
+          Log.error("Error launching one of the activators - will exit", e)
+          e.printStackTrace
+          println("Exiting")
+          System.exit(-1)
+      }
     }
   }
 

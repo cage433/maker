@@ -205,15 +205,15 @@ class CommoditySwapTests extends JonTestEnv {
     )
     val swapExplanation = swapSeptoOct09.explanation(env)
     assertEquals(swapExplanation.name, "Sum(SEP 2009 value, OCT 2009 value)")
-    assertEquals(swapExplanation.format(1), "Sum((((F_Avg - K) * Volume) * disc), (((F_Avg - K) * Volume) * disc))")
+    assertEquals(swapExplanation.format(1), "Sum((((F_Avg - K) × Volume) × disc), (((F_Avg - K) × Volume) × disc))")
 
     val sep09Explanation = swapSeptoOct09.subPeriodSwaps(0).explanation(env)
-    assertEquals(sep09Explanation.name, "(((F_Avg - K) * Volume) * disc)")
-    assertEquals(sep09Explanation.format(1), "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).SEPTEMBER 2009), 3) - 200.00 USD/MT) * 100.00 MT) * USD.07Oct2009)")
+    assertEquals(sep09Explanation.name, "(((F_Avg - K) × Volume) × disc)")
+    assertEquals(sep09Explanation.format(1), "(((Round(Average(Prem Unl Euro-Bob Non-Oxy NWE Barges (Argus).SEPTEMBER 2009), 3) - 200.00 USD/MT) × 100.00 MT) × USD.07Oct2009)")
 
     val ex0 = "(((Round(Average(01Sep2009, 02Sep2009, 03Sep2009, 04Sep2009, 07Sep2009, 08Sep2009, 09Sep2009, " +
             "10Sep2009, 11Sep2009, 14Sep2009, 15Sep2009, 16Sep2009, 17Sep2009, 18Sep2009, 21Sep2009, 22Sep2009, " +
-            "23Sep2009, 24Sep2009, 25Sep2009, 28Sep2009, 29Sep2009, 30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+            "23Sep2009, 24Sep2009, 25Sep2009, 28Sep2009, 29Sep2009, 30Sep2009), 3) - 200.00 USD/MT) × 100.00 MT) × 1.00)"
 
     val ex = "(((Round(Average(01Sep2009 Fixed, " +
             "02Sep2009 Fixed, " +
@@ -236,12 +236,12 @@ class CommoditySwapTests extends JonTestEnv {
             "25Sep2009, " +
             "28Sep2009, " +
             "29Sep2009, " +
-            "30Sep2009), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+            "30Sep2009), 3) - 200.00 USD/MT) × 100.00 MT) × 1.00)"
 
     val ex1 = "(((Round(Average(100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, " +
             "100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 100.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, " +
             "200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT, " +
-            "200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT), 3) - 200.00 USD/MT) * 100.00 MT) * 1.00)"
+            "200.00 USD/MT, 200.00 USD/MT, 200.00 USD/MT), 3) - 200.00 USD/MT) × 100.00 MT) × 1.00)"
 
     assertEquals(sep09Explanation.format(2), ex0)
     assertEquals(sep09Explanation.format(3), ex)

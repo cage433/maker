@@ -9,7 +9,6 @@ import starling.browser._
 import starling.gui._
 import api._
 import pages.{ValuationParametersPage, UserDetailsPage}
-import swing.Publisher
 import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import starling.pivot.{Field, SomeSelection}
@@ -21,6 +20,8 @@ import starling.trade.facility.TradeFacility
 import starling.reports.facility.ReportFacility
 import starling.manager.{ServiceProperties, HttpContext, BromptonContext, BromptonActivator}
 import starling.services.EmailService
+import starling.calendar.BusinessCalendar
+import swing.{Swing, Publisher}
 
 class GuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -33,6 +34,7 @@ class GuiBromptonActivator extends BromptonActivator {
     context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, tradeService))
 
     val publisher = context.awaitService(classOf[Publisher])
+    val localCache = context.awaitService(classOf[LocalCache])
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
       override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {
@@ -54,7 +56,14 @@ class GuiBromptonActivator extends BromptonActivator {
 
     def showTrade(tradeID:String, snapshotID:String) {
       val desk = Desk.Titan
-      val tradeTimestamp = tradeService.deskCloses.get(desk).map(closes => closes.values.flatten.toList.sortWith(_.timestamp > _.timestamp)).get.head
+      import StarlingLocalCache._
+      var deskCloses: List[TradeTimestamp] = null
+      var ukBusinessCalendar: BusinessCalendar = null
+      Swing.onEDTWait( {
+        deskCloses = localCache.deskCloses(desk);
+        ukBusinessCalendar = localCache.ukBusinessCalendar
+      })
+      val tradeTimestamp = deskCloses.sortWith(_.timestamp > _.timestamp).head
       val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
       val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
 
@@ -65,7 +74,7 @@ class GuiBromptonActivator extends BromptonActivator {
         val enRule = EnvironmentRuleLabel.AllCloses
         import EnvironmentModifierLabel._
         val envMods = TreeSet[EnvironmentModifierLabel]() + zeroInterestRates
-        val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), starlingServer.ukBusinessCalendar)
+        val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), ukBusinessCalendar)
         ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule, envModifiers = envMods)
       }
 

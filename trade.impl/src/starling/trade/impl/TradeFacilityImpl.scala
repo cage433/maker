@@ -25,7 +25,7 @@ import starling.tradestore.{TradeStores, TradePredicate, TradeSet}
 import starling.services.trade.TradeDiff
 import starling.rmi.{PivotData, TradeReconciliation, Permission}
 import starling.db.{DB, TitanTradeSystem, IntradayTradeSystem, TradeSystems}
-import starling.trade.facility.TradeFacility
+import starling.trade.facility.{TradeInitialData, TradeFacility}
 
 class TradeFacilityImpl(
                         tradeStores:TradeStores,
@@ -33,7 +33,12 @@ class TradeFacilityImpl(
                         eaiStarlingDB: DB,
                         isProduction:Boolean
                         ) extends TradeFacility with Log {
-  def desks = {
+
+  def init() = TradeInitialData(
+    desks, groupToDesksMap, deskCloses, intradayLatest
+  )
+
+  private def desks = {
     val user = User.currentlyLoggedOn
     val enabled = tradeStores.deskDefinitions.keysIterator.toList.filter(enabledDesks.contains)
     val desksAllowed = Permission.desks(user, isProduction)
@@ -42,7 +47,7 @@ class TradeFacilityImpl(
     userDesks
   }
 
-  def groupToDesksMap = Permission.groupToDesksMap(isProduction)
+  private def groupToDesksMap = Permission.groupToDesksMap(isProduction)
 
   private def unLabel(tradeID:TradeIDLabel):TradeID = TradeID(tradeID.id, unLabel(tradeID.tradeSystem))
   private def unLabel(tradeSystem:TradeSystemLabel):TradeSystem = TradeSystems.fromName(tradeSystem.name)
@@ -239,10 +244,10 @@ class TradeFacilityImpl(
     }
   }
 
-  def deskCloses = tradeStores.closedDesksByDay
+  private def deskCloses = tradeStores.closedDesksByDay
   def latestTradeTimestamp(desk:Desk):TradeTimestamp = tradeStores.closedDesks.latestTradeTimestamp(desk)
 
-  def intradayLatest = tradeStores.intradayTradeStore.intradayLatest
+  private def intradayLatest = tradeStores.intradayTradeStore.intradayLatest
 
   def selectLiveAndErrorTrades(day: Day, timestamp: Timestamp, desk: Desk, tradePredicate: TradePredicate):List[Trade] = {
     deskTradeSets(Some(desk), tradePredicate).flatMap(_.selectLiveAndErrorTrades(day, timestamp))
