@@ -137,7 +137,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
         }
         case spec : FixedPricingSpecification => {
           assert(spec.comps.nonEmpty, "Fixed pricing spec with no fixed prices")
-          val exchangeName = spec.hedges.map(_.market).uniqueElement("Hedges should all have the same exchange")
+          val exchangeName = spec.hedges.map(_.market).filter(_ != null)/*ignore fx hedge requests*/.uniqueElement("Hedges should all have the same exchange")
           val market = getFuturesMarket(exchangeName)
           // Reasonable guess - The settlement day should live in trade management but doesn't yet
           val settlementDay = spec.comps.flatMap{comp => if (comp.date == null) None else Some(Day.fromLocalDate(comp.date))}.sortWith(_>_).headOption.getOrElse(deliveryDay).addWeekdays(2)
