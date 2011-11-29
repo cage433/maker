@@ -147,7 +147,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
             spec.comps.map{
               case comp => {
                 val fraction = (fromTitanQuantity(comp.quantity) / deliveryQuantity).checkedValue(UOM.SCALAR)
-                (fraction, fromTitanQuantity(comp.price))
+                (fraction, fromTitanQuantity(comp.price) - fromTitanQuantity(spec.premium)) // comps already included premiums - this prevents double counting
               }
             },
             spec.premium,

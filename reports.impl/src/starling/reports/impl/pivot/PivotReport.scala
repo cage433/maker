@@ -64,7 +64,8 @@ trait PivotReport[R <: PivotReportRow] {
     futuresAsSpreads,
     futuresAsSwaps,
     useSkew,
-    tenor,
+    oilTenors,
+    metalsTenors,
     valuationCurrency
   )
   def zeroFields:Set[Field] = Set()
@@ -97,8 +98,8 @@ trait RiskFactorSplittingPivotReport[R <: RiskPivotReportRow[R] with PivotRowSha
 object PivotReport{
   import ReportSpecificOptions._ 
   def validReportSpecificChoices(desk : Option[Desk]) = desk match {
-    case Some(Desk.Titan) => List(valuationCurrency)
-    case Some(Desk(_, _, Some(_ : EAIDeskInfo))) => List(collapseOptions, showEqFutures, futuresAsSpreads, futuresAsSwaps, useSkew, tenor, atmVega, positionType, priceUnit, lots)
+    case Some(Desk.Titan) => List(valuationCurrency, metalsTenors)
+    case Some(Desk(_, _, Some(_ : EAIDeskInfo))) => List(collapseOptions, showEqFutures, futuresAsSpreads, futuresAsSwaps, useSkew, oilTenors, atmVega, positionType, priceUnit, lots)
     case None => Nil
     case _ => throw new Exception("Unexpected desk " + desk)
   }

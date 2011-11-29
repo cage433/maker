@@ -72,10 +72,10 @@ class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
     val q1 = SimpleNamedQuantity("one", Quantity(1, UOM.USD))
     val q2 = SimpleNamedQuantity("two", Quantity(2, UOM.USD))
     val mult = q1 * q2
-    val expectMult = BinOpNamedQuantity("*", q1, q2, q1 * q2)
+    val expectMult = BinOpNamedQuantity("×", q1, q2, q1 * q2)
     assertEquals(mult, expectMult)
 
-    assertEquals(mult.name, "(one * two)")
+    assertEquals(mult.name, "(one × two)")
     assertEquals(mult.format(1), "(1.00 USD * 2.00 USD)")
     assertEquals(mult.format(2), "(1.00 USD * 2.00 USD)")
   }

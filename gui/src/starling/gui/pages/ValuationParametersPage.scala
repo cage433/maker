@@ -160,7 +160,7 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
     val infoPanelHolder = new MigPanel("insets 0") {
       def update(comp:Component) {
         removeAll
-        add(comp, "push, grow")
+        add(comp, "growx")
         revalidate()
         repaint()
       }
