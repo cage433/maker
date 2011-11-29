@@ -124,30 +124,33 @@ object GuiStart extends Log {
   }
 
   def initCache(starlingServer:StarlingServer, fc2Service:FC2Facility, reportService:ReportFacility, tradeService:TradeFacility) = {
+    val starlingInitialData = starlingServer.init()
+    val fc2InitialData = fc2Service.init()
+    val tradeInitialData = tradeService.init()
     val cacheMap = new HeterogeneousMap[LocalCacheKey]
     import LocalCache._
     import StarlingLocalCache._
     try {
       cacheMap(MethodLogIndex) = 0
-      cacheMap(CurrentUser) = starlingServer.whoAmI
-      cacheMap(AllUserNames) = starlingServer.allUserNames
-      cacheMap(PricingGroups) = fc2Service.pricingGroups
-      cacheMap(ExcelDataSets) = fc2Service.excelDataSets
-      cacheMap(Snapshots) = fc2Service.snapshots
-      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2Service.observationDays
+      cacheMap(CurrentUser) = starlingInitialData.whoAmI
+      cacheMap(AllUserNames) = starlingInitialData.allUserNames
+      cacheMap(PricingGroups) = fc2InitialData.pricingGroups
+      cacheMap(ExcelDataSets) = fc2InitialData.excelDataSets
+      cacheMap(Snapshots) = fc2InitialData.snapshots
+      val (observationDaysForPricingGroup, observationDaysForExcel) = fc2InitialData.observationDays
       cacheMap(ObservationDaysForPricingGroup) = observationDaysForPricingGroup
       cacheMap(ObservationDaysForExcel) = observationDaysForExcel
-      cacheMap(ExcelLatestMarketDataVersion) = fc2Service.excelLatestMarketDataVersions
-      cacheMap(PricingGroupLatestMarketDataVersion) = fc2Service.pricingGroupLatestMarketDataVersions
+      cacheMap(ExcelLatestMarketDataVersion) = fc2InitialData.excelLatestMarketDataVersions
+      cacheMap(PricingGroupLatestMarketDataVersion) = fc2InitialData.pricingGroupLatestMarketDataVersions
       cacheMap(LocalCacheKeys.ReportOptionsAvailable) = reportService.reportOptionsAvailable
-      cacheMap(DeskCloses) = tradeService.deskCloses
-      cacheMap(IntradayLatest) = tradeService.intradayLatest
-      cacheMap(UKBusinessCalendar) = starlingServer.ukBusinessCalendar
-      cacheMap(Desks) = tradeService.desks
-      cacheMap(GroupToDesksMap) = tradeService.groupToDesksMap
-      cacheMap(IsStarlingDeveloper) = starlingServer.isStarlingDeveloper
-      cacheMap(EnvironmentRules) = fc2Service.environmentRuleLabels
-      cacheMap(CurveTypes) = fc2Service.curveTypes
+      cacheMap(DeskCloses) = tradeInitialData.deskCloses
+      cacheMap(IntradayLatest) = tradeInitialData.intradayLatest
+      cacheMap(UKBusinessCalendar) = starlingInitialData.ukBusinessCalendar
+      cacheMap(Desks) = tradeInitialData.desks
+      cacheMap(GroupToDesksMap) = tradeInitialData.groupToDesksMap
+      cacheMap(IsStarlingDeveloper) = starlingInitialData.isStarlingDeveloper
+      cacheMap(EnvironmentRules) = fc2InitialData.environmentRuleLabels
+      cacheMap(CurveTypes) = fc2InitialData.curveTypes
       cacheMap(LatestEmailEvent) = new Timestamp
     } catch {
       case e : Throwable =>

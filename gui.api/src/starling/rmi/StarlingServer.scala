@@ -10,21 +10,22 @@ import starling.browser.service.{PageLogInfo, BookmarkLabel, UserSettingsLabel, 
 import starling.utils.{CaseInsensitive, STable}
 import starling.manager.DoNotCache
 
-/**
- * This is the remote interface to the starling server.
- */
+case class StarlingServerInitialData(
+  name:String,
+  version:Version,
+  ukBusinessCalendar:BusinessCalendar,
+  whoAmI:User,
+  isStarlingDeveloper:Boolean,
+  allUserNames:List[String]
+)
+
 trait StarlingServer {
   def name:String
-  def version:Version
-
+  @DoNotCache def init():StarlingServerInitialData
   def referenceDataTables():List[ReferenceDataLabel]
   def referencePivot(table:ReferenceDataLabel, pivotFieldParams:PivotFieldParams):PivotData
-  def ukBusinessCalendar:BusinessCalendar
 
-  def whoAmI:User
   @DoNotCache def orgPivot(pivotFieldParams:PivotFieldParams):PivotData
-  @DoNotCache def allUserNames:List[String]
-  def isStarlingDeveloper:Boolean
   @DoNotCache def userStatsPivot(pivotFieldParams:PivotFieldParams):PivotData
   @DoNotCache def storeSystemInfo(info:OSInfo)
   def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int):PivotData

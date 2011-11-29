@@ -46,6 +46,7 @@ class BrowserBromptonActivator extends BromptonActivator {
     val bundlesByName = new scala.collection.mutable.HashMap[String,BrowserBundle]()
     val publisher = context.awaitService(classOf[Publisher])
     val cacheMap = new HeterogeneousMap[LocalCacheKey]()
+    context.registerService(classOf[LocalCache], new LocalCache(cacheMap))
 
     publisher.reactions += {
       case event => {

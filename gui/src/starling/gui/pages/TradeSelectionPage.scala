@@ -49,8 +49,7 @@ case class TradeSelectionPage(
   }
   
   override def subClassesPageData(pageBuildingContext:StarlingServerContext) = {
-    val desks = pageBuildingContext.tradeService.desks
-    Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), desks, tpp.intradaySubgroupAndTimestamp.map(_._1), pivotPageState))
+    Some(TradeSelectionPageData(tpp.deskAndTimestamp.map(_._1), tpp.intradaySubgroupAndTimestamp.map(_._1), pivotPageState))
   }
 
   override def finalDrillDownPage(fields:Seq[(Field, Selection)], pageContext:PageContext, modifiers:Modifiers, reportSpecificChoices : ReportSpecificChoices) = {
@@ -79,6 +78,7 @@ case class TradeSelectionPage(
   }
 
   override def configPanel(context:PageContext, pageData:PageData, tableSelection:() => TableSelection) = {
+    val desks = context.localCache.desks
     val data = pageData match {case v:PivotTablePageData => v.subClassesPageData match {case Some(d:TradeSelectionPageData) => d}}
     val deskTimestamp = tpp.deskAndTimestamp.map(_._2)
     val expiry = tpp.expiry
@@ -94,12 +94,12 @@ case class TradeSelectionPage(
 
       val deskCheckBox = new CheckBox {
         text = "Main Desk:"
-        def enable_? = !data.desks.isEmpty
+        def enable_? = !desks.isEmpty
         enabled = enable_?
         selected = data.desk.isDefined && enabled
       }
 
-      val deskCombo = if (data.desks.isEmpty) new ComboBox(List(Desk("", Nil))) else new ComboBox(data.desks) {
+      val deskCombo = if (desks.isEmpty) new ComboBox(List(Desk("", Nil))) else new ComboBox(desks) {
         renderer = ListView.Renderer(_.name)
         data.desk match {
           case Some(d) => selection.item = d
@@ -546,7 +546,7 @@ case class TradeSelectionBookmark(desk:Option[Desk], intradaySubgroups:Option[In
   }
 }
 
-case class TradeSelectionPageData(desk:Option[Desk], desks:List[Desk],
+case class TradeSelectionPageData(desk:Option[Desk],
                                intradaySubgroup:Option[IntradayGroups],
                                pivotPageState:PivotPageState) extends PageData
 

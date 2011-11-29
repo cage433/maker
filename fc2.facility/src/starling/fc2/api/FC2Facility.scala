@@ -6,15 +6,18 @@ import starling.pivot.{PivotEdits, PivotFieldParams}
 import starling.gui.api._
 import starling.manager.DoNotCache
 
+case class FC2InitialData(
+  snapshots:Map[MarketDataSelection,List[SnapshotIDLabel]],
+  observationDays:(Map[PricingGroup,Set[Day]], Map[String,Set[Day]]),
+  pricingGroups:List[PricingGroup],
+  environmentRuleLabels:Map[PricingGroup,List[EnvironmentRuleLabel]],
+  excelDataSets:List[String],
+  excelLatestMarketDataVersions:Map[String,Int],
+  pricingGroupLatestMarketDataVersions:Map[PricingGroup,Int],
+  curveTypes:List[CurveTypeLabel]
+)
 trait FC2Facility {
-  @DoNotCache def snapshots():Map[MarketDataSelection,List[SnapshotIDLabel]]
-  @DoNotCache def observationDays():(Map[PricingGroup,Set[Day]], Map[String,Set[Day]])
-  def pricingGroups():List[PricingGroup]
-  def environmentRuleLabels():Map[PricingGroup,List[EnvironmentRuleLabel]]
-  def curveTypes():List[CurveTypeLabel]
-  @DoNotCache def excelDataSets():List[String]
-  @DoNotCache def excelLatestMarketDataVersions:Map[String,Int]
-  @DoNotCache def pricingGroupLatestMarketDataVersions:Map[PricingGroup,Int]
+  @DoNotCache def init():FC2InitialData
 
   @DoNotCache def importData(marketDataSelection:MarketDataSelection, observationDay:Day):MarketDataVersion
   @DoNotCache def snapshot(marketDataIdentifier:MarketDataIdentifier, snapshotType:SnapshotType):SnapshotIDLabel

@@ -24,13 +24,17 @@ class StarlingServerImpl(
         ukHolidayCalendar: BusinessCalendarSet
       ) extends StarlingServer with Log {
 
-  def referenceDataTables() = referenceData.referenceDataTables()
-  def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = referenceData.referencePivot(table, pivotFieldParams)
-  def ukBusinessCalendar = ukHolidayCalendar
-  def whoAmI = User.currentlyLoggedOn
-  def allUserNames:List[String] = userSettingsDatabase.allUsersWithSettings
-  def isStarlingDeveloper = {
-    if (version.production) {
+  def init() = StarlingServerInitialData(
+    name,
+    versionInfo,
+    ukHolidayCalendar,
+    User.currentlyLoggedOn,
+    isStarlingDeveloper,
+    userSettingsDatabase.allUsersWithSettings
+  )
+
+  private def isStarlingDeveloper = {
+    if (versionInfo.production) {
       User.currentlyLoggedOn.groups.contains(Groups.StarlingProductionAdmin)
     } else {
       val groups = User.currentlyLoggedOn.groups
@@ -38,6 +42,9 @@ class StarlingServerImpl(
       List(StarlingDevelopers, StarlingTesters, StarlingProductionAdmin, StarlingBusinessUsers).exists(groups.contains(_))
     }
   }
+
+  def referenceDataTables() = referenceData.referenceDataTables()
+  def referencePivot(table: ReferenceDataLabel, pivotFieldParams: PivotFieldParams) = referenceData.referencePivot(table, pivotFieldParams)
 
   def orgPivot(pivotFieldParams:PivotFieldParams) = {
     PivotTableModel.createPivotData(new OrgPivotTableDataSource, pivotFieldParams)
@@ -99,9 +106,6 @@ class StarlingServerImpl(
       List()
     ), pivotFieldParams)
   }
-
-  def version = versionInfo
-
 
   def storeSystemInfo(info:OSInfo) {userSettingsDatabase.storeSystemInfo(User.currentlyLoggedOn, info)}
 
