@@ -10,6 +10,10 @@ import starling.market.FuturesExchange
 trait TitanPricingSpec {
 
   def priceExcludingVAT(env : Environment) : Quantity
+  def premiumExcludingVAT(env : Environment) : Quantity = {
+    val premiumInPremiumCurrency = if (isLiableToShanghaiVAT) (premium.named("Premium") / (env.shanghaiVATRate + 1.0)).named("Premium Excl VAT") else premium.named("Premium")
+    inValuationCurrency(env, premiumInPremiumCurrency)
+  }
   def priceIncludingVAT(env : Environment) = {
     if (isLiableToShanghaiVAT){
       Some(priceExcludingVAT(env) * (env.shanghaiVATRate + 1.0))

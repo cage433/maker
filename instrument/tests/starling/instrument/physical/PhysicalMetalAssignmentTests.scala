@@ -11,6 +11,7 @@ import starling.marketdata._
 import starling.curves._
 import Quantity._
 import starling.market._
+import starling.market.FuturesFrontPeriodIndex._
 
 /**
  * Commenting out until everything settles down - AMc 29/9/11
@@ -34,6 +35,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
       case _ : CountryBenchmarkAtomicKey => Quantity(115, GBP / G)
       case _ : AreaBenchmarkAtomicKey => Quantity(0, GBP / G)
       case _ : FreightParityAtomicKey => Quantity(5, CNY / LB)
+      case _ : ShanghaiVATRateKey => new Quantity(0.17)
 
     }
   )
@@ -145,11 +147,14 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
 
     val specs = List(
       FixedPricingSpec(Market.LME_COPPER, Day(2013, 1, 1), List((0.3, Quantity(20, USD/MT)), (0.7, Quantity(25, USD/MT))), Quantity(1.5, USD/MT), EUR),
+      FixedPricingSpec(Market.SHANGHAI_COPPER, Day(2013, 1, 1), List((0.3, Quantity(20, CNY/MT)), (0.7, Quantity(25, CNY/MT))), Quantity(1.5, CNY/MT), EUR),
       UnknownPricingSpecification(LmeCashSettlementIndex(Market.LME_NICKEL, Level.Ask), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (USD/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
-      AveragePricingSpec(LmeThreeMonthIndex(Market.LME_ALUMINIUM, Level.Bid), Month(2012, 5), 1.5 (USD/MT), GBP)
+      UnknownPricingSpecification(FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (CNY/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
+      AveragePricingSpec(LmeThreeMonthIndex(Market.LME_ALUMINIUM, Level.Bid), Month(2012, 5), 1.5 (USD/MT), GBP),
+      AveragePricingSpec(FuturesFrontPeriodIndex(Market.SHANGHAI_ALUMINUIUM), Month(2012, 5), 1.5 (USD/MT), GBP)
     )
 
-    val commodities = List(Copper, Nickel, Aluminium)
+    val commodities = List(Copper, Copper, Nickel, Copper, Aluminium, Aluminium)
     val assignments = specs.zip(commodities).zipWithIndex.map{
       case ((spec, commodity), i) =>
         PhysicalMetalAssignment(
@@ -170,12 +175,19 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
         )
     }
     val expectedMtms : List[Quantity] = List(
-      8,186,616,434.30(EUR),
-      8,833,857,520.12(EUR),
-      12,138,054,020.56(GBP)
+      8186616434.30(EUR),
+      7035039114.50(EUR),
+      8912731247.18(EUR),
+      7723125735.45(EUR),
+      12352886833.03(GBP),
+      10714216405.08(GBP)
     )
-
-
-//    assignments.zip(expectedMtms).foreach{case (ass, expMtm) => assertQtyEquals(ass.mtm(env), expMtm, 1e-6)}
+//    assignments.foreach{ass => println(ass.mtm(env))}
+    assignments.zip(expectedMtms).foreach{case (ass, expMtm) => assertQtyEquals(ass.mtm(env), expMtm, 1e-2)}
   }
+}
+
+object PhysicalMetalAssignmentTests extends App{
+  println("Hello")
+  new PhysicalMetalAssignmentTests().testValuationSnapshots
 }

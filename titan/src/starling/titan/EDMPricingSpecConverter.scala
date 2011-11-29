@@ -125,7 +125,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           UnknownPricingSpecification(
              index,
              qpMonth,
-             spec.fixations.map{
+             spec.fixations.filterNot(_.observedPrice == null)/* The non-real fixing has no price and should be ignored */.map{
                case fixation =>
                  val fraction = (fromTitanQuantity(fixation.fixedQuantity) / deliveryQuantity).checkedValue(UOM.SCALAR)
                  UnknownPricingFixation(fraction, fromTitanQuantity(fixation.observedPrice))
