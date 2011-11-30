@@ -9,9 +9,13 @@ import starling.webservice.{EDMFormats, JsonSerializer}
 case class PricingValuationDetails(
   priceExcludingVAT : Quantity,
   priceIncludingVAT : Option[Quantity],
+  priceExcludingVATExcludingPremium : Quantity,
+  priceIncludingVATExcludingPremium : Option[Quantity],
   premium : Option[Quantity],
   valueExcludingVAT : Quantity,
   valueIncludingVAT : Option[Quantity],
+  valueExcludingVATExcludingPremium : Quantity,
+  valueIncludingVATExcludingPremium : Option[Quantity],
   isComplete : Boolean,
   fixedQuantity : Quantity,
   pricingType : String,

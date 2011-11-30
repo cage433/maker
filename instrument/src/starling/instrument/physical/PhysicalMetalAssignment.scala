@@ -108,7 +108,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
         benchmarkCountryCode.map(benchmarkCountryCodeLabel -> _.code) ++
        benchmarkIncoTermCode.map(benchmarkIncoTermCodeLabel -> _.code)
 
-  def price(env: Environment) = contractPricingSpec.priceExcludingVAT(env)
+  def price(env: Environment) = contractPricingSpec.priceExcludingVATIncludingPremium(env)
 
   def periodKey = contractPricingSpec.quotationPeriod.map(DateRangePeriod)
 
@@ -141,18 +141,30 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
   }
   
   private def contractPaymentExplained(env : Environment) : NamedQuantity = {
-    val price = contractPricingSpec.priceExcludingVAT(env)
-    var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
-    exp = timesVolume(exp, quantity)
-    discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
+    val priceExcludingPremium = contractPricingSpec.priceExcludingVATExcludingPremium(env).named("Price")
+    val premiumExcludingVAT = contractPricingSpec.premiumExcludingVAT(env).named("Premium")
+    val signedQuantity = if (isPurchase) -quantity else quantity
+    val settlementDay = contractPricingSpec.settlementDay(env.marketDay)
+    discounted(env, timesVolume(priceExcludingPremium, signedQuantity), settlementDay) +
+    discounted(env, timesVolume(premiumExcludingVAT, signedQuantity), settlementDay)
+//    var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
+//    exp = timesVolume(exp, quantity)
+//    discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
   }
 
   private def benchmarkPaymentExplained(env : Environment) : NamedQuantity = {
     val spec = benchmarkPricingSpec(env)
-    val price = spec.priceExcludingVAT(env)
-    var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
-    exp = timesVolume(exp, inventoryQuantity)
-    discounted(env, exp, spec.settlementDay(env.marketDay))
+    val priceExcludingPremium = spec.priceExcludingVATExcludingPremium(env).named("Benchmark Price")
+    val premiumExcludingVAT = spec.premiumExcludingVAT(env).named("Benchmark Premium")
+    val signedQuantity = if (isPurchase) inventoryQuantity else -inventoryQuantity
+    val settlementDay = spec.settlementDay(env.marketDay)
+    discounted(env, timesVolume(priceExcludingPremium, signedQuantity), settlementDay) +
+    discounted(env, timesVolume(premiumExcludingVAT, signedQuantity), settlementDay)
+
+//    val price = spec.priceExcludingVAT(env)
+//    var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
+//    exp = timesVolume(exp, inventoryQuantity)
+//    discounted(env, exp, spec.settlementDay(env.marketDay))
   }
 
   def benchmarkPricingSpec(env : Environment) : TitanPricingSpec = {
@@ -170,15 +182,6 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       valuationCCY
     )
   }
-
-  //private def freightParityExplained(env : Environment) : NamedQuantity = {
-    //var exp : NamedQuantity = (env.freightParity(
-      //contractIncoTermCode, contractLocationCode, 
-      //benchmarkIncoTermCode.get, benchmarkCountryCode.get
-      //) * -1).named("Freight Parity")
-    //exp = timesVolume(exp)
-    //discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
-    //}
 
   def explanation(env: Environment): NamedQuantity = {
     val namedEnv = env.withNaming()
@@ -354,7 +357,7 @@ case class PhysicalMetalAssignment( assignmentID : String,
       /*
          Rows 71, 72, 74
          For a purchase assignment this is the final receipted quantity (when it exists) otherwise current inventory quantity
-         For a salee assignment this is the final delivered quantity (when it exists) otherwise current inventory quantity
+         For a sale assignment this is the final delivered quantity (when it exists) otherwise current inventory quantity
        */
       quantity,
       CostsAndIncomeValuation.buildEither(env, quantity, contractPricingSpec)
@@ -368,7 +371,7 @@ case class PhysicalMetalAssignment( assignmentID : String,
       /*
          Rows 71, 72, 74
          For a purchase assignment this is the final receipted quantity (when it exists) otherwise current inventory quantity
-         For a salee assignment this is the final delivered quantity (when it exists) otherwise current inventory quantity
+         For a sale assignment this is the final delivered quantity (when it exists) otherwise current inventory quantity
        */
       quantity,
       CostsAndIncomeValuation.buildEither(env, quantity, contractPricingSpec),
@@ -431,11 +434,15 @@ object CostsAndIncomeValuation{
       Some(pricingSpec.premium)
 
     PricingValuationDetails(
-      pricingSpec.priceExcludingVAT(env),
-      pricingSpec.priceIncludingVAT(env),
+      pricingSpec.priceExcludingVATIncludingPremium(env),
+      pricingSpec.priceIncludingVATIncludingPremium(env),
+      pricingSpec.priceExcludingVATExcludingPremium(env),
+      pricingSpec.priceIncludingVATExcludingPremium(env),
       premium,
-      pricingSpec.priceExcludingVAT(env) * quantity,
-      pricingSpec.priceIncludingVAT(env).map(_ * quantity),
+      pricingSpec.valueExcludingVATIncludingPremium(env, quantity),
+      pricingSpec.valueIncludingVATIncludingPremium(env, quantity),
+      pricingSpec.valueExcludingVATExcludingPremium(env, quantity),
+      pricingSpec.valueIncludingVATExcludingPremium(env, quantity),
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,
