@@ -1,12 +1,23 @@
 package starling.http
 
 object InstallationHelper {
-  def generateL4JXML(serverURL:String, serverName:String, booterJarPath:String, iconPath:String, splashPath:String, starlingTimestamp:Long) = {
+  def generateL4JXML(serverURL:String, serverName:String, booterJarPath:String, iconPath:String, splashPath:Option[String], starlingTimestamp:Long) = {
+    val splash = splashPath.map(p => {
+      <splash>
+        <file>{p}</file>
+        <waitForWindow>true</waitForWindow>
+        <timeout>60</timeout>
+        <timeoutErr>true</timeoutErr>
+      </splash>
+    }).getOrElse("")
+
+    val classifier = splashPath.map(_ => "").getOrElse("-no-splash")
+
     <launch4jConfig>
       <dontWrapJar>false</dontWrapJar>
       <headerType>gui</headerType>
       <jar>{booterJarPath}</jar>
-      <outfile>Starling-{serverName}_{starlingTimestamp}.exe</outfile>
+      <outfile>Starling-{serverName}_{starlingTimestamp + classifier}.exe</outfile>
       <errTitle></errTitle>
       <cmdLine>{serverURL} {serverName}</cmdLine>
       <chdir></chdir>
@@ -25,6 +36,7 @@ object InstallationHelper {
         <maxHeapSize>500</maxHeapSize>
         <opt>-Dsun.java2d.d3d=false</opt>
       </jre>
+      {splash}
       <versionInfo>
         <fileVersion>0.0.0.1</fileVersion>
         <txtFileVersion>Some more</txtFileVersion>
@@ -35,7 +47,7 @@ object InstallationHelper {
         <productName>Starling</productName>
         <companyName>Trafigura</companyName>
         <internalName>Starling</internalName>
-        <originalFilename>Starling-{serverName}.exe</originalFilename>
+        <originalFilename>Starling-{serverName + classifier}.exe</originalFilename>
       </versionInfo>
     </launch4jConfig>
   }
