@@ -108,6 +108,7 @@ trait SubmitRequest[R] {
 
 trait PageData
 case class PreviousPageData(pageData:PageData, refreshInfo:Option[RefreshInfo])
+object NoPageData extends PageData
 
 object LocalCache {
   val Version = new LocalCacheKey[Version]("Version")

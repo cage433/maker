@@ -1,6 +1,7 @@
 package starling.browser.internal
 
 import collection.mutable.ArrayBuffer
+import HomePage.StarlingNamePanel
 import starling.browser._
 import osgi.BundleAdded
 import service.{StarlingGUIEvent, BookmarkLabel}
@@ -1417,12 +1418,22 @@ class SubmitResponse
 case class SuccessSubmitResponse[R](data:R) extends SubmitResponse
 case class FailureSubmitResponse(t:Throwable) extends SubmitResponse
 
-class NullPageComponent extends FlowPanel with PageComponent {
+class NullPageComponent extends MigPanel("insets 0", rowConstraints = "[p]0[grow,fill]") with PageComponent {
   background = Color.WHITE
-  contents += new Label("Loading...")
-  // This is used as the initial size if the user has no settings. It is also used when splitting tabs.
+  // This is used as the initial size if the user has no settings.
   preferredSize = new Dimension(1250, 750)
   border = MatteBorder(1,0,0,0,GuiUtils.BorderColour)
+
+  val logo = new FixedImagePanel(BrowserIcons.im("/icons/small_sunny_bird3.png"))
+  val namePanel = new StarlingNamePanel(addSubTitle = false)
+  val stripedPanelHolder = new MigPanel("insets 0 " + GuiUtils.StartPageInsets) {
+    background = Color.WHITE
+    add(new StripedPanel(), "push, grow")
+  }
+
+  add(logo, "split")
+  add(namePanel, "ay center, gapleft 41lp, wrap")
+  add(stripedPanelHolder, "push, grow")
 }
 
 class NavigationButton extends Button {
