@@ -7,6 +7,7 @@ import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
+
 case class CountryBenchmarkData(countryData: NestedMap[(NeptuneCountryCode, GradeCode), Day, Quantity]) extends MarketData {
   def size = countryData.nestedSize
 }

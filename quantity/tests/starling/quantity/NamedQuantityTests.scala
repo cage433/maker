@@ -20,13 +20,13 @@ class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
   }
 
   @Test def onceANamedQuantityAlwaysANamedQuantity {
-    (namedAbc * 2.0)       .format(0) should be === "(%s * %s)" % (namedAbc.format(0), 2.0)
-    (namedAbc * percentage).format(0) should be === "(%s * %s)" % (namedAbc.format(0), percentage.toShortString)
-    (namedAbc * abc)       .format(0) should be === "(%s * %s)" % (namedAbc.format(0), abc)
-    (namedAbc * namedAbc)  .format(0) should be === "(%s * %s)" % (namedAbc.format(0), namedAbc.format(0))
-    (namedAbc / 2.0)       .format(0) should be === "(%s / %s)" % (namedAbc.format(0), 2.0)
-    (namedAbc / abc)       .format(0) should be === "(%s / %s)" % (namedAbc.format(0), abc)
-    (namedAbc / namedAbc)  .format(0) should be === "(%s / %s)" % (namedAbc.format(0), namedAbc.format(0))
+    (namedAbc * 2.0)       .format(0) should be === "(%s × %s)" % (namedAbc.format(0), 2.0)
+    (namedAbc * percentage).format(0) should be === "(%s × %s)" % (namedAbc.format(0), percentage.toShortString)
+    (namedAbc * abc)       .format(0) should be === "(%s × %s)" % (namedAbc.format(0), abc)
+    (namedAbc * namedAbc)  .format(0) should be === "(%s × %s)" % (namedAbc.format(0), namedAbc.format(0))
+    (namedAbc / 2.0)       .format(0) should be === "(%s ÷ %s)" % (namedAbc.format(0), 2.0)
+    (namedAbc / abc)       .format(0) should be === "(%s ÷ %s)" % (namedAbc.format(0), abc)
+    (namedAbc / namedAbc)  .format(0) should be === "(%s ÷ %s)" % (namedAbc.format(0), namedAbc.format(0))
     (namedAbc + abc)       .format(0) should be === "(%s + %s)" % (namedAbc.format(0), abc)
     (namedAbc + namedAbc)  .format(0) should be === "(%s + %s)" % (namedAbc.format(0), namedAbc.format(0))
     (namedAbc - abc)       .format(0) should be === "(%s - %s)" % (namedAbc.format(0), abc)
@@ -54,7 +54,7 @@ class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
     (namedAbc + new Quantity(0.000047)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "4.7\u00D710\u207B\u2075")
     (namedAbc + new Quantity(0.00004)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "4.0\u00D710\u207B\u2075")
     (namedAbc + new Quantity(0.000002)).format(0) should be === "(%s + %s)" % (namedAbc.format(0), "2.0\u00D710\u207B\u2076")
-    (namedAbc * new Quantity(0.000002, UOM.USD)).format(0) should be === "(%s * %s)" % (namedAbc.format(0), "2.0\u00D710\u207B\u2076 USD")
+    (namedAbc * new Quantity(0.000002, UOM.USD)).format(0) should be === "(%s × %s)" % (namedAbc.format(0), "2.0\u00D710\u207B\u2076 USD")
   }
 
   @Test
@@ -76,8 +76,8 @@ class NamedQuantityTests extends TestNGSuite with ShouldMatchers {
     assertEquals(mult, expectMult)
 
     assertEquals(mult.name, "(one × two)")
-    assertEquals(mult.format(1), "(1.00 USD * 2.00 USD)")
-    assertEquals(mult.format(2), "(1.00 USD * 2.00 USD)")
+    assertEquals(mult.format(1), "(1.00 USD × 2.00 USD)")
+    assertEquals(mult.format(2), "(1.00 USD × 2.00 USD)")
   }
 
   @Test

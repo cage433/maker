@@ -532,9 +532,18 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     publish(PivotEditsUpdatedEvent(edits0, t))
   }
 
+  private def updateNumberOfInPageEdits(numberOfInPageEdits:Int, validState:Boolean) {
+    publish(NumberOfInPageEditsUpdated(numberOfInPageEdits, validState))
+  }
+
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable,
     rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns(), resizeRowHeaderTableColumns(),
-    data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType))
+    data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType),
+    (numberOfEdits, validState) => updateNumberOfInPageEdits(numberOfEdits, validState))
+
+  def totalNumCols = tableModelsHelper.rowHeaderTableModel.getColumnCount + tableModelsHelper.mainTableModel.getColumnCount
+
+  def allEdits = tableModelsHelper.allEdits(edits)
 
   def extraFormatInfoUpdated(extraFormatInfo:ExtraFormatInfo) {
     currentExtraFormatInfo = extraFormatInfo
@@ -601,10 +610,10 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     publish(CollapsedStateUpdated(columnCollapsedState = Some(newCollapsedColState)))
   }
 
-  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents, otherLayoutInfo.columnDetails)
-  private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents, otherLayoutInfo.columnDetails)
-  private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails)
-  private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails)
+  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
+  private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
+  private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
+  private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
   private val allTables = List(fullTable, mainTable, rowHeaderTable, colHeaderTable)
   mainTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = mainTable}})
   colHeaderTable.addFocusListener(new FocusAdapter {override def focusGained(e:FocusEvent) {lastTableToHaveFocus = colHeaderTable}})

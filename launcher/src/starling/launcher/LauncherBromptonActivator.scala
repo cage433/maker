@@ -5,11 +5,8 @@ import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.io.xml.DomDriver
 import starling.browser._
 import common.MigPanel
-import common.MigPanel._
 import internal.BrowserIcons
 import java.awt.Dimension
-import collection.mutable.Stack
-import service.StarlingGUIEvent
 import swing.event.{ButtonClicked, Event}
 import java.io.ByteArrayOutputStream
 import swing._
@@ -23,7 +20,7 @@ trait StdOut {
 case class StdOutEvent(data:Array[Byte]) extends Event
 class LauncherBromptonActivator extends BromptonActivator {
 
-  def start(context: BromptonContext) = {
+  def start(context: BromptonContext) {
     val publisher = context.awaitService(classOf[Publisher])
     val stdOut = context.awaitService(classOf[StdOut])
     publisher.listenTo(stdOut.publisher)
@@ -54,10 +51,10 @@ object StdOutPage extends Page {
 
 case class StdOutPageData(data:Array[Byte]) extends PageData
 
-class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPanel() with PageComponent {
+class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPanel("insets n n 0 0", "[p]unrel[fill]") with PageComponent {
 
   val textArea = new TextArea(new String(data))
-  textArea.peer.getCaret().asInstanceOf[DefaultCaret].setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE) //auto scroll
+  textArea.peer.getCaret.asInstanceOf[DefaultCaret].setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE) //auto scroll
   val textAreaScrollPane = new ScrollPane(textArea)
   val updates = new ByteArrayOutputStream
 
@@ -72,11 +69,11 @@ class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPane
     } }
   }
   val buttonPanel = new MigPanel("insets 0") {
-    add(clearButton, "sg")
+    add(clearButton, "sg, wrap")
     add(restoreButton, "sg")
   }
   add(buttonPanel, "ay top")
-  add(textAreaScrollPane, "gapleft unrel, push, grow")
+  add(textAreaScrollPane)
 
   listenTo(context.remotePublisher)
   reactions += {
@@ -86,7 +83,7 @@ class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPane
       val somethingIsSelected = textArea.peer.getSelectedText != null
       textArea.append(text)
       if (!somethingIsSelected) {
-        textArea.peer.setCaretPosition(textArea.peer.getDocument().getLength())
+        textArea.peer.setCaretPosition(textArea.peer.getDocument.getLength)
       }
     }
   }
