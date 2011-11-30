@@ -47,14 +47,19 @@ case class DefaultTitanLogisticsAssignmentServices(props: Props, titanInventoryS
 
 case class DefaultTitanLogisticsInventoryServices(props: Props) extends TitanLogisticsInventoryServices {
 
+  import JMXEnabler._
   private val rmetadminuser = props.ServiceInternalAdminUser()
   private val logisticsServiceURL = props.TitanLogisticsServiceUrl()
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
-  lazy val service : EdmInventoryServiceWithGetAllInventory /* EdmInventoryService with Object { def getAllInventoryLeaves() : List[EDMInventoryItem];  } */ =
+  lazy val service : EdmInventoryServiceWithGetAllInventory =
     new EdmInventoryServiceResourceProxy(ProxyFactory.create(classOf[EdmInventoryServiceResource], logisticsServiceURL, clientExecutor)) {
       def getAllInventoryLeaves() : List[InventoryItem] = LogisticServices.findLeaves(getAllInventory().associatedInventory)
-      def getAllInventory() : LogisticsInventoryResponse = getInventoryByGroupCompanyId("*")
+
+      def getAllInventory() : LogisticsInventoryResponse = {
+        enableLogisticsAPIs(props) // temporary measure until we address this properly
+        getInventoryByGroupCompanyId("*")
+      }
     }
 }
 

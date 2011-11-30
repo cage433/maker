@@ -24,6 +24,42 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-lib" level="project" />
     <orderEntry type="module" module-name="databases" exported="" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/net.databinder/dispatch-core_2.9.1/jars/dispatch-core_2.9.1-0.8.6.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/net.databinder/dispatch-http_2.9.1/jars/dispatch-http_2.9.1-0.8.6.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.httpcomponents/httpcore/jars/httpcore-4.1.2.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.httpcomponents/httpclient/jars/httpclient-4.1.2.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 
