@@ -27,7 +27,11 @@ class GuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
     val starlingServer = context.awaitService(classOf[StarlingServer])
     val tradeService = context.awaitService(classOf[TradeFacility])
-    starlingServer.storeSystemInfo(GuiStart.systemInfo)
+    val thread = new Thread(new Runnable() { def run() {
+      starlingServer.storeSystemInfo(GuiStart.systemInfo)
+    }})
+    thread.setName("storeSystemInfo")
+    thread.start
 
     val fc2Service = context.awaitService(classOf[FC2Facility])
     val reportService = context.awaitService(classOf[ReportFacility])

@@ -23,7 +23,8 @@ case class PhysicalMetalForward(
     catch {
       case ex => {
         Log.warn("Error valuing trade " + titanTradeID + ", message was " + ex.getMessage)
-        Left("Error valuing trade " + titanTradeID + ", message was " + ex.getMessage)
+        ex.printStackTrace()
+        Left("Error valuing trade " + titanTradeID + ", message was " + ex.getMessage + "\n" + ex.getStackTrace)
       }
     }
   }

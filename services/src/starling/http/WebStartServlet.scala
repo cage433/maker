@@ -190,6 +190,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     val excelPluginXllName = "excel_plugin-" + serverName + ".xll"
     val booterName = "booter.jar"
     val starlingExeName = "Starling-" + serverName + ".exe"
+    val starlingExeNoSplashName = "Starling-" + serverName + "-no-splash.exe"
     val kerberosName = "kerberos.reg"
     val starlingInstallerName = "Starling-" + serverName + "-InstallScript.nsi"
     val createInstallerName = "CreateInstallerInstructions.txt"
@@ -204,6 +205,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
           <a href={link("launcher.jnlp")}>Webstart Launch</a><br/><br/>
                   <a href={link(booterName + "?" + UUID.randomUUID.toString)}>{booterName}</a><br/>
                   <a href={link(starlingExeName + "?" + UUID.randomUUID.toString)}>{starlingExeName}</a><br/>
+                  <a href={link(starlingExeNoSplashName + "?" + UUID.randomUUID.toString)}>{starlingExeNoSplashName}</a><br/>
                   <a href={link(kerberosName)}>{kerberosName}</a><br/>
                   <a href={link(excelPluginIniName)}>{excelPluginIniName}</a><br/>
                   <a href={link(excelPluginXllName)}>{excelPluginXllName}</a><br/>
@@ -274,32 +276,10 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
       println("TS " + booterJarFile.lastModified())
       writeFileToStream(booterJarFile, response)
     } else if (path == "/" + starlingExeName) {
-      val iconFile = new File("project/deployment/starling.ico")
       val splashFile = new File("project/deployment/splash_screen.bmp")
-      val (booterJarFile,booterTimestamp) = generateBooterJar
-      val timestamp = math.max(booterTimestamp, new File("services" + GUICode.classesPath + "starling/http/InstallationHelper.class").lastModified())
-      val exeName = "Starling-" + serverName + "_" + timestamp + ".exe"
-
-      def getOrGenerateFile = {
-        val exeFile = new File(GUICode.fileCacheDir, exeName)
-        if (exeFile.exists) {
-          println("Returning the exe")
-          exeFile
-        } else {
-          println("Generating the exe")
-          val configFile = new File(GUICode.fileCacheDir, "launch4j.xml")
-          val configXML = InstallationHelper.generateL4JXML(externalURL, serverName, booterJarFile.getAbsolutePath, iconFile.getAbsolutePath, splashFile.getAbsolutePath, timestamp).toString
-          val bufferedWriter = new BufferedWriter(new FileWriter(configFile))
-          bufferedWriter.write(configXML)
-          bufferedWriter.close
-          println("Config: " + configFile.getAbsolutePath)
-          execute("lib/launch4j/launch4j", configFile.getAbsolutePath)
-          exeFile
-        }
-      }
-      val exeFile = GUICode.memoize(exeName, getOrGenerateFile _)
-      response.setHeader("Content-Disposition:", "attachment; filename="+starlingExeName + "\"")
-      writeFileToStream(exeFile, response)
+      exeRequested(starlingExeName, Some(splashFile.getAbsolutePath))
+    } else if (path == "/" + starlingExeNoSplashName) {
+      exeRequested(starlingExeNoSplashName, None)
     } else if (path == "/" + kerberosName) {
       val kerberosFile = new File("project/deployment/kerberos.reg")
       writeFileToStream(kerberosFile, response)
@@ -377,11 +357,40 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
             response.getWriter.write("Requested " + file.getName + " with md5 " + requestedMD5 + " but the current md5 is " + actualMD5)
           } else {
             response.setContentType("application/octet-stream")
-            response.setDateHeader("Expires", Day(1, 1, 2020).millis)
+            response.setDateHeader("Expires", Day(2020, 1, 1).millis)
             writeFile()
           }
         }
       }
+    }
+
+    def exeRequested(exeName0:String, splashPath:Option[String]) {
+      val iconFile = new File("project/deployment/starling.ico")
+      val (booterJarFile,booterTimestamp) = generateBooterJar
+      val timestamp = math.max(booterTimestamp, new File("services" + GUICode.classesPath + "starling/http/InstallationHelper.class").lastModified())
+      val classifier = splashPath.map(_ => "").getOrElse("-no-splash")
+      val exeName = "Starling-" + serverName + "_" + timestamp + classifier + ".exe"
+
+      def getOrGenerateFile = {
+        val exeFile = new File(GUICode.fileCacheDir, exeName)
+        if (exeFile.exists) {
+          println("Returning the exe : " + exeName0)
+          exeFile
+        } else {
+          println("Generating the exe : " + exeName0)
+          val configFile = new File(GUICode.fileCacheDir, "launch4j.xml")
+          val configXML = InstallationHelper.generateL4JXML(externalURL, serverName, booterJarFile.getAbsolutePath, iconFile.getAbsolutePath, splashPath, timestamp).toString
+          val bufferedWriter = new BufferedWriter(new FileWriter(configFile))
+          bufferedWriter.write(configXML)
+          bufferedWriter.close
+          println("Config: " + configFile.getAbsolutePath)
+          execute("lib/launch4j/launch4j", configFile.getAbsolutePath)
+          exeFile
+        }
+      }
+      val exeFile = GUICode.memoize(exeName, getOrGenerateFile _)
+      response.setHeader("Content-Disposition:", "attachment; filename="+exeName0 + "\"")
+      writeFileToStream(exeFile, response)
     }
   }
 
