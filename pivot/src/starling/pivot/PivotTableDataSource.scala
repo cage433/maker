@@ -71,7 +71,7 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Row]) {
     }
   } }
 
-  def size = edits.size + newRows.size
+  def size(numCols:Int) = edits.size + (newRows.size * numCols)
 
   def editFor(row: Row, field:Field): Option[(KeyFilter, KeyEdits)] = {
     val filterKeys:Map[KeyFilter, KeyEdits] = edits.filterKeys(_.matches(row))
@@ -155,9 +155,7 @@ case class PivotEdits(edits:Map[KeyFilter,KeyEdits], newRows:List[Row]) {
       }
     }}
 
-    val filteredFixedNewRows = fixedNewRows.filter(_.isMeaningful)
-
-    copy(newRows = filteredFixedNewRows)
+    copy(newRows = fixedNewRows)
   }
   def withAmend(amendKeys:KeyFilter, field:Field, value:Option[Any]) = {
     if (newRows.exists(r => amendKeys.matches(r))) {

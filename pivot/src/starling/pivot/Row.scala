@@ -1,6 +1,6 @@
 package starling.pivot
 
-import model.{UndefinedValueNew, NoValue, UndefinedValue}
+import model.{UndefinedValueNew, UndefinedValue}
 import starling.quantity._
 import starling.utils.sql.PersistAsBlob
 import scalaz.Scalaz._
@@ -48,8 +48,6 @@ case class Row(value: Map[Field, Any]) {
     case Some(UndefinedValueNew) => false
     case Some(_) => true
   }
-
-  def isMeaningful = value.exists { v => v != UndefinedValue && v != NoValue && v != UndefinedValueNew }
 
   def apply[T](fieldDetails: FieldDetails): T = apply(fieldDetails.field)
   def apply[T](field: Field): T = value(field).asInstanceOf[T]

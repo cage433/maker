@@ -155,6 +155,8 @@ class PivotTablePageComponent(
   val currentFieldState = data.pivotFieldsState
   val drillDownGroups = data.drillDownGroups
 
+  private def allEdits = pivotComp.allEdits
+
   val toolBar = new MigPanel("insets 1 1 1 1, gap 1") {
     val lockScreenButton = new ToggleToolBarButton {
       icon = StarlingIcons.Lock
@@ -162,7 +164,7 @@ class PivotTablePageComponent(
       selected = pivotPageState.otherLayoutInfo.frozen
       reactions += {case ButtonClicked(b) => {
         pageContext.goTo(selfPage(pivotPageState.copy(
-          otherLayoutInfo = pivotPageState.otherLayoutInfo.copy(frozen = !pivotPageState.otherLayoutInfo.frozen)), edits))
+          otherLayoutInfo = pivotPageState.otherLayoutInfo.copy(frozen = !pivotPageState.otherLayoutInfo.frozen)), allEdits))
       }}
     }
 
@@ -174,7 +176,7 @@ class PivotTablePageComponent(
         case ButtonClicked(b) => {
           val newColumnDetails = pivotPageState.otherLayoutInfo.columnDetails.copy(expandToFit = !pivotPageState.otherLayoutInfo.columnDetails.expandToFit)
           pageContext.goTo(selfPage(pivotPageState.copy(
-            otherLayoutInfo = pivotPageState.otherLayoutInfo.copy(columnDetails = newColumnDetails)), edits))
+            otherLayoutInfo = pivotPageState.otherLayoutInfo.copy(columnDetails = newColumnDetails)), allEdits))
         }
       }
     }
@@ -183,7 +185,7 @@ class PivotTablePageComponent(
       icon = StarlingIcons.Rotate
       tooltip = "Switch the row and column fields"
       reactions += {
-        case ButtonClicked(_) => { pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(currentFieldState.rotate), edits)) }
+        case ButtonClicked(_) => { pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(currentFieldState.rotate), allEdits)) }
       }
       enabled = currentFieldState.hasRowOrColumnFields
     }
@@ -191,12 +193,12 @@ class PivotTablePageComponent(
     val bottomTotalsButton = new ToggleToolBarButton {
       icon = StarlingIcons.RowGrandTotals
       tooltip = "Display or hide the row grand totals"
-      reactions += { case ButtonClicked(_) => {pageContext.goTo(selfPage(pivotPageState.copyTotals(_.toggleRowGrandTotal), edits))} }
+      reactions += { case ButtonClicked(_) => {pageContext.goTo(selfPage(pivotPageState.copyTotals(_.toggleRowGrandTotal), allEdits))} }
     }
     val rightTotalsButton = new ToggleToolBarButton {
       icon = StarlingIcons.ColumnTotals
       tooltip = "Display or hide the column grand totals"
-      reactions += { case ButtonClicked(_) => {pageContext.goTo(selfPage(pivotPageState.copyTotals(_.toggleColumnGrandTotal), edits))} }
+      reactions += { case ButtonClicked(_) => {pageContext.goTo(selfPage(pivotPageState.copyTotals(_.toggleColumnGrandTotal), allEdits))} }
     }
     val rowSubTotalsButton = new ToggleToolBarButton {
       icon = StarlingIcons.RowSubTotals
@@ -206,7 +208,7 @@ class PivotTablePageComponent(
         val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(rowFields.contains(_))
         val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
-        pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleRowSubTotals), edits))
+        pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleRowSubTotals), allEdits))
       } }
     }
     val columnSubTotalsButton = new ToggleToolBarButton {
@@ -217,13 +219,13 @@ class PivotTablePageComponent(
         val newDisabledSubTotals = pivotPageState.otherLayoutInfo.disabledSubTotals.filterNot(colFields.contains(_))
         val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
         val newPivotPageState = pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo)
-        pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleColumnSubTotals), edits))
+        pageContext.goTo(selfPage(newPivotPageState.copyTotals(_.toggleColumnSubTotals), allEdits))
       } }
     }
     val chartButton = new ToolBarButton {
       icon = StarlingIcons.Chart
       tooltip = "Display a chart of table data"
-      reactions += { case ButtonClicked(_) => { pageContext.goTo(selfPage(pivotPageState.copy(showChart = true), edits)) } }
+      reactions += { case ButtonClicked(_) => { pageContext.goTo(selfPage(pivotPageState.copy(showChart = true), allEdits)) } }
     }
     val clearCacheButton = new ToolBarButton {
       icon = StarlingIcons.icon("/icons/16x16_edit-clear.png")
@@ -243,7 +245,7 @@ class PivotTablePageComponent(
       // If the button is deselected it means we need to calculate with the new layout.
       reactions += {
         case ButtonClicked(_) => {
-          pageContext.goTo(selfPage(pivotPageState.flipCalculate, edits))
+          pageContext.goTo(selfPage(pivotPageState.flipCalculate, allEdits))
         }
       }
     }
@@ -254,7 +256,7 @@ class PivotTablePageComponent(
       reactions += {
         case ButtonClicked(_) => {
           val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(removeZeros = !pivotPageState.otherLayoutInfo.removeZeros)
-          pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), edits))
+          pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), allEdits))
         }
       }
     }
@@ -267,13 +269,18 @@ class PivotTablePageComponent(
       icon = StarlingIcons.icon("/icons/16x16_save.png")
       tooltip = "Save the edits made to the data"
       enabled = edits.nonEmpty
-      val numEdits = edits.size
-      val numEditsString = numEdits.toString
+      var numEdits0 = edits.size(pivotComp.totalNumCols)
+      def numEditsAndValidState(n:Int, validState:Boolean) {
+        numEdits0 = n
+        enabled = (numEdits0 > 0) && validState
+        repaint()
+        resetEditsButton.enabled = (numEdits0 > 0)
+      }
 
       def saveEdits() {
         pageContext.submit(new SubmitRequest[Int] {
           def baseSubmit(serverContext:ServerContext) = {
-            save(serverContext, edits)
+            save(serverContext, allEdits)
           }
         }, onComplete = (r:Int) => postSave(r, pageContext), keepScreenLocked = true)
       }
@@ -281,12 +288,13 @@ class PivotTablePageComponent(
 
       override protected def paintComponent(g:Graphics2D) {
         super.paintComponent(g)
-        if (numEdits > 0) {
+        if (numEdits0 > 0) {
+          val s = numEdits0.toString
           g.setColor(Color.WHITE)
           g.setFont(GuiUtils.GuiFieldFilterNumberFont)
 
           val fm = g.getFontMetrics(GuiUtils.GuiFieldFilterNumberFont)
-          val sWidth = fm.stringWidth(numEditsString)
+          val sWidth = fm.stringWidth(s)
           val startPosX = size.width - sWidth - 4
           val sHeight = fm.getHeight
           val startPosY = sHeight - 3
@@ -294,7 +302,7 @@ class PivotTablePageComponent(
           g.fillRect(startPosX, 2, sWidth + 1, sHeight - 4)
 
           g.setColor(Color.RED)
-          g.drawString(numEditsString, startPosX, startPosY)
+          g.drawString(s, startPosX, startPosY)
         }
       }
     }
@@ -313,7 +321,7 @@ class PivotTablePageComponent(
         tooltip = "Use the default layout"
         enabled = currentFieldState != resetPfs
         reactions += {
-          case ButtonClicked(b) => pageContext.goTo(selfPage(PivotPageState.default(resetPfs), edits))
+          case ButtonClicked(b) => pageContext.goTo(selfPage(PivotPageState.default(resetPfs), allEdits))
         }
       }
     } }
@@ -327,7 +335,7 @@ class PivotTablePageComponent(
       reactions += {
         case ButtonClicked(b) => {
           val pfs = PivotFieldsState.Blank.copy(reportSpecificChoices = currentFieldState.reportSpecificChoices)
-          pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(pfs), edits))
+          pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(pfs), allEdits))
         }
       }
     }
@@ -398,7 +406,7 @@ class PivotTablePageComponent(
   pivotComp.setCustomToolBar(toolBar, () => toolBar.resetToolbarState())
 
   reactions += {
-    case FieldsChangedEvent(pivotFieldState) => pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(pivotFieldState), edits))
+    case FieldsChangedEvent(pivotFieldState) => pageContext.goTo(selfPage(pivotPageState.copyPivotFieldsState(pivotFieldState), allEdits))
     case TableDoubleClickEvent(filterFields, drillDownFields, modifiers) => {
 
       def getAxis(fields:Seq[(Field,Selection)], drillDownInfo:DrillDownInfo) = {
@@ -443,7 +451,7 @@ class PivotTablePageComponent(
       if (!possibleGroups.isEmpty && !currentFieldState.rowFields.contains(Field("Trade ID"))) {
         val newFieldState = currentFieldState.withFiltersAndRowFields(drillDownFields, possibleGroups.head)
         val newPPS = pivotPageState.copy(pivotFieldParams = pivotPageState.pivotFieldParams.copy(pivotFieldState = Some(newFieldState)))
-        pageContext.goTo(selfPage(newPPS, edits), modifiers)
+        pageContext.goTo(selfPage(newPPS, allEdits), modifiers)
       } else {
         finalDrillDown(filterFields ++ drillDownFields, pageContext, modifiers, ReportSpecificChoices(currentFieldState.reportSpecificChoices))
       }
@@ -451,7 +459,7 @@ class PivotTablePageComponent(
     case FullScreenSelectedEvent(currentState, newState, currentFrozen) => {
       val newFrozen = if (newState == AllHidden) false else currentFrozen
       val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(frozen = newFrozen, hiddenType = newState, oldHiddenType = Some(currentState), oldFrozen = Some(currentFrozen))
-      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), edits))
+      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), allEdits))
     }
     case ShowErrorsEvent(errors) => {pageContext.goTo(new ReportCellErrorsPage(errors.toList))}
     case PivotEditsUpdatedEvent(edits0, t) => pageContext.goTo(selfPage(pivotPageState, edits0), compToFocus = Some(t))
@@ -459,14 +467,14 @@ class PivotTablePageComponent(
     case FieldPanelEvent(collapse) => {
       val hiddenType = if (collapse) FieldListHidden else NothingHidden
       val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(hiddenType = hiddenType)
-      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), edits))
+      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), allEdits))
     }
     case CollapsedStateUpdated(rowOption, columnOption) => {
       val newOtherLayoutInfo = rowOption match {
         case Some(r) => pivotPageState.otherLayoutInfo.copy(rowCollapsedState = r)
         case None => pivotPageState.otherLayoutInfo.copy(columnCollapsedState = columnOption.get)
       }
-      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), edits))
+      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), allEdits))
     }
     case SubTotalToggled(field, location) => {
       val subTotalsDisabled = pivotPageState.otherLayoutInfo.disabledSubTotals
@@ -476,12 +484,13 @@ class PivotTablePageComponent(
         field :: subTotalsDisabled
       }
       val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(disabledSubTotals = newDisabledSubTotals)
-      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), edits))
+      pageContext.goTo(selfPage(pivotPageState.copy(otherLayoutInfo = newOtherLayoutInfo), allEdits))
     }
     case UserSettingUpdated(StandardUserSettingKeys.ExtraFormattingInfo) => {
       val newExtraFormatInfo = pageContext.getSetting(StandardUserSettingKeys.ExtraFormattingInfo)
       pivotComp.extraFormatInfoUpdated(newExtraFormatInfo)
     }
+    case NumberOfInPageEditsUpdated(numEdits, validState) => toolBar.saveEditsButton.numEditsAndValidState((numEdits + edits.size(pivotComp.totalNumCols)), validState)
   }
   listenTo(pivotComp, pageContext.remotePublisher)
 
