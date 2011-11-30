@@ -131,7 +131,7 @@ case class ForwardCurve(
 {
   type CurveValuesType = Quantity
   require(prices.keySet.forall(_.lastDay >= marketDayAndTime.day), "Forward curve for " + market + ", " + marketDayAndTime + " has prices in the past")
-  require(prices.values.forall(_.uom == market.priceUOM))
+  require(prices.values.forall(_.uom == market.priceUOM), "Not the same UOM, market: " + market.priceUOM + ", prices: " + prices)
 
   private lazy val memoizedPrices = CacheFactory.getCache("ForwardCurve", unique = true)
 
