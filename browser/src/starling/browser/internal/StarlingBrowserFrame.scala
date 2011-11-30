@@ -17,12 +17,12 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK), "exitAction")
   peer.getRootPane.getActionMap.put("exitAction", exitAction.peer)
 
-  private val newFrameAction = Action("New Frame") {containerMethods.createNewFrame(Some(this))}
+  private val newFrameAction = Action("New Frame") {containerMethods.createNewFrame(Some(this), Left(homePage))}
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK), "newFrameAction")
   peer.getRootPane.getActionMap.put("newFrameAction", newFrameAction.peer)
 
   private val newFrameAtCurrentPageAction = Action("New Frame At Current Page") {
-    containerMethods.createNewFrame(Some(this), startPage = Some(Left(browserTabbedPane.selectedPage)))
+    containerMethods.createNewFrame(Some(this), startPage = Left(browserTabbedPane.selectedPage))
   }
   peer.getRootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "newFrameAtCurrentPageAction")
   peer.getRootPane.getActionMap.put("newFrameAtCurrentPageAction", newFrameAtCurrentPageAction.peer)

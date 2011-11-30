@@ -100,7 +100,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     case e@BundleAdded(bundle) => {
       if (current != -1 && bundle.bundleName == history(current).bundle) {
         val currentPageInfo = history(current)
-        require(bundle.getClass.getClassLoader != currentPageInfo.page.getClass.getClassLoader)
+        //require(bundle.getClass.getClassLoader != currentPageInfo.page.getClass.getClassLoader)
         val newPage = StarlingBrowser.reflectionCloningStrategy.cloneObjectUsingClassLoader(
           currentPageInfo.page, bundle.getClass.getClassLoader).asInstanceOf[Page]
         currentPageInfo.refreshPage = Some((newPage, false))
@@ -142,7 +142,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           openTab(modifiers.shift, Left(page))
         } else {
           if (modifiers.shift) {
-            containerMethods.createNewFrame(Some(frame), Some(Left(page)))
+            containerMethods.createNewFrame(Some(frame), Left(page))
           } else {
             StarlingBrowser.this.goTo(page)
           }
@@ -153,7 +153,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           openTab(modifiers.shift, Right((serverContext, onException)))
         } else {
           if (modifiers.shift) {
-            containerMethods.createNewFrame(Some(frame), Some(Right((serverContext, onException))))
+            containerMethods.createNewFrame(Some(frame), Right((serverContext, onException)))
           } else {
             StarlingBrowser.this.goTo(Right((serverContext, onException)))
           }
@@ -229,7 +229,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     homeButton.enabled = enabled
     liveUpdateCheckbox.enabled = enabled
     bookmarkButton.enabled = enabled
-    bookmarkDropDownButton.enabled = enabled
+    //bookmarkDropDownButton.enabled = enabled
     enableAddressBar(enabled)
   }
 
@@ -620,7 +620,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK | InputEvent.ALT_DOWN_MASK), "viewSettingsAction")
   peer.getActionMap.put("viewSettingsAction", viewSettingsAction.peer)
   
-  println("XXXXXXX " + this.getClass.getClassLoader)
   var currentComponent:PageComponent = new NullPageComponent()
   mainPanel.peer.add(currentComponent.peer)
   var waitingFor:Set[Option[Int]] = Set()
@@ -668,7 +667,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val bookmarkButton = new BookmarkButton(currentPage0, pageContext, pageBuilder)
-  private val bookmarkDropDownButton = new BookmarkDropDownButton(currentPage0, pageContext)
+  //private val bookmarkDropDownButton = new BookmarkDropDownButton(currentPage0, pageContext)
 
   refreshButtonStatus()
 
@@ -685,7 +684,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     add(extraInfoLabel, "hidemode 3")
     add(settingsButton)
     add(bookmarkButton, "split 2, gap after 0")
-    add(bookmarkDropDownButton, "gap before 0, growy")
+    //add(bookmarkDropDownButton, "gap before 0, growy")
   }
 
   peer.add(actionPanel.peer, "pushx, growx, wrap 0")
@@ -702,7 +701,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     forwardButton.enabled = (current < (history.size-1))
     redoButton.enabled = (current < (history.size-1))
     bookmarkButton.enabled = true
-    bookmarkDropDownButton.enabled = true
+    //bookmarkDropDownButton.enabled = true
     enableAddressBar(true)
     homeButton.enabled = true
     liveUpdateCheckbox.enabled = true

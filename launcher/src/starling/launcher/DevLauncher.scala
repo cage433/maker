@@ -11,6 +11,7 @@ object DevLauncher {
     val buffer = Launcher.teeStdOut
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = propsWithUnusedPort()
+    System.setProperty("appname", props.ServerName())
     Server.run()
     //System.setProperty(BouncyRMI.CodeVersionKey, GUICode.latestTimestamp.toString())
     Launcher.start(buffer, props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
@@ -60,6 +61,7 @@ object DevRMILauncher {
     val buffer = Launcher.teeStdOut
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = PropsHelper.defaultProps
+    System.setProperty("appname", props.ServerName())
     Launcher.start(buffer, props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
   }
 }

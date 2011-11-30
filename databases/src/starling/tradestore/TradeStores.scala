@@ -28,7 +28,8 @@ case class TradeStores(
   closedDesks: ClosedDesks,
   eaiTradeStores: Map[Desk,EAITradeStore],
   intradayTradeStore: IntradayTradeStore,
-  titanTradeStore : TradeStore
+  titanTradeStore : TradeStore,
+  val enabledDesks:Set[Desk]
 ) {
 
   def registerTradeImporter(key:Object, tradeImporter:TradeImporter) {
@@ -110,7 +111,8 @@ case class TradeStores(
   def closedDesksByDay: Map[Desk, Map[Day, List[TradeTimestamp]]] = {
     val closes = closedDesks.closedDesksByDay
     val titanLatestTradeTimestamp = titanCurrentTimestamp
-    closes + (Desk.Titan -> (closes.getOrElse(Desk.Titan, Map()) + (TradeTimestamp.magicLatestTimestampDay -> List(titanLatestTradeTimestamp))))
+    val allCloses = closes + (Desk.Titan -> (closes.getOrElse(Desk.Titan, Map()) + (TradeTimestamp.magicLatestTimestampDay -> List(titanLatestTradeTimestamp))))
+    Map() ++ allCloses.filterKeys(enabledDesks.contains(_))
   }
 
   def toTradeSets(tradeSelection: TradeSelectionWithTimestamp): List[(TradeSet, Timestamp)] = {

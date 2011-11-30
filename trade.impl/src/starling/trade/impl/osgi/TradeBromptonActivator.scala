@@ -60,7 +60,9 @@ class TradeBromptonActivator extends BromptonActivator {
     val tradeStores = new TradeStores(
       closedDesks,
       eaiTradeStores, intradayTradesDB,
-      titanTradeStore)
+      titanTradeStore,
+      enabledDesks
+    )
 
     context.createServiceTracker(Some(classOf[TradeImporter]), ServiceProperties(), new BromptonServiceCallback[TradeImporter] {
       def serviceAdded(ref: BromptonServiceReference, properties:ServiceProperties, importer: TradeImporter) {
@@ -76,7 +78,7 @@ class TradeBromptonActivator extends BromptonActivator {
     if (props.ImportsBookClosesFromEAI())
       eaiAutoImport.start // TODO Thomas -- move this somewhere sensible
 
-    val tradeService = new TradeFacilityImpl(tradeStores, enabledDesks, eaiStarlingDB, props.Production())
+    val tradeService = new TradeFacilityImpl(tradeStores, eaiStarlingDB, props.Production())
 
     val tradeHandler = new TradeHandler(
       broadcaster,

@@ -62,7 +62,6 @@ class ReportFacilityImpl(
 
   val reportOptionsAvailable = reportService.pivotReportRunner.reportOptionsAvailable
 
-
   def tradeValuation(tradeIDLabel:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp, reportSpecificChoices : ReportSpecificChoices):TradeValuationAndDetails = {
     val tradeID = unLabel(tradeIDLabel)
     val stores = tradeStores.storesFor(tradeID.tradeSystem)

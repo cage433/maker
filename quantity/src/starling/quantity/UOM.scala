@@ -93,7 +93,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   //Data
   val BYTES = UOM(UOMType.BYTES, BYTES_SYMBOL, 1)
-  val KILOBYTES = UOM(UOMType.BYTES, BYTES_SYMBOL, 1000)
+  val KILOBYTES = UOM(UOMType.BYTES, KILOBYTES_SYMBOL, 1000)
 
   // Heat energy
   val THERMS = UOM(UOMType.HEAT_ENERGY, THERMS_SYMBOL, 1)

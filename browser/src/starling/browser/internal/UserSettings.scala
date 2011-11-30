@@ -8,7 +8,6 @@ import swing.Publisher
 import starling.browser.osgi.{BundleRemoved, BundleAdded}
 
 object UserSettings {
-  val MainWindowBounds = Key[Rectangle]("The location and size of the main window", RootBrowserBundle.bundleName)
   val LiveDefault = new Key[Boolean]("LiveDefault", RootBrowserBundle.bundleName)
 }
 
@@ -16,15 +15,19 @@ class UserSettingsValue(var value:Option[AnyRef], var data:String) {
   override def toString = "UserSettingsValue(" + value.toString + ", " + data + ")"
 }
 
-class UserSettings(initialSettings:UserSettingsLabel, publisher:Publisher) extends Serializable {
 
+class UserSettings(publisher:Publisher) extends Serializable {
   var bundles = new MMap[String,BrowserBundle]()
   val indexedEntries = new MMap[String, MMap[String, UserSettingsValue]]()
-  initialSettings.userSettings.groupBy(_.bundle).foreach { case(bundle,values) => {
-    val valuesForBundle = new MMap[String,UserSettingsValue]()
-    values.foreach(entry => valuesForBundle(entry.key) = new UserSettingsValue(None, entry.value))
-    indexedEntries(bundle) = valuesForBundle
-  } }
+
+  def setSettings(settings:UserSettingsLabel) {
+    settings.userSettings.groupBy(_.bundle).foreach { case(bundle,values) => {
+      val valuesForBundle = new MMap[String,UserSettingsValue]()
+      values.foreach(entry => valuesForBundle(entry.key) = new UserSettingsValue(None, entry.value))
+      indexedEntries(bundle) = valuesForBundle
+    } }
+  }
+
 
   publisher.reactions += {
     case BundleAdded(bundle) => {

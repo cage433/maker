@@ -11,6 +11,8 @@ import swing.event.{ButtonClicked, Event}
 import java.io.ByteArrayOutputStream
 import swing._
 import javax.swing.text.DefaultCaret
+import javax.swing.KeyStroke
+import java.awt.event.KeyEvent
 
 trait StdOut {
   def readAll:Array[Byte]
@@ -31,8 +33,9 @@ class LauncherBromptonActivator extends BromptonActivator {
       def marshal(obj: AnyRef) = xstream.toXML(obj)
       def unmarshal(text: String) = xstream.fromXML(text)
       override def utilButtons(pageContext: PageContext) = {
-        PageButton("StdOut", StdOutPage, BrowserIcons.im("/icons/32x32_event.png"), None) :: Nil
+        PageButton("StdOut", StdOutPage, BrowserIcons.im("/icons/32x32_event.png"), Some(KeyStroke.getKeyStroke(KeyEvent.VK_S,0))) :: Nil
       }
+
     })
   }
 }

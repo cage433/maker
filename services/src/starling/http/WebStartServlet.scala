@@ -357,7 +357,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
             response.getWriter.write("Requested " + file.getName + " with md5 " + requestedMD5 + " but the current md5 is " + actualMD5)
           } else {
             response.setContentType("application/octet-stream")
-            response.setDateHeader("Expires", Day(1, 1, 2020).millis)
+            response.setDateHeader("Expires", Day(2020, 1, 1).millis)
             writeFile()
           }
         }

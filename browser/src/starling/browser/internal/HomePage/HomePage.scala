@@ -18,16 +18,16 @@ class HomePage
 case object StarlingHomePage extends Page {
 
   def bundle = RootBrowserBundle.bundleName
-  def build(version: Version) = HomePagePageData(version)
-  def createServerContext(sc: ServerContext) = sc.browserService.version
-  type SC = Version
+  def build(x: String) = HomePagePageData()
+  def createServerContext(sc: ServerContext) = ""
+  type SC = String
 
   def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new StarlingHomePageComponent(context, browserSize, data)
   def text = "Starling"
   def icon = BrowserIcons.im("/icons/weather-clear.png")
 }
 
-case class HomePagePageData(version:Version) extends PageData
+case class HomePagePageData() extends PageData
 
 object StarlingHomePageComponent {
   private val subTitles = Array("OLAP Platform", "Risk Management Framework", "Risk Management System", "Risk", "OLAP Reporting System", "Risk OLAP")
@@ -63,23 +63,23 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
     background = new Color(0,0,0,32)
 
-    val ver = data.version
+    val ver = context.localCache.version
     if (ver.production) {
       add(new Label("<html><b>Production</b></html>"), "ax center, gapleft 100lp, gapright 100lp")
     } else {
-      val gitCommitLabel = new Label(data.version.gitCommit) {
+      val gitCommitLabel = new Label(ver.gitCommit) {
         tooltip = "Click on me to copy my contents to the clipboard"
         reactions += {
           case MouseClicked(_,_,_,_,_) => {
-            val stringSelection = new StringSelection(data.version.gitCommit)
+            val stringSelection = new StringSelection(ver.gitCommit)
             Toolkit.getDefaultToolkit.getSystemClipboard.setContents(stringSelection, stringSelection)
           }
         }
         listenTo(mouse.clicks)
       }
-      add(new Label("<html><b>" + data.version.name + " (" + data.version.hostname + ")</b></html>"), "ax center, wrap")
+      add(new Label("<html><b>" + ver.name + " (" + ver.hostname + ")</b></html>"), "ax center, wrap")
       add(gitCommitLabel, "ax center, wrap")
-      add(new Label(data.version.database), "span, ax center")
+      add(new Label(ver.database), "span, ax center")
     }
   }
 
@@ -182,8 +182,13 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 
   private def updateBrowserBasedComponents() {
     val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
+    val utilButtons = context.bundles.flatMap { bundle => { bundle.utilButtons(context) }}
     buttonPanel.update(homeButtons)
-    addButtonActions(homeButtons)
+    val allButtons = homeButtons /*::: utilButtons
+    allButtons.groupBy(_.key).filter(_._1 != None).foreach { case (key, buttons) =>
+      Predef.ensuring(buttons.size == 1, "Too many buttons for key " + key.get + " " + buttons)
+    }*/
+    addButtonActions(allButtons)
     bookmarksPanel.rebuildBookmarks
   }
 
