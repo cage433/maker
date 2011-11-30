@@ -26,6 +26,7 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
     val props = context.awaitService(classOf[starling.props.Props])
     val authHandler = context.awaitService(classOf[AuthHandler])
+    val codeMD5s = context.awaitService(classOf[String])
 
     val eventTypes = new java.util.concurrent.ConcurrentHashMap[Class[_],Boolean]()
     val receiver = new Receiver {
@@ -42,7 +43,7 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
     context.registerService(classOf[Receiver], receiver)
 
     rmiServerForGUI = new BouncyRMIServer(
-      props.RmiPort(), authHandler, BouncyRMI.CodeVersionUndefined, Set("starling.gui.api.UnrecognisedTradeIDException"), registerUserMBean = true
+      props.RmiPort(), authHandler, codeMD5s, Set("starling.gui.api.UnrecognisedTradeIDException"), registerUserMBean = true
     )
 
     Log.info("Initialize public services for Titan components, service port: " + props.StarlingServiceRmiPort())

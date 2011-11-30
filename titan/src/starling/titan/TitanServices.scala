@@ -8,6 +8,10 @@ import starling.utils.{Stopwatch, Log}
 import com.trafigura.services.valuation.TradeManagementCacheNotReady
 import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.common.units.TitanId
+import starling.props.Props
+import javax.management.MBeanServerConnection
+import java.net.URL
+
 
 
 // for some strange reason EDM trade service converts titan quota ID with prefix NEPTUNE:
@@ -27,6 +31,25 @@ object NeptuneId {
   }
 }
 
+object JMXEnabler extends Log {
+  import dispatch._
+  import java.net.URL
+
+  // temporary measure until we address this properly
+  def enableLogisticsAPIs(props : Props) {
+    val http = new Http
+    val logisticsHostURL : URL = new URL(props.LogisticsServiceLocation.value())
+    val logisticsReq = :/(logisticsHostURL.getHost, logisticsHostURL.getPort) / "jmx-console" / "HtmlAdaptor"
+    val postURlEncodedAttributes = "action=updateAttributes&name=trafigura.logistics%3Aname%3Dapi-properties&EnableGetInventoryByGroupCompany=True"
+
+    def sendRequest(postAttributes: String): String =
+      http(logisticsReq << (postURlEncodedAttributes, "application/x-www-form-urlencoded")  as_str)
+
+    val result = sendRequest(postURlEncodedAttributes)
+
+    log.debug("HTTP Logistics JMX result: \n" + result)
+  }
+}
 
 /**
  * logistics service interface

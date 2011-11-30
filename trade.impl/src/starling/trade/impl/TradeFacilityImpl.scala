@@ -29,7 +29,6 @@ import starling.trade.facility.{TradeInitialData, TradeFacility}
 
 class TradeFacilityImpl(
                         tradeStores:TradeStores,
-                        enabledDesks: Set[Desk],
                         eaiStarlingDB: DB,
                         isProduction:Boolean
                         ) extends TradeFacility with Log {
@@ -40,7 +39,7 @@ class TradeFacilityImpl(
 
   private def desks = {
     val user = User.currentlyLoggedOn
-    val enabled = tradeStores.deskDefinitions.keysIterator.toList.filter(enabledDesks.contains)
+    val enabled = tradeStores.deskDefinitions.keysIterator.toList.filter(tradeStores.enabledDesks.contains)
     val desksAllowed = Permission.desks(user, isProduction)
     val userDesks = enabled.filter(desksAllowed.contains)
     log.info("Getting desks for user: " + user.name + ", desks: " + userDesks)

@@ -15,6 +15,7 @@ import starling.rmi._
 import starling.db.{MarketDataSource, MarketDataStore}
 import starling.utils.{Receiver, Broadcaster}
 import starling.services.{QlikViewUpdater, EmailService, ReferenceData, StarlingInit}
+import starling.http.GUICode
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -33,6 +34,8 @@ class ServicesBromptonActivator extends BromptonActivator {
       startEAIAutoImportThread=props.ImportsBookClosesFromEAI(),
       marketDataReadersProviders = bromptonMarketDataReaderProviders
     )
+    context.registerService(classOf[String], GUICode.allMD5s)
+
     context.registerService(classOf[StarlingServer], starlingInit.starlingServer,ServiceProperties(ExportGuiRMIProperty))
     context.registerService(classOf[FC2Facility], starlingInit.fCFacility,ServiceProperties(ExportGuiRMIProperty))
     context.registerService(classOf[FC2Service], starlingInit.fC2Service)

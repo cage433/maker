@@ -13,25 +13,26 @@ case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principa
 class BouncyRMIClientBromptonActivator extends BromptonActivator with Log {
   def start(context: BromptonContext) = {
     val guiLaunchParameters = context.awaitService(classOf[GuiLaunchParameters])
-    System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
     val overriddenUser = guiLaunchParameters.runAs
-    val client = new BouncyRMIClient(
-      guiLaunchParameters.serverRmiHost,
-      guiLaunchParameters.serverRmiPort,
-      auth(guiLaunchParameters.principalName),
-      overriddenUser = overriddenUser)
-    client.startBlocking
+    Log.infoWithTime("Bouncy client") {
+      val client = new BouncyRMIClient(
+        guiLaunchParameters.serverRmiHost,
+        guiLaunchParameters.serverRmiPort,
+        auth(guiLaunchParameters.principalName),
+        overriddenUser = overriddenUser)
+      Log.infoWithTime("Bouncy rmi connect") { client.startBlocking }
 
-    context.registerService(classOf[Publisher], client.remotePublisher)
-    context.registerService(classOf[MethodLogService], client.methodLogService)
+      context.registerService(classOf[Publisher], client.remotePublisher)
+      context.registerService(classOf[MethodLogService], client.methodLogService)
 
-    val serviceListing = client.proxy(classOf[ServicesListing])
-    serviceListing.services.foreach { klass:Class[_] => {
-      val service = client.proxy(klass)
-      context.registerService(klass.asInstanceOf[Class[Any]], service.asInstanceOf[Any])
-    }}
+      val serviceListing = client.proxy(classOf[ServicesListing])
+      serviceListing.services.foreach { klass:Class[_] => {
+        val service = client.proxy(klass)
+        context.registerService(klass.asInstanceOf[Class[Any]], service.asInstanceOf[Any])
+      }}
+      context.onStopped { client.stop }
+    }
 
-    context.onStopped { client.stop }
   }
 
   def auth(servicePrincipalName: String): Client = {

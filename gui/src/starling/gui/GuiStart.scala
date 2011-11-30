@@ -124,6 +124,7 @@ object GuiStart extends Log {
   }
 
   def initCache(starlingServer:StarlingServer, fc2Service:FC2Facility, reportService:ReportFacility, tradeService:TradeFacility) = {
+
     val starlingInitialData = starlingServer.init()
     val fc2InitialData = fc2Service.init()
     val tradeInitialData = tradeService.init()
@@ -152,12 +153,12 @@ object GuiStart extends Log {
       cacheMap(EnvironmentRules) = fc2InitialData.environmentRuleLabels
       cacheMap(CurveTypes) = fc2InitialData.curveTypes
       cacheMap(LatestEmailEvent) = new Timestamp
+      cacheMap
     } catch {
       case e : Throwable =>
         e.printStackTrace()
         throw e
     }
-    cacheMap
   }
 
   def addListeners(   cacheMap:HeterogeneousMap[LocalCacheKey],

@@ -259,7 +259,12 @@ object StarlingBuild extends Build{
     "commons-httpclient" % "commons-httpclient" % "3.1",
     "com.trafigura.tradinghub" % "scala-hub-support" % "2.17",
     "com.trafigura.tradinghub" % "persistence-support" % "2.17",
-    "org.jboss.resteasy" % "jaxrs-api" % "2.2.2.GA"
+    "org.jboss.resteasy" % "jaxrs-api" % "2.2.2.GA",
+    "net.databinder" %% "dispatch-http" % "0.8.6" withSources(),                                                                                                                                                                        
+    "net.databinder" %% "dispatch-core" % "0.8.6" withSources(),
+    "org.apache.httpcomponents" % "httpclient" % "4.1.2",
+    "org.apache.httpcomponents" % "httpcore" % "4.1.2",
+    "commons-logging" % "commons-logging" % "1.1.1"
   )
 
   lazy val starlingApi = Project(

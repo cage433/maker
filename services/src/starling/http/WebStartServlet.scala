@@ -67,6 +67,16 @@ object GUICode {
     "transloader" -> new File(ivyDir + "transloader/transloader/jars/transloader-0.4.jar")
   )
 
+  def allMD5s = {
+    val (modules, libraries) = GUICode.dependencies
+    val treeSet = new java.util.TreeSet[String]()
+    modules.foreach { case (name, md5) => treeSet.add(md5)}
+    libraries.foreach { case (name, md5) => treeSet.add(md5)}
+    val allMD5s = new java.util.LinkedList[String]()
+    allMD5s.addAll(treeSet)
+    allMD5s.toString
+  }
+
   def dependencies = {
     (modules.map { module => module -> md5ForModule(module) }, libJarNames.mapValues(file=>md5(file)))
   }
@@ -357,7 +367,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
             response.getWriter.write("Requested " + file.getName + " with md5 " + requestedMD5 + " but the current md5 is " + actualMD5)
           } else {
             response.setContentType("application/octet-stream")
-            response.setDateHeader("Expires", Day(1, 1, 2020).millis)
+            response.setDateHeader("Expires", Day(2020, 1, 1).millis)
             writeFile()
           }
         }

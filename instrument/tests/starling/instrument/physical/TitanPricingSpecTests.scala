@@ -111,8 +111,8 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest{
     )
     
     specs.foreach{spec =>
-      val priceExclVAT = spec.priceExcludingVAT(env)
-      val priceInclVAT = spec.priceIncludingVAT(env).get
+      val priceExclVAT = spec.priceExcludingVATExcludingPremium(env)
+      val priceInclVAT = spec.priceIncludingVATExcludingPremium(env).get
       val vatRate = env.shanghaiVATRate
       assertQtyEquals(priceExclVAT * (vatRate + 1.0), priceInclVAT, 1e-6)
       assert(priceInclVAT.numeratorUOM === spec.valuationCCY)

@@ -1,6 +1,5 @@
 package starling.launcher
 
-import starling.browser.osgi.BrowserBromptonActivator
 import starling.singleclasspathmanager.{SingleClasspathManager}
 import java.net.{ConnectException, Socket, URL}
 import starling.gui.osgi.{MetalsGuiBromptonActivator, GuiBromptonActivator}
@@ -11,6 +10,8 @@ import scala.Predef._
 import swing.Publisher
 import starling.utils.StringIO
 import java.io.{File, ByteArrayOutputStream, OutputStream}
+import management.ManagementFactory
+import starling.browser.osgi.{RunAsUser, BrowserBromptonActivator}
 
 //Starts the gui without osgi
 object Launcher {
@@ -18,8 +19,10 @@ object Launcher {
     if (args.length < 4) {
       throw new IllegalArgumentException("You need to specify 4 arguments: hostname, rmi port, servicePrincipalName and serverType")
     }
-    val buffer = teeStdOut
-    println("Args: " + args.toList)
+    val buffer = teeStdOut //If you print to stdout before this line, std will not be captured
+    println("Launcher: Args: " + args.toList)
+    println("Launcher: stdout setup " + ManagementFactory.getRuntimeMXBean.getUptime + "ms")
+
     val rmiHost = args(0)
     val rmiPort = args(1).toInt
     val servicePrincipalName = args(2)
@@ -34,11 +37,12 @@ object Launcher {
           start(buffer, rmiHost, rmiPort, servicePrincipalName, serverType)
         }
       }
-      val st = args(3)
+      val st = args(4)
       val index = st.indexOf("://")
       val s = st.substring(index + 3)
       val url = new URL("http://localhost:7777/" + s)
       val stream = url.openStream()
+      println("Launcher: triggered open page " + ManagementFactory.getRuntimeMXBean.getUptime + "ms")
       stream.close()
     } else {
       start(buffer, rmiHost, rmiPort, servicePrincipalName, serverType)
@@ -80,7 +84,6 @@ object Launcher {
     start(Some(stdOut), rmiHost, rmiPort, servicePrincipalName, serverType, None)
   }
   def start(maybeStdOut:Option[StdOut], rmiHost: String, rmiPort: Int, servicePrincipalName: String, serverType:ServerTypeLabel, overriddenUser:Option[String] = None) {
-
     this.rmiHost = rmiHost
     this.rmiPort = rmiPort
     this.servicePrincipalName = servicePrincipalName
@@ -90,8 +93,8 @@ object Launcher {
     val launchParameters = GuiLaunchParameters(rmiHost, rmiPort, servicePrincipalName, overriddenUser)
 
     val baseActivators = List[Class[_ <: BromptonActivator]](
-      classOf[BouncyRMIClientBromptonActivator],
       classOf[BrowserBromptonActivator],
+      classOf[BouncyRMIClientBromptonActivator],
       classOf[GuiBromptonActivator],
       classOf[LauncherBromptonActivator]
     )
@@ -106,6 +109,7 @@ object Launcher {
     val activators = baseActivators ::: extraActivators
     val initialServices = List(
       classOf[GuiLaunchParameters] -> launchParameters,
+      classOf[RunAsUser] -> RunAsUser(overriddenUser),
       classOf[StdOut] -> stdOut
     )
     val single = new SingleClasspathManager(true, activators, initialServices)
@@ -117,7 +121,7 @@ class PublishingOutputStream extends OutputStream with StdOut {
   val buffer = new ByteArrayOutputStream()
   val publisher = new Publisher() {}
 
-  def readAll = buffer.toByteArray
+  def readAll = synchronized { buffer.toByteArray }
 
   private def broadcast(bytes:Array[Byte]) {
     publisher.publish(StdOutEvent(bytes))

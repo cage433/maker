@@ -41,11 +41,11 @@ object InstallationHelper {
         <fileVersion>0.0.0.1</fileVersion>
         <txtFileVersion>Some more</txtFileVersion>
         <fileDescription>Starling</fileDescription>
-        <copyright>Trafigura</copyright>
+        <copyright>Trafigura Ltd</copyright>
         <productVersion>0.0.0.1</productVersion>
         <txtProductVersion>fds</txtProductVersion>
         <productName>Starling</productName>
-        <companyName>Trafigura</companyName>
+        <companyName>Trafigura Ltd</companyName>
         <internalName>Starling</internalName>
         <originalFilename>Starling-{serverName + classifier}.exe</originalFilename>
       </versionInfo>
@@ -58,10 +58,12 @@ object InstallationHelper {
 !define product "Starling-""" + serverName + """"
 !define product_lower "starling-""" + serverName.toLowerCase + """"
 !define exe "${product}.exe"
+!define exe_no_splash "${product}-no-splash.exe"
 !define excel_ini "excel_plugin-""" + serverName + """.ini"
 !define excel_xll "excel_plugin-""" + serverName + """.xll"
 !define uninstall_exe "uninstall_${product}.exe"
-!define company "Trafigura"
+!define uninstall_exe_no_splash "uninstall_${product}-no-splash.exe"
+!define company "Trafigura Ltd"
 !define add_remove_key "Software\Microsoft\Windows\CurrentVersion\Uninstall\${product}"
 !define java_version_str "SOFTWARE\JavaSoft\Java Runtime Environment"
 
@@ -95,10 +97,11 @@ WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters" "a
 ; Add registry keys so that the "starling" protocol is recognised
 WriteRegStr HKCR "${product_lower}" "" "$\"URL:${product} Protocol$\""
 WriteRegStr HKCR "${product_lower}" "URL Protocol" "$\"$\""
-WriteRegStr HKCR "${product_lower}\DefaultIcon" "" "$\"${exe},1$\""
-WriteRegStr HKCR "${product_lower}\shell\open\command" "" "$\"$INSTDIR\${exe}$\" $\"%1$\""
+WriteRegStr HKCR "${product_lower}\DefaultIcon" "" "$\"${exe_no_splash},1$\""
+WriteRegStr HKCR "${product_lower}\shell\open\command" "" "$\"$INSTDIR\${exe_no_splash}$\" $\"%1$\""
 
 File ${exe}
+File ${exe_no_splash}
 File ${excel_ini}
 File ${excel_xll}
 
@@ -125,6 +128,7 @@ SetShellVarContext all
 Delete $INSTDIR\${uninstall_exe}
 
 Delete $INSTDIR\${exe}
+Delete $INSTDIR\${exe_no_splash}
 Delete $INSTDIR\${excel_ini}
 Delete $INSTDIR\${excel_xll}
 

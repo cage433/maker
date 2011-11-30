@@ -7,14 +7,13 @@ import java.lang.reflect.Method;
 import java.net.*;
 import java.security.*;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Downloads
  */
 class Booter {
     public static void main(String[] args) throws Exception {
+        System.out.println("Booter: Step-0 Booter#main " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
         if (args.length < 2) {
             System.out.println("Usage: java -jar booter.jar <appurl> <appname>");
             Thread.sleep(5000);
@@ -36,40 +35,16 @@ class Booter {
         if (!cacheDir.exists()) cacheDir.mkdir();
         File logFile = new File(cacheDir, "log.txt");
         System.setProperty("stdout.logfile", logFile.getPath());
+        System.setProperty("appname", appName);
         System.setOut(new java.io.PrintStream(new TeeOutputStream(System.out, new FileOutputStream(logFile))));
         System.setErr(new java.io.PrintStream(new TeeOutputStream(System.err, new FileOutputStream(logFile))));
         Proxy proxy = Proxy.NO_PROXY;//detectClosestHost(appBaseURL);
 
-        System.out.println("Cachdir: " + cacheDir.getAbsolutePath());
+        System.out.println("Booter: Cachdir " + cacheDir.getAbsolutePath());
+        System.out.println("Booter: Step-1 std out captured " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
+
         run(cacheDir, proxy, appBaseURL, Arrays.copyOfRange(args, 2, args.length));
     }
-
-//   Takes about 1second
-//    private static Proxy detectClosestHost(URL appBaseURL) throws Exception {
-//        final LinkedBlockingQueue<Proxy> proxyList = new LinkedBlockingQueue<Proxy>();
-//        final InetAddress[] hosts = { InetAddress.getByName(appBaseURL.getHost()), InetAddress.getByName("172.20.15.205") };
-//        final Proxy[] proxies = { Proxy.NO_PROXY, new Proxy(Proxy.Type.HTTP, new InetSocketAddress("172.20.15.205", 3128)) };
-//        for (int i = 0; i < hosts.length; i++) {
-//            final InetAddress host = hosts[i];
-//            final Proxy proxy = proxies[i];
-//            new Thread(new Runnable() { public void run() {
-//                try {
-//                    long start = System.nanoTime();
-//                    long startX = System.currentTimeMillis();
-//                    boolean reachable = host.isReachable(2000);
-//                    if (reachable) {
-//                        long pingTime = System.nanoTime() - start;
-//                        long pingTimeX = System.currentTimeMillis() - startX;
-//                        System.out.println("Ping time for " + host + " " + pingTime + " " + pingTimeX);
-//                        proxyList.put(proxy);
-//                    }
-//                } catch (Exception e) {
-//                    System.out.println("Ping to " + host + " failed:" + e);
-//                }
-//            } }).start();
-//        }
-//        return proxyList.take();
-//    }
 
     private static InputStream open(URL url, Proxy proxy) throws Exception {
         return url.openConnection(proxy).getInputStream();
@@ -79,8 +54,8 @@ class Booter {
 
         //HACK this should probably be specified in app.txt
         System.setProperty("log4j.configuration", "utils/resources/log4j.properties");
-
-        URL appURL = new URL(baseURL + "/webstart/app.txt");
+        System.out.println("Booter: Step-2 about to read app.txt " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
+        final URL appURL = new URL(baseURL + "/webstart/app.txt");
         File appFile = new File(cacheDir, "app.txt");
 
         java.util.List<String> lines;
@@ -91,13 +66,14 @@ class Booter {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    String errorMessage = "Cannot connect to the Starling server\nPlease ensure it is running and try again";
+                    String errorMessage = "Cannot connect to the Starling server\nPlease ensure it is running and try again\n\n" + appURL.toString() + "\n" + t.getMessage();
                     String title = "Cannot connect to the Starling server";
                     JOptionPane.showMessageDialog(null, errorMessage, title, JOptionPane.ERROR_MESSAGE);
                 }
             });
             return;
         }
+        System.out.println("Booter: Step-3 read app.txt " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
 
         String[] firstLine = lines.get(0).split(" ");
         String mainClass = firstLine[0];
@@ -132,7 +108,7 @@ class Booter {
             String md5 = entry.getValue();
             File file = new File(cacheDir, jar);
             URL url = new URL(baseURL + "/webstart/" + jar + "?md5=" + md5);
-            System.out.println("downloading " + url);
+            System.out.println(url);
             InputStream inputStream = open(url, proxy);
             OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file));
             copy(inputStream, outputStream);
@@ -140,6 +116,8 @@ class Booter {
             outputStream.flush();
             outputStream.close();
         }
+
+        System.out.println("Booter: Step-4 Downloads complete " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
 
         Set<String> unnecessaryJars = new HashSet<String>(localJarsWithMD5.keySet());
         unnecessaryJars.removeAll(remoteJarsWithMd5.keySet());
@@ -156,7 +134,7 @@ class Booter {
             app.append(line + "\n");
         }
         app.close();
-
+        System.out.println("Booter: Step-5 written app.txt " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
         final URLClassLoader classLoader = new URLClassLoader(urlsToLocalJars.toArray(new URL[urlsToLocalJars.size()]));
 
         //all-permissions in the webstart jnlp file only applies to this class loader
@@ -172,7 +150,12 @@ class Booter {
             }
         });
 
-        System.out.println("Booter ready " + ManagementFactory.getRuntimeMXBean().getUptime() / 1000 + "s");
+        List<String> allMD5s = new LinkedList<String>();
+        allMD5s.addAll(new TreeSet<String>(remoteJarsWithMd5.values()));
+        String maxTimestamp = allMD5s.toString();
+        System.setProperty("starling.codeversion", maxTimestamp);
+
+        System.out.println("Booter: Step-6 setting swing classloader " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
         System.out.flush();
         System.err.flush();
         try {
@@ -186,6 +169,7 @@ class Booter {
             });
             Class launcher = classLoader.loadClass(mainClass);
             Method main = launcher.getMethod("main", new Class[]{String[].class});
+            System.out.println("Booter: Step-7 Done " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
             main.invoke(null, new Object[]{applicationArgs});
         } catch (Exception e) {
             e.printStackTrace();

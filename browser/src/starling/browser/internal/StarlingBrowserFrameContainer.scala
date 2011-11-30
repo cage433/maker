@@ -1,6 +1,7 @@
 package starling.browser.internal
 
 import collection.mutable.ListBuffer
+import HomePage.StarlingHomePage
 import starling.browser._
 import common.GuiUtils._
 import common.{MigPanel, GuiUtils}
@@ -12,9 +13,11 @@ import com.thoughtworks.xstream.io.xml.DomDriver
 import java.awt.event.{KeyEvent, InputEvent}
 import javax.swing.KeyStroke
 import utilspage.UtilsPage
+import java.util.prefs.Preferences
+import java.awt.Rectangle
 
 trait ContainerMethods {
-  def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]=None)
+  def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])])
   def closeFrame(frame: StarlingBrowserFrame)
   def closeAllFrames(fromFrame: StarlingBrowserFrame)
   def updateNotifications()
@@ -59,29 +62,53 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
                                     homePage: Page, userSettings: UserSettings, frameTitle: String, extraInfo:Option[String]) extends ContainerMethods {
   private val frames = new ListBuffer[StarlingBrowserFrame]
 
-  def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Option[Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]]) {
+  val nodeName = "starling/rectangle"
+  def loadWindowLocation:Option[Rectangle] = {
+    if (!Preferences.userRoot().nodeExists(nodeName)) {
+      None
+    } else {
+      val prefs = Preferences.userRoot().node(nodeName);
+      val r = new Rectangle(
+        prefs.getInt("x", 10),
+        prefs.getInt("y", 10),
+        prefs.getInt("width", 100),
+        prefs.getInt("height", 100)
+      )
+      Some(r)
+    }
+  }
+  def storeWindowLocation(rectangle:Rectangle) {
+    val prefs = Preferences.userRoot().node(nodeName);
+    prefs.putInt("x", rectangle.x)
+    prefs.putInt("y", rectangle.y)
+    prefs.putInt("width", rectangle.width)
+    prefs.putInt("height", rectangle.height)
+  }
+
+  def createNewFrame(fromFrame: Option[StarlingBrowserFrame], startPage:Either[Page,(ServerContext => Page, PartialFunction[Throwable,Unit])]) {
     StarlingBrowserFrameContainer.numberOfFramesOpen += 1
-    val startPage0 = startPage.getOrElse(Left(homePage))
 //    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, serverContext.extraInfo)
-    val newFrame = new StarlingBrowserFrame(homePage, startPage0, pageBuilder, lCache, userSettings, this, extraInfo)
+    val newFrame = new StarlingBrowserFrame(homePage, startPage, pageBuilder, lCache, userSettings, this, extraInfo)
     frames += newFrame
     newFrame.title = frameTitle
     fromFrame match {
       case None => {
         import UserSettings._
         // Load the user settings.
-        if (userSettings.settingExists(MainWindowBounds)) {
-          // Need to check if the screen is on the screen.
-          val frameBounds = userSettings.getSetting(MainWindowBounds)
-          if (GuiUtils.onScreen(frameBounds)) {
-            newFrame.peer.setBounds(frameBounds)
-          } else {
+        loadWindowLocation match {
+          case Some(frameBounds) => {
+            // Need to check if the screen is on the screen.
+            if (GuiUtils.onScreen(frameBounds)) {
+              newFrame.peer.setBounds(frameBounds)
+            } else {
+              newFrame.pack()
+              newFrame.centerOnScreen()
+            }
+          }
+          case None => {
             newFrame.pack()
             newFrame.centerOnScreen()
           }
-        } else {
-          newFrame.pack()
-          newFrame.centerOnScreen()
         }
       }
       case Some(fFrame) => {
@@ -94,8 +121,7 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
 
   private def saveUserSettings(frame: Frame) {
     try {
-      import UserSettings._
-      userSettings.putSetting(MainWindowBounds, frame.bounds)
+      storeWindowLocation(frame.bounds)
       for (f <- frames) f.visible = false
       serverContext.browserService.saveSettings(userSettings.toLabel(serverContext))
     } catch {
@@ -143,5 +169,4 @@ class StarlingBrowserFrameContainer(serverContext: ServerContext, lCache: LocalC
     }
   }
 
-  createNewFrame(None)
 }

@@ -22,15 +22,19 @@ import javax.swing.KeyStroke
 import java.awt.event.KeyEvent
 
 object CannedBrowserService extends BrowserService {
-  def name = "Canned"
-  def readSettings = UserSettingsLabel(Nil)
+
+  def initialData = InitialData(
+    "Canned",
+    UserDetails("Dev", "dev user"),
+    UserSettingsLabel(Nil),
+    Nil,
+    Version("name", "hostname", "db", "gitcommit", false, None)
+  )
+
   def saveSettings(settings: UserSettingsLabel) {println("We don't save canned settings")}
   def saveBookmark(bookmark: BookmarkLabel) {println("We don't save canned bookmarks")}
   def deleteBookmark(name: String) {println("We don't delete canned bookmarks")}
-  def bookmarks = Nil
-  def version = Version("name", "hostname", "db", "gitcommit", false, None)
   def logPageView(info: PageLogInfo) { /*skip*/ }
-  def userDetails = UserDetails("Dev", "dev user")
   def testEvent() {}
 }
 
