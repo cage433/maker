@@ -7,6 +7,7 @@ import javax.swing.{ImageIcon, KeyStroke}
 import service.StarlingGUIEvent
 import swing.{Publisher, Component}
 import swing.event.Event
+import java.util.UUID
 
 case class HotKey(keyStroke:KeyStroke, name:String, page:Page)
 case class HelpEntry(markup:String, icons:Map[String,ImageIcon], links:Map[String,Page])
@@ -52,4 +53,4 @@ trait BrowserBundle {
   def notificationHandlers:List[NotificationHook] = Nil
 }
 
-case class GotoPageEvent(page:Page) extends StarlingGUIEvent
+case class GotoPageEvent(page:Page, uuid:UUID = UUID.randomUUID()) extends StarlingGUIEvent

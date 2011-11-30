@@ -22,6 +22,8 @@ import starling.manager.{ServiceProperties, HttpContext, BromptonContext, Brompt
 import starling.services.EmailService
 import starling.calendar.BusinessCalendar
 import swing.{Swing, Publisher}
+import java.util.Date
+import starling.browser.osgi.GotoPagePublisher
 
 class GuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -37,7 +39,7 @@ class GuiBromptonActivator extends BromptonActivator {
     val reportService = context.awaitService(classOf[ReportFacility])
     context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, tradeService))
 
-    val publisher = context.awaitService(classOf[Publisher])
+    val publisher = context.awaitService(classOf[GotoPagePublisher])
     val localCache = context.awaitService(classOf[LocalCache])
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
@@ -47,7 +49,7 @@ class GuiBromptonActivator extends BromptonActivator {
             showTrade(tradeID, snapshotID)
             resp.setContentType("text/plain")
             resp.setStatus(200)
-            resp.getWriter.println("Openned valuation page for " + tradeID + " " + snapshotID)
+            resp.getWriter.println("Openned valuation page for " + tradeID + " " + snapshotID + " at " + new Date())
           }
           case _ => {
             resp.setContentType("text/plain")

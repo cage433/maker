@@ -37,7 +37,7 @@ object Launcher {
           start(buffer, rmiHost, rmiPort, servicePrincipalName, serverType)
         }
       }
-      val st = args(3)
+      val st = args(4)
       val index = st.indexOf("://")
       val s = st.substring(index + 3)
       val url = new URL("http://localhost:7777/" + s)

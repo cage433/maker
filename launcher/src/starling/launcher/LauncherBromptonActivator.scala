@@ -7,6 +7,7 @@ import starling.browser._
 import common.MigPanel
 import internal.BrowserIcons
 import java.awt.Dimension
+import osgi.StdOutPublisher
 import swing.event.{ButtonClicked, Event}
 import java.io.ByteArrayOutputStream
 import swing._
@@ -23,7 +24,7 @@ case class StdOutEvent(data:Array[Byte]) extends Event
 class LauncherBromptonActivator extends BromptonActivator {
 
   def start(context: BromptonContext) {
-    val publisher = context.awaitService(classOf[Publisher])
+    val publisher = context.awaitService(classOf[StdOutPublisher])
     val stdOut = context.awaitService(classOf[StdOut])
     publisher.listenTo(stdOut.publisher)
 
@@ -54,7 +55,7 @@ object StdOutPage extends Page {
 
 case class StdOutPageData(data:Array[Byte]) extends PageData
 
-class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPanel("insets n n 0 0", "[p]unrel[fill]") with PageComponent {
+class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPanel("", "[p]unrel[p]") with PageComponent {
 
   val textArea = new TextArea(new String(data))
   textArea.peer.getCaret.asInstanceOf[DefaultCaret].setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE) //auto scroll
@@ -76,7 +77,7 @@ class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPane
     add(restoreButton, "sg")
   }
   add(buttonPanel, "ay top")
-  add(textAreaScrollPane)
+  add(textAreaScrollPane, "push,grow")
 
   listenTo(context.remotePublisher)
   reactions += {

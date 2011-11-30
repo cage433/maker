@@ -89,7 +89,18 @@ class BrowserBromptonActivator extends BromptonActivator {
     Swing.onEDTWait( { settings.setSettings(initialData.settings) })
 
     val publisher = context.awaitService(classOf[Publisher])
-    publisher.reactions += {
+
+    val gotoPagePublisher = new GotoPagePublisher
+    context.registerService(classOf[GotoPagePublisher], gotoPagePublisher)
+
+    val stdOutPublisher = new StdOutPublisher
+    context.registerService(classOf[StdOutPublisher], stdOutPublisher)
+
+    val x = new Publisher {}
+    x.listenTo(publisher)
+    x.listenTo(gotoPagePublisher)
+    x.listenTo(stdOutPublisher)
+    x.reactions += {
       case event => {
         onEDT {
           localCachePublisher.publish(event)
@@ -173,7 +184,7 @@ class BrowserBromptonActivator extends BromptonActivator {
         }
       }
       localCachePublisher.reactions += {
-        case GotoPageEvent(p) => fc.showNewPage(p)
+        case GotoPageEvent(p, _) => fc.showNewPage(p)
       }
       latch.decrement()
     } })
@@ -182,3 +193,6 @@ class BrowserBromptonActivator extends BromptonActivator {
     context.onStopped { System.exit(0) }
   }
 }
+
+class GotoPagePublisher extends Publisher
+class StdOutPublisher extends Publisher
