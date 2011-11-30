@@ -54,7 +54,7 @@ object StdOutPage extends Page {
 
 case class StdOutPageData(data:Array[Byte]) extends PageData
 
-class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPanel("insets n n 0 0", "[p]unrel[fill]") with PageComponent {
+class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPanel("insets n n 0 0", "[p]unrel[p]") with PageComponent {
 
   val textArea = new TextArea(new String(data))
   textArea.peer.getCaret.asInstanceOf[DefaultCaret].setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE) //auto scroll
@@ -76,7 +76,7 @@ class StdOutPageComponent(data:Array[Byte], context:PageContext) extends MigPane
     add(restoreButton, "sg")
   }
   add(buttonPanel, "ay top")
-  add(textAreaScrollPane)
+  add(textAreaScrollPane, "push,grow")
 
   listenTo(context.remotePublisher)
   reactions += {

@@ -89,7 +89,9 @@ class BrowserBromptonActivator extends BromptonActivator {
     Swing.onEDTWait( { settings.setSettings(initialData.settings) })
 
     val publisher = context.awaitService(classOf[Publisher])
-    publisher.reactions += {
+    val x = new Publisher {}
+    x.listenTo(publisher)
+    x.reactions += {
       case event => {
         onEDT {
           localCachePublisher.publish(event)
