@@ -77,7 +77,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
     edmPricingSpec : PricingSpecification, 
     // Trade Mgmt only seems to provide a currency at the top level of a nested pricing spec, hence
     // we have to jump through some hoops.
-    valuationCurrency : Option[UOM] = None
+    maybeValuationCurrency : Option[UOM] = None
   ) : TitanPricingSpec = {
     Option(edmPricingSpec) match {
       case Some(edmPSpec) => edmPSpec match {
@@ -86,7 +86,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
             getIndex(spec.market, spec.index),
             Day.fromJodaDate(spec.qpMonth).containingMonth,
             spec.premium,
-            valuationCurrency.getOrElse(spec.currency)
+            maybeValuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : PartialAveragePricingSpecification => {
@@ -94,7 +94,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
             getIndex(spec.market, spec.index),
             DateRange(Day.fromJodaDate(spec.firstAvgDate), Day.fromJodaDate(spec.lastAvgDate)),
             spec.premium,
-            valuationCurrency.getOrElse(spec.currency)
+            maybeValuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : OptionalPricingSpecification => {
@@ -115,7 +115,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
               case weightedSpec =>
                  (weightedSpec.weight, fromEdmPricingSpec(deliveryDay, deliveryQuantity * weightedSpec.weight, weightedSpec.pricingSpec, ccy))
             },
-            valuationCurrency.getOrElse(spec.currency)
+            maybeValuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : UNKPricingSpecification => {
@@ -132,7 +132,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
              },
              declarationBy,
              spec.premium,
-             valuationCurrency.getOrElse(spec.currency)
+             maybeValuationCurrency.getOrElse(spec.currency)
           )
         }
         case spec : FixedPricingSpecification => {
@@ -141,6 +141,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           val market = getFuturesMarket(exchangeName)
           // Reasonable guess - The settlement day should live in trade management but doesn't yet
           val settlementDay = spec.comps.flatMap{comp => if (comp.date == null) None else Some(Day.fromLocalDate(comp.date))}.sortWith(_>_).headOption.getOrElse(deliveryDay).addWeekdays(2)
+          val valuationCurrency: UOM = maybeValuationCurrency.getOrElse(spec.currency)
           FixedPricingSpec(
             market,
             settlementDay,
@@ -150,8 +151,9 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
                 (fraction, fromTitanQuantity(comp.price))
               }
             },
-            Quantity.NULL,  // Customer price = hedge price + premium - however premium can be in a different currency. Need trade management to send hedge as well as customer price
-            valuationCurrency.getOrElse(spec.currency)
+            Quantity(0, valuationCurrency / market.uom),
+            //Quantity.NULL,  // Customer price = hedge price + premium - however premium can be in a different currency. Need trade management to send hedge as well as customer price
+            valuationCurrency
           )
         }
         case _ => throw new Exception("Unsupported pricing spec type " + edmPricingSpec)

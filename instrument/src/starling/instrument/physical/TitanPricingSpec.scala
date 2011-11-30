@@ -16,10 +16,17 @@ trait TitanPricingSpec {
     inValuationCurrency(env, premiumInPremiumCurrency)
   }
 
+  def premiumIncludingVAT(env : Environment) : Option[Quantity] = {
+    if (isLiableToShanghaiVAT)
+      Some(premiumExcludingVAT(env) * (env.shanghaiVATRate + 1.0))
+    else
+      None
+  }
+
 
   def priceExcludingVATExcludingPremium(env: Environment): Quantity
 
-  def priceExcludingVATIncludingPremium(env : Environment) : Quantity = priceExcludingVATIncludingPremium(env) + premiumExcludingVAT(env)
+  def priceExcludingVATIncludingPremium(env : Environment) : Quantity = priceExcludingVATExcludingPremium(env) + premiumExcludingVAT(env)
 
   def priceIncludingVATExcludingPremium(env : Environment) = {
     if (isLiableToShanghaiVAT){
@@ -187,7 +194,7 @@ case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: 
 
   def priceExcludingVATExcludingPremium(env: Environment) = {
     assert(chosenSpec.isDefined || env.marketDay < declarationDay.endOfDay, "Optional pricing spec must be fixed by " + declarationDay)
-    specToUse.priceExcludingVATExcludingPremium(env)
+    inValuationCurrency(env, specToUse.priceExcludingVATExcludingPremium(env))
   }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specToUse.fixedQuantity(marketDay, totalQuantity)
@@ -216,7 +223,7 @@ case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)], valuatio
   def settlementDay(marketDay: DayAndTime) = specs.flatMap(_._2.settlementDay(marketDay)).sortWith(_ > _).head
 
   def priceExcludingVATExcludingPremium(env: Environment) = Quantity.sum(specs.map {
-    case (weight, spec) => spec.priceExcludingVATExcludingPremium(env) * weight
+    case (weight, spec) => inValuationCurrency(env, spec.priceExcludingVATExcludingPremium(env)) * weight
   })
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = specs.map {

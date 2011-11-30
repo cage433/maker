@@ -72,7 +72,8 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
 
   val nextDepth = depth + 1
 
-  lazy val expandedPanel = {
+  var expandable = true
+  val expandedPanel = {
     namedQuantity match {
       case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp, fi, nextDepth)
       case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func, fi, nextDepth)
@@ -89,7 +90,12 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
           case invert:InvertNamedQuantity => new InvertNamedQuantityPanel(invert, fi, nextDepth)
           case round:RoundedNamedQuantity => new RoundedNamedQuantityPanel(round, fi, nextDepth)
           case nq0:NamedQuantity => new ExpandCollapsePanel(nq0, fi, nextDepth)
-          case q:Quantity => new QuantityPanel(q, fi, nextDepth)
+          case q:Quantity => {
+            expandable = false
+            new Label("") with UpdateableNamedQuantityComponent{
+              def updateExtraInfo(newFI: ExtraFormatInfo) {}
+              def depth = 0
+            }}
         }
       }
     }
@@ -97,16 +103,19 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
   lazy val lShapePanel = new LShape
 
   val label = new Label {
-    text = namedQuantity.name
-    tooltip = quantityText(namedQuantity, fi)
-    cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+    val s = "   " + quantityText(namedQuantity, fi)
+    text = "<html>" + namedQuantity.name + "<br>&nbsp=" + s + "</html>"
+    tooltip = s
     font = PivotCellRenderer.MonoSpacedFont
-    border = UnderLineDashedBorder()
+    if (expandable) {
+      cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+      border = UnderLineDashedBorder()
+    }
   }
 
   add(label)
 
-  reactions += {case MousePressed(`label`,_,_,_,false) => {expandCollapse()}}
+  reactions += {case MousePressed(`label`,_,_,_,false) if expandable => {expandCollapse()}}
   listenTo(label.mouse.clicks)
 
   def expandCollapse() {
@@ -119,7 +128,9 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
       } else {
         ", gaptop 3"
       }
-      add(lShapePanel, "newline 0, split, spanx, gapright 0, ay top")
+      if (expandable) {
+        add(lShapePanel, "newline 0, split, spanx, gapright 0, ay top")
+      }
       add(expandedPanel, "gapleft 0" + extraLayoutInfo)
     }
     expanded = !expanded
@@ -388,27 +399,10 @@ class TopNamedQuantityComponent(quantity:NamedQuantity, formatInfo:ExtraFormatIn
     }
     case q:Quantity => (new QuantityPanel(q, formatInfo, 0), q)
   }
-  val valueLabel = label(quantityText(quantityValue, formatInfo))
 
-  val symbolPanel = new MigPanel("insets 0") {
-    val l = label("=")
-    background = Color.RED
-    l.foreground = Color.WHITE
-    l.font = l.font.deriveFont(java.awt.Font.BOLD, l.font.getSize2D + 10.0f)
-    l.verticalAlignment = swing.Alignment.Center
-    add(l, "push, al center")
-    val w0 = preferredSize.width
-    val h0 = preferredSize.height
-    val max = math.max(w0, h0)
-    preferredSize = new Dimension(max, max)
-  }
-
-  add(valueLabel, "ay top")
-  add(symbolPanel, "ay top")
   add(panelToAdd, "ay top")
 
   def updateExtraInfo(newFI:ExtraFormatInfo) {
-    valueLabel.text = quantityText(quantityValue, newFI)
     panelToAdd.updateExtraInfo(newFI)
   }
 }

@@ -145,8 +145,10 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     val premiumExcludingVAT = contractPricingSpec.premiumExcludingVAT(env).named("Premium")
     val signedQuantity = if (isPurchase) -quantity else quantity
     val settlementDay = contractPricingSpec.settlementDay(env.marketDay)
-    discounted(env, timesVolume(priceExcludingPremium, signedQuantity), settlementDay) +
-    discounted(env, timesVolume(premiumExcludingVAT, signedQuantity), settlementDay)
+    var exp : NamedQuantity = discounted(env, timesVolume(priceExcludingPremium, signedQuantity), settlementDay).named("Contract value w/out premium")
+    if (premiumExcludingVAT.value != 0)
+      exp = exp + discounted(env, timesVolume(premiumExcludingVAT, signedQuantity), settlementDay).named("Contract premium value")
+    exp
 //    var exp : NamedQuantity = (if (isPurchase) price * -1 else price).named("Contract Price")
 //    exp = timesVolume(exp, quantity)
 //    discounted(env, exp, contractPricingSpec.settlementDay(env.marketDay))
@@ -158,8 +160,10 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     val premiumExcludingVAT = spec.premiumExcludingVAT(env).named("Benchmark Premium")
     val signedQuantity = if (isPurchase) inventoryQuantity else -inventoryQuantity
     val settlementDay = spec.settlementDay(env.marketDay)
-    discounted(env, timesVolume(priceExcludingPremium, signedQuantity), settlementDay) +
-    discounted(env, timesVolume(premiumExcludingVAT, signedQuantity), settlementDay)
+    var exp : NamedQuantity = discounted(env, timesVolume(priceExcludingPremium, signedQuantity), settlementDay).named("Benchmark value w/out premium")
+    if (premiumExcludingVAT.value != 0)
+      exp = exp + discounted(env, timesVolume(premiumExcludingVAT, signedQuantity), settlementDay).named("Benchmark premium value")
+    exp
 
 //    val price = spec.priceExcludingVAT(env)
 //    var exp : NamedQuantity = (if (isPurchase) price else price * -1).named("Benchmark Price")
@@ -428,17 +432,14 @@ object CostsAndIncomeValuation{
   def build(env : Environment, quantity : Quantity, pricingSpec : TitanPricingSpec) = {
     // C&I asked that premiums equal to null quantity - which in TM means no premium
     // are represented by None
-    val premium = if (pricingSpec.premium == Quantity.NULL)
-      None
-    else
-      Some(pricingSpec.premium)
 
     PricingValuationDetails(
       pricingSpec.priceExcludingVATIncludingPremium(env),
       pricingSpec.priceIncludingVATIncludingPremium(env),
       pricingSpec.priceExcludingVATExcludingPremium(env),
       pricingSpec.priceIncludingVATExcludingPremium(env),
-      premium,
+      pricingSpec.premiumExcludingVAT(env),
+      pricingSpec.premiumIncludingVAT(env),
       pricingSpec.valueExcludingVATIncludingPremium(env, quantity),
       pricingSpec.valueIncludingVATIncludingPremium(env, quantity),
       pricingSpec.valueExcludingVATExcludingPremium(env, quantity),
