@@ -22,6 +22,7 @@ import starling.manager.{ServiceProperties, HttpContext, BromptonContext, Brompt
 import starling.services.EmailService
 import starling.calendar.BusinessCalendar
 import swing.{Swing, Publisher}
+import java.util.Date
 
 class GuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -47,7 +48,7 @@ class GuiBromptonActivator extends BromptonActivator {
             showTrade(tradeID, snapshotID)
             resp.setContentType("text/plain")
             resp.setStatus(200)
-            resp.getWriter.println("Openned valuation page for " + tradeID + " " + snapshotID)
+            resp.getWriter.println("Openned valuation page for " + tradeID + " " + snapshotID + " at " + new Date())
           }
           case _ => {
             resp.setContentType("text/plain")
