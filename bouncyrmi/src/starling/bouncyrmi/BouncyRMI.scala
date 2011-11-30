@@ -67,7 +67,7 @@ class ClientPipelineFactory(handler: SimpleChannelHandler, timer:HashedWheelTime
 
 object BouncyRMI {
   val CodeVersionUndefined = "undefined"
-  val CodeVersionKey = "starling.codeversion.timestamp"
+  val CodeVersionKey = "starling.codeversion"
   def CodeVersion = System.getProperty(CodeVersionKey, CodeVersionUndefined)
 
   val CertIssuerName = "CN=starling"

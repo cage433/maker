@@ -150,6 +150,10 @@ class Booter {
             }
         });
 
+        List<String> allMD5s = new LinkedList<String>();
+        allMD5s.addAll(new TreeSet<String>(remoteJarsWithMd5.values()));
+        String maxTimestamp = allMD5s.toString();
+        System.setProperty("starling.codeversion", maxTimestamp);
 
         System.out.println("Booter: Step-6 setting swing classloader " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
         System.out.flush();

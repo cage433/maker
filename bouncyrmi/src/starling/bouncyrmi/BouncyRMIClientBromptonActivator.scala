@@ -13,7 +13,6 @@ case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principa
 class BouncyRMIClientBromptonActivator extends BromptonActivator with Log {
   def start(context: BromptonContext) = {
     val guiLaunchParameters = context.awaitService(classOf[GuiLaunchParameters])
-    System.setProperty(BouncyRMI.CodeVersionKey, BouncyRMI.CodeVersionUndefined)
     val overriddenUser = guiLaunchParameters.runAs
     Log.infoWithTime("Bouncy client") {
       val client = new BouncyRMIClient(

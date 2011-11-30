@@ -67,6 +67,16 @@ object GUICode {
     "transloader" -> new File(ivyDir + "transloader/transloader/jars/transloader-0.4.jar")
   )
 
+  def allMD5s = {
+    val (modules, libraries) = GUICode.dependencies
+    val treeSet = new java.util.TreeSet[String]()
+    modules.foreach { case (name, md5) => treeSet.add(md5)}
+    libraries.foreach { case (name, md5) => treeSet.add(md5)}
+    val allMD5s = new java.util.LinkedList[String]()
+    allMD5s.addAll(treeSet)
+    allMD5s.toString
+  }
+
   def dependencies = {
     (modules.map { module => module -> md5ForModule(module) }, libJarNames.mapValues(file=>md5(file)))
   }
