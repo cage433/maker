@@ -25,32 +25,31 @@ class ReferenceDataIndexPageComponent(context:PageContext, pageData:PageData) ex
   val data = pageData match {case d:ReferenceDataIndexPageData => d}
   background = Color.WHITE
 
-  val buttonPanel = new MigPanel("insets 0", "[p][p][p]", "[p][p][p]") {
+  val buttonPanel = new MigPanel("insets 0") {
     opaque = false
 
     val calendarImage = StarlingIcons.im("/icons/32x32_calendar.png")
     val otherRefDataImage = StarlingIcons.im("/icons/32x32_chart_line.png")
-    for ((table,index) <- data.referenceTables.zipWithIndex) {
+    for ((table,i) <- data.referenceTables.zipWithIndex) {
       val imageToUse = if (table.name.toLowerCase.trim != "calendars") {
         otherRefDataImage
       } else {
         calendarImage
       }
-      val shouldSkip2 = false//(table.name.toLowerCase.trim == "calendars")
-      val numberString = (index + 1).toString + "."
+      val numberString = (i + 1).toString + "."
       def gotoPage(modifiers:Modifiers) {context.goTo(ReferenceDataPage(table, PivotPageState(false, PivotFieldParams(true, None))), modifiers)}
       val tableButton = new NumberedButton(table.name, imageToUse,
         gotoPage,
         number = Some(numberString))
       ReferenceDataIndexPageComponent.this.peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).
-              put(KeyStroke.getKeyStroke(KeyEvent.VK_1 + index, 0), numberString)
+              put(KeyStroke.getKeyStroke(KeyEvent.VK_1 + i, 0), numberString)
       ReferenceDataIndexPageComponent.this.peer.getActionMap.put(numberString, Action(numberString){gotoPage(Modifiers.None)}.peer)
-      val constraints = if (index % 3 == 0) {
-        if (shouldSkip2) "newline, skip 2" else "newline, skip 1"
+      val extraConstraints = if (((i % 3) == 0) && (i != 0)) {
+        ",newline, split 3, spanx"
       } else {
         ""
       }
-      add(tableButton, constraints + " ,sg")
+      add(tableButton, "ax center, sg" + extraConstraints)
     }
   }
 
