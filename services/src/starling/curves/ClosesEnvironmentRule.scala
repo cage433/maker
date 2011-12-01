@@ -45,7 +45,7 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
               ))
             }
             case key: ForwardRateDataKey => read_(ObservationTimeOfDay.LiborClose, key)
-            case key: CountryBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
+            case key: CountryBenchmarkMarketDataKey => marketDataReader.read(TimedMarketDataKey(ObservationPoint.RealTime, key))
             case key: GradeAreaBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: FreightParityDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: ShanghaiVATDataKey => read_(ObservationTimeOfDay.Default, key)

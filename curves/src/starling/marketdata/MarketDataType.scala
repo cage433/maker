@@ -85,7 +85,6 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
 
   val manualTypes = List(
     new GradeAreaBenchmarkDataType(referenceDataLookup),
-    new CountryBenchmarkDataType(referenceDataLookup),
     new FreightParityDataType(referenceDataLookup),
     ShanghaiVATDataType
   )
