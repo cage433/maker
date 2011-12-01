@@ -8,11 +8,10 @@ import starling.bouncyrmi.{GuiLaunchParameters, BouncyRMIClientBromptonActivator
 import starling.props.ServerTypeLabel
 import scala.Predef._
 import swing.Publisher
-import starling.utils.StringIO
 import java.io.{File, ByteArrayOutputStream, OutputStream}
 import management.ManagementFactory
 import starling.browser.osgi.{RunAsUser, BrowserBromptonActivator}
-import starling.startserver.SingleClasspathBroadcasterActivator
+import starling.utils.{SingleClasspathBroadcasterActivator, StringIO}
 
 //Starts the gui without osgi
 object Launcher {

@@ -4,7 +4,6 @@ import starling.services.osgi.ServicesBromptonActivator
 import starling.bouncyrmi.BouncyRMIServerBromptonActivator
 import starling.auth.osgi.AuthBromptonActivator
 import starling.singleclasspathmanager.SingleClasspathManager
-import starling.utils.Log
 import management.ManagementFactory
 import java.io.File
 import starling.reports.impl.ReportsBromptonActivator
@@ -16,6 +15,7 @@ import starling.webservice.HttpWebserviceBromptonActivator
 import starling.manager.BromptonActivator
 import starling.props.{ServerTypeLabel, Props, PropsHelper}
 import starling.loopyxl.LoopyxlBromptonActivator
+import starling.utils.{SingleClasspathBroadcasterActivator, Log}
 
 
 /**
