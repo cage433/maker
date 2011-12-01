@@ -170,6 +170,10 @@ class ForwardForwardDiscountCurve(
         val time = if (p.lastDay <= day) t else DayCountActual365.factor(p.firstDay, day)
         d *= math.exp(-z * time)
       }
+      val (lastPeriod, t, z) = zippedData.last
+      if (day > lastPeriod.lastDay){
+        d *= math.exp(- z * DayCountActual365.factor(lastPeriod.lastDay, day))
+      }
       d
     }
   }

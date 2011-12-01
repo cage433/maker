@@ -168,4 +168,26 @@ class DiscountCurveTests extends StarlingTest with Log {
 //        assertQtyEquals(forwardRate, rate, 1e-6)
     }
   }
+
+
+  @Test
+  def testExtrapolationOfDiscounts{
+    val ccy = USD
+    val marketDay = Day(2011, 12, 1).endOfDay
+    val rates = ForwardRateData(
+      Map(ForwardRateSource.LIBOR ->
+        Map(
+          Tenor.OneMonth -> 1.3 (PERCENT),
+          Tenor.TwoMonths -> 1.5 (PERCENT),
+          Tenor.ThreeMonths -> 1.7 (PERCENT),
+          Tenor.OneYear -> 2.0 (PERCENT)
+        )))
+    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates)
+    val env = Environment(
+      new MappingCurveObjectEnvironment(Map[CurveKey, CurveObject](DiscountCurveKey(ccy) ->discountCurve), marketDay)
+    )
+    val oneYearRate = env.discount(USD, marketDay.day + 365)
+    val threeYearRate = env.discount(USD, marketDay.day + 365 + 365 + 365)
+    assertQtyEquals(threeYearRate, oneYearRate * oneYearRate * oneYearRate, 0.002)
+  }
 }
