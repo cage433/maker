@@ -165,10 +165,12 @@ case class TradeSelectionPage(
 
       private val enterIDLabel = new Label("Enter " + deskCombo.selection.item.name + " ID:") {
         enabled = deskCheckBox.selected
+        peer.setDisplayedMnemonic('e')
       }
       private val textIDField = new TextField(10) {
         enabled = deskCheckBox.selected
       }
+      enterIDLabel.peer.setLabelFor(textIDField.peer)
       private val viewButton = new NewPageButton {
         text = "View"
         tooltip = "View the trade corresponding to the trade id entered"

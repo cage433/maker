@@ -235,7 +235,7 @@ class TradeFacilityImpl(
         if (text.isEmpty) {
           throw new UnrecognisedTradeIDException("Please enter a trade id")
         } else {
-          throw new UnrecognisedTradeIDException("No trade found for " + text)
+          throw new UnrecognisedTradeIDException("No trade found with id " + text)
         }
       }
       case id::Nil => TradeIDLabel(id.id, label(id.tradeSystem))
