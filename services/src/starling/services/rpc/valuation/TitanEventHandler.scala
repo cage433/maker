@@ -6,11 +6,12 @@ import com.trafigura.shared.events._
 import starling.rmi.{ProcessedEventStatus, RabbitEventDatabase}
 import starling.titan.{TitanTradeUpdateResult, TitanTradeStoreManager}
 import starling.tradestore.TradeStore.StoreResults
-import starling.utils.{Broadcaster, Log}
+import starling.utils.{Log}
 import starling.gui.api.{SnapshotIDLabel, RefinedMetalsValuationChanged}
 import com.trafigura.edm.common.units.TitanId
 import starling.curves.Environment
 import starling.db.SnapshotID
+import starling.manager.Broadcaster
 
 /**
  * top level received event handler for Titan Rabbit events

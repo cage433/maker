@@ -7,7 +7,8 @@ import starling.daterange.{Day, Timestamp}
 import collection.SortedMap
 import collection.immutable.TreeMap
 import starling.gui.api.{DeskCloseFailed, DeskClosed, TradeTimestamp, Desk}
-import starling.utils.{Log, Broadcaster, StackTraceToString}
+import starling.manager.Broadcaster
+import starling.utils.{Log, StackTraceToString}
 
 class ClosedDesks(broadcaster: Broadcaster, db: DB) {
   def lastClosed: Map[Desk, Timestamp] = {

@@ -5,12 +5,12 @@ import starling.db.DB
 import starling.auth.User
 import starling.gui.api._
 import starling.instrument.utils.StarlingXStream
-import starling.utils.{Broadcaster}
 import starling.pivot._
 import starling.daterange.{Day, Timestamp}
 import starling.calendar.BusinessCalendar
 import starling.browser.service._
 import starling.dbx.{LiteralString, Clause, Query}
+import starling.manager.Broadcaster
 
 case class DayOffSet(offset:Int)
 

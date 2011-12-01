@@ -6,7 +6,7 @@ import org.testng.Assert._
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.{BeforeMethod, Test}
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import java.util.concurrent.{Executors, TimeUnit}
 import starling.auth._
 

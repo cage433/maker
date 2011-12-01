@@ -1,19 +1,18 @@
 package starling.launcher
 
-import starling.manager.{BromptonContext, BromptonActivator}
 import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.io.xml.DomDriver
 import starling.browser._
 import common.MigPanel
 import internal.BrowserIcons
 import java.awt.Dimension
-import osgi.StdOutPublisher
 import swing.event.{ButtonClicked, Event}
 import java.io.ByteArrayOutputStream
 import swing._
 import javax.swing.text.DefaultCaret
 import javax.swing.KeyStroke
 import java.awt.event.KeyEvent
+import starling.manager.{Broadcaster, BromptonContext, BromptonActivator}
 
 trait StdOut {
   def readAll:Array[Byte]
@@ -24,9 +23,13 @@ case class StdOutEvent(data:Array[Byte]) extends Event
 class LauncherBromptonActivator extends BromptonActivator {
 
   def start(context: BromptonContext) {
-    val publisher = context.awaitService(classOf[StdOutPublisher])
+    val broadcaster = context.awaitService(classOf[Broadcaster])
     val stdOut = context.awaitService(classOf[StdOut])
+    val publisher = new Publisher() {}
     publisher.listenTo(stdOut.publisher)
+    publisher.reactions += {
+      case event => broadcaster.broadcast(event)
+    }
 
     context.registerService(classOf[BrowserBundle], new BrowserBundle() {
       val xstream = new XStream(new DomDriver())

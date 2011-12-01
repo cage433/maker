@@ -5,9 +5,10 @@ import swing.event.Event
 import starling.daterange.Day
 import starling.pivot._
 import starling.utils.ImplicitConversions._
-import starling.utils.{Enableable, Broadcaster}
+import starling.utils.{Enableable}
 import starling.services.EmailService
 import starling.gui.api.Email
+import starling.manager.Broadcaster
 
 
 trait ScheduledTaskAttributes {

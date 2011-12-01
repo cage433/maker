@@ -1,8 +1,22 @@
 package starling.manager
 
 import java.util.{Hashtable, Dictionary}
+import swing.event.Event
 
 class Brompton
+
+trait Broadcaster {
+  @DoNotCache def broadcast(event: Event)
+}
+
+trait Receiver {
+  @DoNotCache def event(event: Event)
+}
+
+object Broadcaster {
+  object Null extends Broadcaster { def broadcast(event: Event) {} }
+}
+
 
 trait BromptonActivator {
   def start(context:BromptonContext)

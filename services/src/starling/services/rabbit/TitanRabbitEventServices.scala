@@ -10,7 +10,7 @@ import com.trafigura.services.rabbit.Publisher
 import org.codehaus.jettison.json.JSONArray
 import com.trafigura.events._
 import com.trafigura.shared.events._
-import starling.utils.{Broadcaster, Log, Stopable}
+import starling.utils.{Log, Stopable}
 import starling.utils.ImplicitConversions._
 import starling.quantity.UOM
 import starling.daterange.Day
@@ -19,6 +19,8 @@ import starling.titan.EDMConversions._
 import starling.gui.api._
 import starling.titan.TitanStringLiterals
 import scala.Predef._
+import starling.manager.Broadcaster
+
 
 /**
  * Titan RabbitMQ event module

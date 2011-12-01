@@ -15,7 +15,7 @@ import starling.market._
 import starling.quantity.{UOM, Quantity}
 import starling.models.{European, Call}
 import swing.event.Event
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.daterange._
 import starling.instrument.{TradeID, Trade, TradeSystem}
 import starling.tradestore.eai.{EAITradeStore, EAITradeAttributes}

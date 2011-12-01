@@ -16,6 +16,8 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.settings" />
       <excludeFolder url="file://$MODULE_DIR$/component-tests" />
+      <excludeFolder url="file://$MODULE_DIR$/doc.all" />
+      <excludeFolder url="file://$MODULE_DIR$/doc.shared" />
       <excludeFolder url="file://$MODULE_DIR$/dummy-sbt-vim-hack" />
       <excludeFolder url="file://$MODULE_DIR$/logs" />
       <excludeFolder url="file://$MODULE_DIR$/modulejarcache" />

@@ -12,6 +12,7 @@ import starling.utils.StringIO
 import java.io.{File, ByteArrayOutputStream, OutputStream}
 import management.ManagementFactory
 import starling.browser.osgi.{RunAsUser, BrowserBromptonActivator}
+import starling.startserver.SingleClasspathBroadcasterActivator
 
 //Starts the gui without osgi
 object Launcher {
@@ -93,6 +94,7 @@ object Launcher {
     val launchParameters = GuiLaunchParameters(rmiHost, rmiPort, servicePrincipalName, overriddenUser)
 
     val baseActivators = List[Class[_ <: BromptonActivator]](
+      classOf[SingleClasspathBroadcasterActivator],
       classOf[BrowserBromptonActivator],
       classOf[BouncyRMIClientBromptonActivator],
       classOf[GuiBromptonActivator],

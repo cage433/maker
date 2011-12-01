@@ -2,7 +2,7 @@ package starling.rmi
 
 import starling.auth.User
 import starling.browser.service._
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.gui.api.TestEvent
 
 class BrowserServiceImpl(name:String, version:Version, userSettingsDatabase:UserSettingsDatabase, broadcaster:Broadcaster) extends BrowserService {

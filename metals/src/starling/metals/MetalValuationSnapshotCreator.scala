@@ -11,10 +11,11 @@ import starling.quantity.Quantity
 import starling.titan.valuation.QuotaValuation
 import starling.titan.{TitanTradeStore, TitanTradeStoreManager, TitanTradeUpdateResult}
 import collection.immutable.Map
-import starling.utils.{Broadcaster, Log, Receiver}
+import starling.utils.{Log}
 import starling.db.SnapshotID
 import starling.gui.api._
 import starling.utils.ImplicitConversions._
+import starling.manager.{Broadcaster, Receiver}
 
 /**
  * Creates a snapshot when all metals trades can be valued without a market data exception

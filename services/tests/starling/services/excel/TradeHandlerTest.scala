@@ -8,10 +8,11 @@ import org.mockito.Matchers._
 import collection.immutable.Nil
 import starling.instrument.Trade
 import starling.gui.api.BlotterTradeUpdate
-import starling.utils.{Broadcaster, StarlingTest}
+import starling.utils.{StarlingTest}
 import starling.utils.StarlingMatchers._
 import org.testng.annotations.{AfterClass, BeforeClass, BeforeTest, Test}
 import starling.tradestore.TradeStore.StoreResults
+import starling.manager.Broadcaster
 
 class TradeHandlerTest extends StarlingTest {
   lazy val tradeHandler = new TradeHandler(broadcaster, tradeReader, intradayTradeStore)

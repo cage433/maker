@@ -16,9 +16,10 @@ import org.jboss.netty.handler.timeout.{IdleStateEvent, IdleStateAwareChannelHan
 import org.jboss.netty.util.{HashedWheelTimer, Timeout, TimerTask}
 import java.lang.reflect.{InvocationHandler, Method}
 import starling.auth.Client
-import starling.utils.NamedDaemonThreadFactory
 import java.util.concurrent._
 import scala.collection.JavaConversions._
+import starling.utils.{NamedDaemonThreadFactory}
+import starling.manager.Broadcaster
 
 case class MethodLogEvent(id:Int, method:Method, compressedSize:Int, uncompressedSize:Int, time:Long, serverTime:Long) extends Event {
   def shortName = method.getName + " " + compressedSize+ " bytes (" + uncompressedSize + " uncompressed) " + time + "ms"
@@ -43,7 +44,12 @@ trait MethodLogService {
   def methodInvocations(upTo:Int):List[MethodLogEvent]
 }
 
-class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Unit=(x)=>{}, overriddenUser:Option[String] = None) {
+class BouncyRMIClient(
+                       host: String, port: Int,
+                       auth: Client,
+                       logger:(String)=>Unit=(x)=>{},
+                       overriddenUser:Option[String] = None,
+                       broadcaster:Broadcaster=Broadcaster.Null) {
   private val client = new Client(overriddenUser)
   lazy val clientTimer = new HashedWheelTimer
 
@@ -58,7 +64,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
       val id = methodLog.size + 1
       val logEvent = new MethodLogEvent(id, method, compressed, uncompressed, duration, serverDuration)
       methodLog.add(logEvent)
-      publisher.publish(logEvent)
+      broadcaster.broadcast(logEvent)
     }
   }
 
@@ -383,7 +389,7 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
               case _ => // all good
             }
           }
-          case BroadcastMessage(event) => publisher.publish(event)
+          case BroadcastMessage(event) => broadcaster.broadcast(event)
           case s: ShutdownMessage => {
             stateTransition(s)
             channel match {
@@ -486,7 +492,6 @@ class BouncyRMIClient(host: String, port: Int, auth: Client, logger:(String)=>Un
   }
 
   val reactions = publisher.reactions
-  val remotePublisher = publisher.publisher
 
   class Waiting(val klass:Class[_], val method:Method, val startTime:Long) {
     private val lock = new Object

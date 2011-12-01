@@ -8,7 +8,8 @@ import xml._
 import scalaz.Scalaz._
 import swing.event.Event
 import starling.gui.api.SpotFXDataEvent
-import starling.utils.{RetryingAction, Log, Receiver}
+import starling.utils.{RetryingAction, Log}
+import starling.manager.Receiver
 
 object QlikViewUpdater {
   def main(args: Array[String]) {

@@ -19,7 +19,7 @@ import collection.JavaConversions
 import net.sf.cglib.proxy.{MethodProxy, MethodInterceptor, Enhancer}
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import starling.manager._
-import starling.utils.{Receiver, Broadcaster, ReceiversBroadcaster}
+import starling.utils.{ReceiversBroadcaster}
 import java.lang.reflect.{Method,UndeclaredThrowableException,InvocationTargetException}
 import starling.utils.cache.CacheFactory
 import utils.ThreadSafeCachingProxy

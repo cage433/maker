@@ -18,12 +18,11 @@ import collection.immutable.TreeSet
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 import starling.trade.facility.TradeFacility
 import starling.reports.facility.ReportFacility
-import starling.manager.{ServiceProperties, HttpContext, BromptonContext, BromptonActivator}
 import starling.services.EmailService
 import starling.calendar.BusinessCalendar
 import swing.{Swing, Publisher}
 import java.util.Date
-import starling.browser.osgi.GotoPagePublisher
+import starling.manager._
 
 class GuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -39,7 +38,7 @@ class GuiBromptonActivator extends BromptonActivator {
     val reportService = context.awaitService(classOf[ReportFacility])
     context.registerService(classOf[BrowserBundle], new StarlingBrowserBundle(starlingServer, reportService, fc2Service, tradeService))
 
-    val publisher = context.awaitService(classOf[GotoPagePublisher])
+    val broadcaster = context.awaitService(classOf[Broadcaster])
     val localCache = context.awaitService(classOf[LocalCache])
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
@@ -90,7 +89,7 @@ class GuiBromptonActivator extends BromptonActivator {
       val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
       val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
 
-      publisher.publish(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp, ReportSpecificChoices())))
+      broadcaster.broadcast(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp, ReportSpecificChoices())))
     }
   }
 }
