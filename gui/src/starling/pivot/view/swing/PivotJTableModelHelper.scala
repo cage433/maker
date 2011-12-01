@@ -49,7 +49,6 @@ abstract class PivotJTableModel extends AbstractTableModel {
 
   protected var overrideMap = new MMap[(Int,Int),CellType]()
   def revert(table:PivotJTable):Boolean = {
-    overrideMap.clear()
     false
   }
   def numberOfInPageEdits:Int = overrideMap.size
