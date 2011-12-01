@@ -25,7 +25,8 @@ object  RefinedTacticalRefDataConversions {
     "Zinc" -> SHANGHAI_ZINC,
     "Steel" -> STEEL_REBAR_SHANGHAI,
     "Copper" -> SHANGHAI_COPPER,
-    "Primary Aluminium" -> SHANGHAI_ALUMINUIUM
+    "Primary Aluminium" -> SHANGHAI_ALUMINUIUM,
+    "Lead" -> SHANGHAI_LEAD
   )
 
   lazy val metalNameToCMXMarket = Map(
