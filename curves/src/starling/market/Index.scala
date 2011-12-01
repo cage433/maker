@@ -463,9 +463,9 @@ object LmeSingleIndices{
 }
 
 object FuturesFrontPeriodIndex {
-  def apply(market: FuturesMarket) = {
+  def apply(market : FuturesMarket, promptness : Int = 1) = {
     val name = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
-    new FuturesFrontPeriodIndex(name, None, market, 0, 1, None)
+    new FuturesFrontPeriodIndex(name, None, market, 0, promptness, None)
   }
 }
 
