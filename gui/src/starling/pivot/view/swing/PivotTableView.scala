@@ -610,7 +610,25 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     publish(CollapsedStateUpdated(columnCollapsedState = Some(newCollapsedColState)))
   }
 
-  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
+  private val fullTable = new PivotJTable(tableModelsHelper.fullTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits) {
+    // I'm having to do this as page up and page down don't work for the full table as it is wrapped in a JXLayer - http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7068740
+    private var sortOutPageUpOrPageDown = 0
+    override def processKeyBinding(ks:KeyStroke, e:KeyEvent, condition:Int, pressed:Boolean) = {
+      if ((ks.getKeyCode == 33 || ks.getKeyCode == 34) && (condition == 1) && pressed) {
+        sortOutPageUpOrPageDown = 2
+      }
+      super.processKeyBinding(ks, e, condition, pressed)
+    }
+
+    override def getParent = {
+      if (sortOutPageUpOrPageDown > 0) {
+        sortOutPageUpOrPageDown -= 1
+        super.getParent.getParent
+      } else {
+        super.getParent
+      }
+    }
+  }
   private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
   private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
   private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
