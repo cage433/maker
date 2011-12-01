@@ -1,14 +1,13 @@
 package starling.startserver.apps
 
-import starling.startserver.SingleClasspathBroadcasterActivator
 import starling.auth.osgi.AuthBromptonActivator
 import starling.services.osgi.ServicesBromptonActivator
 import starling.reports.impl.ReportsBromptonActivator
 import starling.singleclasspathmanager.SingleClasspathManager
-import starling.utils.ThreadUtils
 import starling.manager.BromptonActivator
 import starling.props.internal.PropsBromptonActivator
 import starling.trade.impl.osgi.TradeBromptonActivator
+import starling.utils.{SingleClasspathBroadcasterActivator, ThreadUtils}
 
 trait Lookup {
   def apply[T](klass:Class[T]):T

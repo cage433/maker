@@ -1,4 +1,4 @@
-package starling.startserver
+package starling.utils
 
 import starling.utils.{ReceiversBroadcaster}
 import starling.manager._
