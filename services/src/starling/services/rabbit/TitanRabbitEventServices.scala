@@ -16,9 +16,9 @@ import starling.quantity.UOM
 import starling.daterange.Day
 import com.trafigura.services.TitanSerializableCurrency
 import starling.titan.EDMConversions._
-import starling.db.SnapshotID
 import starling.gui.api._
 import starling.titan.TitanStringLiterals
+import scala.Predef._
 
 /**
  * Titan RabbitMQ event module
@@ -93,7 +93,9 @@ object EventPayloadFactory {
 }
 
 case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEventServices {
-  
+
+  val rabbitProperties = ||> { new BasicProperties() } { _.setDeliveryMode(2) }
+
   val rabbitmq_host = props.TitanRabbitBrokerHost()
   val rabbitmq_port = 5672
   val rabbitmq_username = props.TitanRabbitUserName()
@@ -111,9 +113,9 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
   val rabbitmq_mandatory = false
   val rabbitmq_immediate = false
   val rabbitmq_passive = false
-  val rabbitmq_exclusive = true
+  val rabbitmq_exclusive = false
   val rabbitmq_publisher_autoDelete = false
-  val rabbitmq_basicPropertiesDefault = new BasicProperties()
+  val rabbitmq_basicPropertiesDefault = rabbitProperties
   val rabbitmq_makeQueueNameUnique = false
 
   val rabbitEventConnector = new RabbitConnector(
@@ -139,7 +141,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
     rabbitmq_basicPropertiesDefault)
 
   val baseQueueName = ""
-  val serviceName = ".Starling." + props.ServerName // durable server queue based on starling name
+  val serviceName = "Starling." + props.ServerName.value() // durable server queue based on starling name
 
   val rabbitListener = new RabbitListener(
     rabbitEventConnector,
