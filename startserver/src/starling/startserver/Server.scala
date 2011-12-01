@@ -15,6 +15,7 @@ import starling.metals.MetalsBromptonActivator
 import starling.webservice.HttpWebserviceBromptonActivator
 import starling.manager.BromptonActivator
 import starling.props.{ServerTypeLabel, Props, PropsHelper}
+import starling.loopyxl.LoopyxlBromptonActivator
 
 
 /**
@@ -43,7 +44,8 @@ object Server {
     )
     val metalsActivators = List[Class[_ <: BromptonActivator]](
       classOf[MetalsBromptonActivator],
-      classOf[RabbitEventViewerServiceBromptonActivator]
+      classOf[RabbitEventViewerServiceBromptonActivator],
+      classOf[LoopyxlBromptonActivator]
     )
     val activators = baseActivators ::: (if (props.ServerType() == ServerTypeLabel.FC2) metalsActivators else Nil)
     val single = new SingleClasspathManager(false, activators)
