@@ -1,7 +1,7 @@
 package starling.titan
 
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.gui.api.{Desk, TradesUpdated}
 import starling.instrument.{Trade, TradeableType, TradeSystem}
 import EDMConversions._

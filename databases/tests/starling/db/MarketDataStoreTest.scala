@@ -10,7 +10,7 @@ import java.lang.String
 import model.{NoValue, PivotTableModel}
 import starling.richdb.{RichResultSetRowFactory, RichDB}
 import collection.immutable.{Nil, Map}
-import starling.utils.{StarlingTest, Broadcaster}
+import starling.utils.{StarlingTest}
 import starling.market.{TestMarketTest, Market}
 import org.testng.annotations._
 import starling.utils.ImplicitConversions._
@@ -19,6 +19,7 @@ import org.scalatest.matchers.{Matcher, ShouldMatchers}
 import collection.Traversable
 import starling.marketdata._
 import org.scalatest.testng.TestNGSuite
+import starling.manager.Broadcaster
 
 class MarketDataStoreTest extends TestMarketTest with TestNGSuite with ShouldMatchers {
   import MarketDataStore._

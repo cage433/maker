@@ -88,26 +88,14 @@ class BrowserBromptonActivator extends BromptonActivator {
 
     Swing.onEDTWait( { settings.setSettings(initialData.settings) })
 
-    val publisher = context.awaitService(classOf[Publisher])
-
-    val gotoPagePublisher = new GotoPagePublisher
-    context.registerService(classOf[GotoPagePublisher], gotoPagePublisher)
-
-    val stdOutPublisher = new StdOutPublisher
-    context.registerService(classOf[StdOutPublisher], stdOutPublisher)
-
-    val x = new Publisher {}
-    x.listenTo(publisher)
-    x.listenTo(gotoPagePublisher)
-    x.listenTo(stdOutPublisher)
-    x.reactions += {
-      case event => {
+    context.registerService(classOf[Receiver], new Receiver() {
+      def event(event: Event) = {
         onEDT {
           localCachePublisher.publish(event)
           pageContextPublisher.publish(event)
         }
       }
-    }
+    })
 
     var bookmarks = initialData.bookmarks
     context.createServiceTracker(Some(classOf[BrowserBundle]), ServiceProperties(), new BromptonServiceCallback[BrowserBundle] {
@@ -193,6 +181,3 @@ class BrowserBromptonActivator extends BromptonActivator {
     context.onStopped { System.exit(0) }
   }
 }
-
-class GotoPagePublisher extends Publisher
-class StdOutPublisher extends Publisher

@@ -169,7 +169,7 @@ object StarlingBuild extends Build{
     "utils", 
     file("./utils"), 
     settings = standardSettingsNexus ++ Seq(libraryDependencies ++= utilsDependencies)
-  )
+  ) dependsOn (manager)
 
   // Not uploading this to nexus at the moment.
   lazy val osgiRun = Project(

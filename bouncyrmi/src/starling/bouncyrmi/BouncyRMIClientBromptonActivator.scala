@@ -1,17 +1,18 @@
 package starling.bouncyrmi
 
-import starling.manager.{BromptonContext, BromptonActivator}
 import starling.auth.Client
 import starling.auth.internal.{RealClient, ClientLogin}
 import javax.security.auth.login.LoginException
-import starling.utils.Log
 import swing.Publisher
+import starling.utils.{Log}
+import starling.manager.{Broadcaster, BromptonContext, BromptonActivator}
 
 case class GuiLaunchParameters(serverRmiHost:String, serverRmiPort:Int, principalName:String, runAs:Option[String])
 
 
 class BouncyRMIClientBromptonActivator extends BromptonActivator with Log {
   def start(context: BromptonContext) = {
+    val broadcaster = context.awaitService(classOf[Broadcaster])
     val guiLaunchParameters = context.awaitService(classOf[GuiLaunchParameters])
     val overriddenUser = guiLaunchParameters.runAs
     Log.infoWithTime("Bouncy client") {
@@ -19,10 +20,11 @@ class BouncyRMIClientBromptonActivator extends BromptonActivator with Log {
         guiLaunchParameters.serverRmiHost,
         guiLaunchParameters.serverRmiPort,
         auth(guiLaunchParameters.principalName),
-        overriddenUser = overriddenUser)
+        overriddenUser = overriddenUser,
+        broadcaster = broadcaster
+      )
       Log.infoWithTime("Bouncy rmi connect") { client.startBlocking }
 
-      context.registerService(classOf[Publisher], client.remotePublisher)
       context.registerService(classOf[MethodLogService], client.methodLogService)
 
       val serviceListing = client.proxy(classOf[ServicesListing])

@@ -5,7 +5,7 @@ import org.mortbay.jetty.Server
 import starling.props.Props
 import javax.servlet.http.HttpServlet
 import org.mortbay.jetty.servlet.{ServletHolder, Context}
-import starling.utils.{Receiver, Log}
+import starling.utils.{Log}
 
 
 class HttpWebserviceBromptonActivator extends BromptonActivator with Log {

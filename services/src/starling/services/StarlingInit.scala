@@ -23,6 +23,7 @@ import starling.curves._
 import org.apache.commons.io.IOUtils
 import starling.marketdata.{MarketDataTypes, DBReferenceDataLookup}
 import starling.lim.LIMService
+import starling.manager.Broadcaster
 
 
 class StarlingInit( val props: Props,

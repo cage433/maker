@@ -5,10 +5,10 @@ import swing.event.Event
 import collection.mutable.ListBuffer
 import starling.gui.api._
 import starling.gui.api.MarketDataSelection
-import starling.utils.{Broadcaster, Receiver}
 import starling.db.MarketDataStore
 import starling.scheduler.ScheduledTask
 import starling.databases.MarketDataEventSource
+import starling.manager.{Receiver, Broadcaster}
 
 trait MarketDataAvailabilityChecker {
   def dataAvailable(source: MarketDataEventSource): Boolean

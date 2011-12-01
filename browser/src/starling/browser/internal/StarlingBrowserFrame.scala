@@ -221,7 +221,7 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   def createStarlingBrowser(gotoTab: Boolean = true, pageOrBuildPage: Either[Page, (ServerContext => Page, PartialFunction[Throwable, Unit])] = Left(homePage)) {
     val (tabText, icon, addressText) = pageOrBuildPage match {
       case Left(page) => (page.shortText, page.icon, page.text)
-      case _ => (" ", BrowserIcons.im("/icons/10x10_blank.png"), " ")
+      case _ => ("Loading...", BrowserIcons.im("/icons/10x10_blank.png"), "Loading...")
     }
     val tabComponent = new TabComponent(windowMethods, this, tabText, icon)
     val starlingBrowser = new StarlingBrowser(pageBuilder, lCache, userSettings, homePage, addressText,

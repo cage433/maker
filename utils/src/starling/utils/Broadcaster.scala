@@ -4,19 +4,7 @@ import java.util.concurrent.Executors
 import swing.event.Event
 import scala.collection.JavaConversions
 import ImplicitConversions._
-
-
-trait Broadcaster {
-  def broadcast(event: Event)
-}
-
-trait Receiver {
-  def event(event: Event)
-}
-
-object Broadcaster {
-  object Null extends Broadcaster { def broadcast(event: Event) {} }
-}
+import starling.manager.{Receiver, Broadcaster}
 
 class ReceiversBroadcaster extends Broadcaster {
   val executor = Executors.newCachedThreadPool(new NamedDaemonThreadFactory("StarlingBroadcaster"))

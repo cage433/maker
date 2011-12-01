@@ -14,12 +14,13 @@ import starling.auth.User
 import starling.loopyxl.ExcelMethod
 import starling.services.trade.instrumentreaders.ExcelInstrumentReader
 import starling.curves.{USDFXRateCurveKey, SpreadStdDevSurfaceData, SpreadStdDevSurfaceDataKey}
-import starling.utils.{Log, Broadcaster}
+import starling.utils.{Log}
 import starling.pivot.MarketValue
 import org.boris.xlloop.reflect.XLFunction._
 import starling.daterange._
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
+import starling.manager.Broadcaster
 
 class MarketDataHandler(broadcaster : Broadcaster,
                    starlingServer : StarlingServerImpl,

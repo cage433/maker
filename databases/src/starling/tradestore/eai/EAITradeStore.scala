@@ -9,7 +9,7 @@ import starling.pivot._
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.tradestore.{TradeStore}
 import collection.immutable.{List, Set}
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.dbx.QueryBuilder._
 import starling.gui.api.{EAIDeskInfo, Desk}
 

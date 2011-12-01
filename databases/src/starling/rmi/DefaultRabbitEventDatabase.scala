@@ -6,7 +6,8 @@ import starling.dbx.QueryBuilder._
 import starling.daterange.Timestamp
 import starling.gui.api.RabbitEventReceived
 import starling.tradestore.TradeStore.StoreResults
-import starling.utils.{Stopwatch, Log, Broadcaster}
+import starling.utils.{Stopwatch, Log}
+import starling.manager.Broadcaster
 
 object DefaultRabbitEventDatabase {
   val TableName = "RabbitMessages"

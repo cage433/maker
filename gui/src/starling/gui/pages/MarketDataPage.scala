@@ -359,7 +359,7 @@ object MarketDataPage {
 
       new MarketDataPage(marketDataIdentifier, MarketDataPageState(
         marketDataType = mdt,
-        pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState))
+        pivotPageState = PivotPageState(false, PivotFieldParams(true, fieldsState), OtherLayoutInfo(totals = Totals.Null, frozen = false))
       ))
     }
   }

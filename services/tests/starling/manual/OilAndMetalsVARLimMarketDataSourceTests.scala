@@ -6,7 +6,7 @@ import starling.services.StarlingInit
 import starling.curves.readers.OilAndMetalsVARLimMarketDataSource
 import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.auth.AuthHandler
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 
 object OilAndMetalsVARLimMarketDataSourceTests {
   def main(args:Array[String]) {
