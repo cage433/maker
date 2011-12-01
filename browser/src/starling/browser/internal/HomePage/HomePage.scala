@@ -18,16 +18,14 @@ class HomePage
 case object StarlingHomePage extends Page {
 
   def bundle = RootBrowserBundle.bundleName
-  def build(x: String) = HomePagePageData()
+  def build(x: String) = NoPageData
   def createServerContext(sc: ServerContext) = ""
   type SC = String
 
-  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new StarlingHomePageComponent(context, browserSize, data)
+  def createComponent(context: PageContext, data: PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new StarlingHomePageComponent(context, browserSize)
   def text = "Starling"
   def icon = BrowserIcons.im("/icons/weather-clear.png")
 }
-
-case class HomePagePageData() extends PageData
 
 object StarlingHomePageComponent {
   private val subTitles = Array("OLAP Platform", "Risk Management Framework", "Risk Management System", "Risk", "OLAP Reporting System", "Risk OLAP")
@@ -35,9 +33,7 @@ object StarlingHomePageComponent {
   def subTitle = subTitles(r.nextInt(subTitles.length))
 }
 
-class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, pageData:PageData) extends MigPanel("insets 0") with PageComponent {
-  private val data = pageData match {case d:HomePagePageData => {d}}
-
+class StarlingHomePageComponent(context:PageContext, browserSize:Dimension) extends MigPanel("insets 0") with PageComponent {
   private val bookmarksPanel = new BookmarksPanel(context) with RoundedBackground
   bookmarksPanel.background = GuiUtils.TaskPageButtonBackgroundColour
   bookmarksPanel.border = RoundedBorder(GuiUtils.TaskPageButtonBorderColour)
@@ -104,28 +100,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
     val banner = new MigPanel("insets 0", "[p][p]push[p]") {
       background = Color.WHITE
 
-      val logoImage = BrowserIcons.im("/icons/small_sunny_bird3.png")
-      val logo = new FixedImagePanel(logoImage)
-
-      val starlingLabel = new Label {
-        text = "STARLING"
-        font = new Font("Dialog", Font.PLAIN, 64)
-        maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height-20)
-
-        override protected def paintComponent(g:Graphics2D) {
-          g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-          g.drawString(text, 0, size.height - 1)
-        }
-      }
-
-      val descLabel = new Label(StarlingHomePageComponent.subTitle) {
-        font = new Font("Dialog", Font.PLAIN, 14)
-        foreground = new Color(0,0,0,128)
-        override protected def paintComponent(g:Graphics2D) {
-          g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
-          g.drawString(text, 0, size.height - g.getFontMetrics.getDescent)
-        }
-      }
+      val logo = new FixedImagePanel(BrowserIcons.im("/icons/small_sunny_bird3.png"))
 
       val userImage = BrowserIcons.im("/icons/32x32_user_dark.png")
       val userButton = new NumberedButton(context.localCache.currentFullName, userImage,
@@ -139,11 +114,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
         }, false, backgroundColour = Color.WHITE, backgroundOverColour = new Color(0,0,0,32))
       userButton.label.font = new Font("Serif", Font.PLAIN, 20)
 
-      val namePanel = new MigPanel("insets 0", rowConstraints = "[p]0[p]") {
-        background = Color.WHITE
-        add(starlingLabel, "wrap")
-        add(descLabel, "al right, gapright 5lp")
-      }
+      val namePanel = new StarlingNamePanel
 
       add(logo)
       add(namePanel, "ay center, gapleft 35lp")
@@ -223,3 +194,36 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension, page
 }
 
 case class StarlingHomePageComponentState(bookmarkSelected:Option[BookmarkData]) extends ComponentState
+
+class StarlingNamePanel(addSubTitle:Boolean = true) extends MigPanel("insets 0", rowConstraints = "[p]0[p]") {
+  background = Color.WHITE
+
+  val starlingLabel = new Label {
+    text = "STARLING"
+    font = new Font("Dialog", Font.PLAIN, 64)
+    maximumSize = new Dimension(Integer.MAX_VALUE, preferredSize.height-20)
+
+    override protected def paintComponent(g:Graphics2D) {
+      g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+      g.drawString(text, 0, size.height - 1)
+    }
+  }
+
+  val subTitle = if (addSubTitle) {
+    StarlingHomePageComponent.subTitle
+  } else {
+    " "
+  }
+
+  val descLabel = new Label(subTitle) {
+    font = new Font("Dialog", Font.PLAIN, 14)
+    foreground = new Color(0,0,0,128)
+    override protected def paintComponent(g:Graphics2D) {
+      g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+      g.drawString(text, 0, size.height - g.getFontMetrics.getDescent)
+    }
+  }
+
+  add(starlingLabel, "wrap")
+  add(descLabel, "al right, gapright 5lp")
+}

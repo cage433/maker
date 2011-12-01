@@ -649,10 +649,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
             if (values.isEmpty) {
               None
             } else {
+              val max = values.max
+              val min = values.min
               val sum = values.sum
               val count = values.size
               val average = sum / count
-              Some( ("Average: " + average + "     Count: " + count + "     Sum: " + sum, true) )
+              Some(("Max/Min: " + max + "/" + min + "     Avg: " + average + "     Count: " + count + "     Sum: " + sum, true))
             }
           }
         }
