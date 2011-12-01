@@ -98,7 +98,8 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
     FreightFlatRateDataType,
     SpotFXDataType,
     PriceFixingsHistoryDataType,
-    SpreadStdDevSurfaceDataType
+    SpreadStdDevSurfaceDataType,
+    new CountryBenchmarkDataType(referenceDataLookup)
   ) ++ manualTypes
 
   val lookup = types.toMapWithKeys(_.name.name)
