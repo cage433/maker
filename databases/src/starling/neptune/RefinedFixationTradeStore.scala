@@ -1,6 +1,6 @@
 package starling.neptune
 
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import java.lang.String
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.eai.TreeID

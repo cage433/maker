@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReference
 import starling.instrument._
 import starling.pivot._
 import java.lang.String
-import starling.utils.{Broadcaster, AppendingMap, Log}
+import starling.utils.{AppendingMap, Log}
 import collection.{Iterable, Seq}
 import starling.daterange._
 import starling.instrument.{TradeID, Trade, TradeSystem, TradeAttributes}
@@ -28,6 +28,7 @@ import starling.tradestore.TradeStore.StoreResults
 import starling.marketdata.PeriodFieldDetails
 import starling.dbx.{LiteralString, Clause, Query}
 import collection.immutable.{Map, TreeMap, Set, List}
+import starling.manager.Broadcaster
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {

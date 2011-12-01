@@ -5,7 +5,7 @@ import starling.daterange.Day._
 import starling.db.MarketDataSet._
 import starling.auth.AuthHandler
 import starling.utils.ThreadUtils
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.utils.ImplicitConversions._
 
 import starling.lim.LIMService

@@ -13,7 +13,6 @@ import starling.marketdata.ReferenceDataLookup
 import javax.servlet.http.HttpServlet
 import starling.rmi._
 import starling.db.{MarketDataSource, MarketDataStore}
-import starling.utils.{Receiver, Broadcaster}
 import starling.services.{QlikViewUpdater, EmailService, ReferenceData, StarlingInit}
 import starling.http.GUICode
 

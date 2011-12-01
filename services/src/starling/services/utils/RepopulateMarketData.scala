@@ -5,7 +5,8 @@ import starling.gui.api.{PricingGroup, MarketDataSelection}
 import starling.props.PropsHelper
 import starling.daterange.{ObservationTimeOfDay, TimeOfDay, ObservationPoint, Day}
 import starling.auth.AuthHandler
-import starling.utils.{Broadcaster, Log}
+import starling.utils.{Log}
+import starling.manager.Broadcaster
 
 /**
  * Repopulates the last 100 days of market data. Handy when you add a new market and if we need

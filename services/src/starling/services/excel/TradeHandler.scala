@@ -7,7 +7,7 @@ import starling.eai._
 import starling.services.trade.ExcelTradeReader
 import collection.immutable.List
 import starling.utils.ImplicitConversions._
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.gui.api.BlotterTradeUpdate
 import starling.loopyxl.ExcelMethod
 import collection.mutable.ArraySeq

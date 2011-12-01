@@ -4,7 +4,7 @@ import starling.db.IntradayTradeSystem
 import java.lang.String
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.instrument.TradeableType
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.pivot._
 import starling.tradestore.{TradeStore}
 import starling.daterange.{Day, Timestamp}

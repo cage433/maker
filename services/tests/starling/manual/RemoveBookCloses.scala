@@ -4,7 +4,7 @@ import starling.daterange.Day
 import starling.props.PropsHelper
 import starling.services.StarlingInit
 import starling.auth.AuthHandler
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.gui.api.{EAIDeskInfo, Desk, PricingGroup, MarketDataSelection}
 import starling.db.DB._
 import starling.db.DB

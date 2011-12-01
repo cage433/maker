@@ -7,8 +7,9 @@ import starling.dbx.{From, RealTable}
 import starling.pivot._
 import starling.utils.ImplicitConversions._
 import org.springframework.dao.DuplicateKeyException
-import starling.utils.{Broadcaster, Log}
+import starling.utils.{Log}
 import starling.gui.api.{EmailSent, Email}
+import starling.manager.Broadcaster
 
 
 class PersistingEmailService(broadcaster: Broadcaster, db: DB, mailSender: MailSender) extends EmailService with Log {

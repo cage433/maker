@@ -4,7 +4,7 @@ import starling.tradestore.TradeStores
 import starling.trade.impl.TradeFacilityImpl
 import starling.services.excel.TradeHandler
 import starling.services.trade.ExcelTradeReader
-import starling.utils.Broadcaster
+import starling.manager.Broadcaster
 import starling.tradestore.intraday.IntradayTradeStore
 import starling.gui.api.{EAIDeskInfo, Desk}
 import starling.tradestore.eai.EAITradeStore

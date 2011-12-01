@@ -1,6 +1,5 @@
 package starling.neptune
 
-import starling.utils.Broadcaster
 import java.lang.String
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.eai.TreeID
@@ -13,6 +12,7 @@ import starling.pivot._
 import starling.pivot.Field._
 import starling.instrument.TradeableType
 import starling.gui.api.Desk
+import starling.manager.Broadcaster
 
 case class RefinedAssignmentTradeAttributes(
   groupCompany : String,

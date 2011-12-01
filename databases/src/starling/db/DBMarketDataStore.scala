@@ -9,6 +9,7 @@ import collection.immutable.{Iterable, Map}
 import collection.mutable.{ListBuffer, HashSet => MSet}
 import starling.gui.api._
 import starling.utils.ImplicitConversions._
+import starling.manager.Broadcaster
 
 trait MarketDataSources {
   def marketDataSets: Set[MarketDataSet]
