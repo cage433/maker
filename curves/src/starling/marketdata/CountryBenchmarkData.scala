@@ -3,6 +3,7 @@ package starling.marketdata
 import starling.daterange.Day
 import starling.market.Commodity
 import starling.pivot._
+import model.UndefinedValue
 import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
@@ -33,7 +34,10 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
     rowFields = List(commodityField.field, countryCodeField.field, gradeCodeField.field, effectiveFromField.field),
-    filters = List( Field("Observation Time") -> SomeSelection(Set("Default")) )
+    filters = List(
+      Field("Observation Day") -> SomeSelection(Set(UndefinedValue)),
+      Field("Observation Time") -> SomeSelection(Set("Real Time"))
+    )
   )
 
   def createKey(row: Row) = CountryBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))

@@ -85,7 +85,6 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
 
   val manualTypes = List(
     new GradeAreaBenchmarkDataType(referenceDataLookup),
-    new CountryBenchmarkDataType(referenceDataLookup),
     new FreightParityDataType(referenceDataLookup),
     ShanghaiVATDataType
   )
@@ -99,7 +98,8 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
     FreightFlatRateDataType,
     SpotFXDataType,
     PriceFixingsHistoryDataType,
-    SpreadStdDevSurfaceDataType
+    SpreadStdDevSurfaceDataType,
+    new CountryBenchmarkDataType(referenceDataLookup)
   ) ++ manualTypes
 
   val lookup = types.toMapWithKeys(_.name.name)

@@ -62,9 +62,8 @@ object  RefinedTacticalRefDataConversions {
       case (`LME`, AverageOfFourIndex) => LmeAverageOfFourIndex(futuresMarket)
       case (`LME`, Ave4MaxSettIndex) => LmeAve4MaxSettIndex(futuresMarket)
       case (_, CashIndex) => FuturesFrontPeriodIndex(futuresMarket)
+      case (exchange, ThreeMonthIndex) => FuturesFrontPeriodIndex(futuresMarket, 3)
       case (exchange, indexname) => throw new Exception("Unrecognised index + " + indexname + " for exchange " + exchange)
     }
-
   }
-
 }
