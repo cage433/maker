@@ -4,7 +4,6 @@ import starling.utils.Stopwatch
 import starling.services.StarlingInit
 import com.trafigura.services.marketdata.MarketDataServiceApi
 import starling.client.BouncyRMIServiceApi
-import starling.startserver.SingleClasspathBroadcasterActivator
 import starling.auth.osgi.AuthBromptonActivator
 import starling.services.osgi.ServicesBromptonActivator
 import starling.bouncyrmi.BouncyRMIServerBromptonActivator
