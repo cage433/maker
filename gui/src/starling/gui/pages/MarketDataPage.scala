@@ -123,6 +123,7 @@ case class MarketDataPage(
     val singleObservationDay = pd match {
       case PivotTablePageData(pivotData,_) => {
         pivotData.pivotFieldsState.fieldSelection(Field("Observation Day")) match {
+          case Some(s) if s.size == 1 && s.contains(UndefinedValue) => None
           case Some(s) if s.size == 1 => Some(s.head)
           case Some(s) if s.size == 2 && s.contains(UndefinedValue) => Some(s.filterNot(_ == UndefinedValue))
           case _ => None
