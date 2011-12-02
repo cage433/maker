@@ -45,7 +45,7 @@ object RootBrowserBundle extends BrowserBundle {
         }
 
         add(LabelWithSeparator("General"), "spanx, growx, wrap")
-        add(defaultLiveCheckbox, "skip 1")
+        add(defaultLiveCheckbox, "skip 1, wrap")
         add(showPageTimeCheckbox, "skip 1")
         reactions += {
           case UserSettingUpdated(UserSettings.LiveDefault) => {
