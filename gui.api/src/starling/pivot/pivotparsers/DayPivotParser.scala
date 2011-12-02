@@ -14,7 +14,11 @@ object DayPivotParser extends PivotParser {
 
 object ObservationDayPivotParser extends PivotParser {
   def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
-    DayPivotParser.typedParse(text).ensuring(_._1 <= Day.today)
+    val (d, s) = DayPivotParser.typedParse(text)
+    if (d > Day.today) {
+      throw new IllegalArgumentException("You can not specify a day in the future")
+    }
+    (d,s)
   }
 }
 
