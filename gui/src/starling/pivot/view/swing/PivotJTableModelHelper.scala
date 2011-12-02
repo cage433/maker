@@ -523,14 +523,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val value = tv.value
         val stringValue = value.asInstanceOf[String].trim
         val pars = parser(r, c)
-        val originalCell = getValueAt(r,c)
+        val currentValue = getValueAt(r,c)
 
         val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
           if (stringValue.isEmpty) {
-            (None, stringValue, stringValue, originalCell.state)
+            (None, stringValue, stringValue, currentValue.state)
           } else {
             val (v,t) = pars.parse(stringValue, extraFormatInfo)
-            val state = if (r < numOriginalRows && originalCell.state != Added) Edited else Added
+
+            val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
             v match {
               case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
                 val uom = uoms0(c)
@@ -547,8 +548,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
         val k = (r,c)
         overrideMap -= k
+        val originalCell = getValueAt(r,c)
         val originalLabel = originalCell.originalValue match {
-          case None => "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+          case None => {
+            if (originalCell.text.nonEmpty) {
+              originalCell.text
+            } else {
+              "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+            }
+          }
           case Some(origVal) => fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo).text
         }
 

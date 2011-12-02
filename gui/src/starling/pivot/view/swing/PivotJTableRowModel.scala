@@ -262,7 +262,13 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       overrideMap -= k
       val originalCell = getValueAt(r,c)
       val originalLabel =  originalCell.value.value.originalValue match {
-        case None => "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+        case None => {
+          if (originalCell.label.nonEmpty) {
+            originalCell.label
+          } else {
+            "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+          }
+        }
         case Some(ov) => fieldInfo.fieldToFormatter(field(c)).format(ov, extraFormatInfo).text
       }
       if (originalLabel == newLabel) {
