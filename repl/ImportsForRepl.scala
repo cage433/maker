@@ -22,6 +22,7 @@ import starling.services.rpc.valuation._
 import starling.services.rpc.marketdata._
 import starling.titan._
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
+import starling.manager._
 
 def setNullHolidays{
   import starling.calendar._
