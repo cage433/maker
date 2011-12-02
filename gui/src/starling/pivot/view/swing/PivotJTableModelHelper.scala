@@ -160,11 +160,38 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     val numMainColumns = mainTableModel.getColumnCount
 
     if (extraLine) {
-      val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(finalRowNumber, c).label.nonEmpty) ||
-        (0 until numMainColumns).exists(c => mainTableModel.getValueAt(finalRowNumber, c).text.nonEmpty)
-      if (addRow) {
-        addRowToTables()
+      val rowMaxRow = {
+        val rs = rowHeaderTableModel.overrideEdits.map(_._1._1)
+        if (rs.nonEmpty) {
+          rs.max
+        } else {
+          0
+        }
       }
+      val mainMaxRow = {
+        val rs = mainTableModel.overrideEdits.map(_._1._1)
+        if (rs.nonEmpty) {
+          rs.max
+        } else {
+          0
+        }
+      }
+
+      val maxNumberOfRows = math.max(rowMaxRow, mainMaxRow)
+
+      val rowsToAdd = ((finalRowNumber to maxNumberOfRows).flatMap(r => {
+        val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(r, c).label.nonEmpty) ||
+          (0 until numMainColumns).exists(c => mainTableModel.getValueAt(r, c).text.nonEmpty)
+        if (addRow) {
+          Some(true)
+        } else {
+          None
+        }
+      })).size
+
+      (0 until rowsToAdd).foreach(r => {
+        addRowToTables()
+      })
     }
 
     val rowsToDelete = (rowHeaderData0.length until finalRowNumber).filter(r => {
