@@ -19,9 +19,8 @@ object PriceFixingsHistoryDataType extends MarketDataType {
   val exchangeField = FieldDetails("Exchange")
 
   val initialPivotState = PivotFieldsState(
-    filters=List((marketField.field, SomeSelection(Set()))),
     dataFields=List(priceField.field),
-    rowFields=List(levelField.field, periodField.field)
+    rowFields=List(exchangeField.field, marketField.field, Field("Observation Time"), levelField.field, periodField.field)
   )
 
   def extendedKeys = List(exchangeField, marketField)

@@ -61,9 +61,9 @@ object PriceDataType extends MarketDataType {
   lazy val priceField = new PivotQuantityFieldDetails("Price")
 
   lazy val initialPivotState = PivotFieldsState(
-    filters=List((marketField.field,SomeSelection(Set()))),
-    dataFields=List(priceField.field),
-    rowFields=List(periodField.field)
+    filters=List(exchangeField.field->AllSelection),
+    rowFields=List(marketField.field, Field("Observation Time"), periodField.field),
+    dataFields=List(priceField.field)
   )
 
   def extendedKeys = List(marketField)
