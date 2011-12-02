@@ -204,6 +204,9 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
       def withEdits(edits:PivotEdits) = new MarketDataPivotTableDataSource(PrebuiltMarketDataPivotData.this, edits)
 
       def save(edits:PivotEdits) = {
+
+        println("EDITS " + edits)
+
         val editsByTimedKeys: Map[TimedMarketDataKey, List[(KeyFilter, KeyEdits)]] = edits.edits.toList.flatMap { case(keyFilter, keyEdit) => {
           val keyFilterForTimedKey = keyFilter.retain(inMemoryFields)
           val matchingTimedKeys = observationDayAndMarketDataKeyRows.filterKeys(keyFilterForTimedKey.matches).values
@@ -212,14 +215,20 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
         } }.groupBy(_._1).mapValues(_.map(_._2))
 
         val newRowsWithAllFieldsPresent = edits.newRows.map(marketDataType.defaultValue + _).filter { row =>
-          keyAndValueFields.forall{ field => row.isDefined(field) }
+          keyAndValueFields.forall{ field => row.isDefined(field) || field == observationDayField.field }
         }
 
         val groupedNewRows: Map[TimedMarketDataKey, List[Row]] = newRowsWithAllFieldsPresent.groupBy { row => {
-          val observationPoint = ObservationPoint(
-            row(observationDayField.field).asInstanceOf[Day],
-            ObservationTimeOfDay.fromName(row.string(observationTimeField))
-          )
+          val observationPoint = {
+            if (row(observationDayField.field) == UndefinedValue) {
+              ObservationPoint.RealTime
+            } else {
+              ObservationPoint(
+                row(observationDayField.field).asInstanceOf[Day],
+                ObservationTimeOfDay.fromName(row.string(observationTimeField))
+              )
+            }
+          }
           val key: MarketDataKey = marketDataType.createKey(row)
           TimedMarketDataKey(observationPoint, key)
         }}
