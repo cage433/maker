@@ -197,7 +197,6 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     val businessCalendars = context.awaitService(classOf[BusinessCalendars])
 
     context.registerService(classOf[TaskDescription], importLim(businessCalendars, marketDataStore))
-    context.registerService(classOf[TaskDescription], copyBenchmarksAndFreightParity(businessCalendars, marketDataStore, dataTypes))
 
     registerDataValidationTasks(context, broadcaster)
     registerTrinityTask(context)
@@ -206,10 +205,6 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
   private def importLim(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore) = TaskDescription("Import LIM",
     everyFiveMinutes(businessCalendars.everyDay()), new ImportMarketDataTask(marketDataStore, PricingGroup.Metals)
       .withSource("LIM", marketDataStore.sourcesFor(PricingGroup.Metals).flatMap(_.description): _*), coolDown = Period.minutes(3))
-
-  private def copyBenchmarksAndFreightParity(businessCalendars: BusinessCalendars, marketDataStore: MarketDataStore,
-    dataTypes: MarketDataTypes) = TaskDescription(
-      "Copy Freight Parity & Benchmarks", hourly(businessCalendars.everyDay()), CopyManualData(marketDataStore, dataTypes))
 
   private def registerDataValidationTasks(context: BromptonContext, broadcaster: Broadcaster) {
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
