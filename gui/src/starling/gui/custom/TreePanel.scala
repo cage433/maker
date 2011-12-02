@@ -581,6 +581,7 @@ class TreePanelFilterPanel extends MigPanel("insets 0", "[p]0[p]0[p]2lp[p]") {
   textField.minimumSize = selectFilteredNodesButton.preferredSize
   reactions += {
     case KeyPressed(`textField`, Key.Escape, _, _) => textField.text = ""
+    case KeyPressed(`textField`, Key.Enter, _, _) => {TreePanelFilterPanel.this.publish(SelectFiltered(textField.text))}
     case KeyReleased(`textField`, _, _, _) => publish(FilterPopupEvent(textField.text, regexPanel.regexButton.selected))
     case MouseClicked(`clearImage`, _, _, _, _) => {
       textField.text = ""
