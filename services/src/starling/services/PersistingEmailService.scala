@@ -35,8 +35,8 @@ class PersistingEmailService(broadcaster: Broadcaster, db: DB, mailSender: MailS
         new TimestampAsTimeColumnDefinition("Time", "timestamp", "EmailsSent")) :::
         stringColumns("subject", "recipient", "sender", "body")
       )),
-      From(RealTable("EmailsSent"), Nil), Nil, PivotFieldsState(rowFields = List(Field("Day"), Field("Time"), Field("Subject")),
-        dataFields = List(Field("Sender"), Field("Recipient"), Field("Body"))), Nil
+      From(RealTable("EmailsSent"), Nil), Nil, DefaultPivotState(PivotFieldsState(rowFields = List(Field("Day"), Field("Time"), Field("Subject")),
+        dataFields = List(Field("Sender"), Field("Recipient"), Field("Body")))), Nil
     ), pivotFieldParams
   )
 

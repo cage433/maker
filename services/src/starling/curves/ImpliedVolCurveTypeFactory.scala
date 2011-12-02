@@ -55,12 +55,13 @@ class ImpliedVolPivotDataSource(context: EnvironmentWithDomain) extends Unfilter
   }
 
   override def initialState = {
-    new PivotFieldsState(
+    val pfs = new PivotFieldsState(
       columns = ColumnTrees(
         List(ColumnTree(delta.field, false, List(price, volatility).map(f => ColumnTree(f.field, true)) : _*))),
       rowFields = List(period).map(_.field),
       filters = List((marketField.field, marketSelection))
     )
+    DefaultPivotState(pfs)
   }
 
   def unfilteredData(pfs: PivotFieldsState) = {

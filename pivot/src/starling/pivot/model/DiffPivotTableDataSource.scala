@@ -48,7 +48,10 @@ class DiffPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource, l
     })
   }
 
-  override def initialState = a.initialState.copy(reportSpecificChoices = a.initialState.reportSpecificChoices ++ b.initialState.reportSpecificChoices)
+  override def initialState = {
+    val newPFS = a.initialState.pfs.copy(reportSpecificChoices = a.initialState.pfs.reportSpecificChoices ++ b.initialState.pfs.reportSpecificChoices)
+    a.initialState.copy(pfs = newPFS)
+  }
 
   override def drillDownGroups = a.drillDownGroups
 

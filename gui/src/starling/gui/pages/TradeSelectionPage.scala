@@ -284,7 +284,7 @@ case class TradeSelectionPage(
               StandardUserSettingKeys.DefaultReportFields,
               (PivotFieldsState(
                 rowFields=List(Field("Risk Market"), Field("Risk Period")),
-                dataFields=List(Field("Position"))), OtherLayoutInfo())
+                dataFields=List(Field("Position"))), OtherLayoutInfo.Blank)
             )
 
             val curveIdentifier = {

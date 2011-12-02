@@ -12,7 +12,7 @@ class BloombergImportsReferenceData(bloombergImports: BloombergImports) extends 
   val bloomberg@List(quoteId, symbol) = fieldDetails("Quote Id", "Symbol")
 
   def fieldDetailsGroups = List(FieldDetailsGroup("Lim", lim), FieldDetailsGroup("Bloomberg", bloomberg))
-  override val initialState = PivotFieldsState(rowFields = fields(quoteId), dataFields = fields(symbol :: lim))
+  override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(quoteId), dataFields = fields(symbol :: lim)))
 
   def unfilteredData(pfs: PivotFieldsState) = bloombergImports.imports.map { bloombergImport => fields(
     quoteId         → bloombergImport.quoteId,

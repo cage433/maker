@@ -385,11 +385,11 @@ object StarlingHomeButtons {
             context.localCache.environmentRulesForPricingGroup(defaultMarketDataIdentifier.selection.pricingGroup).head
           ))
 
-          val initialState = PivotFieldsState(
+          val initialState = DefaultPivotState(PivotFieldsState(
             dataFields = List(Field("Price"), Field("Input")),
             columnFields = List(Field("Observation Time"), Field("Market")),
             rowFields = List(Field("Period"))
-          )
+          ))
 
           new CurvePage(curveLabel, PivotPageState.default(initialState))
         }

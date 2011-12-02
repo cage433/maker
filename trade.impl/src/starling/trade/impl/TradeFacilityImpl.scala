@@ -128,10 +128,10 @@ class TradeFacilityImpl(
         case Some((desk, timestamp)) => {
           tradeStores.deskDefinitions(desk).initialState match {
             case Some(deskDefault) if (validFieldsState(deskDefault)) => deskDefault
-            case _ => pivot.initialState
+            case _ => pivot.initialState.pfs
           }
         }
-        case None => pivot.initialState
+        case None => pivot.initialState.pfs
       }
     }
     def validFieldsState(fieldsState:PivotFieldsState) = {
@@ -167,7 +167,7 @@ class TradeFacilityImpl(
       pivot.drillDownGroups,
       pivotTable,
       pivot.availablePages,
-      Some(initialPivotState),
+      Some(DefaultPivotState(initialPivotState)),
       reportSpecificOptions)
     tradeSelection.deskAndTimestamp match {
       case Some((d,t)) if t.error != None => {

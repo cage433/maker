@@ -293,7 +293,7 @@ case class CellUpdateInfo(row:Int, column:Int, matches:Boolean, currentFraction:
 /**
  * Supplies data for the pivot table view converted using totals and expand/collapse state.
  */
-case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo(), table:PivotTable,
+case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo.Blank, table:PivotTable,
                                extraFormatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo,
                                fieldState:PivotFieldsState=PivotFieldsState(), previousPageData:Option[PivotTable]=None) {
   val totals = otherLayoutInfo.totals

@@ -16,10 +16,11 @@ class TradeReconciliation(tradeDiff: TradeDiff) extends UnfilteredPivotTableData
   override def initialState = {
     val measures = tradeDiff.fields.flatMap(_.fields.map(_.field)).filterNot { f => fieldsToExcludeFromInitialState.contains(f.name) }
 
-    PivotFieldsState(
+    val pfs = PivotFieldsState(
       rowFields = List(reconciliationField, groupField, Field("Trade ID")),
       dataFields = measures
     )
+    DefaultPivotState(pfs)
   }
 
   val reconciliationField = Field("Reconciliation")

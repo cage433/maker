@@ -136,11 +136,12 @@ class IntradayTradeStore(
     val validFields = Set() ++ tradeableTypes.flatMap(_.fields)
     val blotterFields = List("Trade Day", "Quantity", "Market", "Instrument", "Strike", "Call Put", "Period", "Exercise Type",
       "Premium", "Counterparty", "Broker", "Clearing House", "Trader", "Traded For", "Comment", "Entry Date")
-    PivotFieldsState(
+    val pfs = PivotFieldsState(
       rowFields = List(Field("Trade ID")),
       dataFields = blotterFields.filter(validFields.contains).map(n=>Field(n)),
       filters = List((Field("Strategy"), AllSelection))
     )
+    DefaultPivotState(pfs)
   }
 
   val tableName = "IntradayTrades"

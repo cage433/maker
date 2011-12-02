@@ -39,7 +39,7 @@ case class MethodLogViewerPage(index:Int, pivotPageState:PivotPageState=PivotPag
       val dataFields = List(compressedSize, uncompressedSize, rate, serverTime, ioTime, totalTime)
       def fieldDetailsGroups = List(FieldDetailsGroup("Method Viewer", rowFields ::: dataFields))
 
-      override val initialState = PivotFieldsState(rowFields = fields(rowFields), dataFields = fields(dataFields))
+      override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(rowFields), dataFields = fields(dataFields)))
 
       private def pq(value:Long, uom:UOM) = new Quantity(value, uom).pq
 

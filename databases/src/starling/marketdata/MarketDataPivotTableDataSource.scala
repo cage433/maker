@@ -72,11 +72,12 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
     }
 
     val marketDataTypeInitialPivotState = marketDataType.initialPivotState
-    if (marketDataTypeInitialPivotState.fieldSelection(observationDayField.field).isDefined) {
+    val pfs = if (marketDataTypeInitialPivotState.fieldSelection(observationDayField.field).isDefined) {
       marketDataTypeInitialPivotState
     } else {
       marketDataTypeInitialPivotState.copy(filters=(observationDayField.field, observationDaySelection) :: marketDataTypeInitialPivotState.filters)
     }
+    DefaultPivotState(pfs, OtherLayoutInfo(frozen = false))
   }
 
   private lazy val editableMarketDataSet = marketDataIdentifier.selection match {

@@ -17,13 +17,13 @@ import starling.gui.pages.RabbitEventViewerPageState._
 import starling.browser.PageFactory._
 import starling.gui.pages.EmailsSentPage._
 import starling.gui.pages.PivotPageState._
-import starling.pivot.{NullableDay, SomeSelection, Field, PivotFieldsState}
 import starling.gui.pages.{EmailsSentPage, RabbitEventViewerPageState, RabbitEventViewerPage, PivotPageState}
 import starling.gui.api.RabbitEventReceived
 import starling.bouncyrmi.BouncyRMIClient
 import starling.gui.{StarlingIcons, LocalCacheKeys, StarlingUtilButtons}
 import javax.swing.KeyStroke
 import java.awt.event.KeyEvent
+import starling.pivot._
 
 class MetalsGuiBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -53,9 +53,9 @@ class MetalsBrowserBundle(rabbitEventService:RabbitEventViewerService) extends B
     def rabbitEventPage = new PageFactory {
       def create(serverContext:ServerContext) = {
         val latestRabbitEvent = context.localCache.localCache(LocalCacheKeys.LatestRabbitEvent)
-        val initialLayout = PivotFieldsState(
+        val initialLayout = DefaultPivotState(PivotFieldsState(
           filters = List(Field("Day") -> SomeSelection(Set(NullableDay(Day.today)))),
-          rowFields = List(Field("Starling ID"), Field("Source"), Field("Message Time (UTC)"), Field("Subject")))
+          rowFields = List(Field("Starling ID"), Field("Source"), Field("Message Time (UTC)"), Field("Subject"))))
         RabbitEventViewerPage(PivotPageState.default(initialLayout), RabbitEventViewerPageState(latestRabbitEvent))
       }
     }

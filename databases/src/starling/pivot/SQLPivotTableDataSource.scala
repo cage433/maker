@@ -258,12 +258,11 @@ object SQLPivotTableDataSource {
           columnGroups:List[(String,List[ColumnDefinition])],
           theFrom:From,
           builtInClauses:List[Clause],
-          initialState:PivotFieldsState,
+          initialState:DefaultPivotState,
           drillDownGroups:List[DrillDownInfo],
           useInMemoryDataSourceOnly : Boolean,
           portfolioTimestamp:Timestamp
           ):PivotTableDataSource = {
-    val initialStateX = initialState
     val cols = columnGroups.flatMap(_._2.map(_.name))
     val key = (cols, theFrom, builtInClauses, portfolioTimestamp)
     if (useInMemoryDataSourceOnly)
@@ -297,7 +296,7 @@ class InMemorySQLPivotTableDataSource(
         columnGroups:List[(String,List[ColumnDefinition])],
         theFrom:From,
         builtInClauses:List[Clause],
-        override val initialState:PivotFieldsState,
+        override val initialState:DefaultPivotState,
         override val drillDownGroups:List[DrillDownInfo]) extends UnfilteredPivotTableDataSource {
 
   val fieldDetailsGroups = columnGroups.map{ case(name, cols) => FieldDetailsGroup(name, cols.map(_.fieldDetails))}
@@ -323,7 +322,7 @@ class OnTheFlySQLPivotTableDataSource(
         columnGroups:List[(String,List[ColumnDefinition])],
         theFrom:From,
         builtInClauses:List[Clause],
-        override val initialState:PivotFieldsState,
+        override val initialState:DefaultPivotState,
         override val drillDownGroups:List[DrillDownInfo]
         ) extends PivotTableDataSource {
 

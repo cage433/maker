@@ -68,7 +68,7 @@ object ReferenceDataService {
         name :: otherFields
       ))
 
-      override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
+      override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
         val data = Market.futuresMarkets.map { market =>
@@ -107,7 +107,7 @@ object ReferenceDataService {
         name :: otherFields
       ))
 
-      override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
+      override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
         val data = Index.formulaIndexes.flatMap { index => index partialMatch {
@@ -143,7 +143,7 @@ object ReferenceDataService {
         name :: otherFields
       ))
 
-      override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
+      override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
         val data = Index.all.flatMap { index => index partialMatch {
@@ -183,7 +183,7 @@ object ReferenceDataService {
         name :: otherFields
       ))
 
-      override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields))
+      override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
         val data = Index.all.flatMap { index => index partialMatch {
@@ -215,7 +215,7 @@ object ReferenceDataService {
       def fieldDetailsGroups = List(FieldDetailsGroup("Calendar", calendar, dayField, year, isHoliday))
 
       private val initialYears = (Day.today.year until Day.today.year + 3).toSet.asInstanceOf[Set[Any]]
-      override val initialState = PivotFieldsState(dataFields=List(isHoliday.field), rowFields=List(dayField.field), columnFields=List(calendar.field), filters=List( (year.field, new SomeSelection(initialYears)) ))
+      override val initialState = DefaultPivotState(PivotFieldsState(dataFields=List(isHoliday.field), rowFields=List(dayField.field), columnFields=List(calendar.field), filters=List( (year.field, new SomeSelection(initialYears)) )))
 
       def unfilteredData(pfs : PivotFieldsState) = {
         val data = businessCalendars.calendars.flatMap { c =>
@@ -238,7 +238,7 @@ object ReferenceDataService {
 
       def fieldDetailsGroups = List(FieldDetailsGroup("Pricing Groups", pricingGroup, source))
 
-      override val initialState = PivotFieldsState(rowFields = fields(pricingGroup, source))
+      override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(pricingGroup, source)))
 
       val data = marketDataStore.pricingGroupsDefinitions.flatMap { case (pg, marketDataSets) =>
           marketDataSets.zipWithIndex.map { case (marketDataSet, index) =>

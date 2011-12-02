@@ -83,8 +83,8 @@ case class PivotPageState(showChart:Boolean=false, pivotFieldParams:PivotFieldPa
     copy(pivotFieldParams = pivotFieldParams.copy(calculate = !pivotFieldParams.calculate))
 }
 object PivotPageState {
-  def default(pivotFieldsState:PivotFieldsState) = {
-    PivotPageState(pivotFieldParams = PivotFieldParams(true, Some(pivotFieldsState)))
+  def default(dps:DefaultPivotState) = {
+    PivotPageState(pivotFieldParams = PivotFieldParams(true, Some(dps.pfs)), otherLayoutInfo = dps.oli)
   }
 }
 case class PivotTablePageData(pivotData:PivotData,subClassesPageData:Option[PageData]) extends PageData
@@ -122,7 +122,7 @@ abstract class PivotComponent extends MigPanel("insets 0", "[fill,grow]", "[fill
 }
 
 class PivotTablePageGraphComponent(table:PivotTable) extends PivotComponent {
-  val pivotGrid = new PivotTableConverter(OtherLayoutInfo(), table).createGrid(addExtraColumnRow = false)
+  val pivotGrid = new PivotTableConverter(OtherLayoutInfo.Blank, table).createGrid(addExtraColumnRow = false)
   val pivotChart = new PivotChartView(pivotGrid)
   add(pivotChart, "push, grow")
 
@@ -315,13 +315,13 @@ class PivotTablePageComponent(
       }}
     }
 
-    val resetLayoutButton = pivotTablePageData.pivotData.resetLayout.map { resetPfs => {
+    val resetLayoutButton = pivotTablePageData.pivotData.defaultPivotState.map { defaultPivotState => {
       new ToolBarButton {
         icon = StarlingIcons.icon("/icons/16x16_contract.png")
         tooltip = "Use the default layout"
-        enabled = currentFieldState != resetPfs
+        enabled = currentFieldState != defaultPivotState.pfs || pivotPageState.otherLayoutInfo != defaultPivotState.oli
         reactions += {
-          case ButtonClicked(b) => pageContext.goTo(selfPage(PivotPageState.default(resetPfs), allEdits))
+          case ButtonClicked(b) => pageContext.goTo(selfPage(PivotPageState.default(defaultPivotState), allEdits))
         }
       }
     } }

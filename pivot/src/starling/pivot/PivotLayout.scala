@@ -16,6 +16,10 @@ case class OtherLayoutInfo(totals:Totals=Totals.Null, frozen:Boolean=true,
                            hiddenType:HiddenType=NothingHidden, oldHiddenType:Option[HiddenType]=None,
                            oldFrozen:Option[Boolean]=None, columnDetails:ColumnDetails=ColumnDetails.Default)
 
+object OtherLayoutInfo {
+  val Blank = OtherLayoutInfo()
+}
+
 case class PivotLayout(layoutName:String, pivotFieldState:PivotFieldsState, userLayout:Boolean,
                        otherLayoutInfo:OtherLayoutInfo, layoutType:String, associatedReports:List[String])
 
