@@ -167,9 +167,12 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
         val modifiedCurrentRows = buildModifiedRows(currentRows, maybeEdits)
 
         val keysForNewData: Map[TimedMarketDataKey, List[Row]] = (modifiedCurrentRows ::: newRows).groupBy { row => {
-          val observationPoint = ObservationPoint(row[Day](observationDayField.field),
-            ObservationTimeOfDay.fromName(row.string(observationTimeField)))
-
+          val observationPoint = row.get[Day](observationDayField.field) match {
+            case None => ObservationPoint.RealTime
+            case Some(day) => {
+              ObservationPoint(day, ObservationTimeOfDay.fromName(row.string(observationTimeField)))
+            }
+          }
           TimedMarketDataKey(observationPoint, marketDataType.createKey(row))
         } }
 

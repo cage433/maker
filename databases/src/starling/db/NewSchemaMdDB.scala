@@ -278,7 +278,10 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     val values = if (keys.isEmpty) Nil else queryUsingExtendedKeys(keys,
       select("*")
         from("MarketDataValue")
-       where("observationDay" eql id.observationPoint.day.getOrElse(null))
+       where( id.observationPoint.day match {
+        case Some(day) => "observationDay" eql day
+        case None => "observationDay" isNull
+      })
     ) { rs => marketDataValue(rs) }
 
     val latestValuesByValueKey = values.groupBy(_.valueKey).mapValues(_.maxBy(_.commitId))

@@ -39,7 +39,10 @@ case class Row(value: Map[Field, Any]) {
   def map(f: (Field, Any) => (Field, Any)): Row = copy(value.map(kv => f(kv._1, kv._2)))
   def filterKeys(p: (Field) => Boolean): Row = copy(value.filterKeys(p))
 
-  def matches(field: Field, selection: SomeSelection): Boolean = value.get(field).fold(v => selection.values.contains(v), false)
+  def matches(field: Field, selection: SomeSelection): Boolean = {
+    val v = value.getOrElse(field, UndefinedValue)
+    selection.values.contains(v)
+  }
   def isEmpty = value.isEmpty
 
   def isDefined(field: Field) = value.get(field) match {
