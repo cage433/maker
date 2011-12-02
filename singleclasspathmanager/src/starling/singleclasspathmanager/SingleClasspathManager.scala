@@ -4,6 +4,9 @@ import starling.manager._
 import starling.osgimanager.utils.ThreadSafeCachingProxy
 
 class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: BromptonActivator]], initialServices:List[(Class[_],AnyRef)]=Nil) {
+
+  val lock = new Object()
+
   case class ServiceEntry(klass:Class[_], service:AnyRef, properties:ServiceProperties, reference:BromptonServiceReference) {
     def hasProperties(predicate:ServiceProperties) = properties.contains(predicate)
   }
@@ -21,10 +24,10 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
   }
 
   def service[T](klass:Class[T]):T = {
-    synchronized {
+    lock.synchronized {
       registry.toList.filter(_.klass == klass) match {
         case Nil => {
-          this.wait() //wait then try again when something is registered
+          lock.wait() //wait then try again when something is registered
           service(klass)
         }
         case entry :: Nil => entry.service.asInstanceOf[T]
@@ -34,7 +37,7 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
   }
 
   private def register(klass:Class[_], service:AnyRef, properties:ServiceProperties) {
-    synchronized {
+    lock.synchronized {
       if (!klass.isAssignableFrom(service.asInstanceOf[AnyRef].getClass)) throw new Exception(service + " is not a " + klass)
       val ref = { id+=1; BromptonServiceReference(id + ":" + klass, List(klass.getName)) }
       val entry = ServiceEntry(klass, service.asInstanceOf[AnyRef], properties, ref)
@@ -42,7 +45,7 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       trackers.toList.foreach{ tracker => {
         tracker.applyTo(List(entry))
       }}
-      this.notifyAll()
+      lock.notifyAll()
     }
   }
 
@@ -71,18 +74,28 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       service(klass)
     }
     def createServiceTracker[T](klass:Option[Class[T]], properties:ServiceProperties, callback:BromptonServiceCallback[T]) = {
-      val trackerEntry = TrackerEntry(klass, properties, callback)
-      trackerEntry.applyTo(registry.toList)
-      trackers += trackerEntry
-      new BromptonServiceTracker[T] {
-        def each(f: (T) => Unit) {
-          trackerEntry.each(registry.toList) { (ref,properties,service) => f(service) }
+      lock.synchronized {
+        val trackerEntry = TrackerEntry(klass, properties, callback)
+        trackerEntry.applyTo(registry.toList)
+        trackers += trackerEntry
+        new BromptonServiceTracker[T] {
+          def each(f: (T) => Unit) {
+            trackerEntry.each(registry.toList) { (ref,properties,service) => f(service) }
+          }
         }
       }
     }
 
-    def onStarted(action: => Unit) = onStartedActions += (() => action)
-    def onStopped(action: => Unit) = onStoppedActions += (() => action)
+    def onStarted(action: => Unit) {
+      lock.synchronized {
+        onStartedActions += (() => action)
+      }
+    }
+    def onStopped(action: => Unit) {
+      lock.synchronized {
+        onStoppedActions += (() => action)
+      }
+    }
   }
 
   def start() {
@@ -100,16 +113,17 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
           }
         }
       } })
-      thread.start
+      thread.start()
       thread
     } }
-    threads.foreach(_.join)
-
-    onStartedActions.foreach(printExceptions)
+    threads.foreach(_.join())
+    lock.synchronized {
+      onStartedActions.foreach(printExceptions)
+    }
   }
 
   def stop() {
-    this synchronized {
+    lock synchronized {
       if (!started) throw new Exception("Not started yet")
       started = false
       onStoppedActions.foreach(printExceptions)
