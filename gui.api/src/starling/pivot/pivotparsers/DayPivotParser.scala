@@ -29,15 +29,3 @@ object PeriodPivotParser extends PivotParser {
     (tenor, label)
   }
 }
-
-class SpecifiedValuesParser(allAcceptableValues:Set[String]) extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
-    val lowerCaseValues = allAcceptableValues.map(_.trim.toLowerCase)
-    if (lowerCaseValues(text.trim.toLowerCase)) {
-      (text, text)
-    } else {
-      throw new Exception("Unknown value")
-    }
-  }
-  override def acceptableValues = allAcceptableValues
-}

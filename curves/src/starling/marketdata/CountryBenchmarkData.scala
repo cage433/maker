@@ -4,7 +4,7 @@ import starling.daterange.Day
 import starling.market.Commodity
 import starling.pivot._
 import model.UndefinedValue
-import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
+import pivotparsers.{DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._

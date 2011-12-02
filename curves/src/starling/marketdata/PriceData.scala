@@ -2,7 +2,7 @@ package starling.marketdata
 
 import collection.SortedMap
 import starling.pivot._
-import starling.pivot.pivotparsers.{SpecifiedValuesParser, PeriodPivotParser}
+import starling.pivot.pivotparsers.{PeriodPivotParser}
 import starling.utils.ImplicitConversions._
 import starling.quantity.{UOM, Quantity}
 import collection.immutable.TreeMap
