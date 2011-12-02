@@ -29,7 +29,7 @@ import java.lang.IllegalStateException
  */
 
 object MarketDataPivotTableDataSource {
-  val observationTimeField = FieldDetails("Observation Time")
+  val observationTimeField = FieldDetails.list("Observation Time", ObservationTimeOfDay.names)
   val observationDayField = FieldDetails("Observation Day", ObservationDayPivotParser)
 }
 
