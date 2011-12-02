@@ -37,7 +37,7 @@ object RootBrowserBundle extends BrowserBundle {
             context.putSetting(UserSettings.LiveDefault, selected)
           }}
         }
-        val showPageTimeCheckbox = new CheckBox("Show page time") {
+        val showPageTimeCheckbox = new CheckBox("Show Page Time") {
           selected = context.getSetting(UserSettings.ShowPageTime, false)
           reactions += {case ButtonClicked(_) => {
             context.putSetting(UserSettings.ShowPageTime, selected)

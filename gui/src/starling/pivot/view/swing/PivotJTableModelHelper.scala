@@ -529,7 +529,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           if (stringValue.isEmpty) {
             (None, stringValue, stringValue, currentValue.state)
           } else {
-            val (v,t) = pars.parse(stringValue, extraFormatInfo)
+
+            val uom = uoms0(c)
+            val stringValueToUse = if ((uom != UOM.NULL) && stringValue.last.isDigit) {
+              stringValue + " " + uom.asString
+            } else {
+              stringValue
+            }
+
+            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
 
             val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
             v match {

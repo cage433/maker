@@ -6,7 +6,7 @@ object InstallationHelper {
       <splash>
         <file>{p}</file>
         <waitForWindow>true</waitForWindow>
-        <timeout>60</timeout>
+        <timeout>600</timeout>
         <timeoutErr>true</timeoutErr>
       </splash>
     }).getOrElse("")
