@@ -67,7 +67,7 @@ class RabbitEventViewerServiceImpl(eventDatabase:RabbitEventDatabase) extends Ra
       columns,
       From(RealTable(table), List()),
       List(),
-      PivotFieldsState(),
+      DefaultPivotState.Blank,
       List()
     ), pivotFieldParams)
   }

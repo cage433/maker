@@ -97,7 +97,7 @@ class GuiFieldComponent(val props:GuiFieldComponentProps) extends MigPanel("inse
     val possibleValuesAndSelectionToUse = getPossibleValuesAndSelection
     val transformData = props.transformData
     def valueToLabel(v:Any):String = {
-      if (v == UndefinedValue || v == UndefinedValueNew) "" else props.formatter.format(v, props.tableView.currentExtraFormatInfo).text
+      if (v == UndefinedValue || v == UndefinedValueNew) "n/a" else props.formatter.format(v, props.tableView.currentExtraFormatInfo).text
     }
     val filterPopupPanel = new TreePanel(possibleValuesAndSelectionToUse, valueToLabel, transformData.showOther, transformData.transforms)
 

@@ -102,7 +102,7 @@ class StarlingServerImpl(
       columns,
       From(RealTable(table), List()),
       List(),
-      PivotFieldsState(rowFields = List(dayField, Field(name), Field(pageText)), dataFields = List(Field(countName)), filters = (dayField, SomeSelection(latestDays)) :: Nil ),
+      DefaultPivotState(PivotFieldsState(rowFields = List(dayField, Field(name), Field(pageText)), dataFields = List(Field(countName)), filters = (dayField, SomeSelection(latestDays)) :: Nil )),
       List()
     ), pivotFieldParams)
   }

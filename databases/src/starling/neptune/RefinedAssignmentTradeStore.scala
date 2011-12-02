@@ -78,9 +78,10 @@ class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster)
 //  def pivotDrillDownGroups() = List()
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {
-    PivotFieldsState(
+    val pfs = PivotFieldsState(
         List(Field("Trade Count"))
       )
+    DefaultPivotState(pfs)
   }
 
   val tableName = "RefinedAssignment"

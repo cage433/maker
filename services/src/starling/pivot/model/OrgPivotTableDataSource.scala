@@ -35,6 +35,7 @@ class OrgPivotTableDataSource extends UnfilteredPivotTableDataSource {
   }
 
   override def initialState = {
-    PivotFieldsState(rowFields = List(name.field), dataFields = List(phone.field,email.field,manager.field,department.field))
+    val pfs = PivotFieldsState(rowFields = List(name.field), dataFields = List(phone.field,email.field,manager.field,department.field))
+    DefaultPivotState(pfs)
   }
 }

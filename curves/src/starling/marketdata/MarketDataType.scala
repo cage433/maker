@@ -3,6 +3,7 @@ package starling.marketdata
 import starling.curves.SpreadStdDevSurfaceDataType
 import starling.pivot.{Row, Field, PivotFieldsState, FieldDetails}
 import starling.utils.ImplicitConversions._
+import starling.marketdata.ShanghaiVATDataType
 
 /**
  * There is one of these for each time of market data. eg. prices, spotfx, forward rates...
@@ -83,12 +84,6 @@ case class MarketDataTypeName(name: String) {
 
 class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
 
-  val manualTypes = List(
-    new GradeAreaBenchmarkDataType(referenceDataLookup),
-    new FreightParityDataType(referenceDataLookup),
-    ShanghaiVATDataType
-  )
-
   // This list is used to load MarketDataType-s from the database. (It was indirectly used to populate the drop down
   // list in the market data viewer but is reported not to be anymore).
   val types = List(
@@ -99,8 +94,10 @@ class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {
     SpotFXDataType,
     PriceFixingsHistoryDataType,
     SpreadStdDevSurfaceDataType,
-    new CountryBenchmarkDataType(referenceDataLookup)
-  ) ++ manualTypes
+    new FreightParityDataType(referenceDataLookup),
+    new CountryBenchmarkDataType(referenceDataLookup),
+    ShanghaiVATDataType
+  )
 
   val lookup = types.toMapWithKeys(_.name.name)
 

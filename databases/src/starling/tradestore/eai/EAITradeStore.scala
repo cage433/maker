@@ -108,9 +108,10 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {
-    PivotFieldsState(
+    val pfs = PivotFieldsState(
         List(Field("Trade Count"))
       )
+    DefaultPivotState(pfs)
   }
 
   def pivotDrillDownGroups() = {

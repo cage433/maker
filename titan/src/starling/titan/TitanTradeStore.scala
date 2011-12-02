@@ -57,7 +57,8 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {
-    PivotFieldsState(List(Field("Trade Count")))
+    val pfs = PivotFieldsState(List(Field("Trade Count")))
+    DefaultPivotState(pfs)
   }
 
   def pivotDrillDownGroups() = {

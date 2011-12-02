@@ -67,10 +67,11 @@ class PnLReconciliation(reportContext: AbstractReportContext, tradeSet: TradeSet
   val pnlFieldDetails = new PnLFieldDetails(pnlField)
 
   override def initialState = {
-    new PivotFieldsState(
+    val pfs = new PivotFieldsState(
       columns =
         ColumnTrees(List(ColumnTree(pnlField, true)))
     )
+    DefaultPivotState(pfs)
   }
 
   override def drillDownGroups = {

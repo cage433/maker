@@ -222,10 +222,13 @@ class CannedDataSource extends UnfilteredPivotTableDataSource {
     ColumnTrees(List(
       ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))
   }, rowFields = List(Field("Trader"), Field("Strike")))*/
-  override def initialState = new PivotFieldsState(columns = {
-    ColumnTrees(List(
-      ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))
-  }, rowFields = List(Field("Trader")))
+  override def initialState = {
+    val pfs = new PivotFieldsState(columns = {
+        ColumnTrees(List(
+          ColumnTree(Field("PV"), true), ColumnTree(Field("Gamma"), true)))
+      }, rowFields = List(Field("Trader")))
+    DefaultPivotState(pfs)
+  }
 
   def unfilteredData(pfs : PivotFieldsState) = theData
 
@@ -306,7 +309,10 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
     }
   })
 
-  override def initialState = new PivotFieldsState(rowFields = List(Field("Trader"), Field("Market")), columns = ColumnTrees(Field("Volume"), true))
+  override def initialState = {
+    val pfs = new PivotFieldsState(rowFields = List(Field("Trader"), Field("Market")), columns = ColumnTrees(Field("Volume"), true))
+    DefaultPivotState(pfs)
+  }
 }
 
 class CannedMarketPivotParser(markets:Set[String]) extends PivotParser {

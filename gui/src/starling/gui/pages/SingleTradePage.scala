@@ -140,7 +140,7 @@ object SingleTradePageComponent {
     atmVegaLabel-> false,
     collapseOptionsLabel-> true)
 
-  val GreeksLayout = new PivotFieldsState(
+  val GreeksLayout = DefaultPivotState(new PivotFieldsState(
     rowFields=List(
       Field(tradeIDLabel),
       Field(riskMarketLabel),
@@ -151,7 +151,7 @@ object SingleTradePageComponent {
       List("Position", "Market Price", "Initial Price", "P&L", "Quantity").map(f=>ColumnTree(Field(f), true)): _*)
     )),
     reportSpecificChoices = DefaultReportSpecificChoices
-  )
+  ))
 }
 
 class SingleTradePageComponent(context:PageContext, pageData:PageData) extends MigPanel("insets 0") with PageComponent {

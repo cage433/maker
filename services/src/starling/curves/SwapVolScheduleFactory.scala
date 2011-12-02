@@ -47,13 +47,14 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
   private val indexSelection = indexes.headOption.map(i => SomeSelection(Set(i.name))).getOrElse(AllSelection)
 
   override def initialState = {
-    new PivotFieldsState(
+    val pfs = new PivotFieldsState(
       columns = ColumnTrees(List(
         ColumnTree(average.field, true),
         ColumnTree(marketField.field, false, List(forwardPrice, observedPeriodField, impliedVol, fixed, holiday).map(f => ColumnTree(f.field, true)) : _*))),
       rowFields = List(period, dayField).map(_.field),
       filters = List((indexField.field, indexSelection))
     )
+    DefaultPivotState(pfs)
   }
 
   val fieldDetailsGroups = {

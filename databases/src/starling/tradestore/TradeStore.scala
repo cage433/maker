@@ -448,7 +448,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
       }
       val measures = ds.fieldDetails.filter(fd => (fd.field.name != "Trade Count" && fd.field.name != "Version"))
       val pivotTable = PivotTableModel.createPivotTableData(ds, PivotFieldsState(rowFields=List(PField("Version")), dataFields=measures.map(_.field)))
-      (new PivotTableConverter(OtherLayoutInfo(), pivotTable).toSTable("Trade History"),
+      (new PivotTableConverter(OtherLayoutInfo.Blank, pivotTable).toSTable("Trade History"),
               fieldDetailsGroups0, costsVersions.toList)
     } }
   }
@@ -678,7 +678,7 @@ abstract class TradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem: Trad
     }.toMap
   }
 
-  def pivotInitialState(tradeableTypes:Set[TradeableType[_]]): PivotFieldsState
+  def pivotInitialState(tradeableTypes:Set[TradeableType[_]]):DefaultPivotState
 
   protected val instrumentFilteredDrillDown = {
     import starling.pivot.{Field => PivotField}

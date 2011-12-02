@@ -15,7 +15,7 @@ case class PivotData(
   pivotTable:PivotTable,
   // available pages include Vols and Correlations
   availablePages:List[String],
-  resetLayout:Option[PivotFieldsState],
+  defaultPivotState:Option[DefaultPivotState],
   reportSpecificOptions : List[(String, List[Any])]
 ) {
 }

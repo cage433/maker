@@ -14,7 +14,7 @@ object ShanghaiVATDataType extends MarketDataType{
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(rateField.field),
-    rowFields = Nil//List(nameField.field)
+    rowFields = Nil
   )
   def createKey(row : Row) = ShanghaiVATDataKey()
   def createValue(rows : List[Row]) = ShanghaiVATData(Row.singleRow(rows, "Shanghai VAT").pivotQuantity(rateField).quantityValue.get)

@@ -25,7 +25,7 @@ class NeptuneCountryReferenceData(referenceDataLookup: ReferenceDataLookup) exte
   val all@List(countryCode, areaCode, countryFD, area) = fieldDetails("Country Code", "Area Code", "Country", "Area")
 
   def fieldDetailsGroups = List(FieldDetailsGroup("Fields", all))
-  override val initialState = PivotFieldsState(rowFields = fields(countryCode), dataFields = fields(countryFD, areaCode, area))
+  override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(countryCode), dataFields = fields(countryFD, areaCode, area)))
 
   def unfilteredData(pfs: PivotFieldsState) = referenceDataLookup.countries.toList.map { case (code, country) => fields(
     countryCode → code.code,

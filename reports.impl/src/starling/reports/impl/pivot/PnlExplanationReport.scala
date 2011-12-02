@@ -6,8 +6,8 @@ import starling.quantity.UOM
 import starling.pivot.PivotFieldsState._
 import starling.pivot.Field._
 import starling.utils.Log
-import starling.pivot.{Field, PivotFieldsState, UnionPivotTableDataSource, NullPivotTableDataSource}
 import starling.curves.{AtomicEnvironment, Environment, ForwardStateEnvironment}
+import starling.pivot._
 
 object PnlExplanationReport {
   def run(d1: AtomicEnvironment,
@@ -47,11 +47,14 @@ object PnlExplanationReport {
       new ReportPivotTableDataSource(tradePivot, list, desk) {
         val dayChangeText = "Day Change"
 
-        override def initialState = PivotFieldsState(
-          dataFields = List(Field(dayChangeText)),
-          rowFields = List(Field("Risk Period")),
-          columnFields = List(Field("Risk Market"), Field("Day Change Component"))
-        )
+        override def initialState = {
+          val pfs = PivotFieldsState(
+            dataFields = List(Field(dayChangeText)),
+            rowFields = List(Field("Risk Period")),
+            columnFields = List(Field("Risk Market"), Field("Day Change Component"))
+          )
+          DefaultPivotState(pfs)
+        }
 
         override def zeroFields = Set(Field(dayChangeText))
       }

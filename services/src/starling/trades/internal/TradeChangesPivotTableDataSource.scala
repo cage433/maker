@@ -6,10 +6,11 @@ import starling.pivot._
 class TradeChangesPivotTableDataSource(tradeChanges: TradeChanges) extends UnfilteredPivotTableDataSource {
   override def initialState = {
     val columns = fieldDetails.map(_.field).filter(f => f.name != "Trade ID" && f.name != "Action").map(field => ColumnTree(field, true))
-    new PivotFieldsState(
+    val pfs = new PivotFieldsState(
       rowFields = List(Field("Trade ID"), actionField),
       columns = ColumnTrees(columns)
     )
+    DefaultPivotState(pfs)
   }
 
   val actionField = Field("Action")

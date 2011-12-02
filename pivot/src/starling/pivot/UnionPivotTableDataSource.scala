@@ -64,7 +64,10 @@ class UnionPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource) 
   }
 
   //for now just use the drilldown behaviour of the first pivot
-  override def initialState = a.initialState.copy(reportSpecificChoices = a.initialState.reportSpecificChoices ++ b.initialState.reportSpecificChoices)
+  override def initialState = {
+    val newPFS = a.initialState.pfs.copy(reportSpecificChoices = a.initialState.pfs.reportSpecificChoices ++ b.initialState.pfs.reportSpecificChoices)
+    a.initialState.copy(pfs = newPFS)
+  }
   override def drillDownGroups = if (a.drillDownGroups.nonEmpty) a.drillDownGroups else b.drillDownGroups
   override def availablePages = a.availablePages
 

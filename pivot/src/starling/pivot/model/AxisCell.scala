@@ -8,6 +8,7 @@ case class AxisCell(value:AxisValue, span:Option[Int], label:String, longLabel:S
                     totalState:TotalState, offset:Int, textPosition:TextPosition, editable:Boolean = false,
                     overrideState:Option[EditableCellState]=None, overrideValue:Option[Any]=None) {
   def text = if (!hidden) label else ""
+  def textForCopy = label
   def state = overrideState.getOrElse(value.state)
   def actualValue = overrideValue.getOrElse(value.value.value)
   def selection = value.field → SomeSelection(Set(value.value.originalValue.getOrElse(value.value.value)))

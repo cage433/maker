@@ -462,7 +462,7 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         if (firstColumn) firstColumn = false else sb.append("\t")
         sb.append(mainTableModel.getValueAt(row, column) match {
           case cell:TableCell if cell.asString.nonEmpty => cell.asString
-          case axisCell:AxisCell if axisCell.text.nonEmpty => axisCell.text
+          case axisCell:AxisCell if axisCell.textForCopy.nonEmpty => axisCell.textForCopy
           case _ => " "
         })
       }

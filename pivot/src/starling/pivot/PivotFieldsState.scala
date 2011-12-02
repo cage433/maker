@@ -750,3 +750,8 @@ object PivotFieldsState {
 }
 
 case class PivotFieldParams(calculate:Boolean, pivotFieldState:Option[PivotFieldsState])
+
+case class DefaultPivotState(pfs:PivotFieldsState, oli:OtherLayoutInfo = OtherLayoutInfo.Blank)
+object DefaultPivotState {
+  val Blank = DefaultPivotState(PivotFieldsState.Blank, OtherLayoutInfo.Blank)
+}

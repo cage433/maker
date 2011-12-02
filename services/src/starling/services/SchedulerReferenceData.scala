@@ -10,7 +10,7 @@ class SchedulerReferenceData(scheduler: Scheduler) extends UnfilteredPivotTableD
     "Task", "Starting Time", "London Time", "Period", "Calendar", "Producer", "Consumer", "Sender", "Receipients", "Enabled")
 
   val fieldDetailsGroups = List(FieldDetailsGroup("Schedule", group))
-  override val initialState = PivotFieldsState(rowFields = fields(name), dataFields = fields(group.tail))
+  override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(group.tail)))
 
   def unfilteredData(pfs: PivotFieldsState) = scheduler.getTasks.map { task => fields(
     name       → task.name,

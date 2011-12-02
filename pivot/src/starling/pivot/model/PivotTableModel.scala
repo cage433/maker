@@ -375,10 +375,10 @@ object PivotTableModel {
         if (f.allFieldsUsed.forall(fields.contains(_))) {
           f
         } else {
-          pivot.initialState
+          pivot.initialState.pfs
         }
       }
-      case None => pivot.initialState
+      case None => pivot.initialState.pfs
     }
     (fs, createPivotTableData(pivot, fs))
   }

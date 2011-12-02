@@ -48,7 +48,7 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup, allow
             case key: CountryBenchmarkMarketDataKey => marketDataReader.read(TimedMarketDataKey(ObservationPoint.RealTime, key))
             case key: GradeAreaBenchmarkMarketDataKey => read_(ObservationTimeOfDay.Default, key)
             case key: FreightParityDataKey => read_(ObservationTimeOfDay.Default, key)
-            case key: ShanghaiVATDataKey => read_(ObservationTimeOfDay.Default, key)
+            case key: ShanghaiVATDataKey => marketDataReader.read(TimedMarketDataKey(ObservationPoint.RealTime, key))
             case key@SpotFXDataKey(UOM.CNY) => read_(ObservationTimeOfDay.SHFEClose, key)
             case key: SpotFXDataKey => read_(ObservationTimeOfDay.LondonClose, key)
             case _ => throw new Exception(name + " Closes Rule has no rule for " + key)
