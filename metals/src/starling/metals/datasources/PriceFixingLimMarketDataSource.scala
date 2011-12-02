@@ -34,8 +34,7 @@ object PriceFixingLimMarketDataSource {
     //   Futures.Shfe.Steel.Close == the missing Trafigura.Bloomberg.Futures.Shfe.Steel.Settle
     // These values are also brought in a prices (see PriceLimMarketDataSource)
     new MonthlyFuturesFixings(Futures.Shfe, Level.Close, Set(RelType.FUTURES), "") {
-      val leadAndSteel = Set(Market.SHANGHAI_LEAD, Market.STEEL_REBAR_SHANGHAI) // Don't want to overwrite bloomberg prices
-      override protected def marketPredicate(market: FuturesMarket) = market.isOneOf(leadAndSteel)
+      override protected def marketPredicate(market: FuturesMarket) = market.isOneOf(Market.SHANGHAI_STEEL_AND_LEAD)
     },
 
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all
