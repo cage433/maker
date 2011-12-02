@@ -133,7 +133,7 @@ case class LocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
   def currentFullName = localCache(LocalCache.CurrentUserName).fullName
   def allUserNames = localCache(LocalCache.AllUserNames)
 
-  def bookmarks = localCache(LocalCache.Bookmarks)
+  def bookmarks = localCache.getOrElse(LocalCache.Bookmarks, Nil)
 
   def userNotifications = localCache(UserNotifications)
   def removeUserNotification(notification:Notification) {localCache(UserNotifications) = localCache(UserNotifications).filterNot(_ == notification)}

@@ -233,7 +233,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     homeButton.enabled = enabled
     liveUpdateCheckbox.enabled = enabled
     bookmarkButton.enabled = enabled
-    //bookmarkDropDownButton.enabled = enabled
+    bookmarkDropDownButton.enabled = enabled
     enableAddressBar(enabled)
   }
 
@@ -676,7 +676,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val bookmarkButton = new BookmarkButton(currentPage0, pageContext, pageBuilder)
-  //private val bookmarkDropDownButton = new BookmarkDropDownButton(currentPage0, pageContext)
+  private val bookmarkDropDownButton = new BookmarkDropDownButton(currentPage0, pageContext)
 
   refreshBrowserBar()
 
@@ -694,7 +694,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     add(extraInfoLabel, "hidemode 3")
     add(settingsButton)
     add(bookmarkButton, "split 2, gap after 0")
-    //add(bookmarkDropDownButton, "gap before 0, growy")
+    add(bookmarkDropDownButton, "gap before 0, growy")
   }
 
   peer.add(actionPanel.peer, "pushx, growx, wrap 0")
@@ -719,7 +719,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     forwardButton.enabled = (current < (history.size-1))
     redoButton.enabled = (current < (history.size-1))
     bookmarkButton.enabled = true
-    //bookmarkDropDownButton.enabled = true
+    bookmarkDropDownButton.enabled = true
     enableAddressBar(true)
     homeButton.enabled = true
     liveUpdateCheckbox.enabled = true

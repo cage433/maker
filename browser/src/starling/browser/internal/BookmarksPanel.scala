@@ -12,6 +12,7 @@ import starling.browser._
 import javax.swing._
 import java.awt.event.ActionEvent
 import org.jdesktop.swingx.plaf.basic.BasicMonthViewUI
+import osgi.BundleAdded
 
 class MinimalSXMonthView extends Component {
   var dayOfWeekHeight = 0
@@ -46,7 +47,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     icon = BrowserIcons.icon("/icons/32x32_report_star.png")
   }
   val textLabel = new Label("Select a bookmark (and observation day if required) to go to ")
-  val bookmarks = context.localCache.bookmarks
+  val bookmarks:List[BookmarkData] = context.localCache.bookmarks
 
   val bookmarksListView = new NListView(bookmarks) {
     val bookmarkDataListCellRenderer = new DefaultListCellRenderer {
@@ -180,6 +181,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   }
 
   reactions += {
+    case BundleAdded(_) => rebuildBookmarks()
     case BookmarksUpdate(username, _) if username == context.localCache.currentUserName => rebuildBookmarks()
     case MouseClicked(`bookmarksListView`,_,m,2,_) => goToBookmark(Modifiers.modifiersEX(m))
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => deleteBookmark()
