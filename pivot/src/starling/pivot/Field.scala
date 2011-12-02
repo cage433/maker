@@ -405,6 +405,7 @@ object FieldDetails {
     override def formatter = formatter0
     override def parser = parser0
   }
+  def list(name:String, values:Iterable[String]) = FieldDetails(name, new SpecifiedValuesParser(values.toSet))
   def coded(name:String, codesToNames:Iterable[Tupleable]) = new CodedFieldDetails(name, codesToNames)
 }
 
@@ -436,6 +437,18 @@ class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotForma
     }
   }
   override def acceptableValues = codesToName.values.toSet
+}
+
+class SpecifiedValuesParser(allAcceptableValues:Set[String]) extends PivotParser {
+  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+    val lowerCaseValues = allAcceptableValues.map(_.trim.toLowerCase)
+    if (lowerCaseValues(text.trim.toLowerCase)) {
+      (text, text)
+    } else {
+      throw new Exception("Unknown value")
+    }
+  }
+  override def acceptableValues = allAcceptableValues
 }
 
 case class Average(total:Double,count:Int) {

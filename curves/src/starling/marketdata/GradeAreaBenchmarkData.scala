@@ -1,7 +1,7 @@
 package starling.marketdata
 
 import starling.pivot._
-import pivotparsers.{SpecifiedValuesParser, DayPivotParser}
+import pivotparsers.{DayPivotParser}
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
 import starling.daterange.Day

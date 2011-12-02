@@ -11,7 +11,7 @@ object PriceFixingsHistoryDataType extends MarketDataType {
   type keyType = PriceFixingsHistoryDataKey
   val humanName = "fixings"
   val marketField = FieldDetails("Market")
-  val levelField = FieldDetails("Level")
+  val levelField = FieldDetails.list("Level", Level.names)
   val periodField = new FieldDetails("Period") {
     override def comparator = StoredFixingPeriod.Comparator
   }
