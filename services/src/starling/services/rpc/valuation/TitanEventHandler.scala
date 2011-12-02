@@ -87,6 +87,16 @@ class TitanEventHandler(broadcaster:Broadcaster,
   /**
    * handler for trademgmt trade events
    */
+  def publishOnChangedValues(results: Option[List[TitanTradeUpdateResult]], snapshotID: SnapshotIDLabel, env: Environment) {
+    results match {
+      case Some(listOfResults) =>
+        val changedForwardIDs: List[String] = listOfResults.flatMap(_.changedValueTitanTradeIds)
+        log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedForwardIDs.size))
+        publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
+      case None =>
+    }
+  }
+
   def tradeMgmtTradeEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
     log.info("handler: Got a trade event to process, ID %s event %s".format(ev.key.identifier, ev.toString))
 
@@ -98,7 +108,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
 
     val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
 
-    ev.subject match {
+    val results = ev.subject match {
       case TradeSubject => {
         ev.verb match {
           case UpdatedEventVerb => {
@@ -122,6 +132,13 @@ class TitanEventHandler(broadcaster:Broadcaster,
         }
       }
     }
+
+    publishOnChangedValues(results, snapshotID, env)
+
+    results match {
+      case Some(listOfResults) =>
+    }
+    results
   }
 
   /**
@@ -141,26 +158,26 @@ class TitanEventHandler(broadcaster:Broadcaster,
     log.info("Logistics event %s received for ids { %s }".format(eventId, inventoryIds.mkString(", ")))
 
     val marketDay = Day.today.previousWeekday
+    lazy val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
 
-    ev.verb match {
+    val results: Option[List[TitanTradeUpdateResult]] = ev.verb match {
       case UpdatedEventVerb => {
-        val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
+//        val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
 
-        val results = inventoryIds.map(id => titanTradeStoreManager.updateInventory(env, id, eventId))
-        val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
-        publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
-
-        log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedForwardIDs.size))
+        val results: List[TitanTradeUpdateResult] = inventoryIds.map(id => titanTradeStoreManager.updateInventory(env, id, eventId))
+//        val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
+//        publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
+//
         Some(results)
       }
       case CreatedEventVerb => {
         Log.info("New event received for %s".format(inventoryIds))
         ev.subject match {
           case EDMLogisticsInventorySubject | EDMLogisticsSalesAssignmentSubject => {
-            val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
+//            val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
             val results = inventoryIds.map(id => titanTradeStoreManager.updateInventory(env, id, eventId))
-            val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
-            publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
+//            val changedForwardIDs = results.flatMap(_.changedValueTitanTradeIds)
+//            publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
             Some(results)
           }
           case _ => None
@@ -181,6 +198,8 @@ class TitanEventHandler(broadcaster:Broadcaster,
       }
       case _ => None
     }
+    publishOnChangedValues(results, snapshotID, env)
+    results
   }
 
   private def getID(payload : Payload) = payload.key.identifier
