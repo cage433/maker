@@ -9,6 +9,7 @@ import starling.browser.osgi.{BundleRemoved, BundleAdded}
 
 object UserSettings {
   val LiveDefault = new Key[Boolean]("LiveDefault", RootBrowserBundle.bundleName)
+  val ShowPageTime = new Key[Boolean]("ShowPageTime", RootBrowserBundle.bundleName)
 }
 
 class UserSettingsValue(var value:Option[AnyRef], var data:String) {

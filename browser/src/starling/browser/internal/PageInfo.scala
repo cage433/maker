@@ -9,7 +9,8 @@ import scala.ref.SoftReference
 
 class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
-               var refreshPage:Option[(Page,Boolean)], var componentForFocus:Option[java.awt.Component]=None) {
+               var refreshPage:Option[(Page,Boolean)], val pageTime:Long,
+               var componentForFocus:Option[java.awt.Component]=None) {
   def image:BufferedImage = {
     if (future == null) {
       null

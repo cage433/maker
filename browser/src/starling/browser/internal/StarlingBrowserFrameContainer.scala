@@ -30,21 +30,31 @@ object RootBrowserBundle extends BrowserBundle {
   def unmarshal(text: String) = xstream.fromXML(text)
   override def settings(pageContext:PageContext) = {
     def createGeneralPane(context:PageContext) = {
-      val currentLiveSetting = context.getSetting(UserSettings.LiveDefault, false)
       new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
         val defaultLiveCheckbox = new CheckBox("Default Live") {
-          selected = currentLiveSetting
+          selected = context.getSetting(UserSettings.LiveDefault, false)
           reactions += {case ButtonClicked(_) => {
             context.putSetting(UserSettings.LiveDefault, selected)
+          }}
+        }
+        val showPageTimeCheckbox = new CheckBox("Show page time") {
+          selected = context.getSetting(UserSettings.ShowPageTime, false)
+          reactions += {case ButtonClicked(_) => {
+            context.putSetting(UserSettings.ShowPageTime, selected)
           }}
         }
 
         add(LabelWithSeparator("General"), "spanx, growx, wrap")
         add(defaultLiveCheckbox, "skip 1")
+        add(showPageTimeCheckbox, "skip 1")
         reactions += {
           case UserSettingUpdated(UserSettings.LiveDefault) => {
             val b = context.getSetting(UserSettings.LiveDefault, false)
             defaultLiveCheckbox.selected = b
+          }
+          case UserSettingUpdated(UserSettings.ShowPageTime) => {
+            val b = context.getSetting(UserSettings.ShowPageTime, false)
+            showPageTimeCheckbox.selected = b
           }
         }
         listenTo(context.remotePublisher)
