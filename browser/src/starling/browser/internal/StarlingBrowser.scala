@@ -98,6 +98,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   val publisherX = new Publisher {}
   publisherX.reactions += {
+    case UserSettingUpdated(UserSettings.ShowPageTime) => {
+      pageTimeLabel.visible = userSettings.getSetting(UserSettings.ShowPageTime)
+    }
     case e@BundleAdded(bundle) => {
       if (current != -1 && bundle.bundleName == history(current).bundle) {
         val currentPageInfo = history(current)
@@ -246,7 +249,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     if (page.text == (history(indexGoingFrom).page.text)) {
       // Move back without sliding.
       showPage(pageInfo, indexGoingFrom)
-      refreshButtonStatus()
+      refreshBrowserBar()
     } else {
       setButtonsEnabled(false)
       setTitleText(page.text)
@@ -274,7 +277,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         override def end() {
           backSlideClient.setX(width)
-          refreshButtonStatus()
+          refreshBrowserBar()
           onEDT({
             showPage(pageInfo, indexGoingFrom)
             setScreenLocked(false)
@@ -298,6 +301,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   peer.getActionMap.put("reload", new AbstractAction () {
     def actionPerformed(p1: ActionEvent) {
       BrowserLog.infoWithTime("Rebuilding page component") {
+        val start = System.currentTimeMillis()
         val info = history(current)
         val currentPage = info.page
         val currentBookmark = info.bookmark
@@ -308,7 +312,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         val rebuiltPageComponent = createPopulatedComponent(currentPage, info.pageResponse)
         rebuiltPageComponent.setState(currentState)
         val pageInfo = new PageInfo(currentPage, info.pageResponse, currentBookmark, Some(rebuiltPageComponent),
-          new SoftReference(rebuiltPageComponent), currentState, info.refreshPage)
+          new SoftReference(rebuiltPageComponent), currentState, info.refreshPage, System.currentTimeMillis()-start)
         history(current) = pageInfo
         showPage(pageInfo, current)
       }
@@ -380,7 +384,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     updateRefreshState(pageInfo)
     if (history(indexGoingFrom).page.text == pageInfo.page.text) {
       showPage(pageInfo, indexGoingFrom)
-      refreshButtonStatus()
+      refreshBrowserBar()
     } else {
       setButtonsEnabled(false)
       setTitleText(pageInfo.page.text)
@@ -408,7 +412,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         override def end() {
           forwardSlideClient.setX(-width)
-          refreshButtonStatus()
+          refreshBrowserBar()
           onEDT({
             showPage(pageInfo, indexGoingFrom)
             setScreenLocked(false)
@@ -476,7 +480,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
            showPage(pageInfo, current)
            peer.setEnabled(false)
            setScreenLocked(false)
-           refreshButtonStatus()
+           refreshBrowserBar()
            refreshAction.enabled = history(current).refreshPage.isDefined
          }
     }
@@ -613,6 +617,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     historySelector.show(addressBar.peer, 5, addressBar.size.height-1)
   }
 
+  private val pageTimeLabel = new Label("") {
+    visible = userSettings.getSetting(UserSettings.ShowPageTime, false)
+  }
+
   private val viewSettingsAction = Action("") {pageContext.goTo(SettingsPage(), Modifiers(true, true))}
   viewSettingsAction.icon = BrowserIcons.icon("/icons/22x22/categories/preferences-system.png")
   viewSettingsAction.toolTip = "Go to the settings page"
@@ -670,7 +678,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private val bookmarkButton = new BookmarkButton(currentPage0, pageContext, pageBuilder)
   //private val bookmarkDropDownButton = new BookmarkDropDownButton(currentPage0, pageContext)
 
-  refreshButtonStatus()
+  refreshBrowserBar()
 
   private val actionPanel = new MigPanel("", "[p]0[p][p]0[p][p]") {
     add(backButton)
@@ -682,6 +690,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     add(refreshButton)
     add(liveUpdateCheckbox, "ay center")
     add(addressBar, "pushx, growx, ay center")
+    add(pageTimeLabel, "hidemode 3")
     add(extraInfoLabel, "hidemode 3")
     add(settingsButton)
     add(bookmarkButton, "split 2, gap after 0")
@@ -696,7 +705,15 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     BrowserThreadSafeCachingProxy.clearCache
   }
 
-  private def refreshButtonStatus() {
+  private def prettyTime(millis:Long) = {
+    if (millis < 1000) {
+      millis + "ms"
+    } else {
+      (millis / 1000) + "," + (millis%1000) + "ms"
+    }
+  }
+
+  private def refreshBrowserBar() {
     backButton.enabled = (current > 0)
     undoButton.enabled = (current > 0)
     forwardButton.enabled = (current < (history.size-1))
@@ -707,6 +724,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     homeButton.enabled = true
     liveUpdateCheckbox.enabled = true
     stopButton.enabled = false
+    pageTimeLabel.text = if (history.isEmpty) "" else prettyTime(history(current).pageTime)
   }
 
   def submitYesNo[R](message0:String, description:String, submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {
@@ -720,7 +738,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         submit(submitRequest, onComplete, keepScreenLocked)
       } else {
         setScreenLocked(false)
-        refreshButtonStatus()
+        refreshBrowserBar()
         refreshAction.enabled = history(current).refreshPage.isDefined
       }
     }
@@ -747,7 +765,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
     def reset() {
       setScreenLocked(false)
-      refreshButtonStatus()
+      refreshBrowserBar()
       refreshAction.enabled = history(current).refreshPage.isDefined
     }
 
@@ -757,7 +775,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   def clearContent() {
     starlingBrowserUI.clearContentPanel()
     setScreenLocked(false)
-    refreshButtonStatus()
+    refreshBrowserBar()
     refreshAction.enabled = history(current).refreshPage.isDefined
   }
 
@@ -794,7 +812,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                 refresh()
               } else {
                 setScreenLocked(false)
-                refreshButtonStatus()
+                refreshBrowserBar()
               }
             }
           }
@@ -803,7 +821,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             t.printStackTrace()
             starlingBrowserUI.setError("There was an error when processing your request",BrowserStackTraceToString.string(t), {
               setScreenLocked(false)
-              refreshButtonStatus()
+              refreshBrowserBar()
               refreshAction.enabled = history(current).refreshPage.isDefined
             })
           }
@@ -834,7 +852,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       // Move back without sliding.
       current = index
       showPage(pageInfo, oldCurrent)
-      refreshButtonStatus()
+      refreshBrowserBar()
     } else {
       setButtonsEnabled(false)
       setTitleText(page.text)
@@ -863,7 +881,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         override def end() {
           backSlideClient.setX(width)
-          refreshButtonStatus()
+          refreshBrowserBar()
           onEDT({
             showPage(pageInfo, oldCurrent)
             setScreenLocked(false)
@@ -883,7 +901,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       // Move forward without sliding.
       current = index
       showPage(pageInfo, oldCurrent)
-      refreshButtonStatus()
+      refreshBrowserBar()
     } else {
       setButtonsEnabled(false)
       setTitleText(page.text)
@@ -912,7 +930,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         override def end() {
           forwardSlideClient.setX(-width)
-          refreshButtonStatus()
+          refreshBrowserBar()
           onEDT({
             showPage(pageInfo, oldCurrent)
             setScreenLocked(false)
@@ -928,6 +946,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   def goTo(page:Page) { goTo(Left(page)) }
 
   def goTo(pageOrPageBuilder:Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])]) {
+    val start = System.currentTimeMillis()
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
     setButtonsEnabled(false)
@@ -964,7 +983,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                 case None =>
               }
               setScreenLocked(false)
-              refreshButtonStatus()
+              refreshBrowserBar()
               refreshAction.enabled = currentPageInfo.refreshPage.isDefined
             })
           }
@@ -1007,7 +1026,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
               } else {
                 None
               }
-              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, needToRefreshPage)
+              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, needToRefreshPage, System.currentTimeMillis() - start)
               history.append(pageInfo)
               val oldCurrent = current
               current+=1
@@ -1038,7 +1057,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                     override def timingEvent(fraction: Float) {forwardSlideClient.setX(-fraction * width)}
                     override def end() {
                       forwardSlideClient.setX(-width)
-                      refreshButtonStatus()
+                      refreshBrowserBar()
                       onEDT({
                         bookmarkButton.refresh()
                         setScreenLocked(false)
@@ -1055,7 +1074,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
                   val shouldDoFocus = if (currentTypeFocusInfo.isDefined) false else true
                   showPage(pageInfo, oldCurrent, shouldDoFocus = shouldDoFocus)
                   onEDT(currentComponent.setTypeFocusInfo(currentTypeFocusInfo))
-                  refreshButtonStatus()
+                  refreshBrowserBar()
                   setScreenLocked(false)
                   imageClient.reset
                 })
@@ -1081,7 +1100,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           t.printStackTrace()
           starlingBrowserUI.setError("There was an error when processing your request", BrowserStackTraceToString.string(t), {
             setScreenLocked(false)
-            refreshButtonStatus()
+            refreshBrowserBar()
             refreshAction.enabled = history(current).refreshPage.isDefined
           })
         }
@@ -1091,7 +1110,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             waitingFor -= Some(threadID)
           }
           setScreenLocked(false)
-          refreshButtonStatus()
+          refreshBrowserBar()
           refreshAction.enabled = history(current).refreshPage.isDefined
         }
         pageBuilder.build(unanticipatedException, resetScreen(), createPage, onException, withBuiltPage, updateTitle)
@@ -1100,6 +1119,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   def refresh() {
+    val start = System.currentTimeMillis()
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
     setButtonsEnabled(false)
@@ -1137,11 +1157,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         val pageComponent = createPopulatedComponent(newPage, pageResponse, previousPageData)
         pageComponent.setState(previousState)
         pageComponent.setTypeState(previousTypeState)
-        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None)
+        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None, System.currentTimeMillis() - start)
         history(current) = pageInfo
         showPage(pageInfo, current)
         setScreenLocked(false)
-        refreshButtonStatus()
+        refreshBrowserBar()
       }
     })
   }
