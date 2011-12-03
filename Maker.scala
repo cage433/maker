@@ -9,7 +9,7 @@ val manager = new Project(
   managerRoot,
   List(new File(managerRoot, "src")),
   List(new File(managerRoot, "tests")),
-  List(new File("lib"), libRoot)
+  List(libRoot)
 )
 
 val utilsRoot = new File("utils") 
@@ -18,6 +18,15 @@ val utils = new Project(
   utilsRoot,
   List(new File(utilsRoot, "src")),
   List(new File(utilsRoot, "tests")),
-  List(new File("lib"), libRoot)
+  List(libRoot)
 ) dependsOn (manager)
+
+val concurrentRoot = new File("concurrent")
+val concurrent = new Project(
+  "concurrent",
+  concurrentRoot,
+  List(new File(concurrentRoot, "src")),
+  List(new File(concurrentRoot, "tests")),
+  List(libRoot)
+) dependsOn (utils)
 
