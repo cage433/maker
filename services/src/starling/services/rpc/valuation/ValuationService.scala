@@ -46,14 +46,18 @@ case class ValuationService(
   
   def latestSnapshotID() : TitanSnapshotIdentifier = environmentProvider.latestMetalsValuationSnapshot.toSerializable
 
+  private def marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier]) : (TitanMarketDataIdentifier, Environment) = {
+    val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse(bestValuationIdentifier())
+    val env = environmentProvider.environment(marketDataIdentifier).forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay)).undiscounted // Metals don't want discounting during UAT
+    (marketDataIdentifier, env)
+  }
   def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier] = None) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
 
-    val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse(bestValuationIdentifier())
+    val (marketDataIdentifier, env) = marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier)
     log.info("valueAllTradeQuotas called with market identifier %s".format(marketDataIdentifier))
     val sw = new Stopwatch()
     val forwards : List[PhysicalMetalForward] = titanTradeStore.getAllForwards().collect{case (_, Right(fwd)) => fwd}.toList
     log.info("Got Edm Trade results, trade result count = " + forwards.size)
-    val env = environmentProvider.environment(marketDataIdentifier).forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay))
     val valuations = forwards.map{
       fwd =>
         (fwd.titanTradeID, fwd.costsAndIncomeQuotaValueBreakdown(env))
@@ -67,9 +71,8 @@ case class ValuationService(
 
   def valueSingleTradeQuotas(tradeID : String, maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier]) : (TitanMarketDataIdentifier, Either[String, List[QuotaValuation]]) = {
 
-    val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse(bestValuationIdentifier())
+    val (marketDataIdentifier, env) = marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier)
     log.info("valueSingleTradeQuotas called for %s with market data identifier %s".format(tradeID, marketDataIdentifier))
-    val env = environmentProvider.environment(marketDataIdentifier).forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay))
     (marketDataIdentifier, valueSingleTradeQuotas(tradeID, env))
   }
 

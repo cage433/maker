@@ -77,10 +77,8 @@ class GuiBromptonActivator extends BromptonActivator {
         val marketDataSelection = MarketDataSelection(Some(pricingGroup))
         val version = snapshotID.toInt
         val enRule = EnvironmentRuleLabel.AllCloses
-        import EnvironmentModifierLabel._
-        val envMods = TreeSet[EnvironmentModifierLabel]() + zeroInterestRates
-        val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), ukBusinessCalendar)
-        ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule, envModifiers = envMods)
+        val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), ukBusinessCalendar, zeroInterestRates = true) // Metals don't want discounting during UAT
+        ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule)
       }
 
       val slidableReportOptions = reportService.reportOptionsAvailable.options.filter(_.slidable)

@@ -267,16 +267,20 @@ case class CurveIdentifierLabel(
 }
 
 object CurveIdentifierLabel{
-  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, calendar : BusinessCalendar) = {
+  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, calendar : BusinessCalendar, zeroInterestRates : Boolean) = {
     val day = Day.today.previousWeekday // don't use a calendar as we don't know which one
     val timeOfDayToUse = if (day >= Day.today) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
+    val envModifiers = if (zeroInterestRates)
+      TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
+    else
+      TreeSet.empty[EnvironmentModifierLabel](EnvironmentModifierLabel.ordering)
     CurveIdentifierLabel(
       marketDataIdentifier,
       EnvironmentRuleLabel.COB,
       day,
       day.atTimeOfDay(timeOfDayToUse),
       day.nextBusinessDay(calendar).endOfDay,
-      TreeSet.empty[EnvironmentModifierLabel](EnvironmentModifierLabel.ordering)
+      envModifiers
     )
   }
 }
