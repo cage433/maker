@@ -65,7 +65,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      var extraFormatInfo:ExtraFormatInfo,
                      val pagePivotEdits:PivotEdits,
                      val updateEdits:(PivotEdits, PivotTableType) => Unit,
-                     updateNumberOfEditsAndState:(Int,Boolean) => Unit) {
+                     updateNumberOfEditsAndState:(Int,Boolean) => Unit,
+                     revalidateTheWholeThing: =>Unit) {
 
   val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   val fieldInfo:FieldInfo = pivotTable.fieldInfo
@@ -203,6 +204,10 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     val numberOfEdits = rowHeaderTableModel.numberOfInPageEdits + mainTableModel.numberOfInPageEdits
     val validState = rowHeaderTableModel.validState && mainTableModel.validState
     updateNumberOfEditsAndState(numberOfEdits, validState)
+
+    resizeMainTableColumns
+    resizeRowHeaderTableColumns
+    revalidateTheWholeThing
   }
 
   def allEdits(e:PivotEdits):PivotEdits = fullTableModel.edits(e)
@@ -225,6 +230,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     rowHeaderTableModel.fireTableRowsUpdated(0, rowHeaderTableModel.getRowCount-1)
     colHeaderTableModel.fireTableRowsUpdated(0, colHeaderTableModel.getRowCount-1)
     fullTableModel.fireTableRowsUpdated(0, fullTableModel.getRowCount-1)
+
+    // TODO - update the edited cells in override map
+
     resizeMainTableColumns
     resizeRowHeaderTableColumns
   }
@@ -1060,7 +1068,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
 
         val totalWidth = widths.sum
-        val fieldCompPrefWidth = rowComponent.guiField(fieldIndex).initialPreferredSize.width
+        val rowFieldComponent = rowComponent.guiField(fieldIndex)
+        val fieldCompPrefWidth = rowFieldComponent.initialPreferredSize.width
         if (totalWidth < fieldCompPrefWidth) {
           // Need to add some space to each column.
           val perColDiff = ((fieldCompPrefWidth - totalWidth) / count)
@@ -1079,8 +1088,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             fullColumnModel.getColumn(0).setPreferredWidth(fullColumnModel.getColumn(0).getPreferredWidth + extraWidth)
             rowHeaderColumnModel.getColumn(0).setPreferredWidth(rowHeaderColumnModel.getColumn(0).getPreferredWidth + extraWidth)
           }
+          rowFieldComponent.setPreferredWidth(rowFieldComponent.initialPreferredSize.width)
         } else {
-          rowComponent.guiField(fieldIndex).setPreferredWidth(totalWidth)
+          rowFieldComponent.setPreferredWidth(totalWidth)
         }
       }
 

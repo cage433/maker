@@ -536,10 +536,17 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     publish(NumberOfInPageEditsUpdated(numberOfInPageEdits, validState))
   }
 
+  private def revalidateTheWholeThing() {
+    onEDT({
+      contentPanel.revalidate()
+      contentPanel.repaint()
+    })
+  }
+
   private val tableModelsHelper = new PivotJTableModelHelper(mainData, data.pivotTable,
     rowHeaderData, colHeaderData, colUOMs, resizeColumnHeaderAndMainTableColumns(), resizeRowHeaderTableColumns(),
     data.pivotFieldsState, extraFormatInfo, edits, (edits0, tableType) => updatePivotEdits(edits0, tableType),
-    (numberOfEdits, validState) => updateNumberOfInPageEdits(numberOfEdits, validState))
+    (numberOfEdits, validState) => updateNumberOfInPageEdits(numberOfEdits, validState), revalidateTheWholeThing())
 
   def totalNumCols = tableModelsHelper.rowHeaderTableModel.getColumnCount + tableModelsHelper.mainTableModel.getColumnCount
 
@@ -551,10 +558,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
     val newConverter = viewConverter.copy(extraFormatInfo = extraFormatInfo)
     val (newRowData,newColumnData,newMainTableCells,_,_,_,_) = newConverter.allTableCellsAndUOMs
     tableModelsHelper.setData(newRowData, newColumnData, newMainTableCells, extraFormatInfo)
-    onEDT({
-      contentPanel.revalidate()
-      contentPanel.repaint()
-    })
+    revalidateTheWholeThing()
   }
 
   // What I need to do here is loop through the row header table and decide which columns have collapsible elements. If a column does,
