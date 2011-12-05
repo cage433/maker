@@ -5,7 +5,7 @@ import scala.swing._
 import javax.swing.event.{ListSelectionEvent, ListSelectionListener}
 import starling.pivot.model._
 import starling.pivot._
-import controller.{PivotTable, ChildKey, PivotTableConverter}
+import controller.{PivotTable, PivotTableConverter}
 import starling.pivot.FieldChooserType._
 import org.jdesktop.swingx.decorator.{HighlightPredicate}
 import org.jdesktop.swingx.JXTable
@@ -19,7 +19,7 @@ import java.awt.event._
 import starling.gui.api.ReportSpecificOptions
 import starling.utils.ImplicitConversions._
 import collection.mutable.HashMap
-import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager, Font}
+import java.awt.{Graphics2D, Dimension, Color, GradientPaint, Cursor, AWTEvent, Toolkit, KeyboardFocusManager}
 import javax.swing._
 import starling.pivot.view.swing.PivotTableType._
 import starling.pivot.HiddenType._
@@ -421,9 +421,9 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   if (!otherLayoutInfo.frozen) {
     rowComponent.opaque = true
     rowComponent.background = PivotTableBackgroundColour
-    rowComponent.border = BorderFactory.createMatteBorder(0,0,1,1,GuiUtils.BorderColour)
+    rowComponent.border = BorderFactory.createMatteBorder(0,0,1,1,BorderColour)
   }
-  val sizerPanel = new FlowPanel {background = GuiUtils.PivotTableBackgroundColour}
+  val sizerPanel = new FlowPanel {background = PivotTableBackgroundColour}
 
   private val previousPageData00:Option[(PivotTable, Map[(Int,Int),Float], Map[(Int,Int),Float], Map[(Int,Int),Float])] = previousPageData.map(ppd => {
     val pivotTable = ppd.pageData.asInstanceOf[PivotTablePageData].pivotData.pivotTable
@@ -961,10 +961,16 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private def resizeSizerPanel() {
     if (!otherLayoutInfo.frozen) {
       val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.size.width else fieldPanel.size.width
-      if (extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
-        sizerPanel.preferredSize = new Dimension(10, sizerPanel.size.height)
+      val totalSize = extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width
+      if (totalSize >= browserSize.width) {
+        val delta = totalSize - browserSize.width
+        val d = new Dimension(rowComponent.preferredSize.width-1 - delta, sizerPanel.size.height)
+        sizerPanel.preferredSize = d
+        sizerPanel.minimumSize = d
       } else {
-        sizerPanel.preferredSize = new Dimension(rowComponent.preferredSize.width-1, sizerPanel.size.height)
+        val d = new Dimension(rowComponent.preferredSize.width-1, sizerPanel.size.height)
+        sizerPanel.preferredSize = d
+        sizerPanel.minimumSize = d
       }
       revalidate()
     }
@@ -977,8 +983,12 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
 
       if (!otherLayoutInfo.frozen && updateSizerPanel) {
         val extraWidth = if (otherLayoutInfo.hiddenType == FieldListHidden || otherLayoutInfo.hiddenType == AllHidden) hiddenFieldPanel.preferredSize.width else fieldPanel.preferredSize.width
-        if (extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width > (browserSize.width - browserSize.width / 4)) {
-          sizerPanel.preferredSize = new Dimension(10, sizerPanel.preferredSize.height)
+        val totalSize = extraWidth + rowComponent.preferredSize.width + columnAndMeasureComponent.preferredSize.width
+        if (totalSize >= browserSize.width) {
+          val delta = totalSize - browserSize.width
+          val d = new Dimension(rowComponent.preferredSize.width-1 - delta, sizerPanel.preferredSize.height)
+          sizerPanel.preferredSize = d
+          sizerPanel.minimumSize = d
         }
       }
       revalidate()
