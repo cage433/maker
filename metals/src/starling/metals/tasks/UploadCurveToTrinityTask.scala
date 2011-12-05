@@ -10,5 +10,5 @@ class UploadCurveToTrinityTask(uploader: TrinityUploader, marketDataIdentifier: 
   override def attributes = super.attributes + DataSink → ScheduledTaskAttribute("Trinity")
 
   def execute(observationDay: Day) = uploader.uploadCurve(CurveLabel(CurveTypeLabel("Price"), marketDataIdentifier,
-    EnvironmentSpecificationLabel(observationDay, ClosesEnvironmentRule.label())))
+    EnvironmentSpecificationLabel(observationDay, ClosesEnvironmentRule.label)))
 }
