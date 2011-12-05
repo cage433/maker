@@ -155,7 +155,10 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
 
   override def deleteCells(cells:List[(Int,Int)], currentEdits:PivotEdits, fireChange:Boolean) = {
     var deleteEdits = currentEdits
-    val (newRowCells, normalCells) = cells.partition{case (r,c) => getValueAt(r,c).state == Added}
+    def isAdded(r:Int, ac:AxisCell):Boolean = {
+      (ac.state == Added) || (r >= numOriginalRows) || ac.value.childKey.value.isInstanceOf[NewRowValue]
+    }
+    val (newRowCells, normalCells) = cells.partition{case (r,c) => isAdded(r, getValueAt(r,c))}
 
     newRowCells.foreach{case (r,c) => {
       val value = getValueAt(r,c)
@@ -286,7 +289,15 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   }
 
   override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
-    setValuesAt(List(TableValue(value, rowIndex, columnIndex)), pagePivotEdits, true)
+    val s = value.asInstanceOf[String].trim
+    if (s.isEmpty) {
+      val currentCell = getValueAt(rowIndex, columnIndex)
+      if (currentCell.state != AddedBlank) {
+        deleteCells(List((rowIndex, columnIndex)), pagePivotEdits, true)
+      }
+    } else {
+      setValuesAt(List(TableValue(s, rowIndex, columnIndex)), pagePivotEdits, true)
+    }
   }
 
   def acceptableValues(r:Int, c:Int):Set[String] = {

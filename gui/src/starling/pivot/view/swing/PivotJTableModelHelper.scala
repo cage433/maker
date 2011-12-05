@@ -181,8 +181,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val maxNumberOfRows = math.max(rowMaxRow, mainMaxRow)
 
       val rowsToAdd = ((finalRowNumber to maxNumberOfRows).flatMap(r => {
-        val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(r, c).label.nonEmpty) ||
-          (0 until numMainColumns).exists(c => mainTableModel.getValueAt(r, c).text.nonEmpty)
+        val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(r, c).state != AddedBlank) ||
+          (0 until numMainColumns).exists(c => mainTableModel.getValueAt(r, c).state != AddedBlank)
         if (addRow) {
           Some(true)
         } else {
@@ -534,29 +534,24 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val currentValue = getValueAt(r,c)
 
         val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
-          if (stringValue.isEmpty) {
-            (None, stringValue, stringValue, currentValue.state)
+          val uom = uoms0(c)
+          val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
+            stringValue + " " + uom.asString
           } else {
+            stringValue
+          }
 
-            val uom = uoms0(c)
-            val stringValueToUse = if ((uom != UOM.NULL) && stringValue.last.isDigit) {
-              stringValue + " " + uom.asString
-            } else {
-              stringValue
+          val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
+
+          val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
+          v match {
+            case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
+              val uom = uoms0(c)
+              val dv = pq.doubleValue.get
+              val newPQ = new PivotQuantity(dv, uom)
+              (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
             }
-
-            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
-
-            val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
-            v match {
-              case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
-                val uom = uoms0(c)
-                val dv = pq.doubleValue.get
-                val newPQ = new PivotQuantity(dv, uom)
-                (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
-              }
-              case _ => (Some(v),t,t,state)
-            }
+            case _ => (Some(v),t,t,state)
           }
         } catch {
           case e:Exception => (None, stringValue, stringValue, Error)
@@ -602,7 +597,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
 
     override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
-      setValuesAt(List(TableValue(value, rowIndex, columnIndex)), pagePivotEdits, true)
+      val s = value.asInstanceOf[String].trim
+      if (s.isEmpty) {
+        val currentCell = getValueAt(rowIndex, columnIndex)
+        if (currentCell.state != AddedBlank) {
+          deleteCells(List((rowIndex, columnIndex)), pagePivotEdits, true)
+        }
+      } else {
+        setValuesAt(List(TableValue(s, rowIndex, columnIndex)), pagePivotEdits, true)
+      }
     }
 
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
