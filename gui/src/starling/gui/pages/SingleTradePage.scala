@@ -293,7 +293,9 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
 
           val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(
             MarketDataIdentifier(marketDataSelection, version),
-            context.localCache.ukBusinessCalendar)
+            context.localCache.ukBusinessCalendar,
+            zeroInterestRates = (data.desk == Some(Desk.Titan))  // Metals don't want discounting during UAT
+          )
           ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule)
         }
 

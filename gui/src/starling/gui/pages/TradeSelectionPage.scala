@@ -270,7 +270,7 @@ case class TradeSelectionPage(
         mnemonic = swing.event.Key.C
         reactions += {
           case ButtonClickedEx(b, e) => {
-            val desk = deskCheckBox.ifSelected(deskCombo.selection.item)
+            val desk: Option[Desk] = deskCheckBox.ifSelected(deskCombo.selection.item)
             val deskWithTimestamp = deskCheckBox.ifSelected((deskCombo.selection.item, timestampsCombo.selectedTimestamp))
             val intradaySubgroupWithTimestamp =
               intradayTradesCheckBox.ifSelected((IntradayGroups(intradayTradesCombo.selectedSubgroups), intradayTimestamp.get))
@@ -310,7 +310,7 @@ case class TradeSelectionPage(
                 MarketDataIdentifier(selection, version)
               }
 
-              CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar)
+              CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar, zeroInterestRates = (desk == Some(Desk.Titan))) // Metals don't want discounting during UAT
             }
 
             val rp = ReportParameters(

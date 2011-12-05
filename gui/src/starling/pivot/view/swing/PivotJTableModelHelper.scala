@@ -1102,7 +1102,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     val width = math.max(rowComponentPreferredSize, (0 until numCols).map(c => rowHeaderColumnModel.getColumn(c).getPreferredWidth).sum)
     val height = colHeaderRowCount0 * PivotJTable.RowHeight
-    sizerPanel.preferredSize = new Dimension(width-1,10)
+    val d = new Dimension(width - 1, 10)
+    sizerPanel.preferredSize = d
+    sizerPanel.minimumSize = d
     rowComponent.preferredSize = new Dimension(width,height)
 
     val viewport = rowHeaderScrollPane.getViewport

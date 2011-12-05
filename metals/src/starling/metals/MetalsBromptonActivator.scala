@@ -165,7 +165,6 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
       val metalRules = List(
         ClosesEnvironmentRule(referenceDataLookup),
-        ClosesEnvironmentRule(referenceDataLookup, allowOldPricesToBeUsed = true),
         new VanillaEnvironmentRule(_.atTimeOfDay(SHFEClose), TimeOfDay.EndOfDay, new EnvironmentRuleLabel(SHFEClose.name),
           List(PricingGroup.Metals), referenceDataLookup, dataTypes),
         new TimeShiftToLMECloseEnvironmentRule(referenceDataLookup, dataTypes)
