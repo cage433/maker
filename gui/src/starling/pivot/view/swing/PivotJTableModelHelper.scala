@@ -1084,12 +1084,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }
 
-      val firstAxisCell = rowHeaderTable.getValueAt(0,0).asInstanceOf[AxisCell]
-      if (!(firstAxisCell.hidden || firstAxisCell.value.value == NullAxisValueType) || rowComponent.numberOfFields == 1) {
-        val firstColWidth = fullColumnModel.getColumn(0).getPreferredWidth + 2
-        fullColumnModel.getColumn(0).setPreferredWidth(firstColWidth)
-        rowHeaderColumnModel.getColumn(0).setPreferredWidth(firstColWidth)
-      }
+      val firstColWidth = fullColumnModel.getColumn(0).getPreferredWidth + 2
+      fullColumnModel.getColumn(0).setPreferredWidth(firstColWidth)
+      rowHeaderColumnModel.getColumn(0).setPreferredWidth(firstColWidth)
     }
 
     val rowComponentPreferredSize = {

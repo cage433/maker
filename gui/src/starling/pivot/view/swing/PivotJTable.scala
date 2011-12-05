@@ -310,7 +310,8 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
             val popup = new JPopupMenu
             popup.setBorder(LineBorder(BorderColour))
             if (deletableCells.nonEmpty) {
-              val deleteActionName = if (deletableCells.size == 1) "Delete Cell" else "Delete Cells"
+              val deletableRows = deletableCells.map(_._1).distinct
+              val deleteActionName = if (deletableRows.size == 1) "Delete Row" else "Delete Rows"
               val deleteAction = Action(deleteActionName) {
                 tableModel.deleteCells(deletableCells, pagePivotEdits, true)
               }
