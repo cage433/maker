@@ -293,6 +293,7 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   }
 
   def round(dp: Int) = copy(value = MathUtil.roundToNdp(value, dp))
+  def unnamed : Quantity = Quantity(value, uom)
 }
 
 class QuantityDouble(d : Double){

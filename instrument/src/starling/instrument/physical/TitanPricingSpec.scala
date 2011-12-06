@@ -3,26 +3,28 @@ package starling.instrument.physical
 import starling.curves.Environment
 import starling.market.{FuturesMarket, CommodityMarket, FuturesExchangeFactory, IndexWithDailyPrices}
 import starling.daterange._
-import starling.quantity.{Ratio, UOM, Quantity}
 import starling.quantity.UOM._
 import starling.market.FuturesExchange
+import starling.quantity.{SimpleNamedQuantity, Ratio, UOM, Quantity}
 
 trait TitanPricingSpec {
 
 //  def priceExcludingPremium(env : Environment) : Quantity
 
   def premiumExcludingVAT(env : Environment) : Quantity = {
-    val premiumInPremiumCurrency = if (isLiableToShanghaiVAT) (premium.named("Premium") / (env.shanghaiVATRate + 1.0)).named("Premium Excl VAT") else premium.named("Premium")
+    val premiumInPremiumCurrency = if (isLiableToShanghaiVAT) (premium.named("Premium") / toDisplayVat(env.shanghaiVATRate)).named("Premium Excl VAT") else premium.named("Premium")
     inValuationCurrency(env, premiumInPremiumCurrency)
   }
 
   def premiumIncludingVAT(env : Environment) : Option[Quantity] = {
     if (isLiableToShanghaiVAT)
-      Some(premiumExcludingVAT(env) * (env.shanghaiVATRate + 1.0))
+      Some(premiumExcludingVAT(env) * toDisplayVat(env.shanghaiVATRate))
     else
       None
   }
 
+  // ensure VAT is displayed in explanation in the form 120% rather than 20%, 0.2 + 1.0 or similar
+  private def toDisplayVat(vat : Quantity) = (vat + 1.0).unnamed.named("VAT")
 
   def priceExcludingVATExcludingPremium(env: Environment): Quantity
 
@@ -30,7 +32,7 @@ trait TitanPricingSpec {
 
   def priceIncludingVATExcludingPremium(env : Environment) = {
     if (isLiableToShanghaiVAT){
-      Some(priceExcludingVATExcludingPremium(env) * (env.shanghaiVATRate + 1.0))
+      Some(priceExcludingVATExcludingPremium(env) * toDisplayVat(env.shanghaiVATRate))
     } else {
       None
     }
@@ -114,7 +116,7 @@ trait TitanPricingSpec {
   }
   protected def subtractVATIfLiable(env : Environment, price : Quantity) = {
     if (isLiableToShanghaiVAT)
-      price / (Quantity(100, PERCENT) + env.shanghaiVATRate).named("VAT")
+      price / toDisplayVat(env.shanghaiVATRate)
     else
       price
   }

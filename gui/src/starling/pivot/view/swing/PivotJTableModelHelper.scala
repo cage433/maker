@@ -65,7 +65,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      var extraFormatInfo:ExtraFormatInfo,
                      val pagePivotEdits:PivotEdits,
                      val updateEdits:(PivotEdits, PivotTableType) => Unit,
-                     updateNumberOfEditsAndState:(Int,Boolean) => Unit) {
+                     updateNumberOfEditsAndState:(Int,Boolean) => Unit,
+                     revalidateTheWholeThing: =>Unit) {
 
   val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   val fieldInfo:FieldInfo = pivotTable.fieldInfo
@@ -180,8 +181,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val maxNumberOfRows = math.max(rowMaxRow, mainMaxRow)
 
       val rowsToAdd = ((finalRowNumber to maxNumberOfRows).flatMap(r => {
-        val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(r, c).label.nonEmpty) ||
-          (0 until numMainColumns).exists(c => mainTableModel.getValueAt(r, c).text.nonEmpty)
+        val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(r, c).state != AddedBlank) ||
+          (0 until numMainColumns).exists(c => mainTableModel.getValueAt(r, c).state != AddedBlank)
         if (addRow) {
           Some(true)
         } else {
@@ -203,6 +204,10 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     val numberOfEdits = rowHeaderTableModel.numberOfInPageEdits + mainTableModel.numberOfInPageEdits
     val validState = rowHeaderTableModel.validState && mainTableModel.validState
     updateNumberOfEditsAndState(numberOfEdits, validState)
+
+    resizeMainTableColumns
+    resizeRowHeaderTableColumns
+    revalidateTheWholeThing
   }
 
   def allEdits(e:PivotEdits):PivotEdits = fullTableModel.edits(e)
@@ -225,6 +230,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     rowHeaderTableModel.fireTableRowsUpdated(0, rowHeaderTableModel.getRowCount-1)
     colHeaderTableModel.fireTableRowsUpdated(0, colHeaderTableModel.getRowCount-1)
     fullTableModel.fireTableRowsUpdated(0, fullTableModel.getRowCount-1)
+
+    // TODO - update the edited cells in override map
+
     resizeMainTableColumns
     resizeRowHeaderTableColumns
   }
@@ -526,29 +534,24 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val currentValue = getValueAt(r,c)
 
         val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
-          if (stringValue.isEmpty) {
-            (None, stringValue, stringValue, currentValue.state)
+          val uom = uoms0(c)
+          val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
+            stringValue + " " + uom.asString
           } else {
+            stringValue
+          }
 
-            val uom = uoms0(c)
-            val stringValueToUse = if ((uom != UOM.NULL) && stringValue.last.isDigit) {
-              stringValue + " " + uom.asString
-            } else {
-              stringValue
+          val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
+
+          val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
+          v match {
+            case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
+              val uom = uoms0(c)
+              val dv = pq.doubleValue.get
+              val newPQ = new PivotQuantity(dv, uom)
+              (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
             }
-
-            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
-
-            val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
-            v match {
-              case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
-                val uom = uoms0(c)
-                val dv = pq.doubleValue.get
-                val newPQ = new PivotQuantity(dv, uom)
-                (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
-              }
-              case _ => (Some(v),t,t,state)
-            }
+            case _ => (Some(v),t,t,state)
           }
         } catch {
           case e:Exception => (None, stringValue, stringValue, Error)
@@ -594,7 +597,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
 
     override def setValueAt(value:AnyRef, rowIndex:Int, columnIndex:Int) {
-      setValuesAt(List(TableValue(value, rowIndex, columnIndex)), pagePivotEdits, true)
+      val s = value.asInstanceOf[String].trim
+      if (s.isEmpty) {
+        val currentCell = getValueAt(rowIndex, columnIndex)
+        if (currentCell.state != AddedBlank) {
+          deleteCells(List((rowIndex, columnIndex)), pagePivotEdits, true)
+        }
+      } else {
+        setValuesAt(List(TableValue(s, rowIndex, columnIndex)), pagePivotEdits, true)
+      }
     }
 
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
@@ -807,7 +818,21 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       def rowAlreadyAdded(r:Int) = {rowHeaderTableModel.getValueAt (r, 0).value.childKey.value.isInstanceOf[NewRowValue]}
 
-      val rowEditsMap = rowHeaderTableModel.overrideEdits.filterNot{case (_,ac) => ac.state == Error}
+      val (rowErrors, rowEditsMap0) = rowHeaderTableModel.overrideEdits.partition{case (_,ac) => ac.state == Error}
+      val (mainErrors, mainEditsMap0) = mainTableModel.overrideEdits.partition{case (_,tc) => tc.state == Error}
+
+      val rowEditsByRow = rowEditsMap0.groupBy{case ((r,_),_) => r}
+      val mainEditsByRow = mainEditsMap0.groupBy{case ((r,_),_) => r}
+
+      val rowsWithErrors = rowErrors.map{case ((r,_),_) => r}.toSet ++ mainErrors.map{case ((r,_),_) => r}.toSet
+
+      val rowsToRemove = rowsWithErrors.filter(r => {
+        rowEditsByRow.getOrElse(r, Map()).forall{case (_,ac) => ac.label.isEmpty} &&
+          mainEditsByRow.getOrElse(r, Map()).forall{case (_,tc) => tc.text.isEmpty}
+      })
+
+      val rowEditsMap = rowEditsMap0.filterNot{case ((r,_),_) => rowsToRemove.contains(r)}
+      val mainEditsMap = mainEditsMap0.filterNot{case ((r,_),_) => rowsToRemove.contains(r)}
 
       val (rowDeleteEdits, rowOtherEdits) = rowEditsMap.partition{case (_,ac) => ac.state == Deleted}
       val (rowAdded, rowAmended) = rowOtherEdits.partition{case (_,ac) => ac.state == Added}
@@ -835,8 +860,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }}
 
       // --------------------------------------------------------------------
-
-      val mainEditsMap = mainTableModel.overrideEdits.filterNot{case (_,tc) => tc.state == Error}
 
       val (mainDeleteEdits, mainOtherEdits) = mainEditsMap.partition{case (_,tc) => tc.state == Deleted}
       val (mainAdded, mainAmended) = mainOtherEdits.partition{case (_,tc) => tc.state == Added}
@@ -881,6 +904,14 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       newRows.sorted.foreach{case (_, row) => {
         updatedEdits = updatedEdits.withAddedRow(row)
       }}
+
+
+      println("")
+      println("")
+      println("ALL EDITS")
+      println(updatedEdits)
+      println("")
+      println("")
 
 
       updatedEdits
@@ -1060,7 +1091,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
 
         val totalWidth = widths.sum
-        val fieldCompPrefWidth = rowComponent.guiField(fieldIndex).initialPreferredSize.width
+        val rowFieldComponent = rowComponent.guiField(fieldIndex)
+        val fieldCompPrefWidth = rowFieldComponent.initialPreferredSize.width
         if (totalWidth < fieldCompPrefWidth) {
           // Need to add some space to each column.
           val perColDiff = ((fieldCompPrefWidth - totalWidth) / count)
@@ -1079,8 +1111,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             fullColumnModel.getColumn(0).setPreferredWidth(fullColumnModel.getColumn(0).getPreferredWidth + extraWidth)
             rowHeaderColumnModel.getColumn(0).setPreferredWidth(rowHeaderColumnModel.getColumn(0).getPreferredWidth + extraWidth)
           }
+          rowFieldComponent.setPreferredWidth(rowFieldComponent.initialPreferredSize.width)
         } else {
-          rowComponent.guiField(fieldIndex).setPreferredWidth(totalWidth)
+          rowFieldComponent.setPreferredWidth(totalWidth)
         }
       }
 

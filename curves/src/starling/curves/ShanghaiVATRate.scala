@@ -19,10 +19,9 @@ case class ShanghaiVATCurveKey() extends NonHistoricalCurveKey[ShanghaiVATData]{
 }
 
 case class ShanghaiVATRateKey()
-  extends AtomicDatumKey(ShanghaiVATCurveKey(), "Dummy")
+  extends AtomicDatumKey(ShanghaiVATCurveKey(), "VAT")
 {
   def nullValue = Quantity(17, PERCENT)
     
   def forwardStateValue(original : AtomicEnvironment, forwardDayAndTime : DayAndTime) = original(this)
-
 }
