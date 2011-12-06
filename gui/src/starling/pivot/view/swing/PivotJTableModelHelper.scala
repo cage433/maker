@@ -303,9 +303,21 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   val blankAxisCellTableModel = new PivotJTableModel {
     type CellType = AxisCell
+
+    private val values = fieldState.rowFields.zipWithIndex.flatMap{case (f,i) => {
+      val numRequired = pivotTable.rowFieldHeadingCount(i)
+      Array.fill(numRequired)(AxisCell.Null.copy(label = f.name))
+    }}
+
     def getRowCount = colHeaderData0.length
     def getColumnCount = rowHeaderData0(0).length
-    def getValueAt(rowIndex:Int, columnIndex:Int) = AxisCell.Null
+    def getValueAt(rowIndex:Int, columnIndex:Int) = {
+      if (rowIndex == getRowCount - 1) {
+        values(columnIndex)
+      } else {
+        AxisCell.Null
+      }
+    }
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {}
     def rowHeader(row:Int,col:Int) = false
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
@@ -760,7 +772,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
       case KeyPressed(_,scala.swing.event.Key.Up,_,_) if selection.indices.head == 0 => {
         selectIndices(-1)
-        peer.clearSelection()
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu.editor)
         onEDT({
           popupMenu.editor.requestFocusInWindow()
@@ -989,7 +1000,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       } else if ((rowIndex >= colHeaderTableModel.getRowCount)) {
         (mainTableModel, rowIndex - colHeaderTableModel.getRowCount, columnIndex - rowHeaderTableModel.getColumnCount)
       } else {
-        (blankAxisCellTableModel, 0, 0)
+        (blankAxisCellTableModel, rowIndex, columnIndex)
       }
     }
 
