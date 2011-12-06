@@ -818,7 +818,21 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       def rowAlreadyAdded(r:Int) = {rowHeaderTableModel.getValueAt (r, 0).value.childKey.value.isInstanceOf[NewRowValue]}
 
-      val rowEditsMap = rowHeaderTableModel.overrideEdits.filterNot{case (_,ac) => ac.state == Error}
+      val (rowErrors, rowEditsMap0) = rowHeaderTableModel.overrideEdits.partition{case (_,ac) => ac.state == Error}
+      val (mainErrors, mainEditsMap0) = mainTableModel.overrideEdits.partition{case (_,tc) => tc.state == Error}
+
+      val rowEditsByRow = rowEditsMap0.groupBy{case ((r,_),_) => r}
+      val mainEditsByRow = mainEditsMap0.groupBy{case ((r,_),_) => r}
+
+      val rowsWithErrors = rowErrors.map{case ((r,_),_) => r}.toSet ++ mainErrors.map{case ((r,_),_) => r}.toSet
+
+      val rowsToRemove = rowsWithErrors.filter(r => {
+        rowEditsByRow.getOrElse(r, Map()).forall{case (_,ac) => ac.label.isEmpty} &&
+          mainEditsByRow.getOrElse(r, Map()).forall{case (_,tc) => tc.text.isEmpty}
+      })
+
+      val rowEditsMap = rowEditsMap0.filterNot{case ((r,_),_) => rowsToRemove.contains(r)}
+      val mainEditsMap = mainEditsMap0.filterNot{case ((r,_),_) => rowsToRemove.contains(r)}
 
       val (rowDeleteEdits, rowOtherEdits) = rowEditsMap.partition{case (_,ac) => ac.state == Deleted}
       val (rowAdded, rowAmended) = rowOtherEdits.partition{case (_,ac) => ac.state == Added}
@@ -846,8 +860,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }}
 
       // --------------------------------------------------------------------
-
-      val mainEditsMap = mainTableModel.overrideEdits.filterNot{case (_,tc) => tc.state == Error}
 
       val (mainDeleteEdits, mainOtherEdits) = mainEditsMap.partition{case (_,tc) => tc.state == Deleted}
       val (mainAdded, mainAmended) = mainOtherEdits.partition{case (_,tc) => tc.state == Added}
@@ -892,6 +904,14 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       newRows.sorted.foreach{case (_, row) => {
         updatedEdits = updatedEdits.withAddedRow(row)
       }}
+
+
+      println("")
+      println("")
+      println("ALL EDITS")
+      println(updatedEdits)
+      println("")
+      println("")
 
 
       updatedEdits
