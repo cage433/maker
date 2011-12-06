@@ -23,7 +23,7 @@ trait TitanPricingSpec {
       None
   }
 
-  // ensure VAT is displayed in explanation in the form 120% rather than 0.2 + 1.0 or similar
+  // ensure VAT is displayed in explanation in the form 120% rather than 20%, 0.2 + 1.0 or similar
   private def toDisplayVat(vat : Quantity) = (vat + 1.0).unnamed.named("VAT")
 
   def priceExcludingVATExcludingPremium(env: Environment): Quantity
