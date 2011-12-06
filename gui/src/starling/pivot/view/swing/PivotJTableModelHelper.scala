@@ -541,7 +541,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val currentValue = getValueAt(r,c)
         val stringValue = {
           val currentText = currentValue.text.trim
-          value.asInstanceOf[String].trim + (if (currentText.nonEmpty && !currentText.last.isDigit) {
+          val v = value.asInstanceOf[String].trim
+          v + (if (currentText.nonEmpty && !currentText.last.isDigit && v.nonEmpty && v.last.isDigit) {
             val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
             currentText.substring(lastDigit)
           } else {""})
