@@ -539,60 +539,62 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val c = tv.column
         val value = tv.value
         val currentValue = getValueAt(r,c)
-        val stringValue = {
-          val currentText = currentValue.text.trim
-          val v = value.asInstanceOf[String].trim
-          v + (if (currentText.nonEmpty && !currentText.last.isDigit && v.nonEmpty && v.last.isDigit) {
-            val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
-            currentText.substring(lastDigit)
-          } else {""})
-        }
-        val pars = parser(r, c)
-        val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
-          val uom = uoms0(c)
-          val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
-            stringValue + " " + uom.asString
-          } else {
-            stringValue
+        val currentText = currentValue.text.trim
+        val v = value.asInstanceOf[String].trim
+        if (v != currentText) {
+          val stringValue = {
+            v + (if (currentText.nonEmpty && !currentText.last.isDigit && v.nonEmpty && v.last.isDigit) {
+              val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
+              currentText.substring(lastDigit)
+            } else {""})
           }
-
-          val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
-
-          val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
-          v match {
-            case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
-              val uom = uoms0(c)
-              val dv = pq.doubleValue.get
-              val newPQ = new PivotQuantity(dv, uom)
-              (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
-            }
-            case _ => (Some(v),t,t,state)
-          }
-        } catch {
-          case e:Exception => (None, stringValue, stringValue, Error)
-        }
-
-        val k = (r,c)
-        overrideMap -= k
-        val originalCell = getValueAt(r,c)
-        val originalLabel = originalCell.originalValue match {
-          case None => {
-            if (originalCell.text.nonEmpty) {
-              originalCell.text
+          val pars = parser(r, c)
+          val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
+            val uom = uoms0(c)
+            val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
+              stringValue + " " + uom.asString
             } else {
-              "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+              stringValue
             }
-          }
-          case Some(origVal) => fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo).text
-        }
 
-        if (originalLabel == newLabelForComparison) {
-          anyResetEdits = resetCells(List(k), anyResetEdits, false)
-        } else {
-          if (stateToUse == Error) {
-            overrideMap(k) = originalCell.copy(text = stringValue, longText = Some(stringValue), state = Error)
+            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
+
+            val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
+            v match {
+              case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
+                val uom = uoms0(c)
+                val dv = pq.doubleValue.get
+                val newPQ = new PivotQuantity(dv, uom)
+                (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
+              }
+              case _ => (Some(v),t,t,state)
+            }
+          } catch {
+            case e:Exception => (None, stringValue, stringValue, Error)
+          }
+
+          val k = (r,c)
+          overrideMap -= k
+          val originalCell = getValueAt(r,c)
+          val originalLabel = originalCell.originalValue match {
+            case None => {
+              if (originalCell.text.nonEmpty) {
+                originalCell.text
+              } else {
+                "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+              }
+            }
+            case Some(origVal) => fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo).text
+          }
+
+          if (originalLabel == newLabelForComparison) {
+            anyResetEdits = resetCells(List(k), anyResetEdits, false)
           } else {
-            overrideMap(k) = originalCell.copy(text = newLabel, longText = Some(newLabel), state = stateToUse, value = newValue.get, textPosition = RightTextPosition)
+            if (stateToUse == Error) {
+              overrideMap(k) = originalCell.copy(text = stringValue, longText = Some(stringValue), state = Error)
+            } else {
+              overrideMap(k) = originalCell.copy(text = newLabel, longText = Some(newLabel), state = stateToUse, value = newValue.get, textPosition = RightTextPosition)
+            }
           }
         }
       })
