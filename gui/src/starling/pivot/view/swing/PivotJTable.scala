@@ -53,6 +53,17 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         }}
         if (deletableCells.nonEmpty) {
           tableModel.deleteCells(deletableCells, pagePivotEdits, true)
+          if (selectedCells.nonEmpty) {
+            val newSelectedCells = getSelectedCells
+            if (newSelectedCells.isEmpty) {
+              val (r,c) = selectedCells.head
+              if (r < getRowCount) {
+                setSelectedCells(List((r,c)))
+              } else {
+                setSelectedCells(List((getRowCount - 1, c)))
+              }
+            }
+          }
           repaint()
         }
       } else if (e.getKeyCode == KeyEvent.VK_ESCAPE) {
@@ -314,6 +325,17 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
               val deleteActionName = if (deletableRows.size == 1) "Delete Row" else "Delete Rows"
               val deleteAction = Action(deleteActionName) {
                 tableModel.deleteCells(deletableCells, pagePivotEdits, true)
+                if (selectedCells.nonEmpty) {
+                  val newSelectedCells = getSelectedCells
+                  if (newSelectedCells.isEmpty) {
+                    val (r,c) = selectedCells.head
+                    if (r < getRowCount) {
+                      setSelectedCells(List((r,c)))
+                    } else {
+                      setSelectedCells(List((getRowCount - 1, c)))
+                    }
+                  }
+                }
               }
               val deleteItem = new MenuItem(deleteAction)
               popup.add(deleteItem.peer)
