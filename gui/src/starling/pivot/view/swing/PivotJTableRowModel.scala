@@ -318,7 +318,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     }
   }
 
-  def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+  def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:PivotJTable) {
     // Using a zero row index here as it doesn't really matter as long as it is the correct column.
     val vals = acceptableValues(0, c)
     if (vals.nonEmpty) {
@@ -361,5 +361,19 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
     popupListView.requestFocusInWindow()
     popupListView.selectIndices(0)
+  }
+  override def selectPopupValueIfOnlyOneShowing(row:Int, col:Int) {
+    if (popupShowing && popupListView.listData.size == 1) {
+      val valueToUse = popupListView.listData.head
+      setValueAt(valueToUse, row, col)
+    }
+  }
+  override def singlePopupValue(row:Int, col:Int) = {
+    if (popupShowing && popupListView.listData.size == 1) {
+      val valueToUse = popupListView.listData.head
+      Some(valueToUse)
+    } else {
+      None
+    }
   }
 }

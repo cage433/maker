@@ -24,6 +24,7 @@ import com.trafigura.services.ResteasyServiceApi
 import org.joda.time.Period
 import starling.scheduler.{TaskDescription, Scheduler}
 import starling.services._
+import rpc.refdata.LogisticsService
 import starling.db._
 import starling.lim.LIMService
 import starling.gui.api.Email._
@@ -31,6 +32,7 @@ import starling.gui.api.{Email, MarketDataSelection, PricingGroup}
 import starling.metals.tasks.{UploadCurveToTrinityTask, TrinityUploader}
 import starling.props.ServerTypeLabel._
 import starling.calendar.{BusinessCalendar, BusinessCalendars}
+import com.trafigura.services.Logistics.LogisticsServiceApi
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -72,22 +74,20 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val environmentProvider = new DefaultEnvironmentProvider(marketDataStore, referenceDataLookup)
 
+    import starling.services.rpc.refdata.{FileMockedTitanServices, DefaultTitanServices}
+
+    val (titanServices, logisticsServices) = if (!testMode) (
+      new DefaultTitanServices(props),
+      new DefaultTitanLogisticsServices(props)
+    )
+    else (
+      new FileMockedTitanServices(),
+      new FileMockedTitanLogisticsServices()
+    )
+
     val titanTradeStoreManager: TitanTradeStoreManager = {
-      import starling.services.rpc.refdata.{FileMockedTitanServices, DefaultTitanServices}
-
-      val (titanServices, logisticsServices) = if (!testMode) (
-        new DefaultTitanServices(props),
-        new DefaultTitanLogisticsServices(props)
-      )
-      else (
-        new FileMockedTitanServices(),
-        new FileMockedTitanLogisticsServices()
-      )
-
       val manager = TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices)
-
       context.onStarted { manager.start }
-
       manager
     }
 
@@ -152,11 +152,13 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     {
       import com.trafigura.services.marketdata._
       import starling.services.rpc.marketdata._
-
       val marketDataService = new MarketDataService(marketDataStore)
+      val logisticsService = new LogisticsService(titanServices, logisticsServices)
 
       context.registerService(classOf[MarketDataServiceApi], marketDataService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
       context.registerService(classOf[ExampleServiceApi], ExampleService, ServiceProperties(ExportTitanHTTPProperty))
+
+      context.registerService(classOf[LogisticsServiceApi], logisticsService, ServiceProperties(ExportTitanHTTPProperty))
     }
 
     {

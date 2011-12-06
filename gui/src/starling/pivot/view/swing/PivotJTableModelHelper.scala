@@ -18,6 +18,7 @@ import collection.immutable.Map
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import swing.event.{Event, MouseClicked, KeyPressed, KeyTyped}
+import java.awt.event.{ActionEvent, KeyEvent}
 
 case class OverrideDetails(text:String, state:EditableCellState)
 case class TableValue(value:AnyRef, row:Int, column:Int)
@@ -37,9 +38,11 @@ abstract class PivotJTableModel extends AbstractTableModel {
   def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView)
   def deleteCells(cells:List[(Int,Int)], currentEdits:PivotEdits, fireChange:Boolean):PivotEdits = PivotEdits.Null
   def resetCells(cells:List[(Int,Int)], currentEdits:PivotEdits, fireChange:Boolean):PivotEdits = PivotEdits.Null
-  def textTyped(textField:JTextField, cellEditor:CellEditor , r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp)
+  def textTyped(textField:JTextField, cellEditor:CellEditor , r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:PivotJTable)
   def finishedEditing()
   def popupShowing:Boolean
+  def selectPopupValueIfOnlyOneShowing(row:Int, col:Int) {}
+  def singlePopupValue(row:Int, col:Int):Option[String] = None
   def focusPopup()
   def parser(row:Int, col:Int):PivotParser = TextPivotParser
   def setValuesAt(values:List[TableValue], currentEdits:PivotEdits, fireChange:Boolean):PivotEdits = PivotEdits.Null
@@ -288,7 +291,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
       resetEdits
     }
-    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:PivotJTable) {}
     def finishedEditing() {popupMenu setVisible false}
     def popupShowing = popupMenu.isShowing
     def focusPopup() {
@@ -306,7 +309,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {}
     def rowHeader(row:Int,col:Int) = false
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
-    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {}
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:PivotJTable) {}
     def finishedEditing() {popupMenu setVisible false}
     def popupShowing = popupMenu.isShowing
     def focusPopup() {
@@ -539,60 +542,62 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val c = tv.column
         val value = tv.value
         val currentValue = getValueAt(r,c)
-        val stringValue = {
-          val currentText = currentValue.text.trim
-          val v = value.asInstanceOf[String].trim
-          v + (if (currentText.nonEmpty && !currentText.last.isDigit && v.nonEmpty && v.last.isDigit) {
-            val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
-            currentText.substring(lastDigit)
-          } else {""})
-        }
-        val pars = parser(r, c)
-        val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
-          val uom = uoms0(c)
-          val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
-            stringValue + " " + uom.asString
-          } else {
-            stringValue
+        val currentText = currentValue.text.trim
+        val v = value.asInstanceOf[String].trim
+        if (v != currentText) {
+          val stringValue = {
+            v + (if (currentText.nonEmpty && !currentText.last.isDigit && v.nonEmpty && v.last.isDigit) {
+              val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
+              currentText.substring(lastDigit)
+            } else {""})
           }
-
-          val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
-
-          val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
-          v match {
-            case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
-              val uom = uoms0(c)
-              val dv = pq.doubleValue.get
-              val newPQ = new PivotQuantity(dv, uom)
-              (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
-            }
-            case _ => (Some(v),t,t,state)
-          }
-        } catch {
-          case e:Exception => (None, stringValue, stringValue, Error)
-        }
-
-        val k = (r,c)
-        overrideMap -= k
-        val originalCell = getValueAt(r,c)
-        val originalLabel = originalCell.originalValue match {
-          case None => {
-            if (originalCell.text.nonEmpty) {
-              originalCell.text
+          val pars = parser(r, c)
+          val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
+            val uom = uoms0(c)
+            val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
+              stringValue + " " + uom.asString
             } else {
-              "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+              stringValue
             }
-          }
-          case Some(origVal) => fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo).text
-        }
 
-        if (originalLabel == newLabelForComparison) {
-          anyResetEdits = resetCells(List(k), anyResetEdits, false)
-        } else {
-          if (stateToUse == Error) {
-            overrideMap(k) = originalCell.copy(text = stringValue, longText = Some(stringValue), state = Error)
+            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
+
+            val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
+            v match {
+              case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
+                val uom = uoms0(c)
+                val dv = pq.doubleValue.get
+                val newPQ = new PivotQuantity(dv, uom)
+                (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
+              }
+              case _ => (Some(v),t,t,state)
+            }
+          } catch {
+            case e:Exception => (None, stringValue, stringValue, Error)
+          }
+
+          val k = (r,c)
+          overrideMap -= k
+          val originalCell = getValueAt(r,c)
+          val originalLabel = originalCell.originalValue match {
+            case None => {
+              if (originalCell.text.nonEmpty) {
+                originalCell.text
+              } else {
+                "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+              }
+            }
+            case Some(origVal) => fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo).text
+          }
+
+          if (originalLabel == newLabelForComparison) {
+            anyResetEdits = resetCells(List(k), anyResetEdits, false)
           } else {
-            overrideMap(k) = originalCell.copy(text = newLabel, longText = Some(newLabel), state = stateToUse, value = newValue.get, textPosition = RightTextPosition)
+            if (stateToUse == Error) {
+              overrideMap(k) = originalCell.copy(text = stringValue, longText = Some(stringValue), state = Error)
+            } else {
+              overrideMap(k) = originalCell.copy(text = newLabel, longText = Some(newLabel), state = stateToUse, value = newValue.get, textPosition = RightTextPosition)
+            }
           }
         }
       })
@@ -649,7 +654,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       parser.acceptableValues
     }
 
-    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:PivotJTable) {
       val vals = acceptableValues(0, c)
       if (vals.nonEmpty) {
         val t = textField.getText.toLowerCase
@@ -692,14 +697,29 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       popupListView.requestFocusInWindow()
       popupListView.selectIndices(0)
     }
+    override def selectPopupValueIfOnlyOneShowing(row:Int, col:Int) {
+      if (popupShowing && popupListView.listData.size == 1) {
+        val valueToUse = popupListView.listData.head
+        setValueAt(valueToUse, row, col)
+      }
+    }
+
+    override def singlePopupValue(row:Int, col:Int) = {
+      if (popupShowing && popupListView.listData.size == 1) {
+        val valueToUse = popupListView.listData.head
+        Some(valueToUse)
+      } else {
+        None
+      }
+    }
   }
 
   val popupMenu = new JPopupMenu {
     var editor:JTextField = _
     var cellEditor:CellEditor = _
-    var tableToFocus:AWTComp = _
+    var tableToFocus:PivotJTable = _
 
-    def show(ed:JTextField, cEditor:CellEditor, tToFocus:AWTComp, invoker:AWTComp, x:Int, y:Int) {
+    def show(ed:JTextField, cEditor:CellEditor, tToFocus:PivotJTable, invoker:AWTComp, x:Int, y:Int) {
       editor = ed
       cellEditor = cEditor
       tableToFocus = tToFocus
@@ -717,7 +737,17 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
     reactions += {
       case KeyPressed(_,scala.swing.event.Key.Enter,_,_) => selectText(selection.items.head)
-      case KeyPressed(_,scala.swing.event.Key.Tab,_,_) => selectText(selection.items.head)
+      case KeyPressed(_,scala.swing.event.Key.Tab,_,_) => {
+        selectText(selection.items.head)
+        val am = SwingUtilities.getUIActionMap(popupMenu.tableToFocus)
+        val im = SwingUtilities.getUIInputMap(popupMenu.tableToFocus, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+
+        val tabBinding = im.get(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0))
+        val tabAction = am.get(tabBinding)
+
+        val ae = new ActionEvent(popupMenu.tableToFocus, 0, "")
+        tabAction.actionPerformed(ae)
+      }
       case e@KeyPressed(_,scala.swing.event.Key.BackSpace,_,_) => e.consume()
       case e@KeyPressed(_,scala.swing.event.Key.Escape,_,_) => {
         e.consume()
@@ -730,6 +760,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
       case KeyPressed(_,scala.swing.event.Key.Up,_,_) if selection.indices.head == 0 => {
         selectIndices(-1)
+        peer.clearSelection()
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu.editor)
         onEDT({
           popupMenu.editor.requestFocusInWindow()
@@ -1032,16 +1063,27 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       allModels.foreach(_.fireTableDataChanged())
     }
 
-    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:AWTComp) {
+    def textTyped(textField:JTextField, cellEditor:CellEditor, r:Int, c:Int, focusOwner:Option[AWTComp], tableFrom:PivotJTable) {
       val (m,row,col) = getTableModel(r, c)
       m.textTyped(textField, cellEditor, row, col, focusOwner, tableFrom)
     }
-    def finishedEditing() {popupMenu setVisible false}
+    def finishedEditing() {
+      popupMenu setVisible false
+      popupListView.peer.clearSelection()
+    }
     def popupShowing = popupMenu.isShowing
     def focusPopup() {
       KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
       popupListView.requestFocusInWindow()
       popupListView.selectIndices(0)
+    }
+    override def selectPopupValueIfOnlyOneShowing(r:Int, c:Int) {
+      val (m,row,col) = getTableModel(r, c)
+      m.selectPopupValueIfOnlyOneShowing(row, col)
+    }
+    override def singlePopupValue(r:Int, c:Int) = {
+      val (m,row,col) = getTableModel(r, c)
+      m.singlePopupValue(row, col)
     }
   }
 
