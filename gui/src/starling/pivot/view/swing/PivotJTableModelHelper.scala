@@ -538,10 +538,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val r = tv.row
         val c = tv.column
         val value = tv.value
-        val stringValue = value.asInstanceOf[String].trim
-        val pars = parser(r, c)
         val currentValue = getValueAt(r,c)
-
+        val stringValue = {
+          val currentText = currentValue.text.trim
+          value.asInstanceOf[String].trim + (if (currentText.nonEmpty && !currentText.last.isDigit) {
+            val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
+            currentText.substring(lastDigit)
+          } else {""})
+        }
+        val pars = parser(r, c)
         val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
           val uom = uoms0(c)
           val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
