@@ -169,7 +169,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
         }
         case _ => {
           val k = ((r,c))
-          overrideMap(k) = overrideMap(k).copy(label = "", longLabel = "")
+          overrideMap(k) = overrideMap(k).copy(label = "", longLabel = "", overrideState = Some(Added))
         }
       }
     }}
@@ -216,7 +216,11 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
           deletedRowsToReset += r
         }
       }
-      overrideMap -= k
+      if (r >= numOriginalRows) {
+        overrideMap(k) = overrideMap(k).copy(label = "", longLabel = "", overrideState = Some(Added))
+      } else {
+        overrideMap -= k
+      }
       resetEdits = resetEdits.remove(getValueAt(r,c).value.pivotEdits)
     }}
     deletedRowsToReset.distinct.foreach(r => {

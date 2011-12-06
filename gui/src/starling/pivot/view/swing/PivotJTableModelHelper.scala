@@ -455,7 +455,11 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             deletedRowsToReset += r
           }
         }
-        overrideMap -= k
+        if (r >= numOriginalRows) {
+          overrideMap(k) = overrideMap(k).copy(text = "", longText = Some(""), state = Added)
+        } else {
+          overrideMap -= k
+        }
         resetEdits = resetEdits.remove(getValueAt(r,c).edits)
       }}
       deletedRowsToReset.distinct.foreach(r => {
@@ -469,14 +473,19 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       maybeUpdate(fireChange, currentEdits, resetEdits)
       resetEdits
     }
+
     override def deleteCells(cells:List[(Int,Int)], currentEdits:PivotEdits, fireChange:Boolean) = {
       var deleteEdits = currentEdits
 
-      val (newRowCells, normalCells) = cells.partition{case (r,c) => getValueAt(r,c).state == Added}
+      def isAdded(r:Int, tc:TableCell):Boolean = {
+        (tc.state == Added) || (r >= numOriginalRows) || rowHeaderTableModel.getValueAt(r,0).value.childKey.value.isInstanceOf[NewRowValue]
+      }
+
+      val (newRowCells, normalCells) = cells.partition{case (r,c) => isAdded(r, getValueAt(r,c))}
 
       newRowCells.foreach{case (r,c) => {
         val value = getValueAt(r,c)
-        val rowCell = rowHeaderTableModel.getValueAt(r,c)
+        val rowCell = rowHeaderTableModel.getValueAt(r,0)
         rowCell.value.childKey.value match {
           case NewRowValue(rowIndex) => {
             deleteEdits = deleteEdits.withNewAmended(rowIndex, field(c), None)
@@ -484,7 +493,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           }
           case _ => {
             val k = ((r,c))
-            overrideMap(k) = overrideMap(k).copy(text = "", longText = Some(""))
+            overrideMap(k) = overrideMap(k).copy(text = "", longText = Some(""), state = Added)
           }
         }
       }}
