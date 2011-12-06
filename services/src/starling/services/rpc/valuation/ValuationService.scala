@@ -48,7 +48,7 @@ case class ValuationService(
 
   private def marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier]) : (TitanMarketDataIdentifier, Environment) = {
     val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse(bestValuationIdentifier())
-    val env = environmentProvider.environment(marketDataIdentifier).forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay)).undiscounted // Metals don't want discounting during UAT
+    val env = environmentProvider.environment(marketDataIdentifier).undiscounted.forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay)) // Metals don't want discounting during UAT
     (marketDataIdentifier, env)
   }
   def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier] = None) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
