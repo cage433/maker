@@ -31,7 +31,7 @@ case class Trade(
       case h::Nil => tr + h.explanation(env)
       case _ => tr + new SimpleNamedQuantity("All Costs", Quantity.sumNamed(costs.map(_.explanation(env))))
     }
-    pnl.inBaseCurrency.named("Total")
+    pnl.inBaseCurrency.named("Valuation")
   }
 
   def assets(env: Environment) = asUtpPortfolio.assets(env)
