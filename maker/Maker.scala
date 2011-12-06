@@ -1,32 +1,29 @@
-import maker.project.Project
-import java.io.File
+import maker._
+import project.Project
 
-val libRoot = new File("lib_managed")
+val libRoot = List(file("lib_managed"))
 
-val managerRoot = new File("manager")
+val managerRoot = file("manager")
 val manager = new Project( 
   "manager",
   managerRoot,
-  List(new File(managerRoot, "src")),
-  List(new File(managerRoot, "tests")),
-  List(libRoot)
+  Nil, Nil,
+  libRoot
 )
 
-val utilsRoot = new File("utils") 
+val utilsRoot = file("utils") 
 val utils = new Project(
   "utils",
   utilsRoot,
-  List(new File(utilsRoot, "src")),
-  List(new File(utilsRoot, "tests")),
-  List(libRoot)
+  Nil, Nil,
+  libRoot
 ) dependsOn (manager)
 
-val concurrentRoot = new File("concurrent")
+val concurrentRoot = file("concurrent")
 val concurrent = new Project(
   "concurrent",
   concurrentRoot,
-  List(new File(concurrentRoot, "src")),
-  List(new File(concurrentRoot, "tests")),
-  List(libRoot)
+  Nil, Nil,
+  libRoot
 ) dependsOn (utils)
 
