@@ -90,6 +90,10 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         putClientProperty("JTable.autoStartsEdit", false)
       } else if (e.getKeyCode == KeyEvent.VK_RIGHT && (e.getModifiersEx & InputEvent.ALT_DOWN_MASK) == InputEvent.ALT_DOWN_MASK) {
         putClientProperty("JTable.autoStartsEdit", false)
+      } else if (e.getKeyCode == KeyEvent.VK_TAB) {
+        if (isEditing) {
+          tableModel.selectPopupValueIfOnlyOneShowing(getEditingRow, getEditingColumn)
+        }
       } else {
         putClientProperty("JTable.autoStartsEdit", true)
       }
@@ -144,6 +148,16 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
     val textField = new JTextField() {
       override def processKeyBinding(ks:KeyStroke, e:KeyEvent, condition:Int, pressed:Boolean) = {
+        if (e.getKeyCode == KeyEvent.VK_TAB && e.getModifiersEx == 0 && condition == 0) {
+          if (isEditing) {
+            val r = getEditingRow
+            val c = getEditingColumn
+            tableModel.singlePopupValue(r, c) match {
+              case Some(t) => setText(t)
+              case None =>
+            }
+          }
+        }
         val r = super.processKeyBinding(ks, e, condition, pressed)
         // Don't want to react if ctrl is down.
         val offMask = InputEvent.CTRL_DOWN_MASK
