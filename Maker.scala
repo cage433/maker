@@ -4,7 +4,7 @@ import project.Project
 val libRoot = List(file("lib_managed"))
 
 val managerRoot = file("manager")
-val manager = new Project( 
+lazy val manager = new Project( 
   "manager",
   managerRoot,
   Nil, Nil,
@@ -12,7 +12,7 @@ val manager = new Project(
 )
 
 val utilsRoot = file("utils") 
-val utils = new Project(
+lazy val utils = new Project(
   "utils",
   utilsRoot,
   Nil, Nil,
@@ -20,7 +20,7 @@ val utils = new Project(
 ) dependsOn (manager)
 
 val concurrentRoot = file("concurrent")
-val concurrent = new Project(
+lazy val concurrent = new Project(
   "concurrent",
   concurrentRoot,
   Nil, Nil,
