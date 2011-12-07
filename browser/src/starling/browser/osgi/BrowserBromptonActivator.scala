@@ -111,6 +111,9 @@ class BrowserBromptonActivator extends BromptonActivator {
           bundle.addListeners(cacheMap, bundlesPublisher)
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
           pageContextPublisher.publish(BundleAdded(bundle))
+          if (bundle == RootBrowserBundle) {
+            pageContextPublisher.publish(UserSettingUpdated(UserSettings.ShowPageTime)) //to trigger show page on the first page
+          }
           latch.decrement()
           println("Bundle '" + bundle.bundleName + "' started. " + ManagementFactory.getRuntimeMXBean().getUptime()  + "ms")
         }

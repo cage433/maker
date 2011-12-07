@@ -99,7 +99,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   val publisherX = new Publisher {}
   publisherX.reactions += {
     case UserSettingUpdated(UserSettings.ShowPageTime) => {
-      pageTimeLabel.visible = userSettings.getSetting(UserSettings.ShowPageTime)
+      pageTimeLabel.visible = userSettings.getSetting(UserSettings.ShowPageTime, false)
     }
     case e@BundleAdded(bundle) => {
       if (current != -1 && bundle.bundleName == history(current).bundle) {
