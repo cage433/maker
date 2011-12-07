@@ -7,7 +7,6 @@ import starling.manager._
 import starling.calendar.BusinessCalendars
 import starling.services.excel.ExcelLoopReceiver
 import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRules, CurveViewer}
-import starling.daterange.{ObservationPoint, TimeOfDay, ObservationTimeOfDay}
 import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
 import javax.servlet.http.HttpServlet
@@ -15,6 +14,8 @@ import starling.rmi._
 import starling.db.{MarketDataSource, MarketDataStore}
 import starling.services.{QlikViewUpdater, EmailService, ReferenceData, StarlingInit}
 import starling.http.GUICode
+import java.util.Timer
+import starling.daterange._
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -100,8 +101,13 @@ class ServicesBromptonActivator extends BromptonActivator {
     })
     excelLoopReceiver.start
 
+    val timer = new Timer(true)
+    context.registerService(classOf[Timer], timer)
+    context.registerService(classOf[Notifier], new TimedNotifier(timer))
+
     if (props.QlikViewEnabled()) {
-      context.registerService(classOf[Receiver], new QlikViewUpdater(props.QlikViewServerUrl(), props.QlikViewSpotFXTask()))
+      context.registerService(classOf[Receiver], new QlikViewUpdater(props.QlikViewServerUrl(), props.QlikViewSpotFXTask(),
+        context.awaitService(classOf[Notifier])))
     }
 
     starlingInit.start

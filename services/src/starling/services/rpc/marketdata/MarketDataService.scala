@@ -11,13 +11,13 @@ import scalaz.Scalaz._
 import starling.db.{SnapshotID, MarketDataStore}
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
 import starling.calendar.WeekdayBusinessCalendar
-import starling.daterange.{Location, Day}
 import collection.immutable.Map
 import starling.quantity.{Quantity, UOM}
 import starling.titan.EDMConversions
+import starling.daterange.{Notifier, Location, Day}
 
 
-class MarketDataService(marketDataStore: MarketDataStore)
+class MarketDataService(marketDataStore: MarketDataStore, notifier: Notifier = Notifier.Null)
   extends MarketDataServiceApi with Log {
 
 
@@ -51,6 +51,8 @@ class MarketDataService(marketDataStore: MarketDataStore)
 
 
   def latestSpotFXRates = {
+    notifier.notify("latestSpotFXRates")
+
     val snapshot = latestSnapshotID.getOrElse(
       throw new IllegalArgumentException("No Market Data Snapshots have been made within the last business week"))
 
