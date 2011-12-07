@@ -24,7 +24,7 @@ case class PricingValuationDetails(
   quotationPeriodEnd : Option[Day],
   index : String
 ){
-override def toString = JsonSerializer(classOf[PricingValuationDetails])(EDMFormats).pretty(this)
+override def toString = JsonSerializer()(EDMFormats).pretty(this)
 }
 
 trait CostsAndIncomeValuation {
@@ -133,7 +133,7 @@ case class PurchaseQuotaValuation(
  assignmentValuations: Map[String, CostsAndIncomeAllocatedPurchaseAssignmentValuation] // Keys are assignment ID
 ) extends QuotaValuation {
   def hasError:Boolean = (unallocatedValuations.values ++ assignmentValuations.values).exists(_.hasError)
-  override def toString = JsonSerializer(classOf[PurchaseQuotaValuation])(EDMFormats).pretty(this)
+  override def toString = JsonSerializer()(EDMFormats).pretty(this)
 }
 
 
@@ -174,7 +174,7 @@ case class SalesQuotaValuation(
   def hasError = unallocatedValuationDetails.isLeft || benchmarkDetails.isLeft ||
         assignmentValuations.values.exists(_.hasError)
 
-  override def toString = JsonSerializer(classOf[SalesQuotaValuation])(EDMFormats).pretty(this)
+  override def toString = JsonSerializer()(EDMFormats).pretty(this)
 }
 
 
