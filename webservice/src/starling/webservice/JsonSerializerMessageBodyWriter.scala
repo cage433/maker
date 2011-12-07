@@ -31,6 +31,6 @@ class JsonSerializerMessageBodyWriter extends MessageBodyWriter[Any] {
   private def serialize(clazz: Class[_], value: Any): String = if (clazz.isPrimitive || clazz == classOf[String]) {
     value.toString
   } else {
-    JsonSerializer(clazz).serialize(value)
+    JsonSerializer().serialize(value)
   }
 }

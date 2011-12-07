@@ -28,7 +28,7 @@ class XmlSerializerMessageBodyWriterTests extends WordSpec with ShouldMatchers {
   }
 
   "should produce xml that can be converted to json" in {
-    val serializer = JsonSerializer(classOf[ReferenceInterestRate])
+    val serializer = JsonSerializer()
 
     serializer.toJValue(referenceInterestRate).toXml should be ===
       writer.serialize(classOf[ReferenceInterestRate], referenceInterestRate)
