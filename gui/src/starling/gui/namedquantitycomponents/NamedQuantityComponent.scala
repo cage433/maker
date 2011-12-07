@@ -61,7 +61,13 @@ object NamedQuantityComponentHelper {
     }
   }
 
-  def quantityText(q:Quantity, fi:ExtraFormatInfo) = q.toStringAllDecimalPlaces()
+  def quantityText(q:Quantity, fi:ExtraFormatInfo) = {
+    if (fi.decimalPlaces.unlimitedOnExplainScreen) {
+      q.toStringAllDecimalPlaces()
+    } else {
+      QuantityLabelPivotFormatter.format(q, fi).text
+    }
+  }
 }
 import NamedQuantityComponentHelper._
 

@@ -483,6 +483,12 @@ object StarlingSettings {
       val lotsSpinner = createSpinner(numFromText(dp.lotsFormat))
       val percentSpinner = createSpinner(numFromText(dp.percentageFormat))
 
+      val explainCheckBox = new CheckBox("Unlimited on Explain Screen") {
+        selected = dp.unlimitedOnExplainScreen
+        tooltip = "Display the maximum number of decimal places when viewing the explain screen"
+        reactions += {case ButtonClicked(_) => saveSettings()}
+      }
+
       add(LabelWithSeparator("Decimal Places"), "spanx, growx, wrap")
       add(new Label("Default:"), "skip 1")
       add(defaultSpinner, "wrap")
@@ -493,15 +499,17 @@ object StarlingSettings {
       add(new Label("Lots:"), "skip 1")
       add(lotsSpinner, "wrap")
       add(new Label("Percent:"), "skip 1")
-      add(percentSpinner)
+      add(percentSpinner, "wrap unrel")
+      add(explainCheckBox, "skip 1, spanx")
 
-      def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format, percentSpinner.format)
+      def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format, percentSpinner.format, explainCheckBox.selected)
       def decimalPlaces_=(dp:DecimalPlaces) {
         defaultSpinner.setValue(numFromText(dp.defaultFormat))
         priceSpinner.setValue(numFromText(dp.priceFormat))
         currencySpinner.setValue(numFromText(dp.currencyFormat))
         lotsSpinner.setValue(numFromText(dp.lotsFormat))
         percentSpinner.setValue(numFromText(dp.percentageFormat))
+        explainCheckBox.selected = dp.unlimitedOnExplainScreen
       }
     }
     lazy val dateRangeFormatPanel = new MigPanel("insets n n n 0", "[" + StandardLeftIndent + "][p]") {
