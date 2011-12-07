@@ -51,7 +51,7 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
   val marketDataID = marketDataStore.latestMarketDataIdentifier(marketDataSelection)
   val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
 
-  val rule = new ClosesEnvironmentRule(neptuneRefData, allowOldPricesToBeUsed = true)
+  val rule = new ClosesEnvironmentRule(neptuneRefData)
   rule.createEnv(marketDay, reader).environment
 //  val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose), Map(), new MarketDataTypes(neptuneRefData))
 //  Environment(
