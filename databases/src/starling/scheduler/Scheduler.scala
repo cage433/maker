@@ -9,11 +9,10 @@ import starling.utils.ImplicitConversions._
 import collection.mutable.ListBuffer
 
 
-class Scheduler(props: Props, initialTasks: List[TaskDescription] = Nil) extends Stopable with Log {
+class Scheduler(props: Props, timer: Timer, initialTasks: List[TaskDescription] = Nil) extends Stopable with Log {
   def getTasks: List[TaskDescription] = tasks.toList
 
   private val tasks = new ListBuffer[TaskDescription]() ++= initialTasks
-  private lazy val timer = new Timer(true)
 
   override def start = log.infoF("%s tasks for ServerType: %s" %(tasks.size, props.ServerType())) {
     super.start;

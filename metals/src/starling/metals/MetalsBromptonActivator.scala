@@ -5,7 +5,6 @@ import swing.event.Event
 
 import starling.curves._
 import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
-import starling.daterange.TimeOfDay
 import starling.manager._
 import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 import starling.services.jmx.StarlingJMX
@@ -33,6 +32,8 @@ import starling.metals.tasks.{UploadCurveToTrinityTask, TrinityUploader}
 import starling.props.ServerTypeLabel._
 import starling.calendar.{BusinessCalendar, BusinessCalendars}
 import com.trafigura.services.Logistics.LogisticsServiceApi
+import java.util.Timer
+import starling.daterange.{Notifier, TimedNotifier, TimeOfDay}
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -130,7 +131,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val dataTypes = new MarketDataTypes(referenceDataLookup)
 
-    registerScheduler(context, osgiBroadcaster, dataTypes)
+    registerScheduler(context, osgiBroadcaster, dataTypes, context.awaitService(classOf[Timer]))
 
     Map(
       "Bloomberg → LIM"    → new BloombergImportsReferenceData(bloombergImports),
@@ -152,7 +153,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     {
       import com.trafigura.services.marketdata._
       import starling.services.rpc.marketdata._
-      val marketDataService = new MarketDataService(marketDataStore)
+      val marketDataService = new MarketDataService(marketDataStore, context.awaitService(classOf[Notifier]))
       val logisticsService = new LogisticsService(titanServices, logisticsServices)
 
       context.registerService(classOf[MarketDataServiceApi], marketDataService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
@@ -177,9 +178,9 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
   }
 
   // TODO [19 Oct 2011] Reuse scheduler for oil tasks
-  private def registerScheduler(context: BromptonContext, broadcaster: Broadcaster, dataTypes: MarketDataTypes) {
+  private def registerScheduler(context: BromptonContext, broadcaster: Broadcaster, dataTypes: MarketDataTypes, timer: Timer) {
     val props = context.awaitService(classOf[starling.props.Props])
-    val scheduler = new Scheduler(props)
+    val scheduler = new Scheduler(props, timer)
     val jmx = new StarlingJMX(scheduler)
 
     context.onStarted { scheduler.start; jmx.start }

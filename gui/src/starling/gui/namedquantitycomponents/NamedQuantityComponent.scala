@@ -61,7 +61,13 @@ object NamedQuantityComponentHelper {
     }
   }
 
-  def quantityText(q:Quantity, fi:ExtraFormatInfo) = q.toStringAllDecimalPlaces()
+  def quantityText(q:Quantity, fi:ExtraFormatInfo) = {
+    if (fi.decimalPlaces.unlimitedOnExplainScreen) {
+      q.toStringAllDecimalPlaces()
+    } else {
+      QuantityLabelPivotFormatter.format(q, fi).text
+    }
+  }
 }
 import NamedQuantityComponentHelper._
 
@@ -103,13 +109,17 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
   lazy val lShapePanel = new LShape
 
   val label = new Label {
-    val s = "   " + quantityText(namedQuantity, fi)
-    text = "<html>" + namedQuantity.name + "<br>&nbsp=" + s + "</html>"
-    tooltip = s
+    text = generateText(fi)
+    tooltip = quantityText(namedQuantity, fi)
     font = PivotCellRenderer.MonoSpacedFont
     if (expandable) {
       cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
       border = UnderLineDashedBorder()
+    }
+
+    def generateText(newFI:ExtraFormatInfo) = {
+      val s = "   " + quantityText(namedQuantity, newFI)
+      "<html>" + namedQuantity.name + "<br>&nbsp=" + s + "</html>"
     }
   }
 
@@ -140,6 +150,7 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
     
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     label.tooltip = quantityText(namedQuantity, newFI)
+    label.text = label.generateText(newFI)
     expandedPanel.updateExtraInfo(newFI)
   }
 

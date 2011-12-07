@@ -1331,25 +1331,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     columnHeaderScrollPanePanel.maximumSize = new Dimension(Integer.MAX_VALUE, prefHeight)
     mainTableScrollPane.getViewport.setPreferredSize(mainTable.getPreferredSize)
   }
-
-  def tableAsString = {
-    val ls = System.getProperty("line.separator")
-    val sb = new StringBuilder
-    var firstRow = true
-    for (row <- 0 until fullTableModel.getRowCount) {
-      var firstColumn = true
-      if (firstRow) firstRow = false else sb.append(ls)
-      for (column <- 0 until fullTableModel.getColumnCount) {
-        if (firstColumn) firstColumn = false else sb.append("\t")
-        sb.append(fullTableModel.getValueAt(row, column) match {
-          case cell:TableCell if cell.asString.nonEmpty => cell.asString
-          case axisCell:AxisCell if axisCell.text.nonEmpty => axisCell.text
-          case _ => " "
-        })
-      }
-    }
-    sb.toString()
-  }
 }
 
 case class NumberOfInPageEditsUpdated(numberOfEdits:Int, valid:Boolean) extends Event

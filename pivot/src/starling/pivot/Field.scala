@@ -118,7 +118,7 @@ object PivotQuantityPivotParser extends PivotParser {
   }
 }
 
-case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String, percentageFormat:String) {
+case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String, percentageFormat:String, unlimitedOnExplainScreen:Boolean) {
   def format(uom:UOM) = {
     if ((uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
       lotsFormat
@@ -158,7 +158,7 @@ object PivotFormatter {
   val PercentFormat = "#0.00"
 
   val DefaultDateRangeFormat = DateRangeFormat(Standard)
-  val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat, PercentFormat)
+  val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat, PercentFormat, false)
   val DefaultExtraFormatInfo = ExtraFormatInfo(DefaultDecimalPlaces, DefaultDateRangeFormat)
 
   def longText(pq: PivotQuantity) =

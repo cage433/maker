@@ -8,12 +8,13 @@ import xml._
 import scalaz.Scalaz._
 import swing.event.Event
 import starling.gui.api.SpotFXDataEvent
-import starling.utils.{RetryingAction, Log}
 import starling.manager.Receiver
+import starling.utils.{RetryingAction, Log}
+import starling.daterange.Notifier
 
 object QlikViewUpdater {
   def main(args: Array[String]) {
-    new QlikViewUpdater("http://qvdev:8080/qmsb/Task.asmx", "Reload of Titan.PricingAndRisk.FXRates.Extract.qvw (UAT)")
+    new QlikViewUpdater("http://qvdev:8080/qmsb/Task.asmx", "Reload of Titan.PricingAndRisk.FXRates.Extract.qvw")
       .event(SpotFXDataEvent(null, null, null, false))
   }
 
@@ -28,11 +29,18 @@ object QlikViewUpdater {
   }
 }
 
-class QlikViewUpdater(serverUrl: String, spotFXTaskName: String) extends Receiver with Log {
+class QlikViewUpdater(serverUrl: String, spotFXTaskName: String, notifier: Notifier = Notifier.Null) extends Receiver with Log {
   def this(props: Props) = this(props.QlikViewServerUrl(), props.QlikViewSpotFXTask())
 
   def event(event: Event) = event partialMatch {
-    case _: SpotFXDataEvent => runTask(getTaskID())
+    case _: SpotFXDataEvent => try {
+      notifier.expectWithin("latestSpotFXRates", 2000, () => log.error("web service failed to call latestSpotFXRates"))
+
+      log.info("Notifying web service: %s, task: %s" % (serverUrl, spotFXTaskName))
+      runTask(getTaskID())
+    } catch {
+      case e => log.error("Unable to update", e)
+    }
   }
 
   private val h = new Http

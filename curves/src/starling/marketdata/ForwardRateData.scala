@@ -27,10 +27,10 @@ object ForwardRateDataType extends MarketDataType {
   }
   val rateField = FieldDetails.createMeasure("Rate", PivotQuantitySetPivotFormatter, PivotQuantityPivotParser)
 
-  def createKey(row: Row) = ForwardRateDataKey(row[UOM](currencyField))
+  def createKey(row: Row) = ForwardRateDataKey(UOM.parseCurrency(row.string(currencyField)))
 
   def createValue(rows: List[Row]) = ForwardRateData(rows.map { row =>
-    (ForwardRateSource(row.string(sourceField)), (Tenor.parse(row(tenorField)), row[Quantity](rateField)))
+    (ForwardRateSource(row.string(sourceField)), (Tenor.parse(row(tenorField)), row.quantity(rateField)))
   }.toNestedMap)
 
   val initialPivotState = PivotFieldsState(
