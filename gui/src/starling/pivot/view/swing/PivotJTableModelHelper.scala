@@ -305,8 +305,12 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     type CellType = AxisCell
 
     private val values = fieldState.rowFields.zipWithIndex.flatMap{case (f,i) => {
-      val numRequired = pivotTable.rowFieldHeadingCount(i)
-      Array.fill(numRequired)(AxisCell.Null.copy(label = f.name))
+      if (i < pivotTable.rowFieldHeadingCount.length) {
+        val numRequired = pivotTable.rowFieldHeadingCount(i)
+        Array.fill(numRequired)(AxisCell.Null.copy(label = f.name))
+      } else {
+        Array(AxisCell.Null)
+      }
     }}
 
     def getRowCount = colHeaderData0.length
