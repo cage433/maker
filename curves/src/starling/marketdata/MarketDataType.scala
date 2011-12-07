@@ -3,7 +3,6 @@ package starling.marketdata
 import starling.curves.SpreadStdDevSurfaceDataType
 import starling.pivot.{Row, Field, PivotFieldsState, FieldDetails}
 import starling.utils.ImplicitConversions._
-import starling.marketdata.ShanghaiVATDataType
 
 /**
  * There is one of these for each time of market data. eg. prices, spotfx, forward rates...

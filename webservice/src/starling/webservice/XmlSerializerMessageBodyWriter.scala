@@ -29,7 +29,7 @@ class XmlSerializerMessageBodyWriter extends MessageBodyWriter[Any] {
   def serialize(clazz: Class[_], value: Any): Elem = if (clazz.isPrimitive || clazz == classOf[String]) {
     element(clazz.getSimpleName, value)
   } else {
-    JsonSerializer(clazz).toJValue(value).toXml
+    JsonSerializer().toJValue(value).toXml
   }
 
   private def element(name: String, contents: Any): Elem = <tmp>{contents}</tmp>.copy(label = name)

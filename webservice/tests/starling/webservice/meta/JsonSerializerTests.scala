@@ -18,7 +18,7 @@ import net.liftweb.json._
 
 class JsonSerializerTests extends WordSpec with ShouldMatchers {
   implicit val formats = EDMFormats
-  val serializer = JsonSerializer(null)
+  val serializer = JsonSerializer()
   val identifier = TitanMarketDataIdentifier.valueOf("4717-2011-10-12")
   val rate = TitanSerializableQuantity(0.12, Map("USD" → -1, "GBP" → 1))
 

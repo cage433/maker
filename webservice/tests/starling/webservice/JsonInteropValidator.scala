@@ -49,7 +49,7 @@ object JsonInteropValidator extends ShouldMatchers {
     }
 
     val roundTripped = decorate("Could not serialized %s" % deserialized) {
-      JsonSerializer(clazz).serialize(deserialized)
+      JsonSerializer().serialize(deserialized)
     }
 
     input should be === roundTripped

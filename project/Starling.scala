@@ -14,6 +14,7 @@ object StarlingBuild extends Build{
   val projectName = "starling"
   val scalaVer = "2.9.1"
   val amqpVersion = "1.7.2"
+  val retrieveManagedLibs = false
 
   import Utils._
 
@@ -97,7 +98,8 @@ object StarlingBuild extends Build{
     //resolvers += Resolver.defaultLocal,
     organizationName := "Trafigura",
     version := starlingVersion,
-    shellPrompt  := ShellPrompt.buildShellPrompt
+    shellPrompt  := ShellPrompt.buildShellPrompt,
+    retrieveManaged := retrieveManagedLibs
   )
 
   lazy val publishSetting = publishTo <<= (version) {

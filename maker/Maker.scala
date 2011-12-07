@@ -3,27 +3,45 @@ import project.Project
 
 val libRoot = List(file("lib_managed"))
 
-val managerRoot = file("manager")
-val manager = new Project( 
+lazy val manager = Project( 
   "manager",
-  managerRoot,
-  Nil, Nil,
-  libRoot
+  file("manager"),
+  libDirs = libRoot
 )
 
-val utilsRoot = file("utils") 
-val utils = new Project(
+lazy val osgiRun = Project(
+  "osgirun",
+  file("osgirun"),
+  libDirs = libRoot
+)
+
+lazy val booter = Project(
+  "booter",
+  file("booter"),
+  libDirs = libRoot
+)
+
+lazy val utils = Project(
   "utils",
-  utilsRoot,
-  Nil, Nil,
-  libRoot
+  file("utils"),
+  libDirs = libRoot
 ) dependsOn (manager)
 
-val concurrentRoot = file("concurrent")
-val concurrent = new Project(
+lazy val concurrent = Project(
   "concurrent",
-  concurrentRoot,
-  Nil, Nil,
-  libRoot
+  file("concurrent"),
+  libDirs = libRoot
 ) dependsOn (utils)
+
+lazy val quantity = Project(
+  "quantity",
+  file("quantity"),
+  libDirs = libRoot
+) dependsOn (utils)
+
+lazy val osgiManager = Project(
+  "osgimanager",
+  file("osgimanager"),
+  libDirs = libRoot
+) dependsOn(manager, utils)
 

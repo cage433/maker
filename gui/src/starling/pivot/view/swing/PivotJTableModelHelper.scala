@@ -303,9 +303,25 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   val blankAxisCellTableModel = new PivotJTableModel {
     type CellType = AxisCell
+
+    private val values = fieldState.rowFields.zipWithIndex.flatMap{case (f,i) => {
+      if (i < pivotTable.rowFieldHeadingCount.length) {
+        val numRequired = pivotTable.rowFieldHeadingCount(i)
+        Array.fill(numRequired)(AxisCell.Null.copy(label = f.name))
+      } else {
+        Array(AxisCell.Null)
+      }
+    }}
+
     def getRowCount = colHeaderData0.length
     def getColumnCount = rowHeaderData0(0).length
-    def getValueAt(rowIndex:Int, columnIndex:Int) = AxisCell.Null
+    def getValueAt(rowIndex:Int, columnIndex:Int) = {
+      if (rowIndex == getRowCount - 1) {
+        values(columnIndex)
+      } else {
+        AxisCell.Null
+      }
+    }
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {}
     def rowHeader(row:Int,col:Int) = false
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
@@ -540,63 +556,72 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       values.foreach(tv => {
         val r = tv.row
         val c = tv.column
-        val value = tv.value
+        val sValue = tv.value.asInstanceOf[String].trim
+
         val currentValue = getValueAt(r,c)
         val currentText = currentValue.text.trim
-        val v = value.asInstanceOf[String].trim
-        if (v != currentText) {
-          val stringValue = {
-            v + (if (currentText.nonEmpty && !currentText.last.isDigit && v.nonEmpty && v.last.isDigit) {
-              val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
-              currentText.substring(lastDigit)
-            } else {""})
-          }
-          val pars = parser(r, c)
-          val (newValue,newLabel,newLabelForComparison,stateToUse) =  try {
-            val uom = uoms0(c)
-            val stringValueToUse = if ((uom != UOM.NULL) && stringValue.nonEmpty && stringValue.last.isDigit) {
-              stringValue + " " + uom.asString
-            } else {
-              stringValue
-            }
 
-            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
+        if (sValue != currentText) {
+
+          val uom = uoms0(c)
+          val (newValue,newLabel,stateToUse) =  try {
+
+            val stringValueToUse = if (sValue.nonEmpty && sValue.last.isDigit) {
+              if (uom != UOM.NULL) {
+                sValue + " " + uom.asString
+              } else if (currentText.nonEmpty && !currentText.last.isDigit) {
+                val lastDigit = currentText.lastIndexWhere(_.isDigit) + 1
+                val uomText = currentText.substring(lastDigit)
+                sValue + " " + uomText
+              } else {
+                sValue
+              }
+            } else {
+              sValue
+            }
 
             val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
-            v match {
-              case pq:PivotQuantity if t.isEmpty && (c < uoms0.length) => {
-                val uom = uoms0(c)
-                val dv = pq.doubleValue.get
-                val newPQ = new PivotQuantity(dv, uom)
-                (Some(newPQ), PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, false)._1,PivotFormatter.shortAndLongText(newPQ, extraFormatInfo, true)._1,state)
-              }
-              case _ => (Some(v),t,t,state)
-            }
+
+            val pars = parser(r, c)
+            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
+
+
+            (Some(v), t, state)
           } catch {
-            case e:Exception => (None, stringValue, stringValue, Error)
+            case e:Exception => (None, sValue, Error)
           }
 
-          val k = (r,c)
-          overrideMap -= k
-          val originalCell = getValueAt(r,c)
-          val originalLabel = originalCell.originalValue match {
-            case None => {
-              if (originalCell.text.nonEmpty) {
-                originalCell.text
-              } else {
-                "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+          if (Some(currentValue.value) != newValue) {
+            val k = (r,c)
+            overrideMap -= k
+            val originalCell = getValueAt(r,c)
+            val originalLabel = originalCell.originalValue match {
+              case None => {
+                if (originalCell.text.nonEmpty) {
+                  originalCell.text
+                } else {
+                  "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+                }
+              }
+              case Some(origVal) => {
+                fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo)
+                fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo).text
               }
             }
-            case Some(origVal) => fieldInfo.fieldToFormatter(field(c)).format(origVal, extraFormatInfo).text
-          }
 
-          if (originalLabel == newLabelForComparison) {
-            anyResetEdits = resetCells(List(k), anyResetEdits, false)
-          } else {
-            if (stateToUse == Error) {
-              overrideMap(k) = originalCell.copy(text = stringValue, longText = Some(stringValue), state = Error)
+            if (originalLabel == newLabel) {
+              anyResetEdits = resetCells(List(k), anyResetEdits, false)
             } else {
-              overrideMap(k) = originalCell.copy(text = newLabel, longText = Some(newLabel), state = stateToUse, value = newValue.get, textPosition = RightTextPosition)
+              if (stateToUse == Error) {
+                overrideMap(k) = originalCell.copy(text = sValue, longText = Some(sValue), state = Error)
+              } else {
+                val actualLabelToUse = if (newLabel.endsWith(uom.asString)) {
+                  newLabel.replaceAll(uom.asString, "")
+                } else {
+                  newLabel
+                }
+                overrideMap(k) = originalCell.copy(text = actualLabelToUse, longText = Some(newLabel), state = stateToUse, value = newValue.get, textPosition = RightTextPosition)
+              }
             }
           }
         }
@@ -760,7 +785,6 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }
       case KeyPressed(_,scala.swing.event.Key.Up,_,_) if selection.indices.head == 0 => {
         selectIndices(-1)
-        peer.clearSelection()
         KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu.editor)
         onEDT({
           popupMenu.editor.requestFocusInWindow()
@@ -989,7 +1013,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       } else if ((rowIndex >= colHeaderTableModel.getRowCount)) {
         (mainTableModel, rowIndex - colHeaderTableModel.getRowCount, columnIndex - rowHeaderTableModel.getColumnCount)
       } else {
-        (blankAxisCellTableModel, 0, 0)
+        (blankAxisCellTableModel, rowIndex, columnIndex)
       }
     }
 
