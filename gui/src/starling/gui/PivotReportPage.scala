@@ -60,14 +60,18 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
   override def shortText = if (showParameters) shortTitle else reportParameters.shortText
 
   override def latestPage(localCache:LocalCache) = {
-    val page1 = reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp match {
-      case Some((groups, _)) => {
-        val latestTimestamp = localCache.latestTimestamp(groups)
-        selfReportPage(reportParameters.copyWithIntradayTimestamp(latestTimestamp))
-      }
-      case None => this
+    val deskAndTimestamp = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp.map {
+      case (desk, TradeTimestamp(_, TradeTimestamp.magicLatestTimestampDay, _, _)) => (desk, localCache.latestDeskTradeTimestamp(desk))
+      case (desk, tradeTimestamp) => (desk , tradeTimestamp)
     }
-
+    val intradaySubgroupAndTimestamp = reportParameters.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map {
+      case (groups, _) => {
+        val latestTimestamp = localCache.latestTimestamp(groups)
+        (groups, latestTimestamp)
+      }
+    }
+    val tradeSelection = reportParameters.tradeSelectionWithTimestamp.copy(deskAndTimestamp = deskAndTimestamp, intradaySubgroupAndTimestamp = intradaySubgroupAndTimestamp)
+    val page1 = selfReportPage(reportParameters.copy(tradeSelectionWithTimestamp = tradeSelection))
     val newPnlParameters:Option[PnlFromParameters] = page1.reportParameters.pnlParameters.map {
       pnlParameters => {
         localCache.latestMarketDataVersionIfValid(pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection) match {
@@ -84,6 +88,8 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
       }
       case _ => page1.reportParameters.curveIdentifier
     }
+
+
 
     page1.selfReportPage(page1.reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
   }
