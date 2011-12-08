@@ -377,7 +377,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     type CellType = TableCell
 
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = "", longText = None))
+    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = "", longText = None, value = UndefinedValueNew))
     if (extraLine) {
       addedRows0 += blankCells
     }
