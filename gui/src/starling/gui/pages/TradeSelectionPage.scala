@@ -163,7 +163,7 @@ case class TradeSelectionPage(
         }
       }
 
-      private val enterIDLabel = new Label("Enter " + deskCombo.selection.item.name + " ID:") {
+      private val enterIDLabel = new Label("Enter Trade ID:") {
         enabled = deskCheckBox.selected
         peer.setDisplayedMnemonic('e')
       }
