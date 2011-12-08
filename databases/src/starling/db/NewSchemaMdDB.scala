@@ -22,18 +22,19 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
   val (extendedKeys, valueKeys) = (new ExtendedKeyCache(db, dataTypes), new ValueKeyCache(db))
   log.debug("Loaded %s extended keys, %s value keys" % (extendedKeys.size, valueKeys.size))
 
-  def checkIntegrity(): Unit = {
-    def queryIds(table: String, column: String): Set[Int] =
-      db.queryWithResult(select("DISTINCT " + column) from(table)) { _.getInt(column) }.toSet
-
-    val danglingExtendedKeys = queryIds("MarketDataValue", "extendedKey").diff(queryIds("MarketDataExtendedKey", "id"))
-    val danglingValueKeys = queryIds("MarketDataValue", "valueKey").diff(queryIds("MarketDataValueKey", "id"))
-
-    danglingExtendedKeys.ensuring(_.isEmpty, "Dangling extended keys: " + danglingValueKeys)
-    danglingValueKeys.ensuring(_.isEmpty, "Dangling value keys: " + danglingValueKeys)
-  }
+  def checkIntegrity(): Unit = {}
 
   def readAll(): Unit = {
+    log.infoWithTime("Integrity") {
+      def queryIds(table: String, column: String): Set[Int] =
+        db.queryWithResult(select("DISTINCT " + column) from(table)) { _.getInt(column) }.toSet
+
+      val danglingExtendedKeys = queryIds("MarketDataValue", "extendedKey").diff(queryIds("MarketDataExtendedKey", "id"))
+      val danglingValueKeys = queryIds("MarketDataValue", "valueKey").diff(queryIds("MarketDataValueKey", "id"))
+
+      danglingExtendedKeys.ensuring(_.isEmpty, "Dangling extended keys: " + danglingValueKeys)
+      danglingValueKeys.ensuring(_.isEmpty, "Dangling value keys: " + danglingValueKeys)
+    }
     val extendedKeyTypePairs = db.queryWithResult("select * from MarketDataValue", Map()) { rs => {
       val mdv = marketDataValue(rs)
       (mdv.valueKey.id, mdv.valueKey.row, mdv.extendedKey.marketDataType)

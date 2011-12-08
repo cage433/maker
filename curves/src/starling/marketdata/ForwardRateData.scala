@@ -34,8 +34,7 @@ object ForwardRateDataType extends MarketDataType {
   }.toNestedMap)
 
   val initialPivotState = PivotFieldsState(
-    rowFields = List(sourceField.field, currencyField.field),
-    columnFields = List(tenorField.field),
+    rowFields = List(sourceField.field, currencyField.field, tenorField.field),
     dataFields = List(rateField.field)
   )
 
