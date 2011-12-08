@@ -54,6 +54,7 @@ object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], 
   val SHFEClose = new ObservationTimeOfDay("SHFE Close")
   val COMEXClose = new ObservationTimeOfDay("COMEX Close")
   val LondonClose = new ObservationTimeOfDay("London Close")
+  val CFETSPublicationTime = new ObservationTimeOfDay("CFETS Publication Time")
   val LiborClose = new ObservationTimeOfDay("Libor Close")
   val ECBPublicationTime = new ObservationTimeOfDay("ECB Publication Time")
 

@@ -4,9 +4,10 @@ import starling.utils.ImplicitConversions._
 
 import starling.pivot._
 import starling.quantity.{Quantity, UOM}
-import starling.daterange.{Day, Tenor}
 import scalaz.NewType
 import utils.TenorPivotParser
+import starling.daterange.{ObservationTimeOfDay, Day, Tenor}
+import scalaz.Scalaz._
 
 
 object ForwardRateDataType extends MarketDataType {
@@ -34,7 +35,7 @@ object ForwardRateDataType extends MarketDataType {
   }.toNestedMap)
 
   val initialPivotState = PivotFieldsState(
-    rowFields = List(sourceField.field, currencyField.field, tenorField.field),
+    rowFields = List(Field("Observation Time"), sourceField.field, currencyField.field, tenorField.field),
     dataFields = List(rateField.field)
   )
 
@@ -45,7 +46,7 @@ object ForwardRateDataType extends MarketDataType {
   }
 }
 
-case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
+case class ForwardRateDataKey(ccy: UOM) extends MarketDataKey {
   ccy.ensuring(_.isCurrency, ccy + " is not a currency")
 
   type marketDataType = ForwardRateData
@@ -53,6 +54,7 @@ case class ForwardRateDataKey(ccy : UOM) extends MarketDataKey {
   def typeName = ForwardRateDataType.name
   def humanName = ccy.toString
   def fields = Set(ForwardRateDataType.currencyField.field)
+  def observationTime = (ccy == UOM.CNY) ? ObservationTimeOfDay.CFETSPublicationTime | ObservationTimeOfDay.LiborClose
 }
 
 case class ForwardRateSource(value: String) extends NewType[String]

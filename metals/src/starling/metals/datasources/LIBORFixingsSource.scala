@@ -22,10 +22,8 @@ object LIBORFixingsSource extends HierarchicalLimSource(TopRelation.Trafigura.Bl
   }
 
   def marketDataEntriesFrom(rates: List[Prices[LIBORRelation]]) = {
-    rates.groupBy(group).map { case ((currency, observationDay), grouped) =>
-      MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose),
-        ForwardRateDataKey(currency), ForwardRateData(toNestedMap(grouped))
-      )
+    rates.groupBy(group).map { case ((key, observationDay), grouped) =>
+      MarketDataEntry(observationDay.atTimeOfDay(key.observationTime), key, ForwardRateData(toNestedMap(grouped)))
     }
   }
 
@@ -33,5 +31,5 @@ object LIBORFixingsSource extends HierarchicalLimSource(TopRelation.Trafigura.Bl
     (rate.relation.source, (rate.relation.tenor, Quantity(rate.priceByLevel(Level.Close), UOM.PERCENT)))
   }.toNestedMap
 
-  def group(fixings: Prices[LIBORRelation]) = (fixings.relation.currency, fixings.observationDay)
+  def group(fixings: Prices[LIBORRelation]) = (ForwardRateDataKey(fixings.relation.currency), fixings.observationDay)
 }

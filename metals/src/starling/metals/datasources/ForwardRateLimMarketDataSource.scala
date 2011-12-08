@@ -75,11 +75,11 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailServ
     liborFixingsHistoryData(marketDataStore, observationDay).mapNestedValues((_, observationDay))
 
   private def liborFixingsHistoryData(marketDataStore: MarketDataStore, observationDay: Day): NestedMap[UOM, Tenor, Quantity] =
-    currencies.toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, currency)).toOption.flatOpt)
+    currencies.toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, ForwardRateDataKey(currency))).toOption.flatOpt)
 
-  private def read(marketDataStore: MarketDataStore, observationDay: Day, currency: UOM): Option[Map[Tenor, Quantity]] =
+  private def read(marketDataStore: MarketDataStore, observationDay: Day, key: ForwardRateDataKey): Option[Map[Tenor, Quantity]] =
     latestLimOnlyMarketDataReader(marketDataStore).readAs[ForwardRateData](TimedMarketDataKey(
-      observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose), ForwardRateDataKey(currency))).rates.get(ForwardRateSource.LIBOR)
+      observationDay.atTimeOfDay(key.observationTime), key)).rates.get(ForwardRateSource.LIBOR)
 
   private def latestLimOnlyMarketDataReader(marketDataStore: MarketDataStore) = new NormalMarketDataReader(
     marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals))))
