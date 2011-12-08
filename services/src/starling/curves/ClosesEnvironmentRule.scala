@@ -36,7 +36,7 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup) exten
               "No " + market + " prices on " + observationDay + " at " + market.asInstanceOf[FuturesMarket].closeTime
             ))
           }
-          case key: ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))
+          case key: ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(key.observationTime), key))
           case key: CountryBenchmarkMarketDataKey => marketDataReader.read(TimedMarketDataKey(ObservationPoint.RealTime, key))
           case key: GradeAreaBenchmarkMarketDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))
           case key: FreightParityDataKey =>  marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))

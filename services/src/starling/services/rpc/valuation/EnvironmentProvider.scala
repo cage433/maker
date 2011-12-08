@@ -28,14 +28,28 @@ trait EnvironmentProvider {
   def environment(marketDataVersion:MarketDataVersion, observationDay:Day):Environment
   def makeValuationSnapshot(version:Int):SnapshotID
 
-  def environment(marketDataIdentifier : TitanMarketDataIdentifier) : Environment = {
-    snapshots(None).find(_.identifier == marketDataIdentifier.snapshotIdentifier.id) match {
-      case Some(snapshot) =>
-        environment(snapshot, marketDataIdentifier.observationDay)
+  def valuationServiceEnvironment(snapshotID : SnapshotID, observationDay : Day, marketDay : Day): Environment = {
+    valuationServiceEnvironment(new SnapshotMarketDataVersion(snapshotID.label), observationDay, marketDay)
+  }
+  def valuationServiceEnvironment(marketDataVersion:MarketDataVersion, observationDay : Day, marketDay : Day): Environment = {
+    environment(marketDataVersion, observationDay).undiscounted.forwardState(marketDay.endOfDay)
+  }
+
+  def snapshotIDFromIdentifier(identifier : String) : SnapshotID = {
+    snapshots(None).find(_.identifier == identifier) match {
+      case Some(snapshotID) => snapshotID
       case None =>
-        throw new SnapshotIDNotFound(marketDataIdentifier.snapshotIdentifier.id)
+        throw new SnapshotIDNotFound(identifier)
     }
   }
+//  def environment(marketDataIdentifier : TitanMarketDataIdentifier) : Environment = {
+//    snapshots(None).find(_.identifier == marketDataIdentifier.snapshotIdentifier.id) match {
+//      case Some(snapshot) =>
+//        environment(snapshot, marketDataIdentifier.observationDay)
+//      case None =>
+//        throw new SnapshotIDNotFound(marketDataIdentifier.snapshotIdentifier.id)
+//    }
+//  }
   def latestMetalsValuationSnapshot : SnapshotID = metalsValuationSnapshots(None).sortWith(_ > _).head
 
   /**

@@ -37,7 +37,7 @@ trait CostsAndIncomeValuation {
 
 trait AssignmentValuation {
   def assignmentID : String
-  def hasError:Boolean
+  def hasMissingMarketDataError:Boolean
   def assignmentQuantity : Quantity
   def valuationDetails : Either[String, PricingValuationDetails]
 }
@@ -52,7 +52,7 @@ case class CostsAndIncomeAllocatedPurchaseAssignmentValuation(
   assignmentQuantity : Quantity,
   valuationDetails : Either[String, PricingValuationDetails]
 ) extends AssignmentValuation {
-  def hasError = valuationDetails.isLeft
+  def hasMissingMarketDataError = valuationDetails.isLeft
 }
 
 case class CostsAndIncomeAllocatedSaleAssignmentValuation(
@@ -67,7 +67,7 @@ case class CostsAndIncomeAllocatedSaleAssignmentValuation(
   weightGainOrLoss : Quantity,
   weightGainOrLossDetails : Either[String, PricingValuationDetails]
 ) extends AssignmentValuation {
-  def hasError = valuationDetails.isLeft || weightGainOrLossDetails.isLeft
+  def hasMissingMarketDataError = valuationDetails.isLeft || weightGainOrLossDetails.isLeft
 }
 
 /**
@@ -107,12 +107,12 @@ case class CostsAndIncomeUnallocatedAssignmentValuation(
   weightGainOrLossDetails : Either[String, PricingValuationDetails],
   freightParity : Option[Quantity]
 ) extends AssignmentValuation {
-  def hasError = valuationDetails.isLeft || benchmarkDetails.isLeft || weightGainOrLossDetails.isLeft
+  def hasMissingMarketDataError = valuationDetails.isLeft || benchmarkDetails.isLeft || weightGainOrLossDetails.isLeft
 }
 
 trait QuotaValuation {
   def quotaID: String
-  def hasError:Boolean
+  def hasMissingMarketDataError:Boolean
 }
 
 case class PurchaseQuotaValuation(
@@ -132,7 +132,7 @@ case class PurchaseQuotaValuation(
  unallocatedValuations: Map[String, CostsAndIncomeUnallocatedAssignmentValuation], // Keys are assignment ID
  assignmentValuations: Map[String, CostsAndIncomeAllocatedPurchaseAssignmentValuation] // Keys are assignment ID
 ) extends QuotaValuation {
-  def hasError:Boolean = (unallocatedValuations.values ++ assignmentValuations.values).exists(_.hasError)
+  def hasMissingMarketDataError:Boolean = (unallocatedValuations.values ++ assignmentValuations.values).exists(_.hasMissingMarketDataError)
   override def toString = JsonSerializer()(EDMFormats).pretty(this)
 }
 
@@ -171,8 +171,8 @@ case class SalesQuotaValuation(
    */
   weightGainOrLoss : Quantity
 ) extends QuotaValuation {
-  def hasError = unallocatedValuationDetails.isLeft || benchmarkDetails.isLeft ||
-        assignmentValuations.values.exists(_.hasError)
+  def hasMissingMarketDataError = unallocatedValuationDetails.isLeft || benchmarkDetails.isLeft ||
+        assignmentValuations.values.exists(_.hasMissingMarketDataError)
 
   override def toString = JsonSerializer()(EDMFormats).pretty(this)
 }

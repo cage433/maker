@@ -16,6 +16,7 @@ import starling.db.SnapshotID
 import starling.gui.api._
 import starling.utils.ImplicitConversions._
 import starling.manager.{Broadcaster, Receiver}
+import starling.instrument.physical.PhysicalMetalForward
 
 /**
  * Creates a snapshot when all metals trades can be valued without a market data exception
@@ -23,56 +24,58 @@ import starling.manager.{Broadcaster, Receiver}
 class MetalValuationSnapshotCreator( broadcaster:Broadcaster,
                            environmentProvider:EnvironmentProvider,
                            titanTradeStore:TitanTradeStore) extends Receiver with Log {
+
+  import MetalValuationSnapshotCreator._
+
   def event(event: Event) = {
     event partialMatch {
       case PricingGroupMarketDataUpdate(PricingGroup.Metals, version, _, _) => doCheck(version)
     }
   }
 
-  private def doCheck(version:Int) {
-    val observationDaysToCheck = (Day.today.addWeekdays(-2) until Day.today).filter(_.isWeekday)
-    val latestSnapshot = SnapshotMarketDataVersion(environmentProvider.latestMetalsValuationSnapshot.label)
+  private def doCheck(version: Int) {
+    val versionForLatestSnapshot = SnapshotMarketDataVersion(environmentProvider.latestMetalsValuationSnapshot.label)
     val currentVersion = SpecificMarketDataVersion(version)
 
-    observationDaysToCheck.foreach { observationDay => {
-      val previousEnv = environmentProvider.environment(latestSnapshot, observationDay)
-      val newEnv = environmentProvider.environment(currentVersion, observationDay)
-      val previousValues = valueAll(previousEnv)
-      val newValues = valueAll(newEnv)
+    val observationDay = Day.today
+    val previousEnv = environmentProvider.valuationServiceEnvironment(versionForLatestSnapshot, observationDay, observationDay)
+    val newEnv = environmentProvider.valuationServiceEnvironment(currentVersion, observationDay, observationDay)
+    var forwards: Map[String, Either[String, PhysicalMetalForward]] = titanTradeStore.getAllForwards
 
-      (previousValues, newValues) match {
-        case (MissingMarketDataResults,MissingMarketDataResults) =>
-        case (MissingMarketDataResults,SuccessResults(_)) => {
-          log.info("Snapshoting because first Metals valuation succeeded for " + observationDay)
-          environmentProvider.makeValuationSnapshot(version)
-        }
-        case (SuccessResults(_),MissingMarketDataResults) =>
-        case (SuccessResults(v1),SuccessResults(v2)) => {
-          val changedTrades = v1.filter{ case (tradeID, quotaValues) => quotaValues != v2(tradeID) }
-          if (!changedTrades.isEmpty) {
-            log.info("Snapshoting because Metals valuation changed for " + changedTrades.size + " trades")
-            val snapshotID = environmentProvider.makeValuationSnapshot(version)
-            broadcaster.broadcast(RefinedMetalsValuationChanged(observationDay, snapshotID.label, changedTrades.keySet))
-          }
-        }
+    valuationChange(previousEnv, newEnv, forwards) match {
+      case OldAndNewValuationsNotAvailable |
+           OldValuationsAvailableButNewUnavailable |
+           ValuationUnchanged =>
+      case FirstNewValuation => {
+        log.info("Snapshoting because first Metals valuation succeeded for " + observationDay)
+        environmentProvider.makeValuationSnapshot(version)
       }
-    } }
+      case SecondOrLaterSuccessfulValuation(numChangedTrades) => {
+        log.info("Snapshoting because Metals valuation changed on " + observationDay + ", changed " + numChangedTrades + " + trade(s)")
+        environmentProvider.makeValuationSnapshot(version)
+      }
+    }
   }
+}
+
+/**
+ * Extract as much functionality here to make unit testing possible without
+ * having to implement Broadcasters, TitanTradeStores etc
+ */
+object MetalValuationSnapshotCreator{
 
   trait ValuationResult
   object MissingMarketDataResults extends ValuationResult
   case class SuccessResults(values:Map[String,List[QuotaValuation]]) extends ValuationResult
 
-  private def valueAll(env:Environment):ValuationResult = {
-    val valuations: Map[String, Option[List[QuotaValuation]]] = titanTradeStore.getAllForwards.mapValues { value =>
+  private def valueAll(env:Environment, forwards: Map[String, Either[String, PhysicalMetalForward]]):ValuationResult = {
+    val valuations: Map[String, Option[List[QuotaValuation]]] = forwards.mapValues { value =>
       value match {
         case Right(fwd) => {
-          try {
-            val valuations = fwd.quotas.map(_.value(env))
-            if (valuations.exists(_.hasError)) None else Some(valuations)
-          } catch {
-            case e:MissingMarketDataException => None
-            case _ => Some(Nil)
+          fwd.costsAndIncomeQuotaValueBreakdown(env) match {
+            case Left(someErrorThatIsntMissingMarketData) => Some(Nil)
+            case Right(quotaValues) if quotaValues.exists(_.hasMissingMarketDataError) => None
+            case Right(quotaValues) => Some(quotaValues)
           }
         }
         case _ => Some(Nil)
@@ -85,4 +88,34 @@ class MetalValuationSnapshotCreator( broadcaster:Broadcaster,
     }
   }
 
+  def valueAll(previousEnv:Environment, newEnv : Environment, forwards: Map[String, Either[String, PhysicalMetalForward]]): (ValuationResult, ValuationResult) = (
+    valueAll(previousEnv, forwards),
+    valueAll(newEnv, forwards)
+  )
+
+  trait ValuationChangeResult
+  object OldAndNewValuationsNotAvailable extends ValuationChangeResult
+  object OldValuationsAvailableButNewUnavailable extends ValuationChangeResult
+  object FirstNewValuation extends ValuationChangeResult
+  object ValuationUnchanged extends ValuationChangeResult
+  case class SecondOrLaterSuccessfulValuation(numTradeChanged : Int) extends ValuationChangeResult
+
+  def valuationChange(previousEnv:Environment, newEnv : Environment, forwards: Map[String, Either[String, PhysicalMetalForward]]) : ValuationChangeResult =
+  {
+    val (previousValues, newValues) = valueAll(previousEnv, newEnv, forwards)
+    (previousValues, newValues) match {
+      case (MissingMarketDataResults, MissingMarketDataResults) => OldAndNewValuationsNotAvailable
+      case (MissingMarketDataResults, SuccessResults(_)) => FirstNewValuation
+      case (SuccessResults(_), MissingMarketDataResults) => OldValuationsAvailableButNewUnavailable
+      case (SuccessResults(v1), SuccessResults(v2)) => {
+        val changedTrades = v1.filter {
+          case (tradeID, quotaValues) => quotaValues != v2(tradeID)
+        }
+        if (changedTrades.isEmpty)
+          ValuationUnchanged
+        else
+          SecondOrLaterSuccessfulValuation(changedTrades.size)
+      }
+    }
+  }
 }

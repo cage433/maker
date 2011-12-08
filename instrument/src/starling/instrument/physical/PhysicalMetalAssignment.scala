@@ -429,7 +429,7 @@ object PhysicalMetalAssignment extends InstrumentType[PhysicalMetalAssignment] w
 
 
 object CostsAndIncomeValuation{
-  def build(env : Environment, quantity : Quantity, pricingSpec : TitanPricingSpec) = {
+  private def build(env : Environment, quantity : Quantity, pricingSpec : TitanPricingSpec) = {
     // C&I asked that premiums equal to null quantity - which in TM means no premium
     // are represented by None
 

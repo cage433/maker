@@ -17,7 +17,7 @@ object MarketDataClient {
     val date = day.toLocalDate
     val observationDay = TitanSerializableDate(date)
     val titanSnapshotIdentifier: TitanSnapshotIdentifier = TitanSnapshotIdentifier("42")
-    val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, day)
+    val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, day, day)
 
     ///////////////////
     // Spot FX Examples
@@ -53,7 +53,7 @@ object MarketDataClient {
     ///////////////////////////////////
 
     {
-      val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, 11 Nov 2011)
+      val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, 11 Nov 2011, 11 Nov 2011)
       val interestRates: List[ReferenceInterestRate] = marketData.getReferenceInterestRates(marketDataID)
 
       println("getReferenceInterestRates:...")
@@ -61,7 +61,7 @@ object MarketDataClient {
     }
 
     {
-      val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, 11 Nov 2011)
+      val marketDataID = TitanMarketDataIdentifier(titanSnapshotIdentifier, 11 Nov 2011, 11 Nov 2011)
       val interestRate: ReferenceInterestRate = marketData.getReferenceInterestRate(
         marketDataID, ReferenceRateSource("LIBOR"), Maturity.get("1M"), TitanSerializableCurrency("GBP"))
 

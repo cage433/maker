@@ -147,7 +147,7 @@ class MarketDataServiceTests extends StarlingSpec with JMocker with TemporalSpec
   private val observationDays = Option(Set(Option(observationDay)))
   private val snapshotId = 1
   private val snapshot = SnapshotID(snapshotId, Clock.timestamp, null, null, 1)
-  private val marketDataId = TitanMarketDataIdentifier.valueOf(snapshotId + "-2011-11-02")
+  private val marketDataId = TitanMarketDataIdentifier.valueOf(snapshotId + "-2011-11-02"+ "-2011-11-02")
   private val expectedCurrencies = UOMSymbol.edmCurrencies.map(UOM.asUOM(_)).toSet
 
   private val (nonTrivialCrosses, noObservationTimes, noMarketDataKeys) = {

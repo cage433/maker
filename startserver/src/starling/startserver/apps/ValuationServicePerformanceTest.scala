@@ -57,7 +57,8 @@ object ValuationServicePerformanceTest extends App {
 
     BouncyRMIServiceApi().using { valuationServiceRMI : ValuationServiceApi =>
       val snapshotID = mds.marketDataSnapshotIDs(Some(Day.today)).head
-      val marketDataID = TitanMarketDataIdentifier(snapshotID, Day.today)
+      val today = Day.today
+      val marketDataID = TitanMarketDataIdentifier(snapshotID, today, today)
       val directQuotaResults = run("Quota (direct)", () => vs.valueAllTradeQuotas(Some(marketDataID)))
       val rmiQuotaResults = run("Quota (rmi)", () => valuationServiceRMI.valueAllTradeQuotas(Some(marketDataID)))
 
@@ -83,7 +84,7 @@ object ValuationServicePerformanceTest extends App {
     BouncyRMIServiceApi().using { marketDataRMI : MarketDataServiceApi =>
       val latestSnapshot = mds.latestSnapshotID().getOrThrow("No snapshots")
       val today = Day.today
-      val latestMarketDataID = TitanMarketDataIdentifier(latestSnapshot, today)
+      val latestMarketDataID = TitanMarketDataIdentifier(latestSnapshot, today, today)
 
       val rmiSpotFXResults = run("Spot FX (rmi)", () => mds.getSpotFXRates(latestMarketDataID))
       val rmiReferenceInterestRatesResults = run("Reference interest rates (rmi)", () => mds.getReferenceInterestRates(latestMarketDataID))

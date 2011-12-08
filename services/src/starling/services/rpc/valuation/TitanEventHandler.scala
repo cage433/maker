@@ -23,8 +23,8 @@ class TitanEventHandler(broadcaster:Broadcaster,
 
   import Event._
 
-  def publishedChangedValueEvents(observationDay:Day, snapshotID:SnapshotIDLabel, tradeIds:Set[String]) {
-    broadcaster.broadcast(RefinedMetalsValuationChanged(observationDay, snapshotID, tradeIds))
+  def publishedChangedValueEvents(observationDay:Day, snapshotID:SnapshotIDLabel, tradeId:String) {
+    broadcaster.broadcast(RefinedMetalsValuationChanged(observationDay, snapshotID, tradeId))
   }
 
   /**
@@ -81,7 +81,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
   private def publishManyChangedValueEvents(env : Environment, snapshotID : SnapshotIDLabel, changedIDs : List[String]){
     changedIDs.distinct.foreach{
       id => 
-        publishedChangedValueEvents(env.marketDay.day, snapshotID, Set(id))
+        publishedChangedValueEvents(env.marketDay.day, snapshotID, id)
     }
   }
   /**
