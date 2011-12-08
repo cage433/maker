@@ -990,7 +990,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
           // If we have an error and apply special processing here if required, otherwise display page as desired.
           pageResponse match {
-            case FailurePageResponse(t:Exception) => t match {
+            case FailurePageResponse(t:Throwable) => t match {
               case e: UndeclaredThrowableException => {
                 e.printStackTrace()
                 showError("Error", BrowserStackTraceToString.messageAndThenString(e.getUndeclaredThrowable))
