@@ -257,7 +257,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       val pars = parser(r, c)
 
       val (newValue,newLabel,stateToUse) =  try {
-        val (v,t) = pars.parse(stringValue, extraFormatInfo)
+        val (v,t) = UndefinedValue.parse(stringValue) | pars.parse(stringValue, extraFormatInfo)
         val currentValue = getValueAt(r,c)
         val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
         (Some(v), t, state)
@@ -355,7 +355,10 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       }
     }
   }
-  def finishedEditing() {popupMenu setVisible false}
+  def finishedEditing() {
+    popupMenu setVisible false
+    popupListView.peer.clearSelection()
+  }
   def popupShowing = popupMenu.isShowing
   def focusPopup() {
     KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)

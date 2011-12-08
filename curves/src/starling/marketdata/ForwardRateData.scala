@@ -3,11 +3,11 @@ package starling.marketdata
 import starling.utils.ImplicitConversions._
 
 import starling.pivot._
-import starling.quantity.{Quantity, UOM}
 import scalaz.NewType
 import utils.TenorPivotParser
 import starling.daterange.{ObservationTimeOfDay, Day, Tenor}
 import scalaz.Scalaz._
+import starling.quantity.{UOMType, Quantity, UOM}
 
 
 object ForwardRateDataType extends MarketDataType {
@@ -21,7 +21,7 @@ object ForwardRateDataType extends MarketDataType {
   def valueFieldDetails = List(rateField)
 
   val sourceField = FieldDetails("Source")
-  val currencyField = FieldDetails("Currency")
+  val currencyField = FieldDetails.list("Currency", UOM.currencies.map(_.asString))
   val tenorField = new FieldDetails("Tenor") {
     override def parser = TenorPivotParser
     override def comparator = new OrderedOrdering[Tenor].untyped
@@ -39,7 +39,7 @@ object ForwardRateDataType extends MarketDataType {
     dataFields = List(rateField.field)
   )
 
-  protected def fieldValuesFor(key: ForwardRateDataKey) = Row(currencyField.field → key.ccy)
+  protected def fieldValuesFor(key: ForwardRateDataKey) = Row(currencyField.field → key.ccy.asString)
 
   def rows(key: ForwardRateDataKey, data: ForwardRateData) = data.rates.mapNested { case (source, tenor, rate) =>
     fieldValuesFor(key) + Row(sourceField.field → source.value, tenorField.field → tenor, rateField.field → rate.pq)

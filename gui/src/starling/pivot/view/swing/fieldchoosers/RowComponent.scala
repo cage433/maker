@@ -79,7 +79,12 @@ class RowComponent(model:PivotTableModel,  otherLayoutInfo:OtherLayoutInfo, view
         } else {
           val dropPanel = DropPanel((f, Position.Right) :: Nil)
           dropPanels += dropPanel
-          add(dropPanel, "grow, hidemode 3")
+          val extraConstraints = if (otherLayoutInfo.frozen) {
+            ""
+          } else {
+            " ,gapright 1"
+          }
+          add(dropPanel, "grow, hidemode 3" + extraConstraints)
         }
       }}
     }
