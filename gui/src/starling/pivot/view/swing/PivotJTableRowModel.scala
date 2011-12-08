@@ -355,7 +355,10 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       }
     }
   }
-  def finishedEditing() {popupMenu setVisible false}
+  def finishedEditing() {
+    popupMenu setVisible false
+    popupListView.peer.clearSelection()
+  }
   def popupShowing = popupMenu.isShowing
   def focusPopup() {
     KeyboardFocusManager.getCurrentKeyboardFocusManager.focusNextComponent(popupMenu)
