@@ -135,9 +135,6 @@ class TitanEventHandler(broadcaster:Broadcaster,
 
     publishOnChangedValues(results, snapshotID, env)
 
-    results match {
-      case Some(listOfResults) =>
-    }
     results
   }
 
