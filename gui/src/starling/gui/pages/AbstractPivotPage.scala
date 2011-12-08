@@ -160,7 +160,7 @@ class PivotTablePageComponent(
   val toolBar = new MigPanel("insets 1 1 1 1, gap 1") {
     val lockScreenButton = new ToggleToolBarButton {
       icon = StarlingIcons.Lock
-      tooltip = "Freeze or unfreeze the column headers"
+      tooltip = "Freeze the row headers"
       selected = pivotPageState.otherLayoutInfo.frozen
       reactions += {case ButtonClicked(b) => {
         pageContext.goTo(selfPage(pivotPageState.copy(
@@ -568,11 +568,11 @@ case class AbstractPivotComponentState(filterText:String,
                                        colScrollPosition:Int,
                                        mainScrollPosition:Point,
                                        reportSpecificScrollPosition:Int,
-                                       selectedCells:Either[List[(Int,Int)], (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])],
+                                       selectedCells:Either[(List[(Int,Int)], List[(Int,Int)]), (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])],
                                        configPanelState:Option[NTabbedPaneState]) extends ComponentState
 case class AbstractPivotComponentTypeState(filterText:String, reportSpecificScrollPosition:Int, mainScrollPosition:Point,
                                            configPanelState:Option[NTabbedPaneState],
-                                           selectedCells:Either[List[(Int,Int)],
+                                           selectedCells:Either[(List[(Int,Int)], List[(Int,Int)]),
                                            (List[(Int,Int)],List[(Int,Int)],List[(Int,Int)])]) extends ComponentTypeState
 
 case object AbstractPivotComponentTypeFocusInfo extends TypeFocusInfo
