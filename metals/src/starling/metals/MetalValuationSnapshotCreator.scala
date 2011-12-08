@@ -34,25 +34,39 @@ class MetalValuationSnapshotCreator( broadcaster:Broadcaster,
   }
 
   private def doCheck(version: Int) {
-    val versionForLatestSnapshot = SnapshotMarketDataVersion(environmentProvider.latestMetalsValuationSnapshot.label)
-    val currentVersion = SpecificMarketDataVersion(version)
-
-    val observationDay = Day.today
-    val previousEnv = environmentProvider.valuationServiceEnvironment(versionForLatestSnapshot, observationDay, observationDay)
-    val newEnv = environmentProvider.valuationServiceEnvironment(currentVersion, observationDay, observationDay)
     var forwards: Map[String, Either[String, PhysicalMetalForward]] = titanTradeStore.getAllForwards
+    if (!forwards.isEmpty) /*Otherwise empty environments have valuation snapshots regardless of whether they have any market data */{
+      val (_, previousEnv) = environmentProvider.lastValuationSnapshotEnvironment
 
-    valuationChange(previousEnv, newEnv, forwards) match {
-      case OldAndNewValuationsNotAvailable |
-           OldValuationsAvailableButNewUnavailable |
-           ValuationUnchanged =>
-      case FirstNewValuation => {
-        log.info("Snapshoting because first Metals valuation succeeded for " + observationDay)
-        environmentProvider.makeValuationSnapshot(version)
-      }
-      case SecondOrLaterSuccessfulValuation(numChangedTrades) => {
-        log.info("Snapshoting because Metals valuation changed on " + observationDay + ", changed " + numChangedTrades + " + trade(s)")
-        environmentProvider.makeValuationSnapshot(version)
+      val today = Day.today
+      val currentVersion = SpecificMarketDataVersion(version)
+      var previousObservationDay: Day = previousEnv.marketDay.day
+      val firstDay = previousObservationDay max (today - 7)
+
+      for (observationDay <- firstDay upto today) {
+        val newEnv = environmentProvider.valuationServiceEnvironment(currentVersion, observationDay, observationDay)
+
+        valuationChange(previousEnv, newEnv, forwards) match {
+          case OldAndNewValuationsNotAvailable |
+               OldValuationsAvailableButNewUnavailable =>{
+            log.info("Not snapshotting as new valuations are not available on " + observationDay)
+          }
+          case ValuationUnchanged if observationDay == previousObservationDay =>{
+            log.info("Not snapshotting as values unchanged and this observation day " + observationDay + " is same as last valuation snapshot " + previousObservationDay)
+          }
+          case ValuationUnchanged => {  // Unlikely in practise, however could come about in testing if we copy one day's market data to another day
+            log.info("Snapshotting even though Metals valuation unchanged between " + previousObservationDay + " and " + observationDay + ", but do have valid data for a new observation day")
+            environmentProvider.makeValuationSnapshot(version, observationDay)
+          }
+          case FirstNewValuation => {
+            log.info("Snapshoting because first Metals valuation succeeded for " + observationDay)
+            environmentProvider.makeValuationSnapshot(version, observationDay)
+          }
+          case SecondOrLaterSuccessfulValuation(numChangedTrades) => {
+            log.info("Snapshoting because Metals valuation changed on " + observationDay + ", changed " + numChangedTrades + " + trade(s)")
+            environmentProvider.makeValuationSnapshot(version, observationDay)
+          }
+        }
       }
     }
   }

@@ -146,7 +146,7 @@ class MarketDataServiceTests extends StarlingSpec with JMocker with TemporalSpec
   private val lastBusinessWeek = observationDay.businessDays(weekDay, (-5).to(0)).toList
   private val observationDays = Option(Set(Option(observationDay)))
   private val snapshotId = 1
-  private val snapshot = SnapshotID(snapshotId, Clock.timestamp, null, null, 1)
+  private val snapshot = SnapshotID(snapshotId, Clock.timestamp, null, null, None, 1)
   private val marketDataId = TitanMarketDataIdentifier.valueOf(snapshotId + "-2011-11-02"+ "-2011-11-02")
   private val expectedCurrencies = UOMSymbol.edmCurrencies.map(UOM.asUOM(_)).toSet
 

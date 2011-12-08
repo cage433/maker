@@ -17,8 +17,8 @@ import scalaz.Scalaz._
 import starling.daterange.{TimeOfDay, Day}
 
 trait EnvironmentProvider {
-  def metalsValuationSnapshots(observationDay : Option[Day]) = snapshots(observationDay).filter(ss =>
-    ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) &&  ss.snapshotType == SnapshotType.Valuation
+  def metalsValuationSnapshots(observationDay : Option[Day]) = snapshots(None).filter(ss =>
+    ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) &&  ss.snapshotType == SnapshotType.Valuation && ss.observationDay == observationDay.getOrElse(ss.observationDay)
   )
   def metalsSnapshots(observationDay : Option[Day]) = snapshots(observationDay).filter(ss =>
     ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
@@ -26,7 +26,7 @@ trait EnvironmentProvider {
   def snapshots(observationDay : Option[Day]) : List[SnapshotID]
   def environment(snapshotID : SnapshotID, observationDay : Day) : Environment
   def environment(marketDataVersion:MarketDataVersion, observationDay:Day):Environment
-  def makeValuationSnapshot(version:Int):SnapshotID
+  def makeValuationSnapshot(version:Int, observationDay : Day):SnapshotID
 
   def valuationServiceEnvironment(snapshotID : SnapshotID, observationDay : Day, marketDay : Day): Environment = {
     valuationServiceEnvironment(new SnapshotMarketDataVersion(snapshotID.label), observationDay, marketDay)
@@ -42,23 +42,21 @@ trait EnvironmentProvider {
         throw new SnapshotIDNotFound(identifier)
     }
   }
-//  def environment(marketDataIdentifier : TitanMarketDataIdentifier) : Environment = {
-//    snapshots(None).find(_.identifier == marketDataIdentifier.snapshotIdentifier.id) match {
-//      case Some(snapshot) =>
-//        environment(snapshot, marketDataIdentifier.observationDay)
-//      case None =>
-//        throw new SnapshotIDNotFound(marketDataIdentifier.snapshotIdentifier.id)
-//    }
-//  }
-  def latestMetalsValuationSnapshot : SnapshotID = metalsValuationSnapshots(None).sortWith(_ > _).head
+
+  def latestMetalsValuationSnapshot : SnapshotID = metalsValuationSnapshots(None).sortWith{
+    case (s1, s2) =>
+      if (s1.observationDay == s2.observationDay)
+        s1 > s2
+      else
+        s1.observationDay.get > s2.observationDay.get
+   }.head
 
   /**
    * Used for generating events like 'has value changed'
    */
   def lastValuationSnapshotEnvironment: (SnapshotIDLabel, Environment) = {
     val snapshotID = latestMetalsValuationSnapshot
-    val marketDay = Day.today.previousWeekday //This should probably be the observation day used for valuation
-                                              //was created but this is not stored. Will fix when this code is used
+    val marketDay = snapshotID.observationDay.get
     (snapshotID.label, environment(snapshotID, marketDay))
   }
 
@@ -92,17 +90,17 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDat
   def snapshots(observationDay : Option[Day]) = marketDataStore.snapshots(observationDay)
 
 
-  def makeValuationSnapshot(version: Int) = {
-    marketDataStore.snapshot(MarketDataIdentifier(MetalsSelection, SpecificMarketDataVersion(version)), SnapshotType.Valuation)
+  def makeValuationSnapshot(version: Int, observationDay : Day) = {
+    marketDataStore.snapshot(MarketDataIdentifier(MetalsSelection, SpecificMarketDataVersion(version)), SnapshotType.Valuation, Some(observationDay))
   }
 }
 
 class MockEnvironmentProvider() extends EnvironmentProvider {
 
   private val snapshotsAndData = Map(
-    SnapshotID(1, Day(2011, 7, 7).toTimestamp, null, null, 0) -> (100.0, 99),
-    SnapshotID(2, Day(2011, 7, 7).toTimestamp, null, null, 0) ->  (101.0, 98),
-    SnapshotID(3, Day(2011, 7, 8).toTimestamp, null, null, 0) -> (102.0, 97)
+    SnapshotID(1, Day(2011, 7, 7).toTimestamp, null, null, None, 0) -> (100.0, 99),
+    SnapshotID(2, Day(2011, 7, 7).toTimestamp, null, null, None, 0) ->  (101.0, 98),
+    SnapshotID(3, Day(2011, 7, 8).toTimestamp, null, null, None, 0) -> (102.0, 97)
   )
   def snapshots(observationDay : Option[Day]) = metalsValuationSnapshots(observationDay)
   override def metalsValuationSnapshots(observationDay : Option[Day]) : List[SnapshotID] = snapshotsAndData.keySet.toList.filter{
@@ -124,7 +122,7 @@ class MockEnvironmentProvider() extends EnvironmentProvider {
   def snapshotIDs(observationDay : Option[Day]) : List[SnapshotID] = throw new UnsupportedOperationException
 
   def environment(marketDataVersion: MarketDataVersion, observationDay: Day) = throw new UnsupportedOperationException
-  def makeValuationSnapshot(version: Int) = throw new UnsupportedOperationException
+  def makeValuationSnapshot(version: Int, observationDay : Day) = throw new UnsupportedOperationException
 }
 
 

@@ -30,7 +30,7 @@ class MarketDataAvailabilityBroadcaster(marketDataStore: MarketDataStore, broadc
 
       if (changesByDataFlow.nonEmpty) {
         val marketDataIdentifier = MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), newVersion)
-        val snapshot:SnapshotIDLabel = marketDataStore.snapshot(marketDataIdentifier, SnapshotType.MarketData).label
+        val snapshot:SnapshotIDLabel = marketDataStore.snapshot(marketDataIdentifier, SnapshotType.MarketData, observationDay = None).label
         changesByDataFlow.foreach{ case(source, changes) => {
           changes.foreach { change => {
             change.eventFor(snapshot).foreach { realEvent => broadcaster.broadcast(realEvent) }

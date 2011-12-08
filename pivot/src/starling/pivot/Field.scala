@@ -109,7 +109,7 @@ object PivotQuantityPivotParser extends PivotParser {
     } else {
       textNoCommas
     }
-    val letterIndex = cleanTextMaybeWithUOM.indexWhere{c => c.isLetter || c == '%'}
+    val letterIndex = cleanTextMaybeWithUOM.indexWhere{c => c.isLetter || c == '%' || c == '¢'}
     if (letterIndex == -1) {
       // No UOM specified
       (PivotQuantity(cleanTextMaybeWithUOM.toDouble),"")
