@@ -20,7 +20,7 @@ object SpotFXDataType extends MarketDataType {
 
   val initialPivotState = PivotFieldsState(
     dataFields=List(rateField.field),
-    rowFields=List(currencyField.field)
+    rowFields=List(currencyField.field, Field("Observation Time"))
   )
 
   def rows(key: SpotFXDataKey, data: SpotFXData) = List(Row(
