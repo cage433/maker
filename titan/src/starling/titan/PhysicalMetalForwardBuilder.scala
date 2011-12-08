@@ -22,7 +22,6 @@ import starling.market.Commodity
 class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             inventoryByQuotaID: Map[TitanId, Traversable[InventoryItem]],
             isQuotaFullyAllocated : Map[TitanId, Boolean]) extends Log {
-            //logisticsQuotaByQuotaID: Map[TitanId, LogisticsQuota]) extends Log {
   import refData._
 
   private val QUOTA_PREFIX = "Q-"
@@ -96,6 +95,10 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
       }
 
       val submittedDay = Day.fromLocalDate(trade.submitted.toLocalDate)
+
+      // check for quota identifier uniqueness problems from EDM tradeservice
+      val quotaIds = trade.quotas.map(_.detail.identifier)
+      assert(quotaIds == quotaIds.distinct, "Duplicate quota ids found, trade can not be processed")
 
       val trades: List[Trade] = {
         trade.quotas.map(_.detail).flatMap {
