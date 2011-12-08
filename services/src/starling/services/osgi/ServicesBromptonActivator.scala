@@ -7,7 +7,6 @@ import starling.manager._
 import starling.calendar.BusinessCalendars
 import starling.services.excel.ExcelLoopReceiver
 import starling.curves.{VanillaEnvironmentRule, EnvironmentRule, EnvironmentRules, CurveViewer}
-import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 import starling.marketdata.ReferenceDataLookup
 import javax.servlet.http.HttpServlet
 import starling.rmi._
@@ -16,6 +15,7 @@ import starling.services.{QlikViewUpdater, EmailService, ReferenceData, Starling
 import starling.http.GUICode
 import java.util.Timer
 import starling.daterange._
+import starling.gui.api.{EnabledDesks, PricingGroup, EnvironmentRuleLabel}
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -32,7 +32,8 @@ class ServicesBromptonActivator extends BromptonActivator {
       true, true, true,
       forceGUICompatability=false,
       startEAIAutoImportThread=props.ImportsBookClosesFromEAI(),
-      marketDataReadersProviders = bromptonMarketDataReaderProviders
+      marketDataReadersProviders = bromptonMarketDataReaderProviders,
+      enabledDesks = context.awaitService(classOf[EnabledDesks]).desks
     )
     context.registerService(classOf[String], GUICode.allMD5s)
 

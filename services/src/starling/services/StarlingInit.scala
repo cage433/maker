@@ -24,6 +24,7 @@ import org.apache.commons.io.IOUtils
 import starling.marketdata.{MarketDataTypes, DBReferenceDataLookup}
 import starling.lim.LIMService
 import starling.manager.Broadcaster
+import starling.gui.api.Desk
 
 
 class StarlingInit( val props: Props,
@@ -36,7 +37,8 @@ class StarlingInit( val props: Props,
                     forceGUICompatability: Boolean = true,
                     startEAIAutoImportThread: Boolean = true,
                     testMode : Boolean = false,
-                    marketDataReadersProviders:MarketDataPageIdentifierReaderProviders = MarketDataPageIdentifierReaderProviders.Empty
+                    marketDataReadersProviders:MarketDataPageIdentifierReaderProviders = MarketDataPageIdentifierReaderProviders.Empty,
+                    enabledDesks: Set[Desk] = Set.empty
                     ) extends Stopable with Log {
 
   private lazy val services = CompositeStopable(
@@ -176,7 +178,7 @@ class StarlingInit( val props: Props,
     version, referenceDataService, businessCalendars.UK)
 
   val fC2Service = new FC2Service(marketDataStore, dataTypes, marketDataReadersProviders)
-  val fCFacility = new FC2FacilityImpl(fC2Service, marketDataStore, curveViewer, environmentRules)
+  val fCFacility = new FC2FacilityImpl(fC2Service, marketDataStore, curveViewer, environmentRules, enabledDesks)
 
   def currentUser() = User.currentlyLoggedOn
 

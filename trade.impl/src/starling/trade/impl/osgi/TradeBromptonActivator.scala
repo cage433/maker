@@ -6,7 +6,6 @@ import starling.services.excel.TradeHandler
 import starling.services.trade.ExcelTradeReader
 import starling.manager.Broadcaster
 import starling.tradestore.intraday.IntradayTradeStore
-import starling.gui.api.{EAIDeskInfo, Desk}
 import starling.tradestore.eai.EAITradeStore
 import starling.neptune.{RefinedFixationSystemOfRecord, RefinedFixationTradeStore, RefinedAssignmentSystemOfRecord, RefinedAssignmentTradeStore}
 import starling.tradeimport.{ClosedDesks, TradeImporterFactory, TradeImporter}
@@ -20,6 +19,8 @@ import starling.manager._
 import starling.rmi.StarlingServer
 import starling.trade.facility.TradeFacility
 import starling.marketdata.DBReferenceDataLookup
+import starling.props.ServerTypeLabel
+import starling.gui.api.{EnabledDesks, EAIDeskInfo, Desk}
 
 class TradeBromptonActivator extends BromptonActivator {
 
@@ -28,6 +29,19 @@ class TradeBromptonActivator extends BromptonActivator {
     val broadcaster = context.awaitService(classOf[Broadcaster])
     val props = context.awaitService(classOf[starling.props.Props])
     val ldapUserLookup = context.awaitService(classOf[LdapUserLookup])
+
+    val enabledDesks: Set[Desk] = props.EnabledDesks().trim.toLowerCase match {
+      case "" => props.ServerType() match {
+        case ServerTypeLabel.FC2 => Set(Desk.Titan)
+        case ServerTypeLabel.Oil => Desk.oilDesks
+        case ServerTypeLabel.Dev => Desk.values.toSet
+        case other => throw new Exception("Unknown ServerType: " + other)
+      }
+      case "all" => Desk.values.toSet
+      case "none" => Set.empty
+      case names => names.split(",").toList.map(Desk.fromName).toSet
+    }
+    context.registerService(classOf[EnabledDesks], EnabledDesks(enabledDesks))
 
     context.awaitService(classOf[StarlingServer]) //Hack to ensure that a MarketProvider has been set
 
@@ -47,13 +61,6 @@ class TradeBromptonActivator extends BromptonActivator {
 
     val neptuneReferenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
     val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem, neptuneReferenceDataLookup)
-
-    val enabledDesks: Set[Desk] = props.EnabledDesks().trim.toLowerCase match {
-      case "" => throw new Exception("EnabledDesks property not set, valid values: all, none, " + Desk.names.mkString(", "))
-      case "all" => Desk.values.toSet
-      case "none" => Set.empty
-      case names => names.split(",").toList.map(Desk.fromName).toSet
-    }
 
     val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 

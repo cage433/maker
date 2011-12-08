@@ -110,7 +110,8 @@ class FC2Service(marketDataStore: MarketDataStore, marketDataTypes: MarketDataTy
 class FC2FacilityImpl(service: FC2Service,
                       marketDataStore:MarketDataStore,
                       curveViewer : CurveViewer,
-                      environmentRules: EnvironmentRules) extends FC2Facility {
+                      environmentRules: EnvironmentRules,
+                      enabledDesks: Set[Desk]) extends FC2Facility {
 
 
   val cache = CacheFactory.getCache("FC2")
@@ -119,8 +120,8 @@ class FC2FacilityImpl(service: FC2Service,
   private def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
   private def pricingGroups() = {
-    //val allPricingGroups = desks.flatMap(_.pricingGroups).toSet
-    marketDataStore.pricingGroups//.filter(allPricingGroups.contains(_))
+    val allPricingGroups = enabledDesks.flatMap(_.pricingGroups).toSet
+    marketDataStore.pricingGroups.filter(allPricingGroups.contains(_))
   }
   private def excelDataSets() = marketDataStore.excelDataSets
 

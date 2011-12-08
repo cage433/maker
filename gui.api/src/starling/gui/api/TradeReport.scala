@@ -116,6 +116,8 @@ sealed case class Desk(name: String, pricingGroups: List[PricingGroup], deskInfo
   override def toString = name
 }
 
+case class EnabledDesks(desks: Set[Desk])
+
 object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase = true) {
   import PricingGroup._
 
@@ -141,6 +143,8 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
     case d@Desk(_, _, Some(info: EAIDeskInfo)) => info.book == bookID
     case _ => false
   }
+
+  def oilDesks = Set(GasolinePhysicalBargesAndARABlending, GasoilSpec, GasolineSpec, CrudeSpecNorthSea, HoustonDerivatives, NaphthaSpec)
 }
 
 class TradeEvent
