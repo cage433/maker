@@ -93,7 +93,10 @@ case class AxisValue(field:Field, value:AxisValueType, position:Int, newRowsAtBo
 }
 
 case object UndefinedValue {
+  import scalaz.Scalaz._
+
   override def toString = "n/a"
+  def parse(text: String): Option[(Any, String)] = (text == toString) option(this, toString)
 }
 
 case object UndefinedValueNew {
