@@ -583,7 +583,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
 
             val pars = parser(r, c)
-            val (v,t) = UndefinedValue.parse(stringValueToUse) | pars.parse(stringValueToUse, extraFormatInfo)
+            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
 
             (Some(v), t, state)
           } catch {

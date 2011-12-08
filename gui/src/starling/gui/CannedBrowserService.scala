@@ -316,7 +316,7 @@ class EditableSpecifiedCannedDataSource extends UnfilteredPivotTableDataSource {
 }
 
 class CannedMarketPivotParser(markets:Set[String]) extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo) = {
     val lowerCaseMarkets = markets.map(_.trim().toLowerCase)
     if (lowerCaseMarkets(text.trim.toLowerCase)) {
       (text, text)
