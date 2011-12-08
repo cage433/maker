@@ -644,7 +644,15 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
       }
     }
   }
-  private val bottomTable = new PivotJTable(tableModelsHelper.bottomTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
+
+  private def convertTopTableToString() = {
+    val rows = Array.range(0, topTable.getRowCount)
+    val cols = Array.range(0, topTable.getColumnCount())
+    topTable.convertToString(rows, cols)
+  }
+
+  private val bottomTable = new PivotJTable(tableModelsHelper.bottomTableModel, this, model, indents,
+    otherLayoutInfo.columnDetails, edits, Some(convertTopTableToString))
   private val mainTable = new PivotJTable(tableModelsHelper.mainTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
   private val rowHeaderTable = new PivotJTable(tableModelsHelper.rowHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)
   private val colHeaderTable = new PivotJTable(tableModelsHelper.colHeaderTableModel, this, model, indents, otherLayoutInfo.columnDetails, edits)

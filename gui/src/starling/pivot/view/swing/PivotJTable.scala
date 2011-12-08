@@ -28,7 +28,7 @@ object PivotJTable {
 }
 
 class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, model:PivotTableModel,
-                  indentColumns:Array[Boolean], columnDetails:ColumnDetails, pagePivotEdits:PivotEdits) extends JXTable(tableModel) {
+                  indentColumns:Array[Boolean], columnDetails:ColumnDetails, pagePivotEdits:PivotEdits, topTableAsString:Option[()=>String]=None) extends JXTable(tableModel) {
   setUI(new PivotTableUI)
   setAutoResizeMode(JTable.AUTO_RESIZE_OFF)
   getTableHeader.setReorderingAllowed(false)
@@ -484,18 +484,25 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
   getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F2,0), "EditTableWithF2")
   getActionMap.put("EditTableWithF2", editTableWithF2Action.peer)
 
-  def convertSelectedCellsToString = {
+  def convertToString(rows:Array[Int], cols:Array[Int]) = {
     val ls = System.getProperty("line.separator")
     val sb = new StringBuilder
     val mainTableModel = getModel
-    val mainColumns = getSelectedColumns
-    val mainRows = getSelectedRows
+
+    val extraString = if (cols.length == getColumnCount() && rows.length == getRowCount) {
+      topTableAsString match {
+        case None => ""
+        case Some(func) => (func() + "\n")
+      }
+    } else {
+      ""
+    }
 
     var firstRow = true
-    for (row <- mainRows) {
+    for (row <- rows) {
       var firstColumn = true
       if (firstRow) firstRow = false else sb.append(ls)
-      for (column <- mainColumns) {
+      for (column <- cols) {
         if (firstColumn) firstColumn = false else sb.append("\t")
         sb.append(mainTableModel.getValueAt(row, column) match {
           case cell:TableCell if cell.asString.nonEmpty => cell.asString
@@ -504,6 +511,10 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         })
       }
     }
-    sb.toString()
+    extraString + sb.toString()
+  }
+
+  def convertSelectedCellsToString = {
+    convertToString(getSelectedRows, getSelectedColumns)
   }
 }
