@@ -60,7 +60,7 @@ class MarketDataService(marketDataStore: MarketDataStore, notifier: Notifier = N
     val lastWeeksRates = spotFXRatesFor(snapshot, lastWeek)
 
     lastWeek.reverse.map(observationDay => {
-      val mdi = TitanMarketDataIdentifier(snapshot, observationDay)
+      val mdi = TitanMarketDataIdentifier(snapshot, observationDay, observationDay)
 
       lastWeeksRates(observationDay).map(q => SpotFXRate(mdi, q.toSerializable))
     }).find(containsAllTitanCurrencies).getOrElse(throw new IllegalArgumentException(

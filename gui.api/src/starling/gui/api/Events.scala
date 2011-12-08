@@ -26,7 +26,7 @@ case class ExcelMarketListUpdate(values:List[String]) extends StarlingGUIEvent
 case class ExcelMarketDataUpdate(name:String, version:Int) extends StarlingGUIEvent
 case class TestEvent(text:String) extends StarlingGUIEvent
 case class RabbitEventReceived(latestTimestamp:Long) extends StarlingGUIEvent
-case class RefinedMetalsValuationChanged(observationDay:Day, snapshotID:SnapshotIDLabel, changedTrades:Set[String]) extends Event
+case class RefinedMetalsValuationChanged(observationDay:Day, snapshotID:SnapshotIDLabel, changedTradeId : String) extends Event
 
 object PricingGroupMarketDataUpdate {
   def matching(pricingGroupOption : Option[PricingGroup]) : PartialFunction[Event, PricingGroupMarketDataUpdate] = {

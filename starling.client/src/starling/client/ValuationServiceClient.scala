@@ -26,7 +26,7 @@ object ValuationServiceClient {
 
         //val x = valuationService.valueSingleTradeQuotas("306")
 
-        val (_, valuationResult) = valuationService.valueAllTradeQuotas(Some(TitanMarketDataIdentifier(latestSnapshotIdentifier, Day.today)))
+        val (_, valuationResult) = valuationService.valueAllTradeQuotas(Some(TitanMarketDataIdentifier(latestSnapshotIdentifier, Day.today, Day.today)))
         val (worked, errors) = valuationResult.values.partition(_ isRight)
         println("Worked " + worked.size + ", failed " + errors.size)
         println("Errors: ")

@@ -30,26 +30,41 @@ case class ValuationService(
    * it is possible that the environment corresponding to that snapshot (and snapshot day) may have
    * its market day moved forward.
    */
-  def bestValuationIdentifier() : TitanMarketDataIdentifier = {
+  def bestValuationIdentifier() = {
     val today = Day.today
-    val observationDay = today.previousWeekday
-    //    val (snapshotID, observationDay) : (SnapshotID, Day) = environmentProvider.metalsValuationSnapshots(Some(today)).headOption match {
-//      case Some(s : SnapshotID) if (s.snapshotDay >= today) => (s, today)
-//      case _ => {
-//        val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= today).headOption.getOrElse(throw new Exception("No metals snapshots found"))
-//        (snapshotID, today.previousWeekday)
-//      }
-//    }
-    val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= observationDay).headOption.getOrElse(throw new Exception("No metals snapshots found"))
-    TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay)
+//    val observationDay = today.previousWeekday
+    val (snapshotID, observationDay): (SnapshotID, Day) = environmentProvider.metalsValuationSnapshots(Some(today)).headOption match {
+      case Some(s: SnapshotID) if (s.snapshotDay >= today) => (s, today)
+      case _ => {
+        val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= today).headOption.getOrElse(throw new Exception("No metals snapshots found"))
+        (snapshotID, today.previousWeekday)
+      }
+    }
+    //    val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= observationDay).headOption.getOrElse(throw new Exception("No metals snapshots found"))
+    (snapshotID, observationDay, today)
+//    TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, today)
   }
   
   def latestSnapshotID() : TitanSnapshotIdentifier = environmentProvider.latestMetalsValuationSnapshot.toSerializable
 
   private def marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier]) : (TitanMarketDataIdentifier, Environment) = {
-    val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse(bestValuationIdentifier())
-    val env = environmentProvider.environment(marketDataIdentifier).undiscounted.forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay)) // Metals don't want discounting during UAT
-    (marketDataIdentifier, env)
+    def makeEnv(snapshotID : SnapshotID, observationDay : Day, marketDay : Day) = environmentProvider.valuationServiceEnvironment(snapshotID, observationDay, marketDay)
+    maybeMarketDataIdentifier match {
+      case Some(tmdi @ TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotIdentifier), observationDay, marketDay)) => {
+        val snapshotID = environmentProvider.snapshotIDFromIdentifier(snapshotIdentifier)
+        (tmdi, makeEnv(snapshotID, observationDay, marketDay))
+      }
+      case None => {
+        val (snapshotID, observationDay, marketDay) = bestValuationIdentifier()
+        (TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay), makeEnv(snapshotID, observationDay, marketDay))
+      }
+    }
+//    val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse({
+//      val (snapshotID, observationDay, marketDay) = bestValuationIdentifier()
+//      TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay)
+//    })
+//    val env = environmentProvider.environment(marketDataIdentifier).undiscounted.forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay)) // Metals don't want discounting during UAT
+//    (marketDataIdentifier, env)
   }
   def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier] = None) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
 
@@ -90,5 +105,16 @@ case class ValuationService(
     environmentProvider.metalsValuationSnapshots(observationDay).sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
   }
 
+}
+
+object ValuationService{
+  def buildEnvironment(
+    provider : EnvironmentProvider,
+    snapshotID : SnapshotID,
+    observationDay : Day,
+    marketDay : Day
+  ) : Environment = {
+    provider.environment(snapshotID, observationDay).undiscounted.forwardState(marketDay.endOfDay)
+  }
 }
 
