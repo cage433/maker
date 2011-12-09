@@ -34,7 +34,14 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   private val numCols = rowHeaderData0(0).length
   private val addedRows0 = new ListBuffer[Array[AxisCell]]
 
-  private val blankRow = Array.fill(numCols)(AxisCell.BlankAddedCell)
+  private val blankRow = Array.fill(numCols)(AxisCell.BlankAddedCell).zipWithIndex.map{case (ac,c) => {
+    val f = field(c)
+    if (keyFields.contains(f)) {
+      ac
+    } else {
+      ac.copy(editable = false)
+    }
+  }}
   if (extraLine) {
     addedRows0 += blankRow
   }
@@ -253,38 +260,42 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
       val r = tv.row
       val c = tv.column
       val value = tv.value
-      val stringValue = value.asInstanceOf[String].trim
-      val pars = parser(r, c)
 
-      val (newValue,newLabel,stateToUse) =  try {
-        val (v,t) = pars.parse(stringValue, extraFormatInfo)
-        val currentValue = getValueAt(r,c)
-        val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
-        (Some(v), t, state)
-      } catch {
-        case e:Exception => (None, stringValue, Error)
-      }
+      val currentValue = getValueAt(r,c)
 
-      val k = (r,c)
-      overrideMap -= k
-      val originalCell = getValueAt(r,c)
-      val originalLabel =  originalCell.value.value.originalValue match {
-        case None => {
-          if (originalCell.label.nonEmpty) {
-            originalCell.label
-          } else {
-            "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
-          }
+      if (currentValue.editable && !currentValue.hidden) {
+        val stringValue = value.asInstanceOf[String].trim
+        val pars = parser(r, c)
+
+        val (newValue,newLabel,stateToUse) =  try {
+          val (v,t) = pars.parse(stringValue, extraFormatInfo)
+          val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
+          (Some(v), t, state)
+        } catch {
+          case e:Exception => (None, stringValue, Error)
         }
-        case Some(ov) => fieldInfo.fieldToFormatter(field(c)).format(ov, extraFormatInfo).text
-      }
-      if (originalLabel == newLabel) {
-        anyResetEdits = resetCells(List(k), anyResetEdits, false)
-      } else {
-        if (stateToUse == Error) {
-          overrideMap(k) = originalCell.copy(label = stringValue, longLabel = stringValue, overrideState = Some(Error))
+
+        val k = (r,c)
+        overrideMap -= k
+        val originalCell = getValueAt(r,c)
+        val originalLabel =  originalCell.value.value.originalValue match {
+          case None => {
+            if (originalCell.label.nonEmpty) {
+              originalCell.label
+            } else {
+              "sfkjfhxcjkvuivyruvhrzzasaf$%£$££"
+            }
+          }
+          case Some(ov) => fieldInfo.fieldToFormatter(field(c)).format(ov, extraFormatInfo).text
+        }
+        if (originalLabel == newLabel) {
+          anyResetEdits = resetCells(List(k), anyResetEdits, false)
         } else {
-          overrideMap(k) = originalCell.copy(label = newLabel, longLabel = newLabel, overrideState = Some(stateToUse), overrideValue = newValue)
+          if (stateToUse == Error) {
+            overrideMap(k) = originalCell.copy(label = stringValue, longLabel = stringValue, overrideState = Some(Error))
+          } else {
+            overrideMap(k) = originalCell.copy(label = newLabel, longLabel = newLabel, overrideState = Some(stateToUse), overrideValue = newValue)
+          }
         }
       }
     })

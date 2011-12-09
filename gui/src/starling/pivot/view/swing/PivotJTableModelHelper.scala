@@ -74,6 +74,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   val fieldInfo:FieldInfo = pivotTable.fieldInfo
   val keyFields = editableInfo.map(_.keyFields).getOrElse(Set())
+  val measureFields = editableInfo.map(_.measureFields).getOrElse(Set())
   val extraLine = editableInfo.fold(_.extraLine, false)
 
   def tellMainTableAboutDeletedRows(rows:List[Int]) {
@@ -377,7 +378,19 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     type CellType = TableCell
 
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = "", longText = None, value = UndefinedValueNew))
+    private val blankCells = Array.fill(data0(0).length)(TableCell.BlankAddedCell).zipWithIndex.map{case (tc,c) => {
+      colHeaderData0.find(_(c).value.isMeasure) match {
+        case None => tc.copy(editable = false)
+        case Some(cc) => {
+          val f = cc(c).value.field
+          if (measureFields.contains(f)) {
+            tc
+          } else {
+            tc.copy(editable = false)
+          }
+        }
+      }
+    }}
     if (extraLine) {
       addedRows0 += blankCells
     }
@@ -568,7 +581,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val currentValue = getValueAt(r,c)
         val currentText = currentValue.text.trim
 
-        if (sValue != currentText) {
+        if (sValue != currentText && currentValue.editable) {
 
           val uom = uoms0(c)
           val (newValue,newLabel,stateToUse) =  try {
