@@ -25,7 +25,7 @@ case class TableValue(value:AnyRef, row:Int, column:Int)
 
 object PivotTableType extends Enumeration {
   type PivotTableType = Value
-  val RowHeader, ColumnHeader, Main, Full, TopTable, BottomTable = Value
+  val RowHeader, ColumnHeader, Main, TopTable, BottomTable = Value
 }
 
 import PivotTableType._
@@ -377,7 +377,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     type CellType = TableCell
 
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = "", longText = None))
+    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = "", longText = None, value = UndefinedValueNew))
     if (extraLine) {
       addedRows0 += blankCells
     }
@@ -590,7 +590,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
 
             val pars = parser(r, c)
-            val (v,t) = UndefinedValue.parse(stringValueToUse) | pars.parse(stringValueToUse, extraFormatInfo)
+            val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
 
             (Some(v), t, state)
           } catch {
@@ -903,7 +903,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       if (fireChange) {
         if (anyResetEdits != currentEdits) {
           val newEdits = edits(anyResetEdits)
-          updateEdits(newEdits, Full)
+          updateEdits(newEdits, BottomTable)
         } else {
           tableUpdated()
         }
@@ -934,7 +934,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       if (fireChange) {
         if (editsToUse != currentEdits) {
           val newEdits = allEdits(editsToUse)
-          updateEdits(newEdits, Full)
+          updateEdits(newEdits, BottomTable)
         } else {
           tableUpdated()
         }
@@ -953,7 +953,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         editsToUse = removeAddedRowsIfBlank(editsToUse)
         if (editsToUse != pagePivotEdits) {
           val newEdits = allEdits(editsToUse)
-          updateEdits(newEdits, Full)
+          updateEdits(newEdits, BottomTable)
         } else {
           tableUpdated()
         }

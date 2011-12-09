@@ -42,11 +42,7 @@ object Payloads extends PayloadFactory {
   private def createPayload(payloadType: String, keyId: String): Payload = createPayload(payloadType, TitanStringLiterals.starlingSource, keyId)
 }
 
-case class TitanRabbitIdBroadcaster(
-    publisher : Publisher,
-    source : String = TitanStringLiterals.starlingSource,
-    subject : String = TitanStringLiterals.starlingMarketDataSnapshotIDSubject,
-    payloadType : String = TitanStringLiterals.starlingSnapshotIdPayload) extends Broadcaster with Log {
+case class TitanRabbitIdBroadcaster(publisher : Publisher, source : String = TitanStringLiterals.starlingSource) extends Broadcaster with Log {
 
   def toTitan(list: List[UOM]): List[TitanSerializableCurrency] = list.flatMapO(_.serializableCurrency)
 
@@ -59,7 +55,7 @@ case class TitanRabbitIdBroadcaster(
           Payloads.forObservationDay(observationDay) ::
           Payloads.forSnapshotId(snapshotID) :: Payloads.forTitanTradeId(changedTradeID) :: Nil)
       }
-      case MarketDataSnapshot(snapshotID, isValuationSnapshot) => createEvents(subject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Payloads.forIsValuationSnapshot(isValuationSnapshot) :: Nil)
+      case MarketDataSnapshot(snapshotID, isValuationSnapshot, _) => createEvents(TitanStringLiterals.starlingMarketDataSnapshotIDSubject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Payloads.forIsValuationSnapshot(isValuationSnapshot) :: Nil)
       case SpotFXDataEvent(observationDay, currencies, snapshotIDLabel, isCorrection) => {
         createEvents(TitanStringLiterals.starlingSpotFXDataServiceSubject, verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) ::

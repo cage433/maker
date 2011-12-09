@@ -16,7 +16,7 @@ case class IntradayUpdated(group: String, user: User, timestamp:Timestamp) exten
 case class TradesUpdated(desk : Desk, timestamp :Timestamp) extends StarlingGUIEvent
 case class DeskClosed(desk: Desk, timestamp:TradeTimestamp) extends StarlingGUIEvent
 case class DeskCloseFailed(desk: Desk, timestamp:TradeTimestamp, error: Throwable) extends StarlingGUIEvent
-case class MarketDataSnapshot(snapshotID:SnapshotIDLabel, isValuationSnapshot : Boolean) extends StarlingGUIEvent
+case class MarketDataSnapshot(snapshotID:SnapshotIDLabel, isValuationSnapshot : Boolean, observationDay : Option[Day]) extends StarlingGUIEvent
 case class PricingGroupMarketDataUpdate(pricingGroup:PricingGroup, version:Int,
                                         previousVersion:Int, affectedObservationDays: List[Day]) extends StarlingGUIEvent
 case class ExcelObservationDay(name:String, day:Day) extends StarlingGUIEvent

@@ -49,5 +49,5 @@ class QlikViewUpdater(serverUrl: String, spotFXTaskName: String, notifier: Notif
   private def urlOf(operation: String) = serverUrl + "/" + operation
 
   safely(getTaskID()) // Warn if early binding isn't possible
-    .fold(ex => {ex.printStackTrace(); log.warn(ex.getMessage)}, id => log.debug("QlikView task containing: \"%s\" has id: %s" % (spotFXTaskName, id)))
+    .fold(ex => log.warn(ex.getMessage, ex), id => log.debug("QlikView task containing: \"%s\" has id: %s" % (spotFXTaskName, id)))
 }

@@ -156,7 +156,7 @@ class FC2FacilityImpl(service: FC2Service,
   }
 
   def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType: SnapshotType) = {
-    marketDataStore.snapshot(marketDataIdentifier, snapshotType).label
+    marketDataStore.snapshot(marketDataIdentifier, snapshotType, observationDay = None).label
   }
 
   def importData(marketDataSelection:MarketDataSelection, observationDay:Day) = {

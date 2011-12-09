@@ -1,4 +1,4 @@
-package starling.services
+package starling.gui
 
 import starling.pivot._
 import org.apache.commons.io.IOUtils

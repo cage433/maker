@@ -15,6 +15,7 @@ import starling.dbx.{FalseClause, From, RealTable}
 import starling.dbx.QueryBuilder._
 import starling.browser.service.Version
 import starling.auth.{Groups, LdapUserLookup, User}
+import starling.gui.GitPivotDataSource
 
 class StarlingServerImpl(
         val name:String,

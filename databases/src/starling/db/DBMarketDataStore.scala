@@ -250,13 +250,13 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
     }
   }
 
-  def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType:SnapshotType): SnapshotID = {
+  def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType:SnapshotType, observationDay : Option[Day]): SnapshotID = {
 
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
-    val (snapshotID, justCreated) = tags.snapshot(version, marketDataIdentifier.selection, snapshotType)
+    val (snapshotID, justCreated) = tags.snapshot(version, marketDataIdentifier.selection, snapshotType, observationDay)
 
     if (justCreated) {
-      broadcaster.broadcast(MarketDataSnapshot(snapshotID.label, snapshotType == SnapshotType.Valuation))
+      broadcaster.broadcast(MarketDataSnapshot(snapshotID.label, snapshotType == SnapshotType.Valuation, observationDay))
     }
     snapshotID
   }

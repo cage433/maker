@@ -5,6 +5,7 @@ import java.io.Serializable
 import model.{UndefinedValueNew, UndefinedValue}
 import starling.quantity._
 import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
 
 
 class Field(val name: String) extends Serializable {
@@ -84,19 +85,22 @@ object Field {
 
 // NOTE - The implementations of Parser must be serializable (and easily serializable at that). i.e. an Object like TextPivotParser.
 trait PivotParser extends Serializable {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo):(Any,String)
+  final def parse(text: String, extraFormatInfo: ExtraFormatInfo) = parsedUndefined(text) | parseDefined(text, extraFormatInfo)
   def acceptableValues:Set[String] = Set.empty
+
+  protected def parsedUndefined(text: String): Option[(Any, String)] = None
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo): (Any,String)
 }
 
 object TextPivotParser extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text,text)
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo) = (text,text)
 }
 object IntPivotParser extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = (text.toInt, text)
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo) = (text.toInt, text)
 }
 
 object PivotQuantityPivotParser extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = typedParse(text, extraFormatInfo)
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo) = typedParse(text, extraFormatInfo)
 
   def typedParse(text: String, extraFormatInfo: ExtraFormatInfo) = {
     val textNoCommas = text.replaceAll(",", "").trim()
@@ -105,7 +109,7 @@ object PivotQuantityPivotParser extends PivotParser {
     } else {
       textNoCommas
     }
-    val letterIndex = cleanTextMaybeWithUOM.indexWhere{c => c.isLetter || c == '%'}
+    val letterIndex = cleanTextMaybeWithUOM.indexWhere{c => c.isLetter || c == '%' || c == '¢'}
     if (letterIndex == -1) {
       // No UOM specified
       (PivotQuantity(cleanTextMaybeWithUOM.toDouble),"")
@@ -118,7 +122,21 @@ object PivotQuantityPivotParser extends PivotParser {
   }
 }
 
-case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String, percentageFormat:String, unlimitedOnExplainScreen:Boolean) {
+object DecimalPlaces {
+  def apply(defaultFormat: String, lotsFormat: String, priceFormat: String, currencyFormat: String, percentageFormat: String, unlimitedOnExplainScreen: Boolean): DecimalPlaces = {
+    new DecimalPlaces(Map("default" → defaultFormat, "lots" → lotsFormat, "price" → priceFormat, "currency" → currencyFormat, "percentage" → percentageFormat), unlimitedOnExplainScreen)
+  }
+}
+
+class DecimalPlaces(formats: Map[String, String], val unlimitedOnExplainScreen: Boolean) {
+  def defaultFormat = formats("default")
+  def lotsFormat = formats("lots")
+  def priceFormat = formats("price")
+  def currencyFormat = formats("currency")
+  def percentageFormat = formats("percentage")
+
+  def copyPercentageFormat(format: String) = copyFormat("percentage", format)
+
   def format(uom:UOM) = {
     if ((uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
       lotsFormat
@@ -131,6 +149,8 @@ case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:St
     else
       defaultFormat
   }
+
+  private def copyFormat(name: String, format: String) = new DecimalPlaces(formats + name → format, unlimitedOnExplainScreen)
 }
 
 object MonthFormat extends Enumeration {
@@ -429,7 +449,7 @@ class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotForma
     val name = codeToName(code)
     new TableCell(code, name, longText = Some(name+ " [" + code+ "]"))
   }
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo) = {
     val lowerCaseNameToCode = codesToName.map(cn => cn._2.trim.toLowerCase -> cn._1)
     lowerCaseNameToCode.get(text.trim.toLowerCase) match {
       case Some(code) => (code, codesToName(code))
@@ -440,7 +460,7 @@ class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotForma
 }
 
 class SpecifiedValuesParser(allAcceptableValues:Set[String]) extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo) = {
     val lowerCaseValues = allAcceptableValues.map(_.trim.toLowerCase)
     if (lowerCaseValues(text.trim.toLowerCase)) {
       (text, text)
@@ -502,7 +522,7 @@ class PercentageLabelFieldDetails(name:String) extends FieldDetails(Field(name))
 }
 
 object PercentagePivotParser extends PivotParser {
-  def parse(text:String, extraFormatInfo:ExtraFormatInfo) = {
+  protected def parseDefined(text:String, extraFormatInfo:ExtraFormatInfo) = {
     val textNoCommas = text.replaceAll(",", "").trim()
     val cleanTextMaybeWithPercentage = if (textNoCommas.startsWith("(")) {
       "-" + textNoCommas.replaceAll("\\(", "").replaceAll("\\)", "")
@@ -614,11 +634,11 @@ class MarketValueComparer(backup: Ordering[Any]) extends Ordering[Any] {
 }
 
 object MarketValuePivotParser extends PivotParser {
-  def parse(text: String, extraFormatInfo:ExtraFormatInfo) = (MarketValue.fromString(text).pivotValue, text)
+  protected def parseDefined(text: String, extraFormatInfo:ExtraFormatInfo) = (MarketValue.fromString(text).pivotValue, text)
 }
 
 object PricePivotParser extends PivotParser {
-  def parse(text: String, extraFormatInfo: ExtraFormatInfo) = {
+  protected def parseDefined(text: String, extraFormatInfo: ExtraFormatInfo) = {
     val (pq, v) = PivotQuantityPivotParser.typedParse(text, extraFormatInfo)
 
     val benchmark = pq.quantityValue.get

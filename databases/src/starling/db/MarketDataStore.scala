@@ -158,7 +158,7 @@ trait MarketDataStore {
 
   def update(marketDataSetToData: MultiMap[MarketDataSet, MarketDataUpdate]): SaveResult
 
-  def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType:SnapshotType): SnapshotID
+  def snapshot(marketDataIdentifier: MarketDataIdentifier, snapshotType:SnapshotType, observationDay : Option[Day]): SnapshotID
 
   def snapshots(): List[SnapshotID]
   
@@ -235,11 +235,12 @@ class MarketDataSnapshots(db: DBTrait[RichResultSetRow]) {
     { SnapshotID(_) }
   }
 
-  def snapshot(version: Int, marketDataSelection: MarketDataSelection, snapshotType: SnapshotType) = {
+  def snapshot(version: Int, marketDataSelection: MarketDataSelection, snapshotType: SnapshotType, observationDay : Option[Day]) = {
     val existingSnapshot = if (snapshotType == SnapshotType.Manual) None else { //always create a snapshot when manual
-      db.queryWithOneResult((select("*") from "MarketDataSnapshots" where (("commitid" eql version)
+      val snapshots = db.queryWithResult((select("*") from "MarketDataSnapshots" where (("commitid" eql version)
         and ("marketDataSelection" eql PersistAsBlob(marketDataSelection))
-        and ("snapshotType" eql snapshotType.name)))) { SnapshotID(_) }
+        and ("snapshotType" eql snapshotType.name)))) { SnapshotID(_)  }
+      snapshots.find(_.observationDay == observationDay)
     }
 
 
@@ -250,12 +251,13 @@ class MarketDataSnapshots(db: DBTrait[RichResultSetRow]) {
         val params = Map(
           "commitid" -> version,
           "snapshotTime" -> timestamp, "marketDataSelection" -> StarlingXStream.write(marketDataSelection),
-            "snapshotType" -> snapshotType.name)
+            "snapshotType" -> snapshotType.name,
+            "observationDay" -> observationDay.getOrElse(null))
         var id: Option[Long] = None
         db.inTransaction(writer => id = Some(writer.insertAndReturnKey(
           "MarketDataSnapshots", "snapshotid", params,
-          Some(List("snapshotTime", "commitid", "marketDataSelection", "snapshotType")))))
-        val ss = SnapshotID(id.get.toInt, timestamp, marketDataSelection, snapshotType, version)
+          Some(List("snapshotTime", "commitid", "marketDataSelection", "snapshotType", "observationDay")))))
+        val ss = SnapshotID(id.get.toInt, timestamp, marketDataSelection, snapshotType, observationDay, version)
         (ss, true)
       }
 

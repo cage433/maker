@@ -21,28 +21,20 @@ case class ValuationService(
   extends ValuationServiceApi with Log {
 
   /**
-   * Uses a valuation snapshot if one occurred today, otherwise the most recent snapshot
-   * before today. There seeming little reason to use an old valuation snapshot - which only tells us
-   * it could value all trades at that time.
-   *
-   * In the former case we use today as the observation day, otherwise
-   * we use the previous weekday, regardless of how much earlier the snapshot day might have been, hence
-   * it is possible that the environment corresponding to that snapshot (and snapshot day) may have
-   * its market day moved forward.
+   * Use a valuation snapshot if it occurred recently, with the market data from its associated
+   * observation day. If no suitable valuation snapshot exists then us the most recent from last night.
+   * In either case the market day is today
    */
   def bestValuationIdentifier() = {
     val today = Day.today
-//    val observationDay = today.previousWeekday
-    val (snapshotID, observationDay): (SnapshotID, Day) = environmentProvider.metalsValuationSnapshots(Some(today)).headOption match {
-      case Some(s: SnapshotID) if (s.snapshotDay >= today) => (s, today)
-      case _ => {
-        val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= today).headOption.getOrElse(throw new Exception("No metals snapshots found"))
-        (snapshotID, today.previousWeekday)
-      }
+    val latestMetalsValuationSnapshot = environmentProvider.latestMetalsValuationSnapshot
+    var latestValuationObservationDay = latestMetalsValuationSnapshot.observationDay.get
+    if (latestValuationObservationDay < today.addWeekdays(-3)){
+      val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= today).headOption.getOrElse(throw new Exception("No metals snapshots found"))
+      (snapshotID, today.previousWeekday, today)
+    } else {
+      (latestMetalsValuationSnapshot, latestValuationObservationDay, today)
     }
-    //    val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= observationDay).headOption.getOrElse(throw new Exception("No metals snapshots found"))
-    (snapshotID, observationDay, today)
-//    TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, today)
   }
   
   def latestSnapshotID() : TitanSnapshotIdentifier = environmentProvider.latestMetalsValuationSnapshot.toSerializable
@@ -59,12 +51,6 @@ case class ValuationService(
         (TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay), makeEnv(snapshotID, observationDay, marketDay))
       }
     }
-//    val marketDataIdentifier = maybeMarketDataIdentifier.getOrElse({
-//      val (snapshotID, observationDay, marketDay) = bestValuationIdentifier()
-//      TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay)
-//    })
-//    val env = environmentProvider.environment(marketDataIdentifier).undiscounted.forwardState(Day.today.atTimeOfDay(TimeOfDay.EndOfDay)) // Metals don't want discounting during UAT
-//    (marketDataIdentifier, env)
   }
   def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier] = None) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
 
