@@ -167,10 +167,12 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 
       val metalRules = List(
-        ClosesEnvironmentRule(referenceDataLookup),
-        new VanillaEnvironmentRule(_.atTimeOfDay(SHFEClose), TimeOfDay.EndOfDay, new EnvironmentRuleLabel(SHFEClose.name),
-          List(PricingGroup.Metals), referenceDataLookup, dataTypes),
-        new TimeShiftToLMECloseEnvironmentRule(referenceDataLookup, dataTypes)
+        ClosesEnvironmentRule(referenceDataLookup)
+
+        // Time shifting not needed.
+//        new VanillaEnvironmentRule(_.atTimeOfDay(SHFEClose), TimeOfDay.EndOfDay, new EnvironmentRuleLabel(SHFEClose.name),
+//          List(PricingGroup.Metals), referenceDataLookup, dataTypes),
+//        new TimeShiftToLMECloseEnvironmentRule(referenceDataLookup, dataTypes)
       )
 
       metalRules.foreach(context.registerService(classOf[EnvironmentRule], _))
