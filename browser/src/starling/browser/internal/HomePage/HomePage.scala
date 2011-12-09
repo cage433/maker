@@ -153,7 +153,6 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension) exte
 
   private def updateBrowserBasedComponents() {
     val homeButtons = context.bundles.flatMap { bundle => { bundle.homeButtons(context) }}
-    val utilButtons = context.bundles.flatMap { bundle => { bundle.utilButtons(context) }}
     buttonPanel.update(homeButtons)
     val allButtons = homeButtons /*::: utilButtons
     allButtons.groupBy(_.key).filter(_._1 != None).foreach { case (key, buttons) =>
