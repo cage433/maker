@@ -5,7 +5,7 @@ import starling.pivot.PivotFieldParams
 import starling.rmi.PivotData
 import starling.utils.{STable, CaseInsensitive}
 import starling.gui.api._
-import starling.manager.DoNotCache
+import starling.manager.Memoize
 import starling.auth.User
 
 case class TradeInitialData(
@@ -16,15 +16,15 @@ case class TradeInitialData(
 )
 
 trait TradeFacility {
-  @DoNotCache def init():TradeInitialData
-  def tradeChanges(tradeSelection:TradeSelection,from:Timestamp,to:Timestamp, expiryDay:Day, pivotFieldParams:PivotFieldParams):PivotData
-  def tradeReconciliation(tradeSelection:TradeSelection, from:TradeTimestamp, to:TradeTimestamp, intradayTimestamp: Timestamp, pivotFieldParams:PivotFieldParams):PivotData
-  def readTradeVersions(tradeID:TradeIDLabel):(STable,List[FieldDetailsGroupLabel],List[CostsLabel])
-  def tradeIDFor(desk:Desk, text:String):TradeIDLabel
-  def tradePivot(tradeSelection:TradeSelectionWithTimestamp,expiryDay:Day,pivotFieldParams:PivotFieldParams):PivotData
-  @DoNotCache def bookClose(desk: Desk): Unit
-  @DoNotCache def importTitanTrades()
-  @DoNotCache def tradeImportText(tradeSelection:TradeSelection):(String,String)
-  @DoNotCache def latestTradeTimestamp(desk:Desk):TradeTimestamp
+  def init():TradeInitialData
+  @Memoize def tradeChanges(tradeSelection:TradeSelection,from:Timestamp,to:Timestamp, expiryDay:Day, pivotFieldParams:PivotFieldParams):PivotData
+  @Memoize def tradeReconciliation(tradeSelection:TradeSelection, from:TradeTimestamp, to:TradeTimestamp, intradayTimestamp: Timestamp, pivotFieldParams:PivotFieldParams):PivotData
+  @Memoize def readTradeVersions(tradeID:TradeIDLabel):(STable,List[FieldDetailsGroupLabel],List[CostsLabel])
+  @Memoize def tradeIDFor(desk:Desk, text:String):TradeIDLabel
+  @Memoize def tradePivot(tradeSelection:TradeSelectionWithTimestamp,expiryDay:Day,pivotFieldParams:PivotFieldParams):PivotData
+  def bookClose(desk: Desk): Unit
+  def importTitanTrades()
+  def tradeImportText(tradeSelection:TradeSelection):(String,String)
+  def latestTradeTimestamp(desk:Desk):TradeTimestamp
 
 }

@@ -1,11 +1,11 @@
 package starling.osgimanager.utils
 
 import java.lang.reflect.{Method, InvocationHandler, Proxy, UndeclaredThrowableException, InvocationTargetException}
-import starling.manager.DoNotCache
+import starling.manager.Memoize
 import starling.utils.cache.CacheFactory
 
 /**
- * Caches the result of all method calls unless they have the annotation @DoNotCache
+ * Caches the result of all method calls unless they have the annotation @Memoize
  */
 object ThreadSafeCachingProxy{
   case class MethodInvocation(klass:String, method:String, args:List[Any])
@@ -22,13 +22,13 @@ object ThreadSafeCachingProxy{
           def invoke(proxy: Object, method: Method, args: Array[Object]) = {
             def invokeMethod() = { method.invoke(original, args: _ *) }
             try {
-              if (method.getAnnotation(classOf[DoNotCache]) != null) {
-                invokeMethod()
-              } else {
+              if (method.getAnnotation(classOf[Memoize]) != null) {
                 val methodInvocation = MethodInvocation(method.getDeclaringClass.getName, method.getName, if (args == null) List() else args.toList)
                 try {
                   cache.memoize(methodInvocation, invokeMethod())
                 }
+              } else {
+                invokeMethod()
               }
             } catch {
               case e: Throwable => throw rootCause(e)

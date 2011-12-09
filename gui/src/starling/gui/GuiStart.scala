@@ -41,6 +41,9 @@ import starling.reports.facility.ReportFacility
 import org.joda.time.DateTime
 import starling.daterange.{Timestamp, Day}
 import starling.bouncyrmi.{MethodLogEvent, BouncyRMIClient}
+import collection.immutable.Map
+import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
 
 object StarlingServerNotificationHandlers {
   def notificationHandler = {
@@ -477,11 +480,7 @@ object StarlingSettings {
         }
       }
 
-      val defaultSpinner = createSpinner(numFromText(dp.defaultFormat))
-      val priceSpinner = createSpinner(numFromText(dp.priceFormat))
-      val currencySpinner = createSpinner(numFromText(dp.currencyFormat))
-      val lotsSpinner = createSpinner(numFromText(dp.lotsFormat))
-      val percentSpinner = createSpinner(numFromText(dp.percentageFormat))
+      val spinners = dp.getFormats.mapValuesEagerly(format => createSpinner(numFromText(format)))
 
       val explainCheckBox = new CheckBox("Unlimited on Explain Screen") {
         selected = dp.unlimitedOnExplainScreen
@@ -490,25 +489,17 @@ object StarlingSettings {
       }
 
       add(LabelWithSeparator("Decimal Places"), "spanx, growx, wrap")
-      add(new Label("Default:"), "skip 1")
-      add(defaultSpinner, "wrap")
-      add(new Label("Price:"), "skip 1")
-      add(priceSpinner, "wrap")
-      add(new Label("Currency:"), "skip 1")
-      add(currencySpinner, "wrap")
-      add(new Label("Lots:"), "skip 1")
-      add(lotsSpinner, "wrap")
-      add(new Label("Percent:"), "skip 1")
-      add(percentSpinner, "wrap unrel")
+
+      DecimalPlaces.names.zipWithIndex.foreach { case (name, index) =>
+        add(new Label(name.capitalize + ":"), "skip 1")
+        add(spinners(name), (index < DecimalPlaces.names.length) ? "wrap" | "wrap unrel")
+      }
+
       add(explainCheckBox, "skip 1, spanx")
 
-      def decimalPlaces = DecimalPlaces(defaultSpinner.format, lotsSpinner.format, priceSpinner.format, currencySpinner.format, percentSpinner.format, explainCheckBox.selected)
+      def decimalPlaces = new DecimalPlaces(spinners.mapValuesEagerly(_.format), explainCheckBox.selected)
       def decimalPlaces_=(dp:DecimalPlaces) {
-        defaultSpinner.setValue(numFromText(dp.defaultFormat))
-        priceSpinner.setValue(numFromText(dp.priceFormat))
-        currencySpinner.setValue(numFromText(dp.currencyFormat))
-        lotsSpinner.setValue(numFromText(dp.lotsFormat))
-        percentSpinner.setValue(numFromText(dp.percentageFormat))
+        dp.getFormats.map { case (name, format) => spinners(name).setValue(numFromText(format)) }
         explainCheckBox.selected = dp.unlimitedOnExplainScreen
       }
     }

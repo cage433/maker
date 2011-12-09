@@ -1,16 +1,14 @@
 package starling.auth
 
-import starling.manager.DoNotCache
-
 trait AuthHandler {
   /**
    * If authorized a User should be returned. Otherwise
    * None.
    */
-  @DoNotCache def authorized(ticket: Option[Array[Byte]], sudo:Option[String]): Option[User] = ticket.flatMap(authorized(_, sudo))
-  @DoNotCache def authorized(ticket: Array[Byte], sudo:Option[String]): Option[User]
+  def authorized(ticket: Option[Array[Byte]], sudo:Option[String]): Option[User] = ticket.flatMap(authorized(_, sudo))
+  def authorized(ticket: Array[Byte], sudo:Option[String]): Option[User]
 
-  @DoNotCache def withCallback(callback : Option[User] => Unit) = new CallbackAuthHandler(this, callback)
+  def withCallback(callback : Option[User] => Unit) = new CallbackAuthHandler(this, callback)
 }
 
 object AuthHandler {

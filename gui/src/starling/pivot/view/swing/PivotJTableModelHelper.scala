@@ -851,6 +851,31 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMinL, rMaxL, cMinL, cMaxL)
     }
 
+    private def getTableModels(cells:List[(Int,Int)]) = {
+      cells.map{case (r,c) => {
+        val (m, col) = getTableModel(c)
+        (m, r, col)
+      }}.groupBy(_._1)
+    }
+
+    override def resetCells(cells:List[(Int, Int)], currentEdits:PivotEdits, fireChange:Boolean) = {
+      var editsToUse = currentEdits
+      val modelMap = getTableModels(cells)
+      modelMap.foreach{case (mod, list) => {
+        val cellsForMod = list.map{case (_,r,c) => (r,c)}
+        editsToUse = mod.resetCells(cellsForMod, editsToUse, false)
+      }}
+      if (fireChange) {
+        if (editsToUse != currentEdits) {
+          val newEdits = allEdits(editsToUse)
+          updateEdits(newEdits, TopTable)
+        } else {
+          tableUpdated()
+        }
+      }
+      editsToUse
+    }
+
     def rowHeader(row:Int, col:Int) = false
     def finishedEditing() {
       popupMenu setVisible false
@@ -1054,14 +1079,10 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         updatedEdits = updatedEdits.withAddedRow(row)
       }}
 
-
-      println("")
-      println("")
+      println("---")
       println("ALL EDITS")
       println(updatedEdits)
-      println("")
-      println("")
-
+      println("---")
 
       updatedEdits
     }

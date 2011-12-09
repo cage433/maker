@@ -18,7 +18,11 @@ import starling.utils.NamedDaemonThreadFactory
 import starling.manager.TimeTree
 
 //Message classes
-case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Array[Byte]])
+case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Array[Byte]]) {
+  if (declaringClass == classOf[Object].getName) {
+    throw new IllegalArgumentException("Invoking against Object not allowed: " + this)
+  }
+}
 case class MethodInvocationResult(id: Int, serverDuration:Long, timeTree:TimeTree, result:Array[Byte])
 case class MethodInvocationException(id: Int, t: Throwable)
 case class ServerException(t: Throwable)

@@ -19,9 +19,11 @@ object ObservationDayPivotParser extends PivotParser {
 
   protected def parseDefined(text: String, extraFormatInfo: ExtraFormatInfo) = {
     val (d, s) = DayPivotParser.typedParse(text)
-    if (d > Day.today) {
-      throw new IllegalArgumentException("You can not specify a day in the future")
-    }
+    //if (d > Day.today) {
+    //  throw new IllegalArgumentException("You can not specify a day in the future")
+    //}
+    // DISABLED Check so that we can enter the Trafigura CNY interest rate ahead of time
+    // Can be enabled when the market data service returns the most recent rate
     (d,s)
   }
 }
