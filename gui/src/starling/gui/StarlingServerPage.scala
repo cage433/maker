@@ -38,7 +38,16 @@ object StarlingLocalCache {
 }
 case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
   import starling.gui.LocalCacheKeys._
-  def pricingGroups(maybeDesk:Option[Desk]):List[PricingGroup] = localCache(PricingGroups).intersect(validGroups(maybeDesk))
+  def pricingGroups(maybeDesk:Option[Desk]):List[PricingGroup] = localCache(PricingGroups).map(_.pricingGroup).intersect(validGroups(maybeDesk))
+  def marketDataTypes(marketDataSelection:MarketDataSelection):List[MarketDataTypeLabel] = {
+    val list = marketDataSelection match {
+      case MarketDataSelection(Some(pg),_) => localCache(PricingGroups).find(_.pricingGroup==pg).getOrElse(
+        throw new Exception("No definitions for " + pg)).validMarketDataTypes
+      case MarketDataSelection(None, Some(_)) => localCache(PricingGroups).flatMap(_.validMarketDataTypes).toSet.toList
+      case _ => Nil
+    }
+    list.sortBy(_.name)
+  }
   def excelDataSets = localCache(ExcelDataSets)
   def currentUser = localCache(CurrentUser)
   def methodLogIndex = localCache(MethodLogIndex)

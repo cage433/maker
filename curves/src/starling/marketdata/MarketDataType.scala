@@ -11,9 +11,7 @@ trait MarketDataType {
   type dataType <: MarketData
   type keyType <: MarketDataKey
 
-  val name: MarketDataTypeName = MarketDataTypeName(
-    getClass.getName.substring(getClass.getName.lastIndexOf(".") + 1).stripSuffix("$").stripSuffix("DataType")
-  )
+  val name: MarketDataTypeName = MarketDataTypeName.fromClass(getClass)
   val humanName:String
 
   def extendedKeys:List[FieldDetails]
@@ -79,6 +77,11 @@ trait MarketDataType {
 
 case class MarketDataTypeName(name: String) {
   override def toString = name
+}
+object MarketDataTypeName {
+  def fromClass(klass:Class[_]) = {
+    MarketDataTypeName(klass.getSimpleName.stripSuffix("$").stripSuffix("DataType"))
+  }
 }
 
 class MarketDataTypes(referenceDataLookup: ReferenceDataLookup) {

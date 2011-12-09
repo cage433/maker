@@ -83,6 +83,7 @@ object MarketDataIdentifier {
 case class TradeValuation(explanation: Either[StackTrace, NamedQuantity])
 case class TradeValuationAndDetails(tradeValuation:TradeValuation, tradeRow:List[Any], fieldDetailsGroups:List[FieldDetailsGroupLabel], columns:List[SColumn])
 
+case class PricingGroupDefinition(pricingGroup:PricingGroup, validMarketDataTypes:List[MarketDataTypeLabel])
 case class PricingGroup(name:String) {
   override def toString = name
 }
@@ -335,6 +336,9 @@ case class TradeImportResult(updatedTradeCount:Int, newTradeCount:Int, errorTrad
 }
 
 case class ReferenceDataLabel(name:String)
+object MarketDataTypeLabel {
+  val Default = MarketDataTypeLabel("Price")
+}
 case class MarketDataTypeLabel(name:String) {
   override def toString = name
 }

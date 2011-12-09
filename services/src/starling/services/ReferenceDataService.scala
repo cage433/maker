@@ -240,7 +240,7 @@ object ReferenceDataService {
 
       override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(pricingGroup, source)))
 
-      val data = marketDataStore.pricingGroupsDefinitions.flatMap { case (pg, marketDataSets) =>
+      val data = marketDataStore.pricingGroupMarketDataSets.flatMap { case (pg, marketDataSets) =>
           marketDataSets.zipWithIndex.map { case (marketDataSet, index) =>
             fields(
               pricingGroup → pg.toString,

@@ -50,23 +50,18 @@ class FC2Service(marketDataStore: MarketDataStore, marketDataTypes: MarketDataTy
 
   def marketDataSource(marketDataPageIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits) = {
     val preBuilt = cache.memoize( (marketDataPageIdentifier, marketDataTypeLabel), {
-      val reader = marketDataReaderFor(marketDataPageIdentifier)
-      val marketDataType = marketDataTypeLabel match {
-        case None => {
-          sortMarketDataTypes(reader.availableMarketDataTypes) match {
-            case Nil => None
-            case many => many.headOption
-          }
+      if (marketDataPageIdentifier.selection.isNull) None else {
+        val reader = marketDataReaderFor(marketDataPageIdentifier)
+        val marketDataType = marketDataTypeLabel match {
+          case None => PriceDataType
+          case Some(mdt) => realTypeFor(mdt)
         }
-        case Some(mdt) => Some(realTypeFor(mdt))
-      }
-      marketDataType.map { mdt =>
-        new PrebuiltMarketDataPivotData(reader, marketDataStore,
-          marketDataPageIdentifier.marketDataIdentifier, mdt, marketDataTypes)
+        Some(new PrebuiltMarketDataPivotData(reader, marketDataStore,
+          marketDataPageIdentifier.marketDataIdentifier, marketDataType, marketDataTypes))
       }
     })
     preBuilt match {
-      case Some(preBuilt) => new MarketDataPivotTableDataSource(preBuilt, edits)
+      case Some(p) => new MarketDataPivotTableDataSource(p, edits)
       case None => NullPivotTableDataSource
     }
   }
@@ -119,10 +114,12 @@ class FC2FacilityImpl(service: FC2Service,
   private def excelLatestMarketDataVersions = marketDataStore.latestExcelVersions.mapKeys(_.stripExcel)
   private def pricingGroupLatestMarketDataVersions = Map() ++ marketDataStore.latestPricingGroupVersions.filterKeys(pricingGroups()).toMap
 
-  private def pricingGroups() = {
+  private def pricingGroupDefinitions() = {
     val allPricingGroups = enabledDesks.flatMap(_.pricingGroups).toSet
-    marketDataStore.pricingGroups.filter(allPricingGroups.contains(_))
+    marketDataStore.pricingGroupDefinitions.filter(d=>allPricingGroups.contains(d.pricingGroup))
   }
+  private def pricingGroups() = pricingGroupDefinitions.map(_.pricingGroup)
+
   private def excelDataSets() = marketDataStore.excelDataSets
 
   private def environmentRuleLabels = pricingGroups.toMapWithValues(environmentRules.forPricingGroup(_).map(_.label))
@@ -138,7 +135,7 @@ class FC2FacilityImpl(service: FC2Service,
   }
 
   def init() = FC2InitialData(
-    snapshots(), observationDays(), pricingGroups, environmentRuleLabels,
+    snapshots(), observationDays(), pricingGroupDefinitions(), environmentRuleLabels,
     excelDataSets(), excelLatestMarketDataVersions, pricingGroupLatestMarketDataVersions, curveTypes)
 
   def curvePivot(curveLabel: CurveLabel, pivotFieldParams: PivotFieldParams) = {
@@ -162,10 +159,6 @@ class FC2FacilityImpl(service: FC2Service,
   def importData(marketDataSelection:MarketDataSelection, observationDay:Day) = {
     val saveResult = marketDataStore.importData(marketDataSelection, observationDay)
     SpecificMarketDataVersion(saveResult.maxVersion)
-  }
-
-  def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier) = {
-    sortMarketDataTypes(service.marketDataReaderFor(marketDataIdentifier).availableMarketDataTypes).map(t=>MarketDataTypeLabel(t.name.name))
   }
 
   def latestMarketDataIdentifier(selection:MarketDataSelection):MarketDataIdentifier = marketDataStore.latestMarketDataIdentifier(selection)

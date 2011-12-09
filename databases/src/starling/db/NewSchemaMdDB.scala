@@ -178,24 +178,6 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 //    }
   }
 
-  def marketDataTypes(version: Int, mds: List[MarketDataSet]): Set[MarketDataType] = {
-    val sets = mds.toSet
-
-    db.queryWithResult(select("DISTINCT extendedKey") from("MarketDataValue") where("commitId" lte version)) { rs => {
-      val extendedKey = extendedKeys(rs.getInt("extendedKey"))
-
-      sets.contains(extendedKey.marketDataSet) ? some(extendedKey.marketDataType) | none[MarketDataType]
-    }}.flatten
-
-//    db.queryWithResult(select("DISTINCT ek.marketDataType COLLATE sql_latin1_general_cp1_cs_as AS mdt")
-//      .from("MarketDataExtendedKey ek")
-//      .innerJoin("MarketDataValue v", "ek.id" eql "v.extendedKey")
-//      .where("marketDataSet" in mds.map(_.name))
-//      .and("v.commitId" lte version)) {
-//      rs => { MarketDataTypes.fromName(rs.getString("mdt")) }
-//    }
-  }.toSet
-
   private def queryUsingExtendedKeys[T](extendedKeyIds: List[Int], query: Query)(f: RichResultSetRow => T): List[T] = {
     extendedKeyIds.grouped(1900).toList.flatMap { chunk => { //limit is 2000 but use 1900 to leave space for other parameters
       db.queryWithResult(query and("extendedKey" in chunk))(f)
