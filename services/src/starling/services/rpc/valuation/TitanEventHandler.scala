@@ -120,7 +120,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
               log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedIDs.size))
               Some(results)
             }
-            None
+            else None
           }
           case CreatedEventVerb => None // not handled, everything is driven from updated/cancelled events
           case CancelledEventVerb | RemovedEventVerb => {
