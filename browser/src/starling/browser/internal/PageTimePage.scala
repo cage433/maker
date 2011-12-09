@@ -4,7 +4,7 @@ import starling.browser._
 import common.MigPanel
 import java.awt.Dimension
 import starling.manager.TimeTree
-import swing.TextArea
+import swing.{ScrollPane, TextArea}
 
 case class PageTimePage(timeTree:TimeTree) extends Page {
   def bundle = RootBrowserBundle.bundleName
@@ -21,7 +21,7 @@ case class PageTimePage(timeTree:TimeTree) extends Page {
 
 
 
-class PageTimeComponent(timeTree:TimeTree) extends MigPanel("") with PageComponent {
+class PageTimeComponent(timeTree:TimeTree) extends MigPanel with PageComponent {
   val textArea = new TextArea(timeTree.text())
-  add(textArea, "")
+  add(new ScrollPane(textArea), "push,grow")
 }
