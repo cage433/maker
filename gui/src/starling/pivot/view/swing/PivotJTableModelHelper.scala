@@ -74,6 +74,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
   val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   val fieldInfo:FieldInfo = pivotTable.fieldInfo
   val keyFields = editableInfo.map(_.keyFields).getOrElse(Set())
+  val measureFields = editableInfo.map(_.measureFields).getOrElse(Set())
   val extraLine = editableInfo.fold(_.extraLine, false)
 
   def tellMainTableAboutDeletedRows(rows:List[Int]) {
@@ -377,7 +378,19 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     type CellType = TableCell
 
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = data0(0).map(_.copy(state = AddedBlank, text = "", longText = None, value = UndefinedValueNew))
+    private val blankCells = Array.fill(data0(0).length)(TableCell.BlankAddedCell).zipWithIndex.map{case (tc,c) => {
+      colHeaderData0.find(_(c).value.isMeasure) match {
+        case None => tc.copy(editable = false)
+        case Some(cc) => {
+          val f = cc(c).value.field
+          if (measureFields.contains(f)) {
+            tc
+          } else {
+            tc.copy(editable = false)
+          }
+        }
+      }
+    }}
     if (extraLine) {
       addedRows0 += blankCells
     }
@@ -568,7 +581,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         val currentValue = getValueAt(r,c)
         val currentText = currentValue.text.trim
 
-        if (sValue != currentText) {
+        if (sValue != currentText && currentValue.editable) {
 
           val uom = uoms0(c)
           val (newValue,newLabel,stateToUse) =  try {
@@ -842,13 +855,11 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def paintTable(g:Graphics, table:JTable, rendererPane: CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       // Paint the col header table.
-      val rMinL = math.min(colHeaderRowCount0, rMin)
-      val rMaxL = math.min(colHeaderRowCount0 - 1, rMax)
       val cMinL = math.max(rowHeaderColCount0, cMin)
       val cMaxL = math.max(rowHeaderColCount0, cMax)
 
-      PivotTableUI.colHeaderPaintGrid(g, table, rMinL, rMaxL, cMinL, cMaxL)
-      PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMinL, rMaxL, cMinL, cMaxL)
+      PivotTableUI.colHeaderPaintGrid(g, table, rMin, rMax, cMinL, cMaxL)
+      PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMinL, cMaxL)
     }
 
     private def getTableModels(cells:List[(Int,Int)]) = {
@@ -1148,23 +1159,19 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       {
         // Paint the row header table.
-        val rMinL = rMin
-        val rMaxL = rMax
         val cMinL = math.min(rowHeaderColCount0, cMin)
         val cMaxL = math.min(rowHeaderColCount0 - 1, cMax)
 
-        PivotTableUI.rowHeaderPaintGrid(g, table, rMinL, rMaxL, cMinL, cMaxL, rowHeaderTableModel.getColumnCount - 1)
-        PivotTableUI.rowHeaderPaintCells(g, table, rendererPane, rMinL, rMaxL, cMinL, cMaxL)
+        PivotTableUI.rowHeaderPaintGrid(g, table, rMin, rMax, cMinL, cMaxL, rowHeaderTableModel.getColumnCount - 1)
+        PivotTableUI.rowHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMinL, cMaxL)
       }
       {
         // Paint the main table.
-        val rMinL = rMin
-        val rMaxL = rMax
         val cMinL = math.max(rowHeaderColCount0, cMin)
         val cMaxL = math.max(rowHeaderColCount0, cMax)
 
-        PivotTableUI.mainPaintGrid(g,table,rMinL, rMaxL, cMinL, cMaxL)
-        PivotTableUI.rowHeaderPaintCells(g,table,rendererPane,rMinL, rMaxL, cMinL, cMaxL)
+        PivotTableUI.mainPaintGrid(g,table, rMin, rMax, cMinL, cMaxL)
+        PivotTableUI.rowHeaderPaintCells(g,table,rendererPane, rMin, rMax, cMinL, cMaxL)
       }
     }
     override def selectPopupValueIfOnlyOneShowing(r:Int, c:Int) {
