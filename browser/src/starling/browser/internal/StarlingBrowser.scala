@@ -90,7 +90,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private def updateRefreshState(currentPageInfo:PageInfo) {
     val page = currentPageInfo.page
-    val latestPage = currentPageInfo.pageComponent.get.currentPage.getOrElse(page).latestPage(lCache)
+//    val latestPage = currentPageInfo.pageComponent.get.currentPage.getOrElse(page).latestPage(lCache)
+    val latestPage = page.latestPage(lCache)
     if (page != latestPage) {
       currentPageInfo.refreshPage = Some((latestPage, true))
     }
