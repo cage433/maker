@@ -6,8 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** An annotation for service traits which marks the methods which should not be cached */
+/** An annotation for service traits which marks the methods which should be cached */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface DoNotCache {
+public @interface Memoize {
 }

@@ -2,9 +2,9 @@ package starling.rabbiteventviewer.api
 
 import starling.pivot.PivotFieldParams
 import starling.rmi.PivotData
-import starling.manager.DoNotCache
+import starling.manager.Memoize
 
 trait RabbitEventViewerService {
-  def rabbitEvents(pivotFieldParams:PivotFieldParams, latestID:Long):PivotData
-  @DoNotCache def latestRabbitEvent:Long
+  @Memoize def rabbitEvents(pivotFieldParams:PivotFieldParams, latestID:Long):PivotData
+  def latestRabbitEvent:Long
 }

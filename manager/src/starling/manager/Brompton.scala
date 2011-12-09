@@ -6,11 +6,11 @@ import swing.event.Event
 class Brompton
 
 trait Broadcaster {
-  @DoNotCache def broadcast(event: Event)
+  def broadcast(event: Event)
 }
 
 trait Receiver {
-  @DoNotCache def event(event: Event)
+  def event(event: Event)
 }
 
 object Broadcaster {

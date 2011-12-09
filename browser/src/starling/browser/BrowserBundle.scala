@@ -8,7 +8,6 @@ import service.StarlingGUIEvent
 import swing.{Publisher, Component}
 import swing.event.Event
 import java.util.UUID
-import starling.manager.DoNotCache
 
 case class HotKey(keyStroke:KeyStroke, name:String, page:Page)
 case class HelpEntry(markup:String, icons:Map[String,ImageIcon], links:Map[String,Page])
@@ -48,7 +47,7 @@ trait BrowserBundle {
   def addListeners(cache:HeterogeneousMap[LocalCacheKey], publisher:Publisher) {}
   def settings(pageContext:PageContext):List[Component] = Nil
   def utilButtons(pageContext:PageContext):List[PageButton] = Nil
-  @DoNotCache def homeButtons(pageContext:PageContext):List[PageButton] = Nil
+  def homeButtons(pageContext:PageContext):List[PageButton] = Nil
   def userPage(pageContext:PageContext):Option[Page] = None
   def helpEntries:List[HelpEntry] = Nil
   def notificationHandlers:List[NotificationHook] = Nil

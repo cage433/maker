@@ -1,7 +1,5 @@
 package starling.browser.service
 
-import starling.manager.DoNotCache
-
 case class UserSettingsEntry(bundle:String, key:String, value:String)
 case class UserSettingsLabel(userSettings:List[UserSettingsEntry])
 case class BookmarkLabel(name:String, bundleName:String, bookmark:String)
@@ -12,10 +10,10 @@ case class InitialData(name:String, userDetails:UserDetails, settings:UserSettin
 
 
 trait BrowserService {
-  @DoNotCache def initialData:InitialData
-  @DoNotCache def saveSettings(settings:UserSettingsLabel)
-  @DoNotCache def saveBookmark(bookmark:BookmarkLabel)
-  @DoNotCache def deleteBookmark(name:String)
-  @DoNotCache def logPageView(info:PageLogInfo)
-  @DoNotCache def testEvent()
+  def initialData:InitialData
+  def saveSettings(settings:UserSettingsLabel)
+  def saveBookmark(bookmark:BookmarkLabel)
+  def deleteBookmark(name:String)
+  def logPageView(info:PageLogInfo)
+  def testEvent()
 }
