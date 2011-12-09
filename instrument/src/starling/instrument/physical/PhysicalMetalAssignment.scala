@@ -433,13 +433,21 @@ object CostsAndIncomeValuation{
     // C&I asked that premiums equal to null quantity - which in TM means no premium
     // are represented by None
 
+    def toMT(q:Quantity) = { //All prices sent to C&I should be in MT
+      if (q.uom.isNull) q else {
+        val mtUnit = q.uom.numeratorUOM/UOM.MT
+        q.in(mtUnit).get
+      }
+    }
+    def toMTO(q:Option[Quantity]) = q.map(toMT(_))
+
     PricingValuationDetails(
-      pricingSpec.priceExcludingVATIncludingPremium(env),
-      pricingSpec.priceIncludingVATIncludingPremium(env),
-      pricingSpec.priceExcludingVATExcludingPremium(env),
-      pricingSpec.priceIncludingVATExcludingPremium(env),
-      pricingSpec.premiumExcludingVAT(env),
-      pricingSpec.premiumIncludingVAT(env),
+      toMT(pricingSpec.priceExcludingVATIncludingPremium(env)),
+      toMTO(pricingSpec.priceIncludingVATIncludingPremium(env)),
+      toMT(pricingSpec.priceExcludingVATExcludingPremium(env)),
+      toMTO(pricingSpec.priceIncludingVATExcludingPremium(env)),
+      toMT(pricingSpec.premiumExcludingVAT(env)),
+      toMTO(pricingSpec.premiumIncludingVAT(env)),
       pricingSpec.valueExcludingVATIncludingPremium(env, quantity),
       pricingSpec.valueIncludingVATIncludingPremium(env, quantity),
       pricingSpec.valueExcludingVATExcludingPremium(env, quantity),
