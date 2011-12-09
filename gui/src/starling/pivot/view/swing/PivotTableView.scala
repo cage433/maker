@@ -453,7 +453,7 @@ class PivotTableView(data:PivotData, otherLayoutInfo:OtherLayoutInfo, browserSiz
   private val mainOrBottomTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
   private val rowHeaderTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
   private val columnHeaderOrTopTableUpdateMap = new HashMap[(Int,Int),RefreshedCell]()
-  val (addRows, addCols) = if (otherLayoutInfo.frozen) (0,0) else (colHeaderData.length,rowHeaderData(0).length)
+  val (addRows, addCols) = if (otherLayoutInfo.frozen) (0,0) else (0,rowHeaderData(0).length)
   mainTableUpdateInfo.foreach(c => {
     mainOrBottomTableUpdateMap += ((c.row + addRows, c.column + addCols) -> RefreshedCell(c.currentFraction))
   })

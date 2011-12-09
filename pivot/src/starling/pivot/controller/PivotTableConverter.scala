@@ -224,8 +224,7 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
     val childCellsWithoutTotals:List[List[AxisCell]] = childCells match {
       case Nil => {
         val (text, longText, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
-        val ac = AxisCell(axisValue, Some(1), text, longText, None, false, NotTotal, 0, alignment)
-        ac.changed = changed
+        val ac = AxisCell(axisValue, Some(1), text, longText, None, false, NotTotal, 0, alignment, changed = changed)
         List(List(ac))
       }
       case head :: tail => {
@@ -239,11 +238,9 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
           case _ => head
         }
         val (text, longText, alignment) = AxisNode.textAndAlignment(axisValue, formatInfo, extraFormatInfo)
-        val ac = AxisCell(axisValue, Some(totalSpan), text, longText, collapsible, false, NotTotal, 0, alignment)
-        ac.changed = changed
+        val ac = AxisCell(axisValue, Some(totalSpan), text, longText, collapsible, false, NotTotal, 0, alignment, changed = changed)
         List(ac :: fixedHead) ::: tail.zipWithIndex.map{ case(c,index) => {
-          val ac0 = AxisCell(axisValue, None, text, longText, None, true, NotTotal, index + 1, alignment)
-          ac0.changed = changed
+          val ac0 = AxisCell(axisValue, None, text, longText, None, true, NotTotal, index + 1, alignment, changed = changed)
           ac0 :: c
         }}
       }
