@@ -842,13 +842,11 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     def paintTable(g:Graphics, table:JTable, rendererPane: CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       // Paint the col header table.
-      val rMinL = math.min(colHeaderRowCount0, rMin)
-      val rMaxL = math.min(colHeaderRowCount0 - 1, rMax)
       val cMinL = math.max(rowHeaderColCount0, cMin)
       val cMaxL = math.max(rowHeaderColCount0, cMax)
 
-      PivotTableUI.colHeaderPaintGrid(g, table, rMinL, rMaxL, cMinL, cMaxL)
-      PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMinL, rMaxL, cMinL, cMaxL)
+      PivotTableUI.colHeaderPaintGrid(g, table, rMin, rMax, cMinL, cMaxL)
+      PivotTableUI.colHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMinL, cMaxL)
     }
 
     private def getTableModels(cells:List[(Int,Int)]) = {
@@ -1148,23 +1146,19 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def paintTable(g:Graphics, table:JTable, rendererPane:CellRendererPane, rMin:Int, rMax:Int, cMin:Int, cMax:Int) {
       {
         // Paint the row header table.
-        val rMinL = rMin
-        val rMaxL = rMax
         val cMinL = math.min(rowHeaderColCount0, cMin)
         val cMaxL = math.min(rowHeaderColCount0 - 1, cMax)
 
-        PivotTableUI.rowHeaderPaintGrid(g, table, rMinL, rMaxL, cMinL, cMaxL, rowHeaderTableModel.getColumnCount - 1)
-        PivotTableUI.rowHeaderPaintCells(g, table, rendererPane, rMinL, rMaxL, cMinL, cMaxL)
+        PivotTableUI.rowHeaderPaintGrid(g, table, rMin, rMax, cMinL, cMaxL, rowHeaderTableModel.getColumnCount - 1)
+        PivotTableUI.rowHeaderPaintCells(g, table, rendererPane, rMin, rMax, cMinL, cMaxL)
       }
       {
         // Paint the main table.
-        val rMinL = rMin
-        val rMaxL = rMax
         val cMinL = math.max(rowHeaderColCount0, cMin)
         val cMaxL = math.max(rowHeaderColCount0, cMax)
 
-        PivotTableUI.mainPaintGrid(g,table,rMinL, rMaxL, cMinL, cMaxL)
-        PivotTableUI.rowHeaderPaintCells(g,table,rendererPane,rMinL, rMaxL, cMinL, cMaxL)
+        PivotTableUI.mainPaintGrid(g,table, rMin, rMax, cMinL, cMaxL)
+        PivotTableUI.rowHeaderPaintCells(g,table,rendererPane, rMin, rMax, cMinL, cMaxL)
       }
     }
     override def selectPopupValueIfOnlyOneShowing(r:Int, c:Int) {
