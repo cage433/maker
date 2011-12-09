@@ -9,7 +9,7 @@ import starling.manager.Memoize
 case class FC2InitialData(
   snapshots:Map[MarketDataSelection,List[SnapshotIDLabel]],
   observationDays:(Map[PricingGroup,Set[Day]], Map[String,Set[Day]]),
-  pricingGroups:List[PricingGroup],
+  pricingGroups:List[PricingGroupDefinition],
   environmentRuleLabels:Map[PricingGroup,List[EnvironmentRuleLabel]],
   excelDataSets:List[String],
   excelLatestMarketDataVersions:Map[String,Int],
@@ -27,7 +27,4 @@ trait FC2Facility {
   @Memoize def curvePivot(curveLabel: CurveLabel, pivotFieldParams:PivotFieldParams): PivotData
   @Memoize def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataType:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData
   def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits):Int
-
-  @Memoize def marketDataTypeLabels(marketDataIdentifier:MarketDataPageIdentifier):List[MarketDataTypeLabel]
-
 }

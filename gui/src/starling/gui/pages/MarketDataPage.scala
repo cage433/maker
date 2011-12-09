@@ -111,13 +111,6 @@ case class MarketDataPage(
     }
   }
 
-  override def subClassesPageData(serverContext:ServerContext) = {
-    val fc2Service = serverContext.lookup(classOf[FC2Facility])
-    val avaliableMarketDataTypes = fc2Service.marketDataTypeLabels(marketDataIdentifier)
-    val selected = pageState.marketDataType.orElse(avaliableMarketDataTypes.headOption)
-    Some(MarketDataPagePageData(avaliableMarketDataTypes, selected))
-  }
-
   override def bookmark(serverContext:ServerContext, pd:PageData):Bookmark = {
     val starlingServer = serverContext.lookup(classOf[ReportFacility])
     val singleObservationDay = pd match {
@@ -146,7 +139,8 @@ case class MarketDataPage(
   }
 
   override def configPanel(context:PageContext, pageData:PageData, tableSelection:() => TableSelection) = {
-    val data = pageData match {case v:PivotTablePageData => v.subClassesPageData match {case Some(d:MarketDataPagePageData) => d}}
+    val availableMarketDataTypes = context.localCache.marketDataTypes(marketDataIdentifier.selection)
+    val selectedMarketDataType = pageState.marketDataType.orElse(if(marketDataIdentifier.selection.isNull) None else Some(MarketDataTypeLabel.Default))
 
     //Save the layout as the default for use the next time this market data type is selected
     (pageState.marketDataType, pageState.pivotPageState.pivotFieldParams.pivotFieldState) match {
@@ -238,14 +232,14 @@ case class MarketDataPage(
 
         val typeLabel = new Label("Type:")
 
-        private val labels = if (data.marketDataTypeLabels.isEmpty) List(MarketDataTypeLabel("")) else data.marketDataTypeLabels
+        private val labels = if (availableMarketDataTypes.isEmpty) List(MarketDataTypeLabel("")) else availableMarketDataTypes
         val dataTypeCombo = new ComboBox(labels) {
           renderer = ListView.Renderer(_.toString)
-          data.selection match {
+          selectedMarketDataType match {
             case Some(mdt) => selection.item = mdt
             case None =>
           }
-          enabled = data.marketDataTypeLabels.nonEmpty
+          enabled = availableMarketDataTypes.nonEmpty
           minimumSize = new Dimension(100, preferredSize.height)
         }
 
@@ -274,7 +268,7 @@ case class MarketDataPage(
 
       override def revert() {
         this.suppressing(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel2.filterDataCheckbox) {
-          data.selection match {
+          selectedMarketDataType match {
             case Some(mdt) => extraPanel.dataTypeCombo.selection.item = mdt
             case None =>
           }
@@ -348,7 +342,7 @@ object MarketDataPage {
             marketDataType:Option[MarketDataTypeLabel],
             observationDays:Option[Set[Day]]): ServerContext=>Page = {
     (serverContext) => {
-      val mdt = marketDataType.orElse(serverContext.lookup(classOf[FC2Facility]).marketDataTypeLabels(marketDataIdentifier).headOption)
+      val mdt = if (marketDataIdentifier.selection.isNull) None else marketDataType.orElse(Some(MarketDataTypeLabel.Default))
       val fs = pageContext.getSetting(
         StandardUserSettingKeys.UserMarketDataTypeLayout, Map[MarketDataTypeLabel, PivotFieldsState]()
       ).get(mdt)

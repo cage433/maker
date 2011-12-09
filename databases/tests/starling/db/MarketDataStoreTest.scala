@@ -402,19 +402,19 @@ class MarketDataStoreTest extends TestMarketTest with TestNGSuite with ShouldMat
   }
 
   @Test def noPricingGroupContainsConflictingPriorityMarketDataSets {
-    pricingGroupsDefinitions.filterValues(_.toMultiMapWithKeys(_.priority).valueExists(_.size > 1)) should be === Map.empty
+    pricingGroupMarketDataSets.filterValues(_.toMultiMapWithKeys(_.priority).valueExists(_.size > 1)) should be === Map.empty
   }
 
   @Test def thereAreNoOrphanedPricingGroups {
-    (PricingGroup.values \\ Desk.pricingGroups.intersect(pricingGroupsDefinitions.keys.toList)) should be === Nil
+    (PricingGroup.values \\ Desk.pricingGroups.intersect(pricingGroupMarketDataSets.keys.toList)) should be === Nil
   }
 
   @Test def thereAreNoOrphanedMarketDataSets {
-    (MarketDataSet.values \\ Desk.pricingGroups.flatMap(pricingGroupsDefinitions).distinct) should be === Nil
+    (MarketDataSet.values \\ Desk.pricingGroups.flatMap(pricingGroupMarketDataSets).distinct) should be === Nil
   }
 
   @Test def everyPricingGroupHasASetOfMarketDataSets {
-    pricingGroupsDefinitions.keySet should be === PricingGroup.values.toSet
+    pricingGroupMarketDataSets.keySet should be === PricingGroup.values.toSet
   }
 
   private val createMarketDataCommit = """

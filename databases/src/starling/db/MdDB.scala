@@ -32,7 +32,6 @@ trait MdDB {
   def latestExcelVersions(): Map[MarketDataSet, Int]
   def store(data: List[MarketDataUpdate], marketDataSet: MarketDataSet): SaveResult
   def maxVersionForMarketDataSetNames(names: List[String]): Option[Int]
-  def marketDataTypes(version: Int, mds: List[MarketDataSet]): Set[MarketDataType]
 
   def latestMarketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
 
