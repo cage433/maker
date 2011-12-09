@@ -124,18 +124,37 @@ object PivotQuantityPivotParser extends PivotParser {
 
 object DecimalPlaces {
   def apply(defaultFormat: String, lotsFormat: String, priceFormat: String, currencyFormat: String, percentageFormat: String, unlimitedOnExplainScreen: Boolean): DecimalPlaces = {
-    new DecimalPlaces(Map("default" → defaultFormat, "lots" → lotsFormat, "price" → priceFormat, "currency" → currencyFormat, "percentage" → percentageFormat), unlimitedOnExplainScreen)
+    new DecimalPlaces(Map("default" → defaultFormat, "lots" → lotsFormat, "price" → priceFormat, "currency" → currencyFormat, "percent" → percentageFormat), unlimitedOnExplainScreen)
   }
+
+  val names = List("default", "lots", "price", "currency", "percent", "scalar")
+
+  val defaults = Map(
+    "default" → "#,##0",
+    "lots" → "#,##0.0",
+    "price" → "#,##0.0000",
+    "currency" → "#,##0",
+    "percent" → "#0.00",
+    "scalar" → "#,##0.0000"
+  )
+
+  require(names.toSet == defaults.keySet)
+
+  val default = new DecimalPlaces(defaults, false)
 }
 
 class DecimalPlaces(formats: Map[String, String], val unlimitedOnExplainScreen: Boolean) {
-  def defaultFormat = formats("default")
-  def lotsFormat = formats("lots")
-  def priceFormat = formats("price")
-  def currencyFormat = formats("currency")
-  def percentageFormat = formats("percentage")
+  (formats.keySet -- DecimalPlaces.names).require(_.isEmpty, "Invalid formats")
 
-  def copyPercentageFormat(format: String) = copyFormat("percentage", format)
+  def getFormats = DecimalPlaces.defaults ++ formats
+  def defaultFormat = lookup("default")
+  def lotsFormat = lookup("lots")
+  def priceFormat = lookup("price")
+  def currencyFormat = lookup("currency")
+  def percentageFormat = lookup("percent")
+  def scalarFormat = lookup("scalar")
+
+  def copyPercentageFormat(format: String) = copyFormat("percent", format)
 
   def format(uom:UOM) = {
     if ((uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
@@ -146,11 +165,14 @@ class DecimalPlaces(formats: Map[String, String], val unlimitedOnExplainScreen: 
       priceFormat
     else if (uom.isPercent)
       percentageFormat
+    else if (uom.isScalar)
+      scalarFormat
     else
       defaultFormat
   }
 
-  private def copyFormat(name: String, format: String) = new DecimalPlaces(formats + name → format, unlimitedOnExplainScreen)
+  private def lookup(name: String): String = formats.get(name) | DecimalPlaces.defaults(name)
+  private def copyFormat(name: String, format: String) = new DecimalPlaces(formats + (name → format), unlimitedOnExplainScreen)
 }
 
 object MonthFormat extends Enumeration {
@@ -171,14 +193,8 @@ trait PivotFormatter extends Serializable {
 object PivotFormatter {
   val MaxSetSize = 3
 
-  val DefaultFormat = "#,##0"
-  val PriceFormat = "#,##0.0000"
-  val CurrencyFormat = "#,##0"
-  val LotsFormat = "#,##0.0"
-  val PercentFormat = "#0.00"
-
   val DefaultDateRangeFormat = DateRangeFormat(Standard)
-  val DefaultDecimalPlaces = DecimalPlaces(DefaultFormat, LotsFormat, PriceFormat, CurrencyFormat, PercentFormat, false)
+  val DefaultDecimalPlaces = DecimalPlaces.default
   val DefaultExtraFormatInfo = ExtraFormatInfo(DefaultDecimalPlaces, DefaultDateRangeFormat)
 
   def longText(pq: PivotQuantity) =
