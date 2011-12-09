@@ -25,7 +25,7 @@ case class TableValue(value:AnyRef, row:Int, column:Int)
 
 object PivotTableType extends Enumeration {
   type PivotTableType = Value
-  val RowHeader, ColumnHeader, Main, Full, TopTable, BottomTable = Value
+  val RowHeader, ColumnHeader, Main, TopTable, BottomTable = Value
 }
 
 import PivotTableType._
@@ -903,7 +903,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       if (fireChange) {
         if (anyResetEdits != currentEdits) {
           val newEdits = edits(anyResetEdits)
-          updateEdits(newEdits, Full)
+          updateEdits(newEdits, BottomTable)
         } else {
           tableUpdated()
         }
@@ -934,7 +934,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       if (fireChange) {
         if (editsToUse != currentEdits) {
           val newEdits = allEdits(editsToUse)
-          updateEdits(newEdits, Full)
+          updateEdits(newEdits, BottomTable)
         } else {
           tableUpdated()
         }
@@ -953,7 +953,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         editsToUse = removeAddedRowsIfBlank(editsToUse)
         if (editsToUse != pagePivotEdits) {
           val newEdits = allEdits(editsToUse)
-          updateEdits(newEdits, Full)
+          updateEdits(newEdits, BottomTable)
         } else {
           tableUpdated()
         }

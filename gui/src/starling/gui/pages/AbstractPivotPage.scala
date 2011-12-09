@@ -157,6 +157,8 @@ class PivotTablePageComponent(
 
   private def allEdits = pivotComp.allEdits
 
+  override def currentPage = Some(selfPage(pivotPageState, allEdits))
+
   val toolBar = new MigPanel("insets 1 1 1 1, gap 1") {
     val lockScreenButton = new ToggleToolBarButton {
       icon = StarlingIcons.Lock

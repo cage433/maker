@@ -159,6 +159,7 @@ trait PageComponent extends Component {
   def getRefreshInfo:Option[RefreshInfo] = None
   def pageResized(newSize:Dimension) {}
   def defaultComponentForFocus:Option[java.awt.Component] = None
+  def currentPage:Option[Page] = None
 
   override def paintChildren(g:Graphics2D) {
     try {
