@@ -122,7 +122,21 @@ object PivotQuantityPivotParser extends PivotParser {
   }
 }
 
-case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:String, currencyFormat:String, percentageFormat:String, unlimitedOnExplainScreen:Boolean) {
+object DecimalPlaces {
+  def apply(defaultFormat: String, lotsFormat: String, priceFormat: String, currencyFormat: String, percentageFormat: String, unlimitedOnExplainScreen: Boolean): DecimalPlaces = {
+    new DecimalPlaces(Map("default" → defaultFormat, "lots" → lotsFormat, "price" → priceFormat, "currency" → currencyFormat, "percentage" → percentageFormat), unlimitedOnExplainScreen)
+  }
+}
+
+class DecimalPlaces(formats: Map[String, String], val unlimitedOnExplainScreen: Boolean) {
+  def defaultFormat = formats("default")
+  def lotsFormat = formats("lots")
+  def priceFormat = formats("price")
+  def currencyFormat = formats("currency")
+  def percentageFormat = formats("percentage")
+
+  def copyPercentageFormat(format: String) = copyFormat("percentage", format)
+
   def format(uom:UOM) = {
     if ((uom == UOM.K_BBL || uom == UOM.C_M3 || uom == UOM.K_MT))
       lotsFormat
@@ -135,6 +149,8 @@ case class DecimalPlaces(defaultFormat:String, lotsFormat:String, priceFormat:St
     else
       defaultFormat
   }
+
+  private def copyFormat(name: String, format: String) = new DecimalPlaces(formats + name → format, unlimitedOnExplainScreen)
 }
 
 object MonthFormat extends Enumeration {

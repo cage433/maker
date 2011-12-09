@@ -18,7 +18,7 @@ import starling.rmi.FC2Service
 class MarketDataServlet(fc2Service:FC2Service, marketDataTypes: MarketDataTypes) extends HttpServlet {
   private val FilterField = Extractor.when[String](_.startsWith("@"), _.stripPrefix("@").replaceAll("_", " "))
   private val ConcatenatedFields = Extractor.map[Array[String]](_.flatMap(_.split(":")).toList)
-  private val decimalPlaces = PivotFormatter.DefaultDecimalPlaces.copy(percentageFormat = "#0.0000")
+  private val decimalPlaces = PivotFormatter.DefaultDecimalPlaces.copyPercentageFormat("#0.0000")
   private val extraFormatInfo = ExtraFormatInfo(decimalPlaces, PivotFormatter.DefaultDateRangeFormat)
 
   override def doGet(request: HttpServletRequest, response: HttpServletResponse) = {

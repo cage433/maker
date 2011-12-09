@@ -1,6 +1,7 @@
 package starling.utils
 
 import conversions._
+import starling.webservice.RichElems
 
 
 object ImplicitConversions extends RichAnys
@@ -9,6 +10,7 @@ object ImplicitConversions extends RichAnys
   with RichDateTime
   with RichDouble
   with RichEither
+  with RichElems
   with RichExecutor
   with RichFunction
   with RichList

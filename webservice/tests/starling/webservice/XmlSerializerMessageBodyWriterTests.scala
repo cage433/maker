@@ -7,6 +7,7 @@ import com.trafigura.services.marketdata.{NamedMaturity, ReferenceRateSource, Re
 import com.trafigura.services.{TitanSerializablePercentage, TitanSerializableCurrency, TitanSerializableDate}
 import RichJValue._
 import xml._
+import starling.utils.ImplicitConversions._
 
 
 class XmlSerializerMessageBodyWriterTests extends WordSpec with ShouldMatchers {
