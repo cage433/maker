@@ -6,10 +6,12 @@ import javax.imageio.ImageIO
 import java.util.concurrent.{Callable, Future, Executors}
 import java.io.{BufferedOutputStream, ByteArrayOutputStream, ByteArrayInputStream}
 import scala.ref.SoftReference
+import starling.manager.TimeTree
 
 class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
                var refreshPage:Option[(Page,Boolean)], val pageTime:Long,
+               val timeTree:TimeTree,
                var componentForFocus:Option[java.awt.Component]=None) {
   def image:BufferedImage = {
     if (future == null) {

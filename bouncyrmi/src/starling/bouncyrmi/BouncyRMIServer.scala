@@ -22,6 +22,7 @@ import management.ManagementFactory
 import javax.management.ObjectName
 import collection.JavaConversions._
 import starling.utils.{NamedDaemonThreadFactory, ThreadUtils}
+import starling.manager.Profiler
 
 trait UsersMBean {
   def getUserDetails:JSet[String]
@@ -219,13 +220,13 @@ class BouncyRMIServer(val port: Int, auth: AuthHandler, version: String, knownEx
               val paramClasses = params.map(classForNameWithPrimitiveCheck(serverContextClass.getClassLoader, _))
               val method = serverContextClass.getMethod(name, paramClasses: _*)
               val decodedArgs = args.map( arg => BouncyRMI.decode(serverContextClass.getClassLoader, arg))
-              val start = System.currentTimeMillis()
-              val r = ThreadUtils.withNamedThread(declaringClassName+"#"+method.getName) {
-                method.invoke(serverContext, decodedArgs: _ *)
+              val (encoded, time) = Profiler.captureTime("Server: " + method.getName) {
+                val r = ThreadUtils.withNamedThread(declaringClassName+"#"+method.getName) {
+                  method.invoke(serverContext, decodedArgs: _ *)
+                }
+                BouncyRMI.encode(r)
               }
-              val encoded = BouncyRMI.encode(r)
-              val duration = System.currentTimeMillis() - start
-              MethodInvocationResult(id, duration, encoded)
+              MethodInvocationResult(id, time.time, time, encoded)
             } catch {
               case e: InvocationTargetException => {
                 e.getCause.printStackTrace()

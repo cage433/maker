@@ -15,10 +15,11 @@ import java.lang.Boolean
 import java.io._
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoderOutputStream, ObjectDecoderInputStream, ObjectDecoder, ObjectEncoder}
 import starling.utils.NamedDaemonThreadFactory
+import starling.manager.TimeTree
 
 //Message classes
 case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Array[Byte]])
-case class MethodInvocationResult(id: Int, serverDuration:Long, result:Array[Byte])
+case class MethodInvocationResult(id: Int, serverDuration:Long, timeTree:TimeTree, result:Array[Byte])
 case class MethodInvocationException(id: Int, t: Throwable)
 case class ServerException(t: Throwable)
 case class MethodInvocationBadVersion(id: Int, serverVersion: String)

@@ -19,7 +19,7 @@ import starling.auth.Client
 import java.util.concurrent._
 import scala.collection.JavaConversions._
 import starling.utils.{NamedDaemonThreadFactory}
-import starling.manager.Broadcaster
+import starling.manager.{TimeTree, Profiler, Broadcaster}
 
 case class MethodLogEvent(id:Int, method:Method, compressedSize:Int, uncompressedSize:Int, time:Long, serverTime:Long) extends Event {
   def shortName = method.getName + " " + compressedSize+ " bytes (" + uncompressedSize + " uncompressed) " + time + "ms"
@@ -403,12 +403,13 @@ class BouncyRMIClient(
           }
           case StdOutMessage(_, line) => println("S: " + line)
           case ServerException(t: Throwable) => killAllWaitingFors(t)
-          case MethodInvocationResult(id, serverDuration, result) => {
+          case MethodInvocationResult(id, serverDuration, timedTree, result) => {
             val waiting = waitingFor.get(id)
             val duration = System.currentTimeMillis - waiting.startTime
             val (compressed, uncompressed) = ChannelMessageSize.get(ctx.getChannel)
             logMethodInvocation(waiting.method, compressed, uncompressed, duration, serverDuration)
-            waiting.setResult(BouncyRMI.decode(waiting.klass.getClassLoader, result))
+            val t = TimeTree.create(waiting.method.getName, timedTree::Nil, duration)
+            waiting.setResult(BouncyRMI.decode(waiting.klass.getClassLoader, result), t)
           }
           case MethodInvocationException(id, t) => waitingFor.get(id).exception(t)
           case MethodInvocationBadVersion(id, serverVersion) => {
@@ -496,6 +497,7 @@ class BouncyRMIClient(
   class Waiting(val klass:Class[_], val method:Method, val startTime:Long) {
     private val lock = new Object
     private var completed = false
+    private var timeTree:TimeTree = _
     private var result: AnyRef = null
     private var exception: Throwable = null
     private var serverVersion: String = null
@@ -511,6 +513,7 @@ class BouncyRMIClient(
         if (serverVersion != null) {
           throw new ServerUpgradeException(serverVersion)
         }
+        Profiler.add(timeTree)
         result
       }
     }
@@ -531,9 +534,10 @@ class BouncyRMIClient(
       }
     }
 
-    def setResult(result: Object) {
+    def setResult(result: Object, timeTree:TimeTree) {
       lock.synchronized {
         this.completed = true
+        this.timeTree = timeTree
         this.result = result
         lock.notify()
       }
