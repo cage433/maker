@@ -69,7 +69,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     focusable = false
   }
   private var threadSequence = 0
-  private val componentBufferWindow = 1
+  private val componentBufferWindow = 2
   private val history = new ArrayBuffer[PageInfo]
   private var current = -1
 
@@ -91,8 +91,15 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private def updateRefreshState(currentPageInfo:PageInfo) {
     val page = currentPageInfo.page
-    val latestPage = currentPageInfo.pageComponent.get.currentPage.getOrElse(page).latestPage(lCache)
-//    val latestPage = page.latestPage(lCache)
+    val latestPage = currentPageInfo.pageComponent match {
+      case None => {
+        currentPageInfo.pageComponentSoft.get match {
+          case None => page.latestPage(lCache)
+          case Some(c) => c.currentPage.getOrElse(page).latestPage(lCache)
+        }
+      }
+      case Some(c) => c.currentPage.getOrElse(page).latestPage(lCache)
+    }
     if (page != latestPage) {
       currentPageInfo.refreshPage = Some((latestPage, true))
     }
