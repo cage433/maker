@@ -145,33 +145,16 @@ case class Environment(
   private var averagePriceCache = CacheFactory.getCache("Environment.averagePrice", unique = true)
 
   def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
+  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = index.averagePrice(averagingPeriod, rounding, this)
 
-  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
-    (index, averagingPeriod, rounding),
-    (tuple: (Index, DateRange, Option[Int])) => {
-      val observationDays = index.observationDays(averagingPeriod)
-      val prices = observationDays.map(index.fixingOrForwardPrice(this, _))
-
-      val price = Quantity.average(prices) match {
-        case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
-        case q : Quantity => q
-      }
-      rounding match {
-        case Some(dp) if environmentParameters.swapRoundingOK => {
-          price.round(dp)
-        }
-        case _ => price
-      }
+  def fixingOrForwardPrice(index : SingleIndex, observationDay : Day) = {
+    val price = if (observationDay.endOfDay <= marketDay) {
+      indexFixing(index, observationDay)
     }
-   )
-
-   def fixingOrForwardPrice(index : SingleIndex, observationDay : Day) = {
-     val price = if (observationDay.endOfDay <= marketDay) {
-       indexFixing(index, observationDay)
-     } else {
-       indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted = false)
-     }
-     price
+    else {
+      indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted = false)
+    }
+    price
   }
 
   def indexFixing(index: SingleIndex, fixingDay: Day) : Quantity = {
