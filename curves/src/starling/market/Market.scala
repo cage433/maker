@@ -299,8 +299,6 @@ object Market {
   lazy val SHANGHAI_GOLD = futuresMarketFromName("Shanghai Gold")
   lazy val SHANGHAI_LEAD = futuresMarketFromName("Shanghai Lead")
   lazy val STEEL_REBAR_SHANGHAI = futuresMarketFromName("SHFE Steel Rebar")
-  // These don't have settle prices in Lim - for now we use close prices
-  lazy val SHANGHAI_STEEL_AND_LEAD = Set(SHANGHAI_LEAD, STEEL_REBAR_SHANGHAI)
 
   lazy val NYMEX_WTI = futuresMarketFromName("NYMEX WTI")
   lazy val NYMEX_BRENT = futuresMarketFromName("NYMEX Brent")

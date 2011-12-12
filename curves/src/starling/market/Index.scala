@@ -265,7 +265,7 @@ case class FuturesFrontPeriodIndex(
   def futuresMarket = market
   val name = marketName
 
-  lazy val level = if (Market.SHANGHAI_STEEL_AND_LEAD.contains(market))
+  lazy val level = if (market == Market.SHANGHAI_LEAD)
     Level.Close
   else
     market.exchange.fixingLevel

@@ -31,7 +31,7 @@ object PriceLimMarketDataSource extends scalaz.Options {
     // Futures.Shfe.(Lead or Steel).Close is actually a settlement price (see reasoning in PriceFixingLimMarketDataSource) but
     // this is intended just for UAT.
     new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SHFE, "", Set(RelType.FUTURES)) {
-      override def marketPredicate(market: FuturesMarket) = market.isOneOf(Market.STEEL_REBAR_SHANGHAI, Market.SHANGHAI_LEAD)
+      override def marketPredicate(market: FuturesMarket) = market == Market.SHANGHAI_LEAD
     }),
 
     new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE)))
