@@ -74,7 +74,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
   private lazy val (observationDaysByPricingGroupCache, observationDaysByExcelCache) = {
     val observationDays = db.observationDaysByMarketDataSet
 
-    val observationDaysByPricingGroupCache = pricingGroupsDefinitions.mapValues { marketDataSets =>
+    val observationDaysByPricingGroupCache = pricingGroupMarketDataSets.mapValues { marketDataSets =>
       new MSet() ++ marketDataSets.flatMap(marketDataSet => observationDays.getOrElse(marketDataSet.name, Nil))
     }.withDefaultValue(new MSet())
 
@@ -110,7 +110,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
 
   def latestPricingGroupVersions: Map[PricingGroup, Int] = {
     val lookup = db.latestVersionForMarketDataSets()
-    Map() ++ pricingGroupsDefinitions.mapValues {
+    Map() ++ pricingGroupMarketDataSets.mapValues {
       marketDataSets => marketDataSets.map(mds => lookup.getOrElse(mds, 0)).max
     }
   }
@@ -153,7 +153,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
         maxVersion = scala.math.max(maxVersion, saveActions(data, marketDataSet, changedMarketDataSets))
       }
 
-      for ((pricingGroup, marketDataSets) <- pricingGroupsDefinitions) {
+      for ((pricingGroup, marketDataSets) <- pricingGroupMarketDataSets) {
         val changesForThisPricingGroup = changedMarketDataSets.filterKeys(marketDataSets)
         if (changesForThisPricingGroup.nonEmpty) {
           val changedDays = changesForThisPricingGroup.values.map(_._1).foldRight(Set[Option[Day]]())(_ ++ _).toList.somes
@@ -213,7 +213,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
 
 
   def importData(marketDataSelection: MarketDataSelection, observationDay: Day) = {
-    val marketDataSets = marketDataSelection.pricingGroup.flatMapL(pgl => pricingGroupsDefinitions(PricingGroup(pgl.name)))
+    val marketDataSets = marketDataSelection.pricingGroup.flatMapL(pgl => pricingGroupMarketDataSets(PricingGroup(pgl.name)))
 
     importFor(observationDay, marketDataSets: _*)
   }
@@ -270,7 +270,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
   def latestObservationDayForMarketDataSet(marketDataSet: MarketDataSet) = {
     var days = Set[Day]()
     observationDaysByPricingGroupCache.foreach {
-      case (pg, obDays) if pricingGroupsDefinitions(pg) contains marketDataSet => {
+      case (pg, obDays) if pricingGroupMarketDataSets(pg) contains marketDataSet => {
         days ++= obDays
       }
       case _ =>
@@ -279,7 +279,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
   }
 
   def latestObservationDayFor(pricingGroup: PricingGroup, marketDataType: MarketDataTypeName) = {
-    db.latestObservationDaysFor(pricingGroupsDefinitions(pricingGroup), marketDataType)
+    db.latestObservationDaysFor(pricingGroupMarketDataSets(pricingGroup), marketDataType)
   }
 
   private def marketDataSets(marketDataIdentifier: MarketDataIdentifier): List[MarketDataSet] = marketDataSets(marketDataIdentifier.selection)
@@ -287,20 +287,10 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
   def marketDataSets = marketDataSources.marketDataSets
 
   def marketDataSets(marketDataSelection: MarketDataSelection): List[MarketDataSet] = {
-    val pgmds = marketDataSelection.pricingGroup.flatMapL(pgl => pricingGroupsDefinitions(PricingGroup(pgl.name)))
+    val pgmds = marketDataSelection.pricingGroup.flatMapL(pgl => pricingGroupMarketDataSets(PricingGroup(pgl.name)))
     val excelmds = marketDataSelection.excel.toList.map(MarketDataSet.excel(_))
 
     excelmds ::: pgmds
-  }
-
-  def availableMarketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType] = {
-    val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
-    val mds = marketDataSets(marketDataIdentifier)
-    marketDataIdentifier.selection.pricingGroup match {
-      case Some(PricingGroup.Metals) => (new CountryBenchmarkDataType() :: db.marketDataTypes(version, mds).toList).distinct
-      case _ => db.marketDataTypes(version, mds).toList
-    }
-
   }
 
   def marketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet) = {

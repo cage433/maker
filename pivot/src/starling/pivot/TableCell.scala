@@ -66,6 +66,7 @@ object TableCell {
   val EditableNull = new TableCell(NoValue, "", editable = true)
   val Undefined = new TableCell(UndefinedValue, "n/a")
   val UndefinedNew = new TableCell(UndefinedValueNew, UndefinedValueNew.toString)
+  val BlankAddedCell = new TableCell(UndefinedValueNew, "", RightTextPosition, editable = true, state = AddedBlank)
 
   def longText(pq: PivotQuantity) =
     (pq.explanation, pq.warning) match {

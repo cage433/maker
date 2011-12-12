@@ -6,6 +6,7 @@ import starling.utils.ImplicitConversions._
 import util.DynamicVariable
 import scalaz.Scalaz._
 import java.io.Serializable
+import starling.manager.Profiler
 
 
 class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
@@ -56,10 +57,12 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
     val stopwatch = new Stopwatch()
 
     withName(message) {
-      logger(message + " Start")
-      val result = f;
-      logger(message + " Complete. Time: " + stopwatch)
-      result
+      Profiler.time(message) {
+        logger(message + " Start")
+        val result = f;
+        logger(message + " Complete. Time: " + stopwatch)
+        result
+      }
     }
   }
 

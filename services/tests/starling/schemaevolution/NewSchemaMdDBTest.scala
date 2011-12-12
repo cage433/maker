@@ -187,18 +187,6 @@ object NewSchemaMdDBTest extends Checkers with Log {
   }
 
 //  @Test
-  def testMarketDataTypes() = {
-    val version = slowMdDB.latestVersionForAllMarketDataSets().values.max
-    val versionCommitId = newSchemaMdDB.latestVersionForAllMarketDataSets().values.max
-    val mdSets = newSchemaMdDB.marketDataSetNames().map(MarketDataSet.fromName(_))
-//      MarketDataSet.Crude :: Nil
-    val slow = slowMdDB.marketDataTypes(version, mdSets)
-    val fast = newSchemaMdDB.marketDataTypes(versionCommitId, mdSets)
-
-    assertSet(fast, slow, "Market data types")
-  }
-
-//  @Test
   def testLatestMarketData() = {
     // LIKE [DM] to base the query on known data and try more periods/type combinations
     val from = Day.parse("01JAN2011")

@@ -16,6 +16,8 @@ import starling.gui.api._
 import QueryBuilder._
 import starling.utils.ImplicitConversions._
 import starling.pivot.{Field => PField}
+import starling.curves.SpreadStdDevSurfaceDataType
+import collection.Iterable
 
 /**
  * Thrown when there is no market data available for a particular day
@@ -61,7 +63,7 @@ object MarketDataStore {
 
   import MarketDataSet._
 
-  val pricingGroupsDefinitions = MultiMap[PricingGroup, MarketDataSet](
+  val pricingGroupMarketDataSets = MultiMap[PricingGroup, MarketDataSet](
     PricingGroup.Metals ->> (ManualMetals, LimMetals),
     PricingGroup.LimOnly ->> LIM,
     PricingGroup.System ->> (Starling, LIM, System),
@@ -73,12 +75,32 @@ object MarketDataStore {
     PricingGroup.BarryEckstein ->> (Starling, BarryEckstein, System, LIM),
     PricingGroup.LondonDerivativesOptions ->> (Starling, LondonDerivativesOptions, System, LIM)
   )
+  val pricingGroupDefinitions: List[PricingGroupDefinition] = pricingGroupMarketDataSets.keys.toList.map { pg => {
+    val types = pg match {
+      case PricingGroup.Metals => List(
+          PriceDataType.name,
+          ForwardRateDataType.name,
+          SpotFXDataType.name,
+          PriceFixingsHistoryDataType.name,
+          MarketDataTypeName.fromClass(classOf[CountryBenchmarkDataType]),
+          ShanghaiVATDataType.name
+        )
+      case _ => List(
+        PriceDataType.name,
+        OilVolSurfaceDataType.name,
+        FreightFlatRateDataType.name,
+        PriceFixingsHistoryDataType.name,
+        SpreadStdDevSurfaceDataType.name
+      )
+    }
+    PricingGroupDefinition(pg, types.map(t=>MarketDataTypeLabel(t.name)))
+  }}
 
   val manuallyEditableMarketDataSets = Set(ManualMetals, Starling)
-  val pricingGroups = pricingGroupsDefinitions.keySet.toList
+  val pricingGroups = pricingGroupMarketDataSets.keySet.toList
   def pricingGroupForName(name: String): PricingGroup = pricingGroups.find(_.name == name).get
 
-  def editableMarketDataSetFor(pricingGroup: PricingGroup) = pricingGroupsDefinitions.get(pricingGroup).flatMap {
+  def editableMarketDataSetFor(pricingGroup: PricingGroup) = pricingGroupMarketDataSets.get(pricingGroup).flatMap {
     sets => (manuallyEditableMarketDataSets & sets.toSet).headOption
   }
 
@@ -101,7 +123,8 @@ object MarketDataStore {
 trait MarketDataStore {
   def marketDataSets: Set[MarketDataSet]
 
-  val pricingGroupsDefinitions = MarketDataStore.pricingGroupsDefinitions
+  val pricingGroupDefinitions = MarketDataStore.pricingGroupDefinitions
+  val pricingGroupMarketDataSets = MarketDataStore.pricingGroupMarketDataSets
   val pricingGroups = MarketDataStore.pricingGroups
 
   def readAll()
@@ -127,8 +150,6 @@ trait MarketDataStore {
   def latestSnapshot(pricingGroup: PricingGroup): Option[SnapshotID]
 
   def marketData(from: Day, to: Day, marketDataType: MarketDataTypeName, marketDataSet: MarketDataSet): Map[TimedMarketDataKey, VersionedMarketData]
-
-  def availableMarketDataTypes(marketDataIdentifier: MarketDataIdentifier): List[MarketDataType]
 
   def marketDataTypes:MarketDataTypes
 

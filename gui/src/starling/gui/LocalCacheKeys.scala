@@ -10,7 +10,7 @@ import starling.browser.LocalCacheKey
 import org.joda.time.DateTime
 
 object LocalCacheKeys {
-  val PricingGroups                       = new LocalCacheKey[List[PricingGroup]]("PricingGroups")
+  val PricingGroups                       = new LocalCacheKey[List[PricingGroupDefinition]]("PricingGroups")
   val ExcelDataSets                       = new LocalCacheKey[List[String]]("ExcelDataSets")
   val Snapshots                           = new LocalCacheKey[Map[MarketDataSelection,List[SnapshotIDLabel]]]("Snapshots")
   val ObservationDaysForPricingGroup      = new LocalCacheKey[Map[PricingGroup,Set[Day]]]("ObservationDaysForPricingGroup")

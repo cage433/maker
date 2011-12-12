@@ -10,11 +10,7 @@ class NormalMarketDataReader(marketDataStore: MarketDataStore, marketDataIdentif
 
   def marketDataTypes = marketDataStore.marketDataTypes
 
-  val cachedMarketDataTypes = marketDataStore.availableMarketDataTypes(marketDataIdentifier)
-
   def identifier = marketDataIdentifier.toString
-
-  def availableMarketDataTypes = cachedMarketDataTypes
 
   def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
            keys: Option[Set[MarketDataKey]]) = {

@@ -1,6 +1,5 @@
 package starling.browser.internal
 
-import collection.mutable.ArrayBuffer
 import HomePage.StarlingNamePanel
 import starling.browser._
 import osgi.BundleAdded
@@ -23,6 +22,8 @@ import com.googlecode.transloader.clone.reflect.{ObjenesisInstantiationStrategy,
 import com.googlecode.transloader.clone.SerializationCloningStrategy
 import java.awt.event._
 import utilspage.UtilsPage
+import starling.manager.{TimeTree, Profiler}
+import collection.mutable.{LinkedList, ArrayBuffer}
 
 trait CurrentPage {
   def page:Page
@@ -68,7 +69,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     focusable = false
   }
   private var threadSequence = 0
-  private val componentBufferWindow = 1
+  private val componentBufferWindow = 2
   private val history = new ArrayBuffer[PageInfo]
   private var current = -1
 
@@ -90,8 +91,15 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private def updateRefreshState(currentPageInfo:PageInfo) {
     val page = currentPageInfo.page
-//    val latestPage = currentPageInfo.pageComponent.get.currentPage.getOrElse(page).latestPage(lCache)
-    val latestPage = page.latestPage(lCache)
+    val latestPage = currentPageInfo.pageComponent match {
+      case None => {
+        currentPageInfo.pageComponentSoft.get match {
+          case None => page.latestPage(lCache)
+          case Some(c) => c.currentPage.getOrElse(page).latestPage(lCache)
+        }
+      }
+      case Some(c) => c.currentPage.getOrElse(page).latestPage(lCache)
+    }
     if (page != latestPage) {
       currentPageInfo.refreshPage = Some((latestPage, true))
     }
@@ -310,10 +318,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case None => None
           case Some(pc) => pc.getState
         }
-        val rebuiltPageComponent = createPopulatedComponent(currentPage, info.pageResponse)
+        val (rebuiltPageComponent, _) = createPopulatedComponent(currentPage, info.pageResponse)
         rebuiltPageComponent.setState(currentState)
         val pageInfo = new PageInfo(currentPage, info.pageResponse, currentBookmark, Some(rebuiltPageComponent),
-          new SoftReference(rebuiltPageComponent), currentState, info.refreshPage, System.currentTimeMillis()-start)
+          new SoftReference(rebuiltPageComponent), currentState, info.refreshPage, System.currentTimeMillis()-start, info.timeTree)
         history(current) = pageInfo
         showPage(pageInfo, current)
       }
@@ -620,6 +628,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val pageTimeLabel = new Label("") {
     visible = userSettings.getSetting(UserSettings.ShowPageTime, false)
+  }
+  listenTo(pageTimeLabel.mouse.clicks)
+  reactions += {
+    case MouseClicked(`pageTimeLabel`, _,_,2,_) => goTo(PageTimePage(history(current).timeTree))
   }
 
   private val viewSettingsAction = Action("") {pageContext.goTo(SettingsPage(), Modifiers(true, true))}
@@ -948,6 +960,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   def goTo(pageOrPageBuilder:Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])]) {
     val start = System.currentTimeMillis()
+    val treeTimes = new ArrayBuffer[TimeTree]()
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
     setButtonsEnabled(false)
@@ -1002,6 +1015,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
               }
             }
             case SuccessPageResponse(_,bookmark) => {
+
               // Generate the image here.
               val currentTypeState = currentComponent.getTypeState
               val currentTypeFocusInfo = currentComponent.getTypeFocusInfo
@@ -1019,7 +1033,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
               imageClient.image = image
               genericLockedUI.setClient(imageClient)
 
-              val pageComponent = createPopulatedComponent(page, pageResponse)
+              val (pageComponent, createComponentTime) = createPopulatedComponent(page, pageResponse)
+              treeTimes.append(createComponentTime)
               pageComponent.setTypeState(currentTypeState)
               val latestPage = page.latestPage(lCache)
               val needToRefreshPage = if (latestPage != page) {
@@ -1027,7 +1042,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
               } else {
                 None
               }
-              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, needToRefreshPage, System.currentTimeMillis() - start)
+              val pageTime = System.currentTimeMillis() - start
+              val time = TimeTree.create("Page: " + page.text, treeTimes.toList, pageTime)
+              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, needToRefreshPage, pageTime, time)
               history.append(pageInfo)
               val oldCurrent = current
               current+=1
@@ -1086,9 +1103,13 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       }
     }
 
+    def logPageTime(timeTree:TimeTree) {
+      treeTimes.append(timeTree)
+    }
+
     pageOrPageBuilder match {
       case Left(page) => {
-        pageBuilder.build(page, (page:Page,pageResponse:PageResponse) => {
+        pageBuilder.build(logPageTime, page, (page:Page,pageResponse:PageResponse) => {
           withBuiltPage(page, pageResponse)
         })
       }
@@ -1114,7 +1135,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           refreshBrowserBar()
           refreshAction.enabled = history(current).refreshPage.isDefined
         }
-        pageBuilder.build(unanticipatedException, resetScreen(), createPage, onException, withBuiltPage, updateTitle)
+        pageBuilder.build(logPageTime, unanticipatedException, resetScreen(), createPage, onException, withBuiltPage, updateTitle)
       }
     }
   }
@@ -1147,7 +1168,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     val timer = createTimer(threadID)
     timer.start()
 
-    pageBuilder.refresh(newPage, (pageResponse:PageResponse) => {
+    pageBuilder.refresh(newPage, (pageResponse:PageResponse, timeTree:TimeTree) => {
       timer.stop()
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
@@ -1155,10 +1176,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case SuccessPageResponse(_,b) => b
           case _ => previousBookmark // Not sure what I should do if I can't get a bookmark here.
         }
-        val pageComponent = createPopulatedComponent(newPage, pageResponse, previousPageData)
+
+        val (pageComponent,_ ) = createPopulatedComponent(newPage, pageResponse, previousPageData)
         pageComponent.setState(previousState)
         pageComponent.setTypeState(previousTypeState)
-        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None, System.currentTimeMillis() - start)
+        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None, System.currentTimeMillis() - start, timeTree)
         history(current) = pageInfo
         showPage(pageInfo, current)
         setScreenLocked(false)
@@ -1193,20 +1215,22 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   def createPopulatedComponent(page:Page, pageResponse:PageResponse, previousPageData:Option[PreviousPageData]=None) = {
-    pageResponse match {
-      case SuccessPageResponse(pageData, bookmark) => {
-        try {
-          page.createComponent(pageContext, pageData, bookmark, size, previousPageData)
-        } catch {
-          case t => {
-            t.printStackTrace()
-            new ExceptionPageComponent("Component creation", t)
+    Profiler.captureTime("createPageComponent") {
+      pageResponse match {
+        case SuccessPageResponse(pageData, bookmark) => {
+          try {
+            page.createComponent(pageContext, pageData, bookmark, size, previousPageData)
+          } catch {
+            case t => {
+              t.printStackTrace()
+              new ExceptionPageComponent("Component creation", t)
+            }
           }
         }
-      }
-      case FailurePageResponse(t) => {
-        t.printStackTrace()
-        new ExceptionPageComponent("Task execution", t)
+        case FailurePageResponse(t) => {
+          t.printStackTrace()
+          new ExceptionPageComponent("Task execution", t)
+        }
       }
     }
   }
@@ -1248,7 +1272,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             c
           }
           case None => {
-            val c = createPopulatedComponent(page, pageInfo.pageResponse)
+            val (c,_) = createPopulatedComponent(page, pageInfo.pageResponse)
             pageInfo.pageComponent = Some(c)
             pageInfo.pageComponentSoft = new SoftReference(c)
             c.setState(pageInfo.componentState)
@@ -1329,53 +1353,57 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
     })
   }
 
-  def buildNoCache(page:Page, then:(PageResponse=>Unit)) {
-    threads.execute(new Runnable{
-      def run() {
-        val pageResponse:PageResponse = BrowserLog.infoWithTime("BuildNoCache page " + page.text) {
-          try {
-            PageLogger.logPageView(page, serverContext.browserService)
-            val builtPage = page.build(page.createServerContext(serverContext))
-            val bookmark = page.bookmark(page.createServerContext(serverContext), builtPage)
-            SuccessPageResponse(builtPage, bookmark)
-          } catch {
-            case t => FailurePageResponse(t)
-          }
-        }
-        onEDT(try {
-          then(pageResponse)
+//  def buildNoCache(page:Page, then:(PageResponse=>Unit)) {
+//    threads.execute(new Runnable{
+//      def run() {
+//        val pageResponse:PageResponse = BrowserLog.infoWithTime("BuildNoCache page " + page.text) {
+//          createPageResponse(page)
+//        }
+//        onEDT(try {
+//          then(pageResponse)
+//        } catch {
+//          case t => FailurePageResponse(t)
+//        })
+//      }
+//    })
+//  }
+
+  def createPageResponse(page: Page): (PageResponse, TimeTree) = {
+    Profiler.captureTime("creatPageResponse") {
+      val pageResponse: PageResponse =
+        try {
+          PageLogger.logPageView(page, serverContext.browserService)
+          val builtPage = page.build(page.createServerContext(serverContext))
+          val bookmark = page.bookmark(page.createServerContext(serverContext), builtPage)
+          println(Thread.currentThread().getName + " reading time tree")
+          SuccessPageResponse(builtPage, bookmark)
         } catch {
           case t => FailurePageResponse(t)
-        })
-      }
-    })
+        }
+      pageResponse
+    }
   }
 
-  def refresh(newPage:Page, then:PageResponse=>Unit) {
+  def refresh(newPage:Page, then:(PageResponse,TimeTree)=>Unit) {
     threads.execute(new Runnable{
       def run() {
-        val pageResponse:PageResponse =
-          try {
-            PageLogger.logPageView(newPage, serverContext.browserService)
-            val builtPage = newPage.build(newPage.createServerContext(serverContext))
-            val bookmark = newPage.bookmark(newPage.createServerContext(serverContext), builtPage)
-            SuccessPageResponse(builtPage, bookmark)
-          } catch {
-            case t => FailurePageResponse(t)
-          }
-        onEDT(then(pageResponse))
+        val (pageResponse, timeTree) = createPageResponse(newPage)
+        onEDT(then(pageResponse, timeTree))
       }
     })
   }
 
   private var pageToThens:Map[Page, List[(Page,PageResponse) => Unit]] = Map()
 
-  def build(unanticipatedException: Throwable => Unit, resetScreen: =>Unit, createPage:ServerContext=>Page,
+  def build(logPageTime:(TimeTree=>Unit), unanticipatedException: Throwable => Unit, resetScreen: =>Unit, createPage:ServerContext=>Page,
             onException:PartialFunction[Throwable, Unit],then:(Page,PageResponse)=>Unit, thenWithPage:Page => Unit) {
     threads.execute(new Runnable() { def run() {
       try {
-        val page = createPage(serverContext)
-        onEDT(build(page, then))
+        val (page, time) = Profiler.captureTime("createPage") { createPage(serverContext) }
+        onEDT {
+          logPageTime(time)
+          build(logPageTime, page, then)
+        }
       } catch {
         case t:Throwable => {
           if (onException.isDefinedAt(t)) {
@@ -1392,7 +1420,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
   }
 
   // This method has to be called on the EDT.
-  def build(page:Page, then:(Page,PageResponse)=>Unit) {
+  def build(logPageTime:(TimeTree=>Unit), page:Page, then:(Page,PageResponse)=>Unit) {
     if (pageDataCache.contains(page)) {
       then(page,pageDataCache(page))
     } else {
@@ -1400,18 +1428,11 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
         case None => {
           pageToThens += (page -> List(then))
           threads.execute(new Runnable() { def run() {
-            val pageResponse:PageResponse = BrowserLog.infoWithTime("Build page " + page.text) {
-              try {
-                PageLogger.logPageView(page, serverContext.browserService)
-                val builtPage = page.build(page.createServerContext(serverContext))
-                val bookmark = page.bookmark(page.createServerContext(serverContext), builtPage)
-                SuccessPageResponse(builtPage, bookmark)
-              } catch {
-                //case t:TooLongFrameException => FailurePageResponse(new Exception("Too much data, try refining pivot view", t))
-                case t => FailurePageResponse(t)
-              }
+            val (pageResponse, timeTree) = BrowserLog.infoWithTime("Build page " + page.text) {
+              createPageResponse(page)
             }
             onEDT({
+              logPageTime(timeTree)
               if(pageResponse.isInstanceOf[SuccessPageResponse]) {
                 pageDataCache(page) = pageResponse
               }

@@ -84,7 +84,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
   }
 
   def query(sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => Unit): Int = {
-    log.info(sql)
+    logSql(sql)
     try {
       val counter = new NonAtomicInteger
       withTransaction(DB.DefaultIsolationLevel, true) {
@@ -107,7 +107,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
    * Same as query but results of function f are returned as a List
    */
   def queryWithResult[T](sql: String, parameters: Map[String, Any] = Map[String, Any]())(f: RSR => T): List[T] = {
-    log.info(sql + ", " + parameters)
+    logSql(sql + ", " + parameters)
 
     val counter = new NonAtomicInteger
     // TODO: [21 Nov 2011] Is it necessary to use a transaction for every query ?
@@ -171,6 +171,10 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
   }
 
   protected def createWriter: DBWriter = new DBWriter(DBTrait.this, dataSource)
+
+  private def logSql(sql: String) {
+    log.info(sql.replaceAll("\n", ""))
+  }
 }
 
 object DBConvert {

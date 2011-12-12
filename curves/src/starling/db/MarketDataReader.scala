@@ -13,8 +13,6 @@ trait MarketDataReader {
 
   def marketDataTypes:MarketDataTypes
 
-  def availableMarketDataTypes:List[MarketDataType]
-
   def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]] = None,
            observationTimes: Option[Set[ObservationTimeOfDay]] = None,
            keys: Option[Set[MarketDataKey]]=None): List[(TimedMarketDataKey, MarketData)]

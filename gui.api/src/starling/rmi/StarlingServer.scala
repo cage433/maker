@@ -8,7 +8,7 @@ import starling.calendar.BusinessCalendar
 import starling.daterange.{ObservationPoint, Day, Timestamp}
 import starling.browser.service.{PageLogInfo, BookmarkLabel, UserSettingsLabel, Version}
 import starling.utils.{CaseInsensitive, STable}
-import starling.manager.DoNotCache
+import starling.manager.Memoize
 
 case class StarlingServerInitialData(
   name:String,
@@ -20,13 +20,13 @@ case class StarlingServerInitialData(
 )
 
 trait StarlingServer {
-  def name:String
-  @DoNotCache def init():StarlingServerInitialData
-  def referenceDataTables():List[ReferenceDataLabel]
-  def referencePivot(table:ReferenceDataLabel, pivotFieldParams:PivotFieldParams):PivotData
+  @Memoize def name:String
+  def init():StarlingServerInitialData
+  @Memoize def referenceDataTables():List[ReferenceDataLabel]
+  @Memoize def referencePivot(table:ReferenceDataLabel, pivotFieldParams:PivotFieldParams):PivotData
 
-  @DoNotCache def orgPivot(pivotFieldParams:PivotFieldParams):PivotData
-  @DoNotCache def userStatsPivot(pivotFieldParams:PivotFieldParams):PivotData
-  @DoNotCache def storeSystemInfo(info:OSInfo)
-  def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int):PivotData
+  def orgPivot(pivotFieldParams:PivotFieldParams):PivotData
+  def userStatsPivot(pivotFieldParams:PivotFieldParams):PivotData
+  def storeSystemInfo(info:OSInfo)
+  @Memoize def gitLog(pivotFieldParams:PivotFieldParams, numCommits:Int):PivotData
 }

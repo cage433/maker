@@ -125,7 +125,7 @@ class PublishingOutputStream extends OutputStream with StdOut {
   def readAll = synchronized { buffer.toByteArray }
 
   private def broadcast(bytes:Array[Byte]) {
-    publisher.publish(StdOutEvent(bytes))
+//    publisher.publish(StdOutEvent(bytes))
   }
   def write(c: Int) {
     buffer.write(c)
