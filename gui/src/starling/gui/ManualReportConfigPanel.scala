@@ -145,7 +145,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     def setDays(ci:CurveIdentifierLabel, tradeExpiryDay:Day) {
       // Warning - the order you set these is important - to get round this don't listen to day choosers here.
       observationDayChooser.day = ci.tradesUpToDay
-      forwardObservationDayAndTimeChooser.dayAndTime = ci.valuationDayAndTime
+      forwardObservationDayAndTimeChooser.dayAndTime = ci.forwardObservationDayAndTime
       environmentRule.rule = ci.environmentRule
       thetaToDayChooser.day = ci.thetaDayAndTime.day
       liveOnDayChooser.day = tradeExpiryDay

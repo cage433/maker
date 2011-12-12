@@ -269,6 +269,9 @@ case class CurveIdentifierLabel(
         envModifiers:SortedSet[EnvironmentModifierLabel]) {
 
   def copyVersion(version: Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
+
+  def forwardObservationDayAndTime: DayAndTime = if (valuationDayAndTime.day > tradesUpToDay) valuationDayAndTime else
+    valuationDayAndTime.nextBusinessDay(BusinessCalendar.WeekdayBusinessCalendar)
 }
 
 object CurveIdentifierLabel{
