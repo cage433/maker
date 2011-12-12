@@ -145,7 +145,15 @@ case class Environment(
   private var averagePriceCache = CacheFactory.getCache("Environment.averagePrice", unique = true)
 
   def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
-  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = index.averagePrice(averagingPeriod, rounding, this)
+
+  // now average price is called on index which allows it to be polymorphically overridden for particular implementations
+  // it's memoized here as env is not persisted but index is (and memoizing anon classes can not be persisted)
+  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]) : Quantity =
+    averagePriceCache.memoize(
+      (index, averagingPeriod, rounding),
+      (tuple: (IndexWithDailyPrices, DateRange, Option[Int])) =>
+        index.averagePrice(averagingPeriod, rounding, this)
+    )
 
   def fixingOrForwardPrice(index : SingleIndex, observationDay : Day) = {
     val price = if (observationDay.endOfDay <= marketDay) {

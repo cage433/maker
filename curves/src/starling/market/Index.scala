@@ -2,16 +2,13 @@ package starling.market
 
 import formula.FormulaIndex
 import rules._
-import starling.utils.CaseInsensitive
 import starling.curves._
 import starling.daterange._
 import starling.marketdata.PriceFixingsHistoryDataKey
-import starling.utils.cache.CacheFactory
-import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalendar, BrentMonth}
+import starling.calendar.BusinessCalendar
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern.Extractor
 import starling.quantity._
-import java.lang.IllegalStateException
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
@@ -104,29 +101,21 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
   protected def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
 
   // base implementation of average price for index, may be overridden in specific indices
-  private var averagePriceCache = CacheFactory.getCache("IndexWithDailyPrices.averagePrice", unique = true)
+  def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
+    val observationDays = this.observationDays(averagingPeriod)
+    val prices = observationDays.map(fixingOrForwardPrice(env, _))
 
-  def averagePrice(averagingPeriod: DateRange, env : Environment): Quantity = averagePrice(averagingPeriod, None, env : Environment)
-
-  def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = averagePriceCache.memoize(
-    (averagingPeriod, rounding, env),
-    (tuple: (DateRange, Option[Int], Environment)) => {
-
-      val observationDays = this.observationDays(averagingPeriod)
-      val prices = observationDays.map(fixingOrForwardPrice(env, _))
-
-      val price = Quantity.average(prices) match {
-        case nq : NamedQuantity => SimpleNamedQuantity("Average(" + this + "." + averagingPeriod + ")", nq)
-        case q : Quantity => q
-      }
-      rounding match {
-        case Some(dp) if env.environmentParameters.swapRoundingOK => {
-          price.round(dp)
-        }
-        case _ => price
-      }
+    val price = Quantity.average(prices) match {
+      case nq : NamedQuantity => SimpleNamedQuantity("Average(" + this + "." + averagingPeriod + ")", nq)
+      case q : Quantity => q
     }
-  )
+    rounding match {
+      case Some(dp) if env.environmentParameters.swapRoundingOK => {
+        price.round(dp)
+      }
+      case _ => price
+    }
+  }
 }
 
 /**
