@@ -70,7 +70,7 @@ trait Index extends KnownConversions {
 case class IndexSensitivity(coefficient : Double, index : Index)
 
 /**
- * The cacnonical example is the Ave 4 LME index. It's not a single index as it depends on both
+ * The canonical example is the Ave 4 LME index. It's not a single index as it depends on both
  * cash and 3 month prices, but it does have a single price for each day, which can be displayed in the UI
  * explanation of the valuation of physical forwards
  */
@@ -571,12 +571,12 @@ case class ShfeVwapMonthIndex(
   private val baseFuturesMarket = FuturesFrontPeriodIndex(market)
 
   // this rule undoubtedly needs changing and has been left wide so behaviour can be tested
-  private def isPublishedDay(day : Day, month : DateRange) = day >= month.last - 21
+  private def isPublishedDay(day : Day, month : DateRange) = day >=  market.lastTradingDay(month) /* month.last - 21 */ - 5
 
   override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
     // switch between published monthly vwap and official daily (unweighted) prices according to day
     if (isPublishedDay(env.marketDay.day, averagingPeriod))
-      env.indexFixing(this, averagingPeriod.lastMonth.last)
+      env.indexFixing(this, averagingPeriod.last)
     else
       baseFuturesMarket.averagePrice(averagingPeriod, rounding, env)
   }
