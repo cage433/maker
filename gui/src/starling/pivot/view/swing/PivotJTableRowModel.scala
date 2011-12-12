@@ -35,9 +35,13 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   private val addedRows0 = new ListBuffer[Array[AxisCell]]
 
   private val blankRow = Array.fill(numCols)(AxisCell.BlankAddedCell).zipWithIndex.map{case (ac,c) => {
-    val f = field(c)
-    if (keyFields.contains(f)) {
-      ac
+    if (c < fieldState.rowFields.size) {
+      val f = field(c)
+      if (keyFields.contains(f)) {
+        ac
+      } else {
+        ac.copy(editable = false)
+      }
     } else {
       ac.copy(editable = false)
     }
