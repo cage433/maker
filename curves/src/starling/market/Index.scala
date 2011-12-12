@@ -560,22 +560,23 @@ object ShfeVwapMonthIndex {
     new ShfeVwapMonthIndex(name, market)
   }
 }
+
 case class ShfeVwapMonthIndex(
                val marketName : String,
-               val market : FuturesMarket
-               ) extends SingleIndex {
+               val market : FuturesMarket) extends SingleIndex {
+
+  def level = Level.VwapMonthIndexPrice
 
   // underlying index for "published" price fixings
   private val baseFuturesMarket = FuturesFrontPeriodIndex(market)
 
-  override def level = Level.VwapMonthIndexPrice
-
-  private def isPublishedDay(day : Day, month : DateRange) = day >= month.last
+  // this rule undoubtedly needs changing and has been left wide so behaviour can be tested
+  private def isPublishedDay(day : Day, month : DateRange) = day >= month.last - 21
 
   override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
     // switch between published monthly vwap and official daily (unweighted) prices according to day
     if (isPublishedDay(env.marketDay.day, averagingPeriod))
-      env.indexFixing(this, averagingPeriod.last)
+      env.indexFixing(this, averagingPeriod.lastMonth.last)
     else
       baseFuturesMarket.averagePrice(averagingPeriod, rounding, env)
   }
