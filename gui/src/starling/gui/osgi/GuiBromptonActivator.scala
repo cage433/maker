@@ -43,42 +43,49 @@ class GuiBromptonActivator extends BromptonActivator {
 
     context.registerService(classOf[HttpServlet], new HttpServlet {
       override def doGet(req:HttpServletRequest, resp:HttpServletResponse) {
-        (req.getParameter("tradeID"), req.getParameter("snapshotID")) match {
-          case (tradeID:String, snapshotID:String) => {
-            showTrade(tradeID, snapshotID)
+        req.getParameter("tradeID") match {
+          case tradeID:String => {
+            showTrade(tradeID)
             resp.setContentType("text/plain")
             resp.setStatus(200)
-            resp.getWriter.println("Openned valuation page for " + tradeID + " " + snapshotID + " at " + new Date())
+            resp.getWriter.println("Openned valuation page for " + tradeID + " at " + new Date())
           }
           case _ => {
             resp.setContentType("text/plain")
             resp.setStatus(404)
-            resp.getWriter.println("Missing required parameter(s). Need tradeID and snapshotID")
+            resp.getWriter.println("You need to specify the tradeID parameter - it is case sensitive")
           }
         }
       }
     }, ServiceProperties(HttpContext("gotoValuationScreen")))
 
-    def showTrade(tradeID:String, snapshotID:String) {
+    def showTrade(tradeID:String) {
       val desk = Desk.Titan
       import StarlingLocalCache._
       var deskCloses: List[TradeTimestamp] = null
-      var ukBusinessCalendar: BusinessCalendar = null
+      var marketDataVersion:Int = -1
+      val pricingGroup = PricingGroup.Metals
+      val marketDataSelection = MarketDataSelection(Some(pricingGroup))
       Swing.onEDTWait( {
         deskCloses = localCache.deskCloses(desk);
-        ukBusinessCalendar = localCache.ukBusinessCalendar
+        marketDataVersion = localCache.latestMarketDataVersion(marketDataSelection)
       })
       val tradeTimestamp = deskCloses.sortWith(_.timestamp > _.timestamp).head
       val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
       val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
 
       val curveIdentifier = {
-        val pricingGroup = PricingGroup.Metals
-        val marketDataSelection = MarketDataSelection(Some(pricingGroup))
-        val version = snapshotID.toInt
-        val enRule = EnvironmentRuleLabel.AllCloses
-        val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(MarketDataIdentifier(marketDataSelection, version), ukBusinessCalendar, zeroInterestRates = true) // Metals don't want discounting during UAT
-        ci.copy(thetaDayAndTime = ci.thetaDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule)
+        val observationDay = Day.today.previousWeekday
+        val mods = TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
+
+        CurveIdentifierLabel(
+          MarketDataIdentifier(marketDataSelection, marketDataVersion),
+          EnvironmentRuleLabel.AllCloses,
+          observationDay,
+          Day.today.endOfDay,
+          Day.today.nextWeekday.atTimeOfDay(TimeOfDay.EndOfDay),
+          mods
+        )
       }
 
       val slidableReportOptions = reportService.reportOptionsAvailable.options.filter(_.slidable)
