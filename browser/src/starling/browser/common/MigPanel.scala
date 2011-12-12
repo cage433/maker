@@ -7,13 +7,13 @@ import scala.swing.Swing.EmptyIcon
 import swing._
 import org.jdesktop.swingx.{JXList, JXLabel, JXPanel}
 import org.jdesktop.swingx.decorator.Highlighter
-import javax.swing._
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
 import GuiUtils._
 import org.jdesktop.swingx.painter.{ImagePainter, PinstripePainter, Painter}
 import java.awt.geom.RoundRectangle2D
 import java.awt.geom.RoundRectangle2D.Float
 import swing.ListView.Renderer
+import javax.swing._
 
 class MigPanel(layoutConstraints:String = "", columnConstraints:String = "", rowConstraints:String = "")
         extends Panel with SequentialContainer.Wrapper {
@@ -248,6 +248,33 @@ class ListXView[A] extends ListView[A] {
   def addHighlighter(highlighter:Highlighter) {peer.addHighlighter(highlighter)}
   def rowFilter = peer.getRowFilter
   def rowFilter_=(rowFilter:RowFilter[_ >: javax.swing.ListModel,_ >: java.lang.Integer]) {peer.setRowFilter(rowFilter)}
+}
+
+class ResizingComboBox[A](items:Seq[A], model0:Option[ComboBoxModel]=None) extends ComboBox(items) {
+  lazy val model = model0 match {
+    case None => ComboBox.newConstantModel(items)
+    case Some(m) => m
+  }
+  override lazy val peer: JComboBox = new JComboBox(model) with SuperMixin {
+    var layingOut = false
+    override def getSize = {
+      val s = super.getSize()
+      val prefWidth = getPreferredSize.width
+      if (!layingOut && prefWidth != 0 && s.width < prefWidth) {
+        s.width = getPreferredSize.width
+      }
+      s
+    }
+
+    override def doLayout() {
+      try {
+        layingOut = true
+        super.doLayout()
+      } finally {
+        layingOut = false
+      }
+    }
+  }
 }
 
 class NListView[T](values:Seq[T]) extends ListView[T](values) {

@@ -9,7 +9,7 @@ import javax.swing.{JComboBox, DefaultComboBoxModel}
 import starling.gui.StarlingLocalCache._
 import starling.browser.PageContext
 import starling.browser.common.GuiUtils._
-import starling.browser.common.{RoundedBorder, MigPanel}
+import starling.browser.common.{ResizingComboBox, RoundedBorder, MigPanel}
 
 class SlideReportConfigPanel(context:PageContext, reportParameters:ReportParameters) extends MigPanel with ConfigPanel {
   def displayName = "Slides"
@@ -21,30 +21,10 @@ class SlideReportConfigPanel(context:PageContext, reportParameters:ReportParamet
     border = RoundedBorder(colour = PivotTableBackgroundColour)
     val numFieldCols = 4
     val slideParametersAvailable = reportOptionsAvailable.slideParameters
-    val slideComboBox = new ComboBox(slideParametersAvailable.map(_.slideType))
+    val slideComboBox = new ResizingComboBox(slideParametersAvailable.map(_.slideType))
 
     val marketComboBoxModel = new DefaultComboBoxModel
-    val marketOrCommodityComboBox = new ComboBox(List("")) {
-      override lazy val peer: JComboBox = new JComboBox(marketComboBoxModel) with SuperMixin {
-        var layingOut = false
-        override def getSize = {
-          val s = super.getSize()
-          if (!layingOut && getPreferredSize.width != 0) {
-            s.width = getPreferredSize.width
-          }
-          s
-        }
-
-        override def doLayout = {
-          try {
-            layingOut = true
-            super.doLayout
-          } finally {
-            layingOut = false
-          }
-        }
-      }
-    }
+    val marketOrCommodityComboBox = new ResizingComboBox(List(""), Some(marketComboBoxModel))
     val actualType = new Label("Parallel") {
       horizontalAlignment = Alignment.Left
     }

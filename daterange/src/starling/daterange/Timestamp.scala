@@ -27,6 +27,7 @@ case class Timestamp(instant : Long) extends Ordered[Timestamp] {
   def roundDownToClosestSecond = Timestamp(dt.withMillisOfSecond(0).getMillis)
   def toStringMinutes = dt.toString("ddMMMyyyy HH:mm")
   def toStringSeconds = dt.toString("ddMMMyyyy HH:mm ss")
+  def toStringSecondsShort = dt.toString("ddMMMyy HH:mm ss")
   def timeString = dt.toString("HH:mm")
   def timeStringWithSeconds = dt.toString("HH:mm ss")
   def timeStringWithMilliSeconds = dt.toString("HH:mm:ss.SSS")
