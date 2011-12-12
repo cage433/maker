@@ -185,7 +185,10 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
 
   override def initialState = {
     val initialReportSpecificChoices = mergedReportOptions.default
-    val pfs = PivotFieldsState(reportSpecificChoices = TreeMap(initialReportSpecificChoices.toArray:_*))
+    val pfs = PivotFieldsState(rowFields=List(Field("Risk Market"), Field("Risk Period")),
+                               dataFields=List(Field("Position")),
+                               reportSpecificChoices = TreeMap(initialReportSpecificChoices.toArray:_*))
+
     DefaultPivotState(pfs)
   }
 }
