@@ -173,8 +173,7 @@ case class MarketDataPage(
         val pricingGroupSelector = new MarketDataSelectionComponent(context, None, marketDataIdentifier.selection, scala.swing.Orientation.Vertical)
 
         val snapshotsComboBoxModel = new DefaultComboBoxModel
-        val snapshotsComboBox = new ComboBox[SnapshotComboValue](List(SnapshotComboValue(None))) { // Got to pass a list in - not very good but we remove it straight away.
-          peer.setModel(snapshotsComboBoxModel)
+        val snapshotsComboBox = new ResizingComboBox[SnapshotComboValue](List(SnapshotComboValue(None)), Some(snapshotsComboBoxModel)) { // Got to pass a list in - not very good but we remove it straight away.
           snapshotsComboBoxModel.removeAllElements()
 
           {val snapshots = context.localCache.snapshots(None).getOrElse(marketDataIdentifier.selection, List())
@@ -206,7 +205,7 @@ case class MarketDataPage(
         }
         val snapshotsPanel = new MigPanel("insets 0") {
           add(new Label("as of:") {tooltip = "Market data as of selected date or current"})
-          add(snapshotsComboBox, "pushx, grow")
+          add(snapshotsComboBox, "wmin 50lp, pushx, grow")
         }
 
         private val snapshotButton = new Button {
