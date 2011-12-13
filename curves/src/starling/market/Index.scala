@@ -264,11 +264,7 @@ case class FuturesFrontPeriodIndex(
 
   def futuresMarket = market
   val name = marketName
-
-  lazy val level = if (market == Market.SHANGHAI_LEAD)
-    Level.Close
-  else
-    market.exchange.fixingLevel
+  lazy val level = market.exchange.fixingLevel
   
   def observedPeriod(observationDay : Day) : DateRange = {
     val frontMonth = market.frontPeriod(observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays))
