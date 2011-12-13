@@ -101,4 +101,10 @@ class LogTest extends TestNGSuite with ShouldMatchers {
       Log.debug("if you can see this in a log, something is wrong") // 1 million (inactive) logs / s should be enough for anybody
     }
   }
+
+  @Test def logExceptionDoesNotThrow {
+    Log.off {
+      Log.logException("logExceptionDoesNotThrow") { throw new Exception("if you can see this then LogTest.logExceptionDoesNotThrow failed") }
+    }
+  }
 }

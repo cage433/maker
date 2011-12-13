@@ -34,6 +34,7 @@ import starling.calendar.{BusinessCalendar, BusinessCalendars}
 import com.trafigura.services.Logistics.LogisticsServiceApi
 import java.util.Timer
 import starling.daterange.{Notifier, TimedNotifier, TimeOfDay}
+import java.util.concurrent.ScheduledExecutorService
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -131,7 +132,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val dataTypes = new MarketDataTypes(referenceDataLookup)
 
-    registerScheduler(context, osgiBroadcaster, dataTypes, context.awaitService(classOf[Timer]))
+    registerScheduler(context, osgiBroadcaster, dataTypes, context.awaitService(classOf[ScheduledExecutorService]))
 
     Map(
       "Bloomberg → LIM"    → new BloombergImportsReferenceData(bloombergImports),
@@ -180,9 +181,9 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
   }
 
   // TODO [19 Oct 2011] Reuse scheduler for oil tasks
-  private def registerScheduler(context: BromptonContext, broadcaster: Broadcaster, dataTypes: MarketDataTypes, timer: Timer) {
+  private def registerScheduler(context: BromptonContext, broadcaster: Broadcaster, dataTypes: MarketDataTypes, scheduledExecutorService: ScheduledExecutorService) {
     val props = context.awaitService(classOf[starling.props.Props])
-    val scheduler = new Scheduler(props, timer)
+    val scheduler = new Scheduler(props, scheduledExecutorService)
     val jmx = new StarlingJMX(scheduler)
 
     context.onStarted { scheduler.start; jmx.start }

@@ -1,15 +1,14 @@
 package starling.scheduler
 
-import java.util.{TimerTask, Timer}
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import starling.daterange.{Location, Day}
 import starling.utils.{Stopwatch, Enableable, Log}
 import org.joda.time.Period
-
+import java.util.concurrent.ScheduledExecutorService
 
 case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTask, coolDown: Period = Period.ZERO)
-  extends TimerTask with Enableable {
+  extends Runnable with Enableable {
 
   private val log = Log.forClass[Scheduler]
   private val coolDownClock = new Stopwatch().offset(- coolDown.toStandardSeconds.getSeconds)
@@ -23,8 +22,10 @@ case class TaskDescription(name: String, time: ScheduledTime, task: ScheduledTas
   val cal = time.cal
   def attribute(name: String, alternative: String = ""): ScheduledTaskAttribute = task.attribute(name, alternative)
 
-  def schedule(timer: Timer) = log.infoF("%s%s @ %s @ %s (%s @ London), %s" % (isEnabled ? "" | "[DISABLED] ", name,
-    time.prettyTime("HH:mm dd MMM"), time.cal.name, time.prettyTime("HH:mm dd MMM", Location.London), time.description)) { time.schedule(this, timer) }
+  def schedule(scheduleExecutorService: ScheduledExecutorService) {
+    log.infoF("%s%s @ %s @ %s (%s @ London), %s" % (isEnabled ? "" | "[DISABLED] ", name,
+      time.prettyTime("HH:mm dd MMM"), time.cal.name, time.prettyTime("HH:mm dd MMM", Location.London), time.description)) { time.schedule(this, scheduleExecutorService) }
+  }
 
   def run = log.logException("Task %s failed" % name) { skippingReason match {
     case Some(reasonToSkip) => log.info("Skipping '%s', because: %s" % (name, reasonToSkip))

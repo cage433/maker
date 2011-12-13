@@ -1,10 +1,9 @@
 package starling.daterange
 
 import starling.calendar.Clock
-import java.util.{TimerTask, Timer}
-import java.util.concurrent.TimeUnit
 import collection.mutable.{Map => MMap}
 import starling.utils.ImplicitConversions._
+import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
 
 
 trait Notifier {
@@ -19,7 +18,7 @@ object Notifier {
   }
 }
 
-class TimedNotifier(timer: Timer) extends Notifier {
+class TimedNotifier(scheduledExecutorService: ScheduledExecutorService) extends Notifier {
   private val expectations = MMap.empty[String, Expectation]
   
   def notify[T](name: String) = synchronized {
@@ -31,7 +30,7 @@ class TimedNotifier(timer: Timer) extends Notifier {
     
     expectations.update(name, Expectation(expiry, errorCallback))
 
-    timer.schedule(new Poll, delay)
+    scheduledExecutorService.schedule(new Poll, delay, TimeUnit.MILLISECONDS)
   }
 
   private def verify = synchronized {
@@ -47,7 +46,7 @@ class TimedNotifier(timer: Timer) extends Notifier {
     } else true
   }
 
-  private class Poll extends TimerTask {
+  private class Poll extends Runnable {
     def run = verify
   }
 }
