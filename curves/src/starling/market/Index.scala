@@ -473,7 +473,11 @@ object LmeSingleIndices{
   val niCashOffer = new LmeCashSettlementIndex(Market.LME_NICKEL, level = Level.Ask)
   val ni3MBid = new LmeThreeMonthIndex(Market.LME_NICKEL, level = Level.Bid)
   val ni3MOffer = new LmeThreeMonthIndex(Market.LME_NICKEL, level = Level.Ask)
+}
 
+object ShfeIndices {
+  def shfeMonthVwap(market : FuturesMarket) = ShfeVwapMonthIndex(market)
+  val shfeAlMonthVwap = ShfeVwapMonthIndex(Market.SHANGHAI_ALUMINUIUM)
 }
 
 object FuturesFrontPeriodIndex {
@@ -552,7 +556,8 @@ case class LmeAve4MaxSettIndex(market : FuturesMarket) extends IndexWithDailyPri
 }
 
 /**
- * special type of index handling unweighted arithmetic average price until official published monthly wwap prices are available
+ * special type of index using unweighted arithmetic average prices,
+ *   until official published monthly wwap prices are available and then using the vwap fixing instead
  */
 object ShfeVwapMonthIndex {
   def apply(market : FuturesMarket) = {
@@ -561,31 +566,31 @@ object ShfeVwapMonthIndex {
   }
 }
 
-case class ShfeVwapMonthIndex(
-               val marketName : String,
-               val market : FuturesMarket) extends SingleIndex {
+/**
+ * Wraps a normal front futures market with handling for end of month official month vwap price fixings
+ */
+case class ShfeVwapMonthIndex(marketName : String, market : FuturesMarket) extends SingleIndex {
 
-  def level = Level.VwapMonthIndexPrice
+  def level = Level.VwapMonthIndexLevel
 
   // underlying index for "published" price fixings
-  private val baseFuturesMarket = FuturesFrontPeriodIndex(market)
+  private val baseFrontFuturesMarketIndex = FuturesFrontPeriodIndex(market)
 
   // this rule undoubtedly needs changing and has been left wide so behaviour can be tested
-  private def isPublishedDay(day : Day, month : DateRange) = day >=  market.lastTradingDay(month) /* month.last - 21 */ - 5
+  private def isPublishedDay(marketDay : DayAndTime, month : DateRange) = marketDay >=  month.lastDay.thisOrPreviousBusinessDay(market.businessCalendar).endOfDay
 
-  override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
-    // switch between published monthly vwap and official daily (unweighted) prices according to day
-    if (isPublishedDay(env.marketDay.day, averagingPeriod))
+  // switch between published monthly vwap and official daily (unweighted) prices according to day
+  override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity =
+    if (isPublishedDay(env.marketDay, averagingPeriod))
       env.indexFixing(this, averagingPeriod.last)
     else
-      baseFuturesMarket.averagePrice(averagingPeriod, rounding, env)
-  }
+      baseFrontFuturesMarketIndex.averagePrice(averagingPeriod, rounding, env)
 
-  def observedOptionPeriod(observationDay: Day) = baseFuturesMarket.observedOptionPeriod(observationDay)
+  def observedOptionPeriod(observationDay: Day) = baseFrontFuturesMarketIndex.observedOptionPeriod(observationDay)
 
-  def observedPeriod(day : Day) = baseFuturesMarket.observedPeriod(day)
+  def observedPeriod(day : Day) = baseFrontFuturesMarketIndex.observedPeriod(day)
 
-  def storedFixingPeriodForDay(day: Day) = baseFuturesMarket.storedFixingPeriodForDay(day)
+  def storedFixingPeriodForDay(day: Day) = baseFrontFuturesMarketIndex.storedFixingPeriodForDay(day)
 
-  val name = "SHFE " + market.commodity + " Month VWAP"
+  val name = marketName +  " Month VWAP"
 }
