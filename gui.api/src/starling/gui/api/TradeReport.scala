@@ -105,7 +105,7 @@ case class FieldDetailsGroupLabel(groupName:String, childNames:List[String])
 
 case class SnapshotIDLabel(id: Int, timestamp : Timestamp, marketDataSelection:MarketDataSelection, snapshotType:SnapshotType, version: Int) extends Ordered[SnapshotIDLabel] {
   def compare(rhs: SnapshotIDLabel) = id - rhs.id
-  def shortString = timestamp.toStringSeconds + " (s" + id + ", type " + snapshotType.name + ")"
+  def shortString = timestamp.toStringSecondsShort + " (s" + id + ", " + snapshotType.name + ")"
   def snapshotDay = timestamp.day
 }
 

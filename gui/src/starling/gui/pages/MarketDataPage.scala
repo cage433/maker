@@ -14,9 +14,8 @@ import starling.daterange.Day
 
 import starling.utils.ImplicitConversions._
 import starling.gui.StarlingLocalCache._
-import starling.browser.common.MigPanel
 import starling.browser._
-import common.RoundedBorder
+import common.{ResizingComboBox, MigPanel, RoundedBorder}
 import starling.fc2.api.FC2Facility
 import starling.reports.facility.ReportFacility
 import starling.pivot.model.UndefinedValue
@@ -386,8 +385,6 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
 
   def revert() {this.suppressingSelf(selection = marketDataSelection)}
 
-  private val minWidthForComboBox = 200
-
   private val pricingGroups = pageContext.localCache.pricingGroups(maybeDesk)
   private val pricingGroupCheckBox = new CheckBox {
     text = "Pricing Group:"
@@ -398,11 +395,9 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
   private val pricingGroupCombo = if (pricingGroups.isEmpty) {
     new ComboBox(List(PricingGroup(""))) {
       enabled=false
-      minimumSize = new Dimension(minWidthForComboBox, minimumSize.height)
     }
   } else {
-    new ComboBox(pricingGroups) {
-      minimumSize = new Dimension(minWidthForComboBox, minimumSize.height)
+    new ResizingComboBox(pricingGroups) {
       marketDataSelection.pricingGroup match {
         case Some(pg) => selection.item = pg
         case None => {
@@ -427,11 +422,9 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
     if (pageContext.localCache.excelDataSets.isEmpty) {
       new ComboBox(List("")) {
         enabled = false
-        minimumSize = new Dimension(minWidthForComboBox, minimumSize.height)
       }
     } else {
-      new ComboBox(values) {
-        minimumSize = new Dimension(minWidthForComboBox, minimumSize.height)
+      new ResizingComboBox(values) {
         if (marketDataSelection.excel.isDefined) {
           selection.item = marketDataSelection.excel.get
         } else {
@@ -445,7 +438,7 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
     }
   }
 
-  def selection_= (se:MarketDataSelection) {
+  def selection_=(se:MarketDataSelection) {
     se.pricingGroup match {
       case Some(pg) => {
         pricingGroupCheckBox.selected = true
@@ -505,13 +498,13 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
   listenTo(pricingGroupCheckBox, pricingGroupCombo.selection, excelCheckBox, excelCombo.selection)
 
   val layoutInfo = orientation match {
-    case scala.swing.Orientation.Vertical => "grow, wrap"
-    case scala.swing.Orientation.Horizontal => "grow, gapright rel"
+    case scala.swing.Orientation.Vertical => "wmin 50lp, pushx, growx, wrap"
+    case scala.swing.Orientation.Horizontal => "wmin 50lp, growx, gapright rel"
   }
   add(pricingGroupCheckBox)
   add(pricingGroupCombo, layoutInfo)
   add(excelCheckBox)
-  add(excelCombo, "pushx, grow")
+  add(excelCombo, "wmin 50lp, pushx, growx")
 }
 
 case class SnapshotComboValue(maybeSnapshot:Option[SnapshotIDLabel]) {
