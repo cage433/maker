@@ -1,6 +1,5 @@
 package starling.marketdata
 
-import starling.daterange.Day
 import starling.market.Commodity
 import starling.pivot._
 import model.UndefinedValue
@@ -8,6 +7,7 @@ import pivotparsers.{DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
+import starling.daterange.{ObservationTimeOfDay, Day}
 
 case class CountryBenchmarkData(countryData: NestedMap[(NeptuneCountryCode, GradeCode), Day, Quantity]) extends MarketData {
   def size = countryData.nestedSize
@@ -36,7 +36,7 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
     rowFields = List(commodityField.field, countryCodeField.field, gradeCodeField.field, effectiveFromField.field),
     filters = List(
       Field("Observation Day") -> SomeSelection(Set(UndefinedValue)),
-      Field("Observation Time") -> SomeSelection(Set("Real Time"))
+      Field("Observation Time") -> SomeSelection(Set(ObservationTimeOfDay.RealTime.name))
     )
   )
 

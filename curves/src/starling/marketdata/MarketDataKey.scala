@@ -47,7 +47,8 @@ trait MarketDataKey {
 case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDataKey) {
   def day = observationPoint.day
   def timeOfDay = observationPoint.timeOfDay
-  def timeName = observationPoint.timeName
+  def timeShortName = observationPoint.timeOfDay.shortName
+  def timeName = observationPoint.timeOfDay.name
 
   def typeName = key.typeName
   def fieldValues(marketDataType: MarketDataType) = marketDataType.fieldValues(key)
