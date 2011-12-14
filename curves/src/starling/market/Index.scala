@@ -572,15 +572,18 @@ case class ShfeVwapMonthIndex(marketName : String, market : FuturesMarket) exten
   // underlying index for "published" price fixings
   private val baseFrontFuturesMarketIndex = FuturesFrontPeriodIndex(market)
 
-  // this rule undoubtedly needs changing and has been left wide so behaviour can be tested
-  private def isPublishedDay(marketDay : DayAndTime, month : DateRange) = marketDay >=  month.lastDay.thisOrPreviousBusinessDay(market.businessCalendar).endOfDay
+  // this rule may need changing but is literally the last business day (eod) of the markets business calendar by default for now
+  private def publicationDay(month : DateRange) = month.lastDay.thisOrPreviousBusinessDay(market.businessCalendar).endOfDay
 
-  // switch between published monthly vwap and official daily (unweighted) prices according to day
-  override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity =
-    if (isPublishedDay(env.marketDay, averagingPeriod))
-      env.indexFixing(this, averagingPeriod.last)
+  // switch between published monthly vwap and official daily (unweighted) prices according to the environment's market day
+  override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
+
+    val pubDay = publicationDay(averagingPeriod)
+    if (env.marketDay >= pubDay)
+      env.indexFixing(this, pubDay.day)
     else
       baseFrontFuturesMarketIndex.averagePrice(averagingPeriod, rounding, env)
+  }
 
   def observedOptionPeriod(observationDay: Day) = baseFrontFuturesMarketIndex.observedOptionPeriod(observationDay)
 

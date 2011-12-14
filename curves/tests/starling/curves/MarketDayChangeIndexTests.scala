@@ -12,7 +12,15 @@ import starling.daterange.{DayAndTime, Day}
 class MarketDayChangeIndexTests extends TestMarketTest with TestNGSuite {
 
   /**
-   * test SHFE VWAP Month index behaviour
+   * Test SHFE VWAP Month index behaviour
+   *
+   * also from the repl it was possible to test month roll-over behaviour by entering some manual vwap fixings and then doing something like:
+   *
+   *   val e1 = makeEnv(PricingGroup("Metals"), Day(2011, 12, 30))
+   *   e1.indexFixing(ShfeIndices.shfeMonthVwap(Market.SHANGHAI_COPPER), Day(2011, 12, 30))
+   *
+   *   val e1 = makeEnv(PricingGroup("Metals"), Day(2012, 1, 6))
+   *   e1.indexFixing(ShfeIndices.shfeMonthVwap(Market.SHANGHAI_COPPER), Day(2011, 12, 30))
    */
   @Test
   def testMarketDayChangesForShfeMonthVwapIndex {

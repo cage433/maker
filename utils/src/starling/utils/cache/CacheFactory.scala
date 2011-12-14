@@ -21,6 +21,10 @@ object CacheFactory extends Log {
   private val cacheCount = new AtomicInteger(0)
   private val cacheStats = new MapMaker().concurrencyLevel(16).makeMap[String, Stats]
 
+  def clearAllCaches = caches.values.foreach{
+    case c : SimpleCacheImpl if c.soft => c.clear
+    case _ =>
+  }
   private val statsThread = {
     import scala.collection.JavaConversions._
     
