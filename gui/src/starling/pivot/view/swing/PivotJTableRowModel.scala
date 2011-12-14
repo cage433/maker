@@ -320,7 +320,7 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
   }
 
   def acceptableValues(r:Int, c:Int):Set[String] = {
-    val rowHeaderField = rowHeaderData0(0)(c).value.field
+    val rowHeaderField = field(c)
     fieldState.fieldSelection(rowHeaderField) match {
       case None => {
         val parser = editableInfo.get.fieldToParser(rowHeaderField)
