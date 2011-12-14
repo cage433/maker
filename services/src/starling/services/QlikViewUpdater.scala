@@ -23,10 +23,12 @@ object QlikViewUpdater {
 
     nameToID.filterKeys(_.contains(taskName)).toList match {
       case List((name, id)) => id
-      case Nil => throw new Exception("No task with name containing: '%s', available:\n\t%s" % (taskName, nameToID.keys.mkString("\n\t")))
-      case many => throw new Exception("%d tasks with name containing: '%s'\n\t%s" % (many.size, taskName, many.map(_._1).mkString("\n\t")))
+      case Nil => invalidTaskName("No task with name containing: '%s', available:\n\t%s" % (taskName, nameToID.keys.mkString("\n\t")))
+      case many => invalidTaskName("%d tasks with name containing: '%s'\n\t%s" % (many.size, taskName, many.map(_._1).mkString("\n\t")))
     }
   }
+
+  private def invalidTaskName(msg: String): Nothing = throw new Exception(msg + "\nEither change property: QlikViewSpotFXTask or set QlikViewEnabled=false")
 }
 
 class QlikViewUpdater(serverUrl: String, spotFXTaskName: String, notifier: Notifier = Notifier.Null) extends Receiver with Log {

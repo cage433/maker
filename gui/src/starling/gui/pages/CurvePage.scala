@@ -35,7 +35,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   }
 
   override def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection) = {
-    val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier.selection)
+    val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier)
     val marketDataSelectionPanelPanel = new MigPanel {
       border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
       add(marketDataSelectionPanel, "push, grow")
@@ -64,7 +64,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     }
 
     marketDataSelectionPanel.reactions += {
-      case MarketDataSelectionChanged(selection) => { pageContext.goTo(latest(copySelection(selection)), Modifiers.None) }
+      case MarketDataSelectionChanged(mdi) => { pageContext.goTo(latest(copySelection(mdi.selection)), Modifiers.None) }
     }
 
     def updatePopulatedDays() {

@@ -5,12 +5,15 @@ import org.joda.time.format.DateTimeFormat
 
 import starling.calendar.BusinessCalendar
 import starling.utils.ImplicitConversions._
-import java.util.{TimerTask, Timer}
-import starling.daterange.{Location, Day}
+import starling.daterange.{Timestamp, Location, Day}
+import java.util.concurrent.{TimeUnit, ScheduledExecutorService}
 
 
 case class ScheduledTime(description: String, time: LocalTime, period: Period, cal: BusinessCalendar, ignoreMissed: Boolean = true) {
-  def schedule(task: TimerTask, timer: Timer) = timer.scheduleAtFixedRate(task, scheduledTime.toDate, periodInSeconds * 1000)
+  def schedule(task: Runnable, scheduleExecutorService: ScheduledExecutorService) {
+    scheduleExecutorService.scheduleAtFixedRate(task, initialDelayInSeconds, periodInSeconds, TimeUnit.SECONDS)
+  }
+
   val prettyTime: String = prettyTime("HH:mm")
 
   def prettyTime(format: String, location: Location = cal.location): String =
@@ -25,6 +28,8 @@ case class ScheduledTime(description: String, time: LocalTime, period: Period, c
 
     scheduledTime + (periodsToAdd * periodInSeconds * 1000)
   }
+
+  def initialDelayInSeconds: Long = (scheduledTime.toDate.getTime - Timestamp.now.instant) / 1000
 
   private lazy val periodInSeconds = period.toStandardSeconds.getSeconds.ensuring(_ > 0, "Period cannot be 0")
 }

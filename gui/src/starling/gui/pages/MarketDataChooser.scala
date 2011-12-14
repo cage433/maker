@@ -48,7 +48,9 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     CurrentEntry :: ImportAndSnapshotEntry ::snapshotsForDayAndSelection.map(SnapshotVersionEntry(_))
   }
 
-  private val marketDataSelection = new MarketDataSelectionComponent(pageContext, maybeDesk, snapShotSelectionToUse.marketDataSelection)
+  private val smdv = SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(snapShotSelectionToUse.marketDataSelection))
+  private val mdi = MarketDataIdentifier(snapShotSelectionToUse.marketDataSelection, smdv)
+  private val marketDataSelection = new MarketDataSelectionComponent(pageContext, maybeDesk, mdi)
 
   private val marketDataDayPicker = new TitledDayPicker {
     tooltip = "Select observation day"
@@ -133,7 +135,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
 
   onEDT(onEDT(snapshotView.peer.ensureIndexIsVisible(snapshotView.selection.anchorIndex)))
 
-  updatePopulatedObservationDays(marketDataSelection.selection)
+  updatePopulatedObservationDays(marketDataSelection.selection.selection)
 
   def updatePopulatedObservationDays(selection:MarketDataSelection) {
     marketDataDayPicker.flagged = pageContext.localCache.populatedDays(selection).toSet
@@ -155,15 +157,15 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
   listenTo(pageContext.remotePublisher)
   reactions += {
     case ExcelObservationDay(name, day) => {
-      updatePopulatedObservationDays(marketDataSelection.selection)
+      updatePopulatedObservationDays(marketDataSelection.selection.selection)
     }
     case PricingGroupObservationDay(pricingGroup, day) => {
-      updatePopulatedObservationDays(marketDataSelection.selection)
+      updatePopulatedObservationDays(marketDataSelection.selection.selection)
     }
     case _: MarketDataSnapshot => {
       this.snapshots = snapshots
       val selected = snapshotView.selected
-      updateSnapshotList(marketDataSelection.selection)
+      updateSnapshotList(marketDataSelection.selection.selection)
       snapshotView.selected = selected match {
         case ImportAndSnapshotEntry => {
           // If you are over import and snapshot then there is a big chance that you were the one who caused this MarketDataSnapshot update.
@@ -181,7 +183,8 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     }
   }
   reactions += {
-    case MarketDataSelectionChanged(selection) => {
+    case MarketDataSelectionChanged(mdi0) => {
+      val selection = mdi0.selection
       updatePopulatedObservationDays(selection)
       if (selection.isNull) {
         snapshotView.enabled = false
@@ -194,7 +197,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     case SelectionChanged(`marketDataDayPicker`) => {
       // Change the text field and let other people know about this.
       publish(ObservationDayChanged(this, marketDataDayPicker.day))
-      updateSnapshotList(marketDataSelection.selection)
+      updateSnapshotList(marketDataSelection.selection.selection)
       valuationDayPicker.day = marketDataDayPicker.day
     }
     case SelectionChanged(`valuationDayPicker`) => {
@@ -206,7 +209,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
   listenTo(marketDataSelection, marketDataDayPicker, valuationDayPicker, snapshotView.mouse.clicks, viewButton)
 
   def getState = MarketDataChooserState(
-    SnapshotSelection(marketDataSelection.selection, snapshotView.selectedOption, marketDataDayPicker.day),
+    SnapshotSelection(marketDataSelection.selection.selection, snapshotView.selectedOption, marketDataDayPicker.day),
     valuationDayPicker.day, thetaDayPicker.day,
     zeroVolsCheckbox.selected, zeroInterestRatesCheckbox.selected)
 
@@ -214,9 +217,11 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
     val snapshotSelection = state.snapshotSelection
 
     this.suppressing(marketDataSelection, marketDataDayPicker, valuationDayPicker, snapshotView.selection) {
-      marketDataSelection.selection = snapshotSelection.marketDataSelection
+      val smdv = SpecificMarketDataVersion(pageContext.localCache.latestMarketDataVersion(snapShotSelectionToUse.marketDataSelection))
+      val mdi = MarketDataIdentifier(snapshotSelection.marketDataSelection, smdv)
+      marketDataSelection.selection = mdi
       marketDataDayPicker.day = snapshotSelection.observationDay
-      val newSnapshots = generateSnapshots(marketDataDayPicker.day, marketDataSelection.selection)
+      val newSnapshots = generateSnapshots(marketDataDayPicker.day, marketDataSelection.selection.selection)
       snapshotView.listData = newSnapshots
       if (useLatestSnapshotEntry) {
         val ssToSelection = if (newSnapshots.length > 1) {
@@ -238,7 +243,7 @@ class MarketDataChooser(maybeDesk:Option[Desk], pageContext:PageContext, snapsho
 
   def toSTable = {
     STable("Valuation Environment", List(SColumn("Market Data"), SColumn("Observation Day"), SColumn("Snapshot")),
-      List(List(marketDataSelection.selection.text, marketDataDayPicker.day.toString, snapshotView.selected.label)))
+      List(List(marketDataSelection.selection.selection.text, marketDataDayPicker.day.toString, snapshotView.selected.label)))
   }
 }
 

@@ -16,6 +16,8 @@ import starling.http.GUICode
 import java.util.Timer
 import starling.daterange._
 import starling.gui.api.{EnabledDesks, PricingGroup, EnvironmentRuleLabel}
+import java.util.concurrent.{ScheduledExecutorService, ScheduledThreadPoolExecutor}
+import starling.utils.NamedDaemonThreadFactory
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -102,9 +104,9 @@ class ServicesBromptonActivator extends BromptonActivator {
     })
     excelLoopReceiver.start
 
-    val timer = new Timer(true)
-    context.registerService(classOf[Timer], timer)
-    context.registerService(classOf[Notifier], new TimedNotifier(timer))
+    val scheduledExecutorService = new ScheduledThreadPoolExecutor(2, new NamedDaemonThreadFactory("ScheduledExecutorService"))
+    context.registerService(classOf[ScheduledExecutorService], scheduledExecutorService)
+    context.registerService(classOf[Notifier], new TimedNotifier(scheduledExecutorService))
 
     if (props.QlikViewEnabled()) {
       context.registerService(classOf[Receiver], new QlikViewUpdater(props.QlikViewServerUrl(), props.QlikViewSpotFXTask(),
