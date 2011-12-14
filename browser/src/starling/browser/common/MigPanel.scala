@@ -250,6 +250,10 @@ class ListXView[A] extends ListView[A] {
   def rowFilter_=(rowFilter:RowFilter[_ >: javax.swing.ListModel,_ >: java.lang.Integer]) {peer.setRowFilter(rowFilter)}
 }
 
+class ResizingLabel(text0:String="") extends Label(text0) {
+  minimumSize = new Dimension(10, minimumSize.height)
+}
+
 class ResizingComboBox[A](items:Seq[A], model0:Option[ComboBoxModel]=None) extends ComboBox(items) {
   lazy val model = model0 match {
     case None => ComboBox.newConstantModel(items)
