@@ -22,7 +22,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
   val pricingGroupPanel = new MarketDataSelectionComponent(
     context,
     reportParameters.tradeSelectionWithTimestamp.desk,
-    reportParameters.curveIdentifier.marketDataIdentifier.selection) {
+    reportParameters.curveIdentifier.marketDataIdentifier, showShapshotChooser = true) {
     reactions += { case MarketDataSelectionChanged(selection) => {
       ManualReportConfigPanel.this.publish(MarketDataChanged(ManualReportConfigPanel.this))
       updateSnapshotButton
@@ -66,7 +66,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       icon = StarlingIcons.icon("/icons/14x14_download_data.png")
       reactions += {
         case ButtonClicked(_) => {
-          context.submit(ImportMarketDataRequest(generateMarketDataSelection, observationDayChooser.day))
+          context.submit(ImportMarketDataRequest(generateMarketDataIdentifier.selection, observationDayChooser.day))
         }
       }
     }
@@ -111,7 +111,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     add(liveOnLabel)
     add(liveOnDayChooser)
 
-    def updatePopulatedDays(selection:MarketDataSelection=pricingGroupPanel.selection) {
+    def updatePopulatedDays(selection:MarketDataSelection=pricingGroupPanel.selection.selection) {
       val flaggedDays = context.localCache.populatedDays(selection).toSet
       observationDayChooser.flagged = flaggedDays
       forwardObservationDayAndTimeChooser.flagged = flaggedDays
@@ -133,9 +133,8 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       case ExcelObservationDay(_, _) | PricingGroupObservationDay(_, _) => updatePopulatedDays()
       case DayChangedEvent(_,_) => updateRunButton
       case SelectionChanged(`bookCloseChooser`) => updateRunButton
-      case MarketDataSelectionChanged(selection) => {
-        val valuationDay = observationDayChooser.day
-        updatePopulatedDays(selection)
+      case MarketDataSelectionChanged(mdi) => {
+        updatePopulatedDays(mdi.selection)
       }
     }
 
@@ -153,7 +152,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
   }
 
   def updateSnapshotButton {
-    day2Panel.snapshotButton.enabled = pricingGroupPanel.selection.pricingGroup.isDefined
+    day2Panel.snapshotButton.enabled = pricingGroupPanel.selection.selection.pricingGroup.isDefined
   }
 
 
@@ -189,7 +188,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       }
       case ButtonClicked(`pnlFromCheckbox`) => {
         pnlFromDayAndTimeChooser.enabled = pnlFromCheckbox.selected
-        useExcelButton.enabled = pnlFromCheckbox.selected && pricingGroupPanel.selection.excel.isDefined
+        useExcelButton.enabled = pnlFromCheckbox.selected && pricingGroupPanel.selection.selection.excel.isDefined
         val tradesBookCloseEnabled = tradesBookCloseChooser.validSelection && pnlFromCheckbox.selected
         tradesBookCloseChooser.enabled = tradesBookCloseEnabled
         tradesAsOfLabel.enabled = tradesBookCloseEnabled
@@ -198,7 +197,8 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       case ButtonClicked(`useExcelButton`) => updateRunButton
       case DayAndTimeChangedEvent(_,_) => updateRunButton
       case SelectionChanged(`tradesBookCloseChooser`) => updateRunButton
-      case MarketDataSelectionChanged(selection) => {
+      case MarketDataSelectionChanged(mdi) => {
+        val selection = mdi.selection
         val flaggedDays = context.localCache.populatedDays(selection).toSet
         pnlFromDayAndTimeChooser.flagged = flaggedDays
         useExcelButton.enabled = pnlFromCheckbox.selected && selection.excel.isDefined
@@ -240,16 +240,17 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
   add(pricingGroupPanelPanel, "split, spanx, sgy")
   add(optionsPanel, "sgy")
 
-  private def generateMarketDataSelection = {
+  private def generateMarketDataIdentifier = {
     pricingGroupPanel.selection
   }
 
-  def marketData(mds:MarketDataSelection) {
+  def marketData(mds:MarketDataIdentifier) {
     pricingGroupPanel.selection = mds
   }
 
   def generateReportParams(slideConfig:SlideConfig) = {
-    val marketDataSelection = generateMarketDataSelection
+    val mdi = generateMarketDataIdentifier
+    val marketDataSelection = mdi.selection
     val pricingGroup = marketDataSelection.pricingGroup
 
     val envMods = TreeSet[EnvironmentModifierLabel]() ++        
@@ -264,7 +265,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val forwardValuationDayAndTime = day2Panel.forwardObservationDayAndTimeChooser.dayAndTime
     val thetaDayAndTime: DayAndTime = day2Panel.thetaToDayChooser.day.endOfDay
 
-    val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
+    val marketDataVersion = mdi.marketDataVersion
 
     val pnlParams = if (day1Panel.pnlFromCheckbox.selected) {
       val fromMarketDataSelection = if (day1Panel.useExcelButton.selected) {
@@ -334,7 +335,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
   listenTo(context.remotePublisher)
 
   def setupState(rp:ReportParameters) {
-    pricingGroupPanel.selection = rp.curveIdentifier.marketDataIdentifier.selection
+    pricingGroupPanel.selection = rp.curveIdentifier.marketDataIdentifier
 
     day2Panel.setDays(
       rp.curveIdentifier,

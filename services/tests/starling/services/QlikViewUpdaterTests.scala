@@ -36,11 +36,13 @@ class QlikViewUpdaterTests extends WordSpec with ShouldMatchers {
 
   "Produce nice error when no task found" in {
     intercept[Exception](QlikViewUpdater.extractTaskID("Baloney", xml)).getMessage should be ===
-      "No task with name containing: 'Baloney', available:\n\t" + List(impalaName, titanName).mkString("\n\t")
+      "No task with name containing: 'Baloney', available:\n\t" + List(impalaName, titanName).mkString("\n\t") + suffix
   }
 
   "Produce nice error when more than one task found" in {
     intercept[Exception](QlikViewUpdater.extractTaskID("Reload", xml)).getMessage should be ===
-      "2 tasks with name containing: 'Reload'\n\t" + List(impalaName, titanName).mkString("\n\t")
+      "2 tasks with name containing: 'Reload'\n\t" + List(impalaName, titanName).mkString("\n\t") + suffix
   }
+
+  private val suffix = "\nEither change property: QlikViewSpotFXTask or set QlikViewEnabled=false"
 }

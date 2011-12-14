@@ -40,9 +40,6 @@ object LIMService {
     val ForeignExchange = new LimNode(this) {
       val Ecb = new LimNode(this)
     }
-    val Futures = new LimNode(this) {
-      val Shfe = new LimNode(this)
-    }
     val Trafigura = new LimNode(this) {
       val Bloomberg = new LimNode(this) {
         val Currencies = new LimNode(this) {

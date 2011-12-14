@@ -3,7 +3,7 @@ package starling.browser.internal
 import HomePage.StarlingNamePanel
 import starling.browser._
 import osgi.BundleAdded
-import service.{StarlingGUIEvent, BookmarkLabel}
+import service.BookmarkLabel
 import starling.browser.common._
 import java.util.concurrent.{ThreadFactory, Executors}
 import scala.swing.Swing._
@@ -23,7 +23,7 @@ import com.googlecode.transloader.clone.SerializationCloningStrategy
 import java.awt.event._
 import utilspage.UtilsPage
 import starling.manager.{TimeTree, Profiler}
-import collection.mutable.{LinkedList, ArrayBuffer}
+import collection.mutable.ArrayBuffer
 
 trait CurrentPage {
   def page:Page
@@ -69,7 +69,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     focusable = false
   }
   private var threadSequence = 0
-  private val componentBufferWindow = 2
   private val history = new ArrayBuffer[PageInfo]
   private var current = -1
 
@@ -1293,12 +1292,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       bookmarkButton.refresh()
     }
 
-    // We don't want to keep components hanging about as they take up a lot of memory.
-    for (i <- 0 to (current - componentBufferWindow)) {
-      history(i).pageComponent = None
-    }
-    for (i <- (current + componentBufferWindow) until history.size) {
-      history(i).pageComponent = None
+    // We don't want to keep components hanging about as they take up a lot of memory - they are soft cached.
+    for (i <- 0 until history.size) {
+      if (i != current) {
+        history(i).pageComponent = None
+      }
     }
 
     // Let the page know that it has been shown.

@@ -4,6 +4,8 @@ import starling.pivot._
 import scalaz.Scalaz._
 import starling.quantity.{Quantity, UOM}
 import starling.pivot.Row._
+import starling.daterange.ObservationTimeOfDay
+
 case class FreightParityData(parityRate: Double, comment: String) extends MarketData {
   def size = 1
   def parityQuantity = Quantity(parityRate, UOM.USD / UOM.MT)
@@ -43,7 +45,7 @@ class FreightParityDataType(referenceData: ReferenceDataLookup = ReferenceDataLo
   val initialPivotState = PivotFieldsState(
     dataFields = valueFields,
     rowFields = keyFields.toList,
-    filters = List( Field("Observation Time") -> SomeSelection(Set("Default")))
+    filters = List( Field("Observation Time") -> SomeSelection(Set(ObservationTimeOfDay.Default.name)))
   )
 
   def createKey(row: Row) = FreightParityDataKey(

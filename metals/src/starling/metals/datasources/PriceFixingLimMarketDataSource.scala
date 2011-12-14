@@ -27,16 +27,6 @@ import com.lim.mimapi.RelType
 object PriceFixingLimMarketDataSource {
   val sources = List(LMEFixings, BloombergTokyoCompositeFXRates, BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE.fixingLevel),
-
-    // Import from LIM based source (i.e. not Bloomberg) temporarily,
-    // I'm assuming that because Futures.Shfe.Aluminum.Close == Trafigura.Bloomberg.Futures.Shfe.Aluminium.Settle then
-    //   Futures.Shfe.Lead.Close == the missing Trafigura.Bloomberg.Futures.Shfe.Lead.Settle  &&
-    //   Futures.Shfe.Steel.Close == the missing Trafigura.Bloomberg.Futures.Shfe.Steel.Settle
-    // These values are also brought in a prices (see PriceLimMarketDataSource)
-    new MonthlyFuturesFixings(Futures.Shfe, Level.Close, Set(RelType.FUTURES), "") {
-      override protected def marketPredicate(market: FuturesMarket) = market == Market.SHANGHAI_LEAD
-    },
-
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all
 }
 
@@ -126,10 +116,8 @@ class MonthlyFuturesFixings(override val parentNodes: List[LimNode], override va
 
   case class MonthlyFuturesRelation(market: FuturesMarket, month: Month)
 
-  protected def marketPredicate(market: FuturesMarket) = true
-
   def relationExtractor = Extractor.regex(prefix + """(\w+)\.(\w+)_(\w+)""") { case List(exchange, limSymbol, deliveryMonth) => {
-    val optMarket = Market.fromExchangeAndLimSymbol(exchange, limSymbol).filter(marketPredicate)
+    val optMarket = Market.fromExchangeAndLimSymbol(exchange, limSymbol)
     val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
     (optMarket, optMonth) partialMatch { case (Some(market), Some(month)) => MonthlyFuturesRelation(market, month) }

@@ -190,18 +190,18 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
             updateRunButton(rps)
           }
           case MarketDataChanged(`manualConfigPanel`) => {
-            val mds = generateRPs.curveIdentifier.marketDataIdentifier.selection
+            val mds = generateRPs.curveIdentifier.marketDataIdentifier
             deafTo(presetReportPanel)
             presetReportPanel.marketData(mds)
             listenTo(presetReportPanel)
             updateRunButton(mds)
           }
           case MarketDataChanged(`presetReportPanel`) => {
-            val mds = presetReportPanel.generateMarketDataIdentifier.selection
+            val marketDataIdentifier = presetReportPanel.generateMarketDataIdentifier
             deafTo(manualConfigPanel)
-            manualConfigPanel.marketData(mds)
+            manualConfigPanel.marketData(marketDataIdentifier)
             listenTo(manualConfigPanel)
-            updateRunButton(mds)
+            updateRunButton(marketDataIdentifier)
           }
         }
         listenTo(presetReportPanel, manualConfigPanel, slideConfigPanel)
@@ -218,8 +218,8 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
         def updateRunButton(rps:ReportParameters) {
           runButton.enabled = (rps != reportParameters || !reportParameters.runReports)
         }
-        def updateRunButton(mds:MarketDataSelection) {
-          runButton.enabled = (mds != reportParameters.curveIdentifier.marketDataIdentifier.selection || !reportParameters.runReports)
+        def updateRunButton(mds:MarketDataIdentifier) {
+          runButton.enabled = (mds != reportParameters.curveIdentifier.marketDataIdentifier || !reportParameters.runReports)
         }
 
         add(runButton, "ay center, tag ok")

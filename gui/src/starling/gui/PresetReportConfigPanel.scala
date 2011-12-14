@@ -33,7 +33,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val pricingGroupSelector = new MarketDataSelectionComponent(
       context,
       reportParameters.tradeSelectionWithTimestamp.desk,
-      reportParameters.curveIdentifier.marketDataIdentifier.selection, scala.swing.Orientation.Vertical) {
+      reportParameters.curveIdentifier.marketDataIdentifier, scala.swing.Orientation.Vertical) {
       reactions += { case MarketDataSelectionChanged(selection) => {
         PresetReportConfigPanel.this.publish(MarketDataChanged(PresetReportConfigPanel.this))
       } }
@@ -153,7 +153,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
           case ButtonClicked(`dayChangeCheckBox`) => {
             displayComponents(dayChangeCheckBox.selected)
             dayChangeDayChooser.enabled = dayChangeCheckBox.selected
-            useExcelButton.enabled = dayChangeCheckBox.selected && pricingGroupPanel.pricingGroupSelector.selection.excel.isDefined
+            useExcelButton.enabled = dayChangeCheckBox.selected && pricingGroupPanel.pricingGroupSelector.selection.selection.excel.isDefined
             val bookClosedEnabled = bookCloseChooser.validSelection && dayChangeCheckBox.selected
             bookCloseChooser.enabled = bookClosedEnabled
             bookCloseLabel.enabled = bookClosedEnabled
@@ -161,7 +161,8 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
           }
           case ButtonClicked(`useExcelButton`) => updateRunButton()
           case SelectionChanged(`bookCloseChooser`) => updateRunButton()
-          case MarketDataSelectionChanged(selection) => {
+          case MarketDataSelectionChanged(mdi) => {
+            val selection = mdi.selection
             val flaggedDays = context.localCache.populatedDays(selection).toSet
             dayChangeDayChooser.flagged = flaggedDays
 
@@ -197,12 +198,13 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
         reactions += {
           case DayChangedEvent(`observationDayChooser`, d) => updateRunButton()
-          case MarketDataSelectionChanged(selection) => {
+          case MarketDataSelectionChanged(mdi) => {
+            val selection = mdi.selection
             val flaggedDays = context.localCache.populatedDays(selection).toSet
             observationDayChooser.flagged = flaggedDays
           }
           case ExcelObservationDay(_, _) | PricingGroupObservationDay(_, _) => {
-            val flaggedDays = context.localCache.populatedDays(pricingGroupPanel.pricingGroupSelector.selection).toSet
+            val flaggedDays = context.localCache.populatedDays(pricingGroupPanel.pricingGroupSelector.selection.selection).toSet
             observationDayChooser.flagged = flaggedDays
           }
           case ButtonClicked(`liveTradesCheckBox`) => updateRunButton()
@@ -345,7 +347,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     publish(UpdateRunButtonEvent(this))
   }
 
-  def marketData(mds:MarketDataSelection) {
+  def marketData(mds:MarketDataIdentifier) {
     pricingGroupPanel.pricingGroupSelector.selection = mds
   }
 
@@ -364,7 +366,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       case (i, _) => (i, context.localCache.latestTimestamp(i))
     }
 
-    val marketDataSelection = generateMarketDataSelection
+    val marketDataSelection = generateMarketDataSelection.selection
     val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
     val pricingGroup = marketDataSelection.pricingGroup
 
@@ -454,7 +456,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val newReportOptions = reportParameters.reportOptions
 
     val pnlParams = if (buttonPanel.cobPanel.dayChangePanel.dayChangeCheckBox.selected) {
-      val marketDataSelection = generateMarketDataSelection
+      val marketDataSelection = generateMarketDataSelection.selection
       val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
       val fromMarketDataSelection = if (buttonPanel.cobPanel.dayChangePanel.useExcelButton.selected) {
         marketDataSelection
@@ -504,7 +506,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
   }
 
   def generateMarketDataIdentifier = {
-    val marketDataSelection = generateMarketDataSelection
+    val marketDataSelection = generateMarketDataSelection.selection
     val marketDataVersion = context.localCache.latestMarketDataVersion(marketDataSelection)
     val pricingGroup = marketDataSelection.pricingGroup
 
