@@ -1,6 +1,7 @@
 package starling.gui.api
 
-import starling.daterange.Day
+import starling.daterange.{DayAndTime, Day}
+
 
 case class EnvironmentRuleLabel(name:String)
 
@@ -11,4 +12,4 @@ object EnvironmentRuleLabel {
   val AllCloses = EnvironmentRuleLabel("All Closes")
 }
 
-case class EnvironmentSpecificationLabel(observationDay:Day, environmentRule:EnvironmentRuleLabel)
+case class EnvironmentSpecificationLabel(observationDay:DayAndTime, environmentRule:EnvironmentRuleLabel)

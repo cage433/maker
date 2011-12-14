@@ -127,7 +127,7 @@ case class MarketDataPage(
     if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
       marketDataIdentifier match {
         case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, pageState)
-        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
+        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.observationDayAndTime == singleObservationDay.get => {
           ReportMarketDataBookmark(marketDataIdentifier.selection, pageState, starlingServer.createUserReport(x.reportParameters))
         }
         case _ => PageBookmark(this)

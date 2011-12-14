@@ -29,7 +29,7 @@ class VanillaEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
   def hasNoMarketsWhenThereIsNoMarketData {
     when(reader.readAllPrices(observationPoint)) thenReturn Nil
     when(reader.readAllVols(observationPoint)) thenReturn Nil
-    rule.createEnv(observationPoint.day.get, reader).markets should be === Nil
+    rule.createEnv(observationPoint.day.get.endOfDay, reader).markets should be === Nil
   }
 
   @Test
@@ -41,6 +41,6 @@ class VanillaEnvironmentRuleTests extends StarlingTest with ShouldMatchers {
     when(reader.readAllVols(observationPoint)) thenReturn Nil
 
     val expectedMarkets = UnderlyingDeliveryPeriods(observationPoint.timeOfDay, Market.LME_LEAD, priceData._2.sortedKeys) :: Nil
-    rule.createEnv(observationPoint.day.get, reader).markets should be === expectedMarkets
+    rule.createEnv(observationPoint.day.get.endOfDay, reader).markets should be === expectedMarkets
   }
 }

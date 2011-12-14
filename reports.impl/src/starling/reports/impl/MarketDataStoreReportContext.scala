@@ -3,8 +3,8 @@ package starling.reports.impl
 import pivot.CurveIdentifier
 import starling.curves.{RecordingMarketDataReader, EnvironmentSlider}
 import starling.db.{NormalMarketDataReader, MarketDataStore}
-import starling.daterange.Day
 import starling.utils.ImplicitConversions._
+import starling.daterange.{DayAndTime, Day}
 
 
 class MarketDataStoreReportContext(
@@ -16,5 +16,5 @@ class MarketDataStoreReportContext(
 
   def recorded = recordingReader.recorded.toList.mapFirst(_.asTuple).map(_.flatten).toSet
 
-  def atomicEnvironment(day:Day) = curveIdentifier.environmentRule.createEnv(day, recordingReader).environment.atomicEnv
+  def atomicEnvironment(day:DayAndTime) = curveIdentifier.environmentRule.createEnv(day, recordingReader).environment.atomicEnv
 }

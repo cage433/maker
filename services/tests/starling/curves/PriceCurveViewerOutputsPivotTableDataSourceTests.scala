@@ -22,7 +22,7 @@ class PriceCurveViewerOutputsPivotTableDataSourceTests extends StarlingTest with
   var rule:EnvironmentRule = mock(classOf[EnvironmentRule])
   var marketDataReader:MarketDataReader = mock(classOf[MarketDataReader])
 
-  val environmentDay = Day(2010, 1, 1)
+  val environmentDay = Day(2010, 1, 1).endOfDay
   def markets = List(
     UnderlyingDeliveryPeriods(observationPoint.timeOfDay, Market.LME_LEAD, TreeSet(Day(2010, 1, 1), Day(2010, 1, 2), lastDay)),
     UnderlyingDeliveryPeriods(observationPoint.timeOfDay, Market.LME_TIN, TreeSet(Day(2010, 1, 2), Day(2010, 1, 2), lastDay)),
@@ -30,12 +30,12 @@ class PriceCurveViewerOutputsPivotTableDataSourceTests extends StarlingTest with
   )
 
   val environmentPrice = Quantity(50, UOM.USD / UOM.MT)
-  val observationPoint = ObservationPoint(environmentDay, observationTimeOfDay)
+  val observationPoint = ObservationPoint(environmentDay.day, observationTimeOfDay)
   val lastDay = Day(2010, 1, 10)
   val daysWithData = Set(Day(2010, 1, 1), Day(2010, 1, 2), lastDay)
 
   val env = {
-    val builder = new TestEnvironmentBuilder(environmentDay.endOfDay)
+    val builder = new TestEnvironmentBuilder(environmentDay)
     builder.setConstantPrice(Market.LME_LEAD, environmentPrice)
     builder.setConstantPrice(Market.LME_TIN, environmentPrice)
     builder.setConstantPrice(Market.LME_ZINC, environmentPrice)
@@ -60,7 +60,7 @@ class PriceCurveViewerOutputsPivotTableDataSourceTests extends StarlingTest with
                               CurvePrice(PivotQuantity(environmentPrice), false))
 
     rows.mapDistinct(map => map(priceField)) should be === expectedPrices.toSet
-    val expectedPeriods = (environmentDay upto lastDay).toList
+    val expectedPeriods = (environmentDay.day upto lastDay).toList
     rows.mapDistinct(map => map(periodField)) should be === expectedPeriods.toSet
     val expectedMarkets = markets.map(_.market.name)
     rows.mapDistinct(map => map(marketField)) should be === expectedMarkets.toSet

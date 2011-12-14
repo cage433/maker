@@ -63,7 +63,7 @@ class Patch101_ConvertUserReportData extends Patch {
           }
         }
 
-        UserReportData(ts, mds, envModifiers, rO, envRule, valOff, valTOD, thetaOff, thetaDayTimeOfDay, newTradeVersionOffSetOrLive, newLiveOnOffSet, newPnL)
+        UserReportData(TimeOfDay.EndOfDay, ts, mds, envModifiers, rO, envRule, valOff, valTOD, thetaOff, thetaDayTimeOfDay, newTradeVersionOffSetOrLive, newLiveOnOffSet, newPnL)
       }
     },
     Map("tradeVersionOffSetOrLive" -> classOf[Int], "liveOnOffSet" -> classOf[Int], "pnl" -> classOf[Option[(Int,Int,Boolean,TimeOfDay)]])

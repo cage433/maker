@@ -263,15 +263,12 @@ object EnvironmentModifierLabel {
 case class CurveIdentifierLabel(
         marketDataIdentifier:MarketDataIdentifier,
         environmentRule:EnvironmentRuleLabel,
-        tradesUpToDay:Day, //trades with a trade day after this value are ignored
-        valuationDayAndTime:DayAndTime, //typically the same as tradesUpToDay but can be moved forward
-        thetaDayAndTime:DayAndTime,
+        observationDayAndTime:DayAndTime, //trades with a trade day after this value are ignored
+        forwardValuationDayAndTime:DayAndTime, //typically the same as tradesUpToDay but can be moved forward
+        thetaToDayAndTime:DayAndTime,
         envModifiers:SortedSet[EnvironmentModifierLabel]) {
 
   def copyVersion(version: Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
-
-  def forwardObservationDayAndTime: DayAndTime = if (valuationDayAndTime.day > tradesUpToDay) valuationDayAndTime else
-    valuationDayAndTime.nextBusinessDay(BusinessCalendar.WeekdayBusinessCalendar)
 }
 
 object CurveIdentifierLabel{
@@ -285,7 +282,7 @@ object CurveIdentifierLabel{
     CurveIdentifierLabel(
       marketDataIdentifier,
       EnvironmentRuleLabel.COB,
-      day,
+      day.endOfDay,
       day.atTimeOfDay(timeOfDayToUse),
       day.nextBusinessDay(calendar).endOfDay,
       envModifiers

@@ -120,7 +120,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
             case Some(pnlP) => {
               dayChangeCheckBox.selected = true
               dayChangeDayChooser.enabled = true
-              dayChangeDayChooser.day = pnlP.curveIdentifierFrom.valuationDayAndTime.day
+              dayChangeDayChooser.day = pnlP.curveIdentifierFrom.forwardValuationDayAndTime.day
               useExcelButton.enabled = canUseExcel
               useExcelButton.selected = pnlP.curveIdentifierFrom.marketDataIdentifier.selection.excel.isDefined
               pnlP.tradeTimestampFrom.map(bookCloseChooser.selectedTimestamp = _)
@@ -192,8 +192,8 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
         add(liveTradesCheckBox, "split, spanx")
 
         def setDays(ci:CurveIdentifierLabel, tradeExpiryDay:Day) {
-          observationDayChooser.day = ci.tradesUpToDay
-          liveTradesCheckBox.selected = (ci.tradesUpToDay == tradeExpiryDay)
+          observationDayChooser.day = ci.observationDayAndTime.day
+          liveTradesCheckBox.selected = (ci.observationDayAndTime == tradeExpiryDay)
         }
 
         reactions += {
@@ -256,9 +256,9 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val previousBusinessDay = today.previousBusinessDay(context.localCache.ukBusinessCalendar)
 
     realTime += (rp.curveIdentifier.environmentRule == EnvironmentRuleLabel.RealTime)
-    realTime += (rp.curveIdentifier.tradesUpToDay == today)
-    realTime += (rp.curveIdentifier.valuationDayAndTime == today.startOfDay)
-    realTime += (rp.curveIdentifier.thetaDayAndTime == nextBusinessDay.endOfDay)
+    realTime += (rp.curveIdentifier.observationDayAndTime == today)
+    realTime += (rp.curveIdentifier.forwardValuationDayAndTime == today.startOfDay)
+    realTime += (rp.curveIdentifier.thetaToDayAndTime == nextBusinessDay.endOfDay)
 
     realTime += (rp.expiryDay == today)
 
@@ -278,7 +278,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     rp.pnlParameters match {
       case None =>
       case Some(pnl) => {
-        realTime += (pnl.curveIdentifierFrom.tradesUpToDay == previousBusinessDay)
+        realTime += (pnl.curveIdentifierFrom.observationDayAndTime == previousBusinessDay)
         pnl.tradeTimestampFrom match {
           case None =>
           case Some(tts) => {
@@ -294,17 +294,17 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
   private def isCOB(rp:ReportParameters) = {
     val cob = new ListBuffer[Boolean]()
 
-    val observationDayUsed = rp.curveIdentifier.tradesUpToDay
-    val nextBusinessDay = observationDayUsed.nextBusinessDay(context.localCache.ukBusinessCalendar)
+    val observationDayAndTimeUsed = rp.curveIdentifier.observationDayAndTime
+    val nextBusinessDay = observationDayAndTimeUsed.nextBusinessDay(context.localCache.ukBusinessCalendar)
     val enRule = rp.curveIdentifier.marketDataIdentifier.selection.pricingGroup match {
       case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
       case _ => EnvironmentRuleLabel.COB
     }
 
-    cob += ((rp.expiryDay == observationDayUsed) || (rp.expiryDay == observationDayUsed.startOfFinancialYear))
+    cob += ((rp.expiryDay == observationDayAndTimeUsed.day) || (rp.expiryDay == observationDayAndTimeUsed.day.startOfFinancialYear))
     cob += (rp.curveIdentifier.environmentRule == enRule)
-    cob += (rp.curveIdentifier.valuationDayAndTime == observationDayUsed.endOfDay)
-    cob += (rp.curveIdentifier.thetaDayAndTime == nextBusinessDay.endOfDay)
+    cob += (rp.curveIdentifier.forwardValuationDayAndTime == observationDayAndTimeUsed)
+    cob += (rp.curveIdentifier.thetaToDayAndTime == nextBusinessDay)
 
     val desk = rp.tradeSelectionWithTimestamp.desk
     val allBookCloses = context.localCache.deskCloses(desk) match {
@@ -382,7 +382,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val cIDTo = CurveIdentifierLabel(
       marketIDTo,
       EnvironmentRuleLabel.RealTime,
-      today,
+      today.startOfDay,
       today.startOfDay,
       nextBusinessDay.endOfDay,
       envMods)
@@ -396,7 +396,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       val cIDFrom = CurveIdentifierLabel(
         marketIDFrom,
         EnvironmentRuleLabel.COB,
-        pnlFromDayAndTime.day,
+        pnlFromDayAndTime,
         pnlFromDayAndTime,
         pnlFromDayAndTime.nextBusinessDay(context.localCache.ukBusinessCalendar),
         envMods)
@@ -448,7 +448,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val cIDTo = CurveIdentifierLabel(
       marketIDTo,
       EnvironmentRuleLabel.COB,
-      observationDay,
+      observationDay.endOfDay,
       observationDay.endOfDay,
       nextBusinessDay.endOfDay,
       envMods)
@@ -474,7 +474,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       val cIDFrom = CurveIdentifierLabel(
         marketIDFrom,
         rule,
-        pnlFromDayAndTime.day,
+        pnlFromDayAndTime,
         pnlFromDayAndTime,
         pnlFromDayAndTime.nextBusinessDay(context.localCache.ukBusinessCalendar),
         envMods)

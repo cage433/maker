@@ -5,6 +5,7 @@ import starling.daterange.TimeOfDay
 
 case class UserReport(reportName:String, data:UserReportData, showParameters:Boolean)
 case class UserReportData(
+        baseDayTimeOfDay:TimeOfDay,
         tradeSelection:TradeSelection,
         marketDataSelection:MarketDataSelection,
         environmentModifiers:SortedSet[EnvironmentModifierLabel],
