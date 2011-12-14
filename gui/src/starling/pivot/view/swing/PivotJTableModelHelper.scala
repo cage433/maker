@@ -378,18 +378,35 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     type CellType = TableCell
 
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = Array.fill(data0(0).length)(TableCell.BlankAddedCell).zipWithIndex.map{case (tc,c) => {
-      val field0 = field(c)
-      if (measureFields.contains(field0)) {
-        tc
-      } else {
-        tc.copy(editable = false)
-      }
-    }}
+    private val blankCells = {
 
-    println("")
-    println("BLANK CELLS " + blankCells.toList)
-    println("")
+      def fieldOption(col:Int) = {
+        colHeaderData0.find(_(col).value.isMeasure) match {
+          case Some(cc) => Some(cc(col).value.field)
+          case None => {
+            val measureFields = fieldState.columns.allFieldAndIsMeasures.filter(_.isMeasure)
+            if (col == 0 && measureFields.size == 1) {
+              Some(measureFields.head.field)
+            } else {
+              None
+            }
+          }
+        }
+      }
+
+      Array.fill(data0(0).length)(TableCell.BlankAddedCell).zipWithIndex.map{case (tc,c) => {
+        fieldOption(c) match {
+          case None => tc.copy(editable = false)
+          case Some(field0) => {
+            if (measureFields.contains(field0)) {
+              tc
+            } else {
+              tc.copy(editable = false)
+            }
+          }
+        }
+      }}
+    }
 
     if (extraLine) {
       addedRows0 += blankCells
