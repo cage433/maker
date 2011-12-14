@@ -163,8 +163,9 @@ object Log4JLogger {
 
   private val levelTransformer = new DynamicVariable[(Levels.Value) => Levels.Value](identity _)
 
-  val isOsgi = try { classOf[Category].getClass.getMethod("getLevel"); false }
-    catch { case _:NoSuchMethodException => true }
+  val isOsgi = false
+//    try { classOf[Category].getClass.getMethod("getLevel"); false }
+//    catch { case _:NoSuchMethodException => true }
 }
 
 class Log4JLogger(val logger: Logger, levelTransformer: DynamicVariable[(Levels.Value) => Levels.Value]) extends VarLogger {

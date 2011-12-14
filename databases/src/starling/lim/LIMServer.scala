@@ -83,6 +83,8 @@ private[lim] class LIMServer(hostname: String, port: Int) extends LIMService {
     }
 
     def getPrices(childRelation: String, level: Level, from: Day, to: Day): Map[Day, Double] = {
+      log.debug("getPrices(%s, %s, %s, %s)" % (childRelation, level, from, to))
+
       // LIM doesn't return enough information to determine which value is for which relation, so only pass one at a time
       val parameters = new GetRecordsParameters(Array(childRelation), Array(level.name)).update { params =>
         params.setFromDate(toLIM(from))

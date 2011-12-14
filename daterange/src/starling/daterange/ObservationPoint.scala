@@ -36,7 +36,6 @@ object ObservationPoint {
 }
 
 case class ObservationTimeOfDay private (name: String, shortName: String) extends Ordered[ObservationTimeOfDay] {
-  override def toString = name
   def compare(that: ObservationTimeOfDay) = {
     val lhsIndex = ObservationTimeOfDay.sortIndex(that)
     val rhsIndex = ObservationTimeOfDay.sortIndex(this)
