@@ -11,9 +11,7 @@ import starling.marketdata.{IncotermCode, GradeCode, ContractualLocationCode, Ne
 import starling.market.{Commodity, NeptuneCommodity}
 import starling.market.Copper
 import starling.market.Aluminium
-import starling.utils.Log
 import starling.titan.valuation.AssignmentValuation
-import starling.quantity.UOM._
 import starling.curves.{MissingMarketDataException, Environment}
 
 
@@ -29,7 +27,7 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val benchmarkDeliveryDayLabel = "benchmarkDeliveryDay"
   val benchmarkCountryCodeLabel = "benchmarkCountryCode"
   val benchmarkIncoTermCodeLabel = "benchmarkIncoTermCode"
-  val premiumLabel = "premium"
+  //val premiumLabel = "premium"
   val exchangeLabel = "exchange"
   val contractIndexLabel = "contractIndex"
   val benchmarkIndexLabel = "benchmarkIndex"
@@ -84,7 +82,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       contractLocationCodeLabel -> contractLocationCode.code,
       contractIncoTermCodeLabel -> contractIncoTermCode.code,
       quantityLabel -> quantity,
-      premiumLabel -> contractPricingSpec.premium,
+      //premiumLabel -> contractPricingSpec.premium,
       gradeCodeLabel -> grade.code,
       directionLabel -> (if (isPurchase) "P" else "S")
     ) ++ contractPricingSpec.indexOption.map(contractIndexLabel -> _) ++

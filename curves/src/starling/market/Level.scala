@@ -33,4 +33,3 @@ object Level extends StarlingEnum(classOf[Level], (l: Level) => l.name, ignoreCa
   val VwapMonthIndexLevel = Level("Month VWAP") // added for monthly published vwap pricing indices (i.e. SHFE monthly VWAP)
   val Unknown = Level("Unknown")
 }
-
