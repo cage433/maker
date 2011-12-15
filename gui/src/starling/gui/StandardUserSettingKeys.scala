@@ -1,12 +1,13 @@
 package starling.gui
 
 import api._
+import osgi.StarlingBrowserBundle
 import starling.pivot.{ExtraFormatInfo, OtherLayoutInfo, PivotFieldsState}
 import starling.browser.internal.Key
 
 
 object StandardUserSettingKeys {
-  val bundle = "StarlingServer"
+  val bundle = StarlingBrowserBundle.BundleName
   val InitialTradeSelection = new Key[(Option[Desk], Option[IntradayGroups])]("The initial selection for the trade selection page", bundle)
   val IntradayGroupsDefault = new Key[List[String]]("IntradayGroupsDefault", bundle) //Used when Excel is not checked
   val DeskDefault = new Key[Desk]("DeskDefault", bundle) //Used when desk is not checked

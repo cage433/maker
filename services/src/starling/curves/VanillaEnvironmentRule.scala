@@ -11,14 +11,14 @@ import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
 class VanillaEnvironmentRule(pointRule:(Day)=>ObservationPoint, timeOfDay:TimeOfDay, val label: EnvironmentRuleLabel,
   val pricingGroups: List[PricingGroup], referenceDataLookup: ReferenceDataLookup, dataTypes: MarketDataTypes) extends EnvironmentRule {
 
-  override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.atTimeOfDay(timeOfDay), ReferenceDataLookup.Null)
+  override def createNullAtomicEnvironment(observationDay: DayAndTime) = new NullAtomicEnvironment(observationDay.day.atTimeOfDay(timeOfDay), ReferenceDataLookup.Null)
 
-  def createEnv(observationDay: Day, marketDataReader: MarketDataReader) = {
-    val observationPoint = pointRule(observationDay)
+  def createEnv(observationDay: DayAndTime, marketDataReader: MarketDataReader) = {
+    val observationPoint = pointRule(observationDay.day)
 
     val environmentX = {
       val slice = new MarketDataReaderMarketDataSlice(marketDataReader, observationPoint, dataTypes = dataTypes)
-      val dayAndTime = observationDay.atTimeOfDay(timeOfDay)
+      val dayAndTime = observationDay.day.atTimeOfDay(timeOfDay)
       Environment(new MarketDataCurveObjectEnvironment(dayAndTime, slice, referenceDataLookup = referenceDataLookup))
     }
 

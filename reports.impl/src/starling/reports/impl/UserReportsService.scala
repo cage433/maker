@@ -69,7 +69,7 @@ class UserReportsService(
     val curveIdentifierLabel = CurveIdentifierLabel(
       MarketDataIdentifier(userReportData.marketDataSelection, marketDataVersion),
       userReportData.environmentRule,
-      baseDay,
+      baseDay.atTimeOfDay(userReportData.baseDayTimeOfDay),
       applyOffset(baseDay, userReportData.valuationDayOffset).atTimeOfDay(userReportData.valuationDayTimeOfDay),
       applyOffset(baseDay, userReportData.thetaDayOffset).atTimeOfDay(userReportData.thetaDayTimeOfDay),
       userReportData.environmentModifiers
@@ -97,7 +97,7 @@ class UserReportsService(
           CurveIdentifierLabel(
             MarketDataIdentifier(marketDataSelection, marketDataVersion),
             rule,
-            pnlFromDay,
+            pnlFromDay.atTimeOfDay(timeOfDay),
             pnlFromDay.atTimeOfDay(timeOfDay),
             pnlFromDay.nextBusinessDay(ukHolidayCalendar).atTimeOfDay(userReportData.thetaDayTimeOfDay),
             userReportData.environmentModifiers
@@ -127,24 +127,26 @@ class UserReportsService(
   }
 
   def createUserReport(reportParameters:ReportParameters):UserReportData = {
-    val baseDay = reportParameters.curveIdentifier.tradesUpToDay
-    val bookCloseOffset = tradeVersionOffsetOrLatest(baseDay, reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp)
+    val baseDayAndTime = reportParameters.curveIdentifier.observationDayAndTime
+    val baseDay = baseDayAndTime.day
+    val bookCloseOffset = tradeVersionOffsetOrLatest(baseDayAndTime.day, reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp)
     UserReportData(
+      baseDayTimeOfDay = baseDayAndTime.timeOfDay,
       tradeSelection = reportParameters.tradeSelectionWithTimestamp.asTradeSelection,
       marketDataSelection = reportParameters.curveIdentifier.marketDataIdentifier.selection,
       environmentModifiers = reportParameters.curveIdentifier.envModifiers,
       reportOptions = reportParameters.reportOptions,
       environmentRule = reportParameters.curveIdentifier.environmentRule,
-      valuationDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.valuationDayAndTime.day),
-      valuationDayTimeOfDay = reportParameters.curveIdentifier.valuationDayAndTime.timeOfDay,
-      thetaDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.thetaDayAndTime.day),
-      thetaDayTimeOfDay = reportParameters.curveIdentifier.thetaDayAndTime.timeOfDay,
+      valuationDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.forwardValuationDayAndTime.day),
+      valuationDayTimeOfDay = reportParameters.curveIdentifier.forwardValuationDayAndTime.timeOfDay,
+      thetaDayOffset = businessDaysBetween(baseDay, reportParameters.curveIdentifier.thetaToDayAndTime.day),
+      thetaDayTimeOfDay = reportParameters.curveIdentifier.thetaToDayAndTime.timeOfDay,
       tradeVersionOffSetOrLive = bookCloseOffset,
       liveOnOffSet = liveOnOffsetOrStartOfYear(baseDay, reportParameters.expiryDay),
       pnl = reportParameters.pnlParameters.map {
         case pnl => {
-          val marketDayOffset = businessDaysBetween(baseDay, pnl.curveIdentifierFrom.tradesUpToDay)
-          val timeOfDay = pnl.curveIdentifierFrom.valuationDayAndTime.timeOfDay
+          val marketDayOffset = businessDaysBetween(baseDay, pnl.curveIdentifierFrom.observationDayAndTime.day)
+          val timeOfDay = pnl.curveIdentifierFrom.forwardValuationDayAndTime.timeOfDay
           val bookCloseOffset = pnl.tradeTimestampFrom match {
             case Some(ts) => {
               reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp match {

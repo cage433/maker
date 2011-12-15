@@ -21,6 +21,7 @@ import starling.reports.facility.ReportFacility
 import starling.pivot.model.UndefinedValue
 import starling.pivot.Field._
 import starling.pivot._
+import starling.gui.osgi.StarlingBrowserBundle
 
 
 class FC2Context(val service:FC2Facility)
@@ -30,7 +31,7 @@ abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEd
 }
 
 trait FC2Page extends Page {
-  def bundle = "StarlingServer"
+  def bundle = StarlingBrowserBundle.BundleName
   type SC = FC2Context
   def createServerContext(sc:ServerContext) = new FC2Context(sc.lookup(classOf[FC2Facility]))
 }
@@ -62,7 +63,7 @@ case class MarketDataPage(
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
 
 
-  def bundle = "StarlingServer"
+  def bundle = StarlingBrowserBundle.BundleName
 
   type SC = ServerContext
 
@@ -127,7 +128,7 @@ case class MarketDataPage(
     if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
       marketDataIdentifier match {
         case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, pageState)
-        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
+        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.observationDayAndTime == singleObservationDay.get => {
           ReportMarketDataBookmark(marketDataIdentifier.selection, pageState, starlingServer.createUserReport(x.reportParameters))
         }
         case _ => PageBookmark(this)

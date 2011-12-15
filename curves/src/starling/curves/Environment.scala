@@ -484,7 +484,3 @@ object Environment{
   def apply(instrumentLevelEnv : AtomicEnvironment) : Environment = new Environment(new DefaultInstrumentLevelEnvironment(instrumentLevelEnv))
 }
 
-case class ObservationDay(day:Day) extends Ordered[ObservationDay] {
-  def compare(other:ObservationDay) = day - other.day
-}
-

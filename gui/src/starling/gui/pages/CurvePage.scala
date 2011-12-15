@@ -103,7 +103,7 @@ case class CurveBookmark(curveType:CurveTypeLabel, envRuleLabel:EnvironmentRuleL
   def daySensitive = true
   def createFC2Page(day0:Option[Day], fc2Context:FC2Context, context:PageContext) = {
     val day = day0.get
-    val newEnvironmentSpecification = EnvironmentSpecificationLabel(day, envRuleLabel)
+    val newEnvironmentSpecification = EnvironmentSpecificationLabel(day.endOfDay, envRuleLabel)
     val newMarketDataIdentifier = fc2Context.service.latestMarketDataIdentifier(selection)
     val newCurveLabel = CurveLabel(curveType, newMarketDataIdentifier, newEnvironmentSpecification)
     CurvePage(newCurveLabel, pivotPageState)

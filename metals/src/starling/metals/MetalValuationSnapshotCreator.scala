@@ -44,7 +44,7 @@ class MetalValuationSnapshotCreator( broadcaster:Broadcaster,
       val firstDay = previousObservationDay max (today - 7)
 
       for (observationDay <- firstDay upto today) {
-        val newEnv = environmentProvider.valuationServiceEnvironment(currentVersion, observationDay, observationDay)
+        val newEnv = environmentProvider.valuationServiceEnvironment(currentVersion, observationDay.endOfDay, observationDay)
 
         valuationChange(previousEnv, newEnv, forwards) match {
           case OldAndNewValuationsNotAvailable |

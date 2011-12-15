@@ -17,16 +17,16 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup) exten
   val pricingGroups = List(PricingGroup.Metals)
 
   val label = ClosesEnvironmentRule.label
-  override def createNullAtomicEnvironment(observationDay: Day) = new NullAtomicEnvironment(observationDay.endOfDay, referenceDataLookup)
+  override def createNullAtomicEnvironment(observationDay: DayAndTime) = new NullAtomicEnvironment(observationDay, referenceDataLookup)
 
-  def createEnv(observationDay: Day, marketDataReader: MarketDataReader): EnvironmentWithDomain = {
+  def createEnv(observationDay: DayAndTime, marketDataReader: MarketDataReader): EnvironmentWithDomain = {
     val priceDataMap = Market.futuresMarkets.safeMap { market =>
-      val marketData = marketDataReader. read(TimedMarketDataKey(ObservationPoint(observationDay, market.closeTime), PriceDataKey(market)))
+      val marketData = marketDataReader. read(TimedMarketDataKey(ObservationPoint(observationDay.day, market.closeTime), PriceDataKey(market)))
       PriceDataKey(market) → marketData.asInstanceOf[PriceData]
     }.toMap
 
     val reader = new MarketDataSlice {
-      def read(key: MarketDataKey) = read(key, observationDay)
+      def read(key: MarketDataKey) = read(key, observationDay.day)
 
       private def read(key: MarketDataKey, obsDay : Day) : MarketData = {
         key match {
@@ -36,12 +36,12 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup) exten
               "No " + market + " prices on " + observationDay + " at " + market.asInstanceOf[FuturesMarket].closeTime
             ))
           }
-          case key: ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(key.observationTime), key))
+          case key: ForwardRateDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.day.atTimeOfDay(key.observationTime), key))
           case key: CountryBenchmarkMarketDataKey => marketDataReader.read(TimedMarketDataKey(ObservationPoint.RealTime, key))
-          case key: FreightParityDataKey =>  marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.Default), key))
+          case key: FreightParityDataKey =>  marketDataReader.read(TimedMarketDataKey(observationDay.day.atTimeOfDay(ObservationTimeOfDay.Default), key))
           case key: ShanghaiVATDataKey => marketDataReader.read(TimedMarketDataKey(ObservationPoint.RealTime, key))
-          case key@SpotFXDataKey(UOM.CNY) => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.SHFEClose), key))
-          case key: SpotFXDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose), key))
+          case key@SpotFXDataKey(UOM.CNY) => marketDataReader.read(TimedMarketDataKey(observationDay.day.atTimeOfDay(ObservationTimeOfDay.SHFEClose), key))
+          case key: SpotFXDataKey => marketDataReader.read(TimedMarketDataKey(observationDay.day.atTimeOfDay(ObservationTimeOfDay.LondonClose), key))
           case _ => throw new Exception(name + " Closes Rule has no rule for " + key)
         }
       }
@@ -60,16 +60,16 @@ case class ClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup) exten
       } }
     }
 
-    val environmentX = Environment(new MarketDataCurveObjectEnvironment(observationDay.endOfDay, reader, false, referenceDataLookup))
+    val environmentX = Environment(new MarketDataCurveObjectEnvironment(observationDay, reader, false, referenceDataLookup))
 
     new EnvironmentWithDomain {
       val environment = environmentX
       def markets = marketsX
-      override def discounts = marketDataReader.readAll(ForwardRateDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.LiborClose)).map {
+      override def discounts = marketDataReader.readAll(ForwardRateDataType.name, observationDay.day.atTimeOfDay(ObservationTimeOfDay.LiborClose)).map {
         case (key:ForwardRateDataKey, data:ForwardRateData) => key.ccy -> data
       }
 
-      override def spotFX = marketDataReader.readAll(SpotFXDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose)).map {
+      override def spotFX = marketDataReader.readAll(SpotFXDataType.name, observationDay.day.atTimeOfDay(ObservationTimeOfDay.LondonClose)).map {
         case (key:SpotFXDataKey, _) => key.ccy
       }
     }

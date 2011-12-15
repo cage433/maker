@@ -119,7 +119,7 @@ object CurveViewerFields {
   val priceField = price.field
 }
 
-class PriceCurveViewerOutputsPivotTableDataSource(observationDay: Day, rule: EnvironmentRule, marketDataReader:MarketDataReader) extends UnfilteredPivotTableDataSource {
+class PriceCurveViewerOutputsPivotTableDataSource(observationDay: DayAndTime, rule: EnvironmentRule, marketDataReader:MarketDataReader) extends UnfilteredPivotTableDataSource {
   import CurveViewerFields._
 
   val fieldDetailsGroups = {

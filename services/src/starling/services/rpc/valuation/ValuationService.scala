@@ -9,7 +9,7 @@ import valuation.QuotaValuation
 import com.trafigura.services.TitanSnapshotIdentifier
 import starling.titan.EDMConversions._
 import starling.db.SnapshotID
-import starling.daterange.{TimeOfDay, Day}
+import starling.daterange.{DayAndTime, TimeOfDay, Day}
 
 /**
  * Valuation service implementations
@@ -40,15 +40,15 @@ case class ValuationService(
   def latestSnapshotID() : TitanSnapshotIdentifier = environmentProvider.latestMetalsValuationSnapshot.toSerializable
 
   private def marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier]) : (TitanMarketDataIdentifier, Environment) = {
-    def makeEnv(snapshotID : SnapshotID, observationDay : Day, marketDay : Day) = environmentProvider.valuationServiceEnvironment(snapshotID, observationDay, marketDay)
+    def makeEnv(snapshotID : SnapshotID, observationDay : DayAndTime, marketDay : Day) = environmentProvider.valuationServiceEnvironment(snapshotID, observationDay, marketDay)
     maybeMarketDataIdentifier match {
       case Some(tmdi @ TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotIdentifier), observationDay, marketDay)) => {
         val snapshotID = environmentProvider.snapshotIDFromIdentifier(snapshotIdentifier)
-        (tmdi, makeEnv(snapshotID, observationDay, marketDay))
+        (tmdi, makeEnv(snapshotID, observationDay.endOfDay, marketDay))
       }
       case None => {
         val (snapshotID, observationDay, marketDay) = bestValuationIdentifier()
-        (TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay), makeEnv(snapshotID, observationDay, marketDay))
+        (TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay), makeEnv(snapshotID, observationDay.endOfDay, marketDay))
       }
     }
   }
@@ -97,7 +97,7 @@ object ValuationService{
   def buildEnvironment(
     provider : EnvironmentProvider,
     snapshotID : SnapshotID,
-    observationDay : Day,
+    observationDay : DayAndTime,
     marketDay : Day
   ) : Environment = {
     provider.environment(snapshotID, observationDay).undiscounted.forwardState(marketDay.endOfDay)
