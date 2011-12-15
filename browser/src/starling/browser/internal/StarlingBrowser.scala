@@ -794,7 +794,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   def setDefaultButton(button:Option[Button]) {windowMethods.setDefaultButton(button)}
   def getDefaultButton = windowMethods.getDefaultButton
-  def requestFocusInCurrentPage() {currentComponent.requestFocusInWindow()}
+  def requestFocusInCurrentPage() {currentComponent.defaultComponentForFocus.map(_.requestFocusInWindow())}
 
   def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {
     submitCount += 1
