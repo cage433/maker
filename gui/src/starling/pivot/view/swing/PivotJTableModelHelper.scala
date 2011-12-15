@@ -114,9 +114,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     updatedEdits = mainTableModel.resetCells(mainCellsToUpdate, updatedEdits, false)
 
     val rowsToDelete = (rowHeaderCellsToUpdate ::: mainCellsToUpdate).map(_._1).distinct.sorted
-    val c = rowHeaderTableModel.getColumnCount - 1
     rowsToDelete.foreach(r => {
-      updatedEdits = updatedEdits.withDelete(KeyFilter(rowHeaderTableModel.key(r,c)))
+      updatedEdits = updatedEdits.withDelete(KeyFilter(rowHeaderTableModel.deleteKey(r)))
     })
 
     updatedEdits
@@ -1110,7 +1109,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       }).toList.distinct.sorted
 
       deletesByRow.foreach{r => {
-        updatedEdits = updatedEdits.withDelete(KeyFilter(rowHeaderTableModel.key(r, rowHeaderColumnCount)))
+        updatedEdits = updatedEdits.withDelete(KeyFilter(rowHeaderTableModel.deleteKey(r)))
       }}
 
       newRows.sorted.foreach{case (_, row) => {
