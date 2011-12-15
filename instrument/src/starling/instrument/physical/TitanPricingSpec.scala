@@ -336,8 +336,7 @@ case class UnknownPricingSpecification(
 
   def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, unfixedPriceDay(marketDay))
 
-
-  private def unfixedPriceDay(marketDay : DayAndTime) = TitanPricingSpec.representativeDay(index, month, marketDay)
+  private def unfixedPriceDay(marketDay : DayAndTime) = TitanPricingSpec.representativeObservationDay(index, month, marketDay)
 
   private def priceExclPremium(env : Environment) = {
     val totalFixed = fixations.map(_.fraction).sum
