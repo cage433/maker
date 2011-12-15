@@ -760,7 +760,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     } else {
       message0.take(messageLength)
     }
-    starlingBrowserUI.setYesNoMessage(message, description, b => userSelected(b), windowMethods)
+    val componentToFocus = Option(KeyboardFocusManager.getCurrentKeyboardFocusManager.getFocusOwner)
+    starlingBrowserUI.setYesNoMessage(message, description, b => userSelected(b), windowMethods, componentToFocus)
   }
 
   def setContent(content:Component, cancelAction:Option[()=> Unit]) {
