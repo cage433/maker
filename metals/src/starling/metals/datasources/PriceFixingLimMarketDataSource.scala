@@ -66,7 +66,7 @@ object LMEFixings extends LimSource(List(Ask, Bid)) {
   private val rings = List(LME_AMR1, LME_Official, LME_PMR1, LME_Unofficial)
 
   def relationsFrom(connection: LIMConnection) = for (market <- LME.markets; ring <- rings; tenor <- tenors) yield {
-    (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%S.%S.%s" % (market.commodity, ring.shortName, tenor))
+    (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%S.%S.%s" % (market.commodity.limName, ring.shortName, tenor))
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[LMEFixingRelation]]) = {
