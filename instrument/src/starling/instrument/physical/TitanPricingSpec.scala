@@ -138,15 +138,15 @@ object TitanPricingSpec {
    * Used for unknown pricing spec and also benchmarks
    * Nothing in common really and its use for the latter is probably wrong
    */
-  def representativeDay(index :IndexWithDailyPrices, month : Month, marketDay : DayAndTime) : Day = {
+  def representativeObservationDay(index :IndexWithDailyPrices, month : Month, marketDay : DayAndTime) : Day = {
     val lme = FuturesExchangeFactory.LME
     index.market.asInstanceOf[FuturesMarket].exchange match {
       case `lme` => {
-        val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
-        if (marketDay >= thirdWednesday.endOfDay)
+        val thirdWednesdayIsObservedOnDay = (month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14).addBusinessDays(index.businessCalendar, -2)
+        if (marketDay >= thirdWednesdayIsObservedOnDay.endOfDay)
           month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
         else
-          thirdWednesday
+          thirdWednesdayIsObservedOnDay
       }
       case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
     }
