@@ -116,7 +116,7 @@ class MarketDataService(marketDataStore: MarketDataStore, notifier: Notifier = N
 
       val allCrosses = toUSD ::: toUSD.map(_.invert) ::: crosses
 
-      allCrosses
+      allCrosses.sortBy(_.denominatorUOM)
     }.withDefaultValue(Nil)
   }
 
