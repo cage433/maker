@@ -1,6 +1,7 @@
 package starling.gui
 
 import api._
+import osgi.StarlingBrowserBundle
 import pages.{TimestampChooser}
 import starling.rmi.StarlingServer
 import starling.daterange.{Day, Timestamp}
@@ -13,7 +14,7 @@ import starling.reports.facility.ReportFacility
 import starling.trade.facility.TradeFacility
 
 trait StarlingServerPage extends Page {
-  def bundle = "StarlingServer"
+  def bundle = StarlingBrowserBundle.BundleName
   type SC = StarlingServerContext
   def createServerContext(sc:ServerContext) = new StarlingServerContext(
     sc.lookup(classOf[StarlingServer]),

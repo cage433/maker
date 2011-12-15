@@ -16,11 +16,12 @@ import starling.pivot._
 import starling.gui.{StarlingLocalCache, StarlingIcons}
 import StarlingLocalCache._
 import starling.quantity.{UOM, Quantity}
+import starling.gui.osgi.StarlingBrowserBundle
 
 case class MethodLogViewerPage(index:Int, pivotPageState:PivotPageState=PivotPageState()) extends AbstractPivotPage(pivotPageState) {
   def text = "Method Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_event.png")
-  def bundle = RootBrowserBundle.bundleName
+  def bundle = StarlingBrowserBundle.BundleName
   override def latestPage(localCache: LocalCache) = copy(index=localCache.methodLogIndex)
 
   def dataRequest(serverContext: ServerContext) = {

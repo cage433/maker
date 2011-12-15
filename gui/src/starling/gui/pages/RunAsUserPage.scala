@@ -9,15 +9,12 @@ import starling.browser._
 import service.UserLoggedIn
 import starling.gui.StarlingLocalCache._
 import starling.gui.{StarlingIcons}
+import starling.gui.osgi.StarlingBrowserBundle
 
 case class RunAsUserPage() extends Page {
   def text = "Run as another user"
-//  def icon = BrowserIcons.im("/icons/16x16_user_dark.png")
   def icon = StarlingIcons.im("/icons/16x16_user_dark.png")
-//  def bundle = RootBrowserBundle.bundleName
-  def bundle = "StarlingServer"
-
-
+  def bundle = StarlingBrowserBundle.BundleName
   def build(serverContext: String) = null
   type SC = String
   def createServerContext(sc: ServerContext) = ""

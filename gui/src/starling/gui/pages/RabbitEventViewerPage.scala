@@ -4,6 +4,7 @@ import starling.pivot.PivotEdits
 import starling.gui.{LocalCacheKeys, StarlingIcons}
 import starling.rabbiteventviewer.api.RabbitEventViewerService
 import starling.browser.{ServerContext, LocalCache}
+import starling.gui.osgi.StarlingBrowserBundle
 
 class RabbitEventViewerContext(val service:RabbitEventViewerService)
 
@@ -13,7 +14,7 @@ case class RabbitEventViewerPage(pps:PivotPageState, pageState:RabbitEventViewer
   def text = "Rabbit Event Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_event.png")
 
-  def bundle = "StarlingServer"
+  def bundle = StarlingBrowserBundle.BundleName
   type SC = RabbitEventViewerContext
   def createServerContext(sc:ServerContext) = new RabbitEventViewerContext(sc.lookup(classOf[RabbitEventViewerService]))
 

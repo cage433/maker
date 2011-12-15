@@ -56,13 +56,21 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
     errorPanel.okButton.requestFocusInWindow()
   }
 
-  def setYesNoMessage(message:String, reason:String, onEvent:(Boolean) => Unit, windowMethods:WindowMethods) {
+  def setYesNoMessage(message:String, reason:String, onEvent:(Boolean) => Unit, windowMethods:WindowMethods, componentToFocus:Option[java.awt.Component]) {
     val oldDefaultButton = windowMethods.getDefaultButton
 
     def clearUp(action:Boolean) {
       clearContentPanel()
       onEvent(action)
       windowMethods.setDefaultButton(oldDefaultButton)
+      componentToFocus.map(c => {
+        val res = c.requestFocusInWindow()
+        if (!res) {
+          swing.Swing.onEDT(swing.Swing.onEDT({
+            c.requestFocusInWindow()
+          }))
+        }
+      })
     }
 
     val yesNoPanel = new MigPanel("") with RoundedBackground {

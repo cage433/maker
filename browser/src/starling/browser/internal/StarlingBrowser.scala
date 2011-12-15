@@ -760,7 +760,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     } else {
       message0.take(messageLength)
     }
-    starlingBrowserUI.setYesNoMessage(message, description, b => userSelected(b), windowMethods)
+    val componentToFocus = Option(KeyboardFocusManager.getCurrentKeyboardFocusManager.getFocusOwner)
+    starlingBrowserUI.setYesNoMessage(message, description, b => userSelected(b), windowMethods, componentToFocus)
   }
 
   def setContent(content:Component, cancelAction:Option[()=> Unit]) {
@@ -793,7 +794,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   def setDefaultButton(button:Option[Button]) {windowMethods.setDefaultButton(button)}
   def getDefaultButton = windowMethods.getDefaultButton
-  def requestFocusInCurrentPage() {currentComponent.requestFocusInWindow()}
+  def requestFocusInCurrentPage() {currentComponent.defaultComponentForFocus.map(_.requestFocusInWindow())}
 
   def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {
     submitCount += 1
