@@ -4,9 +4,9 @@ import starling.pivot._
 import pivotparsers.{DayPivotParser}
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-import starling.daterange.Day
 import starling.quantity.{UOM, Quantity}
 import starling.market.{FuturesMarket, NeptuneCommodity, Commodity}
+import starling.daterange.{ObservationTimeOfDay, Day}
 
 case class AreaCode(code:String) {
   override def toString = code
@@ -65,7 +65,7 @@ class GradeAreaBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceD
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
     rowFields = List(areaCodeField, commodityField, gradeCodeField, effectiveFromField).map(_.field),
-    filters = List( Field("Observation Time") → SomeSelection(Set("Default")) )
+    filters = List( Field("Observation Time") → SomeSelection(Set(ObservationTimeOfDay.Default.name)) )
   )
 
   def createKey(row: Row) = GradeAreaBenchmarkMarketDataKey(Commodity.fromName(row.string(commodityField)))

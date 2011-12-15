@@ -1,17 +1,16 @@
 package starling.curves
 
-import starling.utils.StarlingTest
 import org.testng.annotations.Test
 import org.testng.Assert._
-import starling.daterange.Day
 import starling.quantity.UOM._
 import starling.quantity.Percentage
-import starling.daterange.Month
 import starling.quantity.Quantity
-import starling.market.{TestMarketTest, Index, FuturesFrontPeriodIndex, Market}
 import org.scalatest.testng.TestNGSuite
+import starling.market._
+import starling.daterange.{Day, Month}
 
 class MarketDayChangeEnvironmentTests extends TestMarketTest with TestNGSuite {
+
   @Test
   def testMarketDayChanges{
     val marketDay = Day(2010, 1, 1).endOfDay

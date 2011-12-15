@@ -3,16 +3,15 @@ package starling.instrument.physical
 import starling.curves.Environment
 import starling.market.{FuturesMarket, CommodityMarket, FuturesExchangeFactory, IndexWithDailyPrices}
 import starling.daterange._
-import starling.quantity.UOM._
 import starling.market.FuturesExchange
-import starling.quantity.{SimpleNamedQuantity, Ratio, UOM, Quantity}
+import starling.quantity.{UOM, Quantity}
 
 trait TitanPricingSpec {
 
 //  def priceExcludingPremium(env : Environment) : Quantity
 
   def premiumExcludingVAT(env : Environment) : Quantity = {
-    val premiumInPremiumCurrency = if (isLiableToShanghaiVAT) (premium.named("Premium") / toDisplayVat(env.shanghaiVATRate)).named("Premium Excl VAT") else premium.named("Premium")
+    val premiumInPremiumCurrency = if (isLiableToShanghaiVAT) (premium(env).named("Premium") / toDisplayVat(env.shanghaiVATRate)).named("Premium Excl VAT") else premium(env).named("Premium")
     inValuationCurrency(env, premiumInPremiumCurrency)
   }
 
@@ -39,7 +38,7 @@ trait TitanPricingSpec {
   }
 
   def priceIncludingVATIncludingPremium(env : Environment) = {
-    priceIncludingVATExcludingPremium(env).map{prc => prc + inValuationCurrency(env, premium)}
+    priceIncludingVATExcludingPremium(env).map{prc => prc + inValuationCurrency(env, premium(env))}
   }
   def valueExcludingVATExcludingPremium(env : Environment, quantity : Quantity) = {
     priceExcludingVATExcludingPremium(env) * quantity * env.discount(valuationCCY, settlementDay(env.marketDay))
@@ -56,12 +55,12 @@ trait TitanPricingSpec {
 
   def settlementDay(marketDay: DayAndTime): Day
 
-  def premiumCCY: Option[UOM] = {
-    premium.uom.numeratorUOM match {
-      case UOM.NULL => None
-      case ccy => Some(ccy)
-    }
-  }
+//  def premiumCCY: Option[UOM] = {
+//    premium.uom.numeratorUOM match {
+//      case UOM.NULL => None
+//      case ccy => Some(ccy)
+//    }
+//  }
 
   def valuationCCY: UOM
   assert(valuationCCY != null, "Valuation currency is null")
@@ -98,8 +97,8 @@ trait TitanPricingSpec {
 
   def quotationPeriod: Option[DateRange]
 
-  // Working assumption is that premium is inclusive of VAT when the releveant exchange includes it
-  def premium: Quantity
+  // Working assumption is that premium is inclusive of VAT when the relevant exchange includes it
+  def premium(env : Environment) : Quantity
 
   def indexOption: Option[IndexWithDailyPrices]
 
@@ -175,6 +174,7 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
 
   def daysForPositionReport(marketDay: DayAndTime) = observationDays.filter(_.endOfDay > marketDay)
 
+  def premium(env : Environment) = premium
 
   def expiryDay = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
   def priceExcludingVATExcludingPremium(env : Environment) = {
@@ -208,7 +208,7 @@ case class OptionalPricingSpec(choices: List[TitanPricingSpec], declarationDay: 
     case None => "Optional"
   }
 
-  def premium = specToUse.premium
+  def premium(env : Environment) = specToUse.premium(env)
 
   def daysForPositionReport(marketDay: DayAndTime) = specToUse.daysForPositionReport(marketDay)
 
@@ -246,14 +246,13 @@ case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)], valuatio
     case Some(period) => period.lastDay
   }.sortWith(_ < _).lastOption
 
-  def premium = specs.map {
-    case (wt, spec) => spec.premium * wt
+  override def premium(env : Environment) = specs.map {
+    case (wt, spec) => inValuationCurrency(env, spec.premium(env)) * wt
   }.sum
 
   def daysForPositionReport(marketDay: DayAndTime) = specs.flatMap {
     case (amt, spec) => spec.daysForPositionReport(marketDay)
   }.distinct
-
 
   def quotationPeriod = (quotationPeriodStart, quotationPeriodEnd) match {
     case (Some(d1), Some(d2)) => Some(DateRange(d1, d2))
@@ -271,7 +270,6 @@ case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)], valuatio
   }
 
   override def isLiableToShanghaiVAT = isExchangeLiableToVAT(futuresMarket.exchange)
-
 }
 
 case class InvalidTitanPricingSpecException(msg: String) extends Exception(msg)
@@ -318,6 +316,8 @@ case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesB
   def expiryDay = settDay
 
   override def isLiableToShanghaiVAT = isExchangeLiableToVAT(futuresMarket.exchange)
+
+  def premium(env : Environment) = premium
 }
 
 
@@ -376,9 +376,6 @@ case class UnknownPricingSpecification(
   def expiryDay = TitanPricingSpec.calcSettlementDay(index, index.observationDays(month).last)
 
   def futuresMarket : FuturesMarket = index.market.asInstanceOf[FuturesMarket]
+
+  def premium(env : Environment) = premium
 }
-
-
-
-
-

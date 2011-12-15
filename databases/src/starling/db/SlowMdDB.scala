@@ -277,7 +277,7 @@ class SlowMdDB(db: DBTrait[RichResultSetRow]) extends MdDB with Log {
 
     val marketDataType = dataTypes.fromName(marketDataTypeName)
     val observationDayClause = observationDays.map(Clause.optIn("observationDay", _))
-    val observationTimeClause = observationTimes.map(times => In(Field("observationTime"), times.map(_.name)))
+    val observationTimeClause = observationTimes.map(times => In(Field("observationTime"), times.map(_.shortName)))
     val keyClause = marketDataKeys.map(keys => In(Field("marketDataKey"), keys.map(StarlingXStream.write(_))))
 
     val query = (

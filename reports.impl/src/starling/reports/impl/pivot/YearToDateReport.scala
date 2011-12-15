@@ -42,7 +42,7 @@ class YearToDateReport(reportContextBuilder: ReportContextBuilder, curveIdentifi
     val aspectCOY = new SumPivotQuantityFieldDetails("Aspect Close Of Year")
     val aspectCOYC = new SumPivotQuantityFieldDetails("Aspect Close Of Year Costs")
 
-    val tradesUpToDay = reportParameters.curveIdentifier.tradesUpToDay
+    val tradesUpToDay = reportParameters.curveIdentifier.observationDayAndTime
     val expiryDay = reportParameters.expiryDay
 
     def rows(tradeSet: TradeSet, ts: Timestamp): List[AppendingMap[Field, Any]] = {
@@ -70,7 +70,7 @@ class YearToDateReport(reportContextBuilder: ReportContextBuilder, curveIdentifi
           val env = reportContextBuilder.contextFromCurveIdentifier(curveIdentifierFactory.unLabel(reportParameters.curveIdentifier)).environment
 
           //      val marketDay = reportParameters.curveIdentifier.valuationDayAndTime
-          val (fieldGroups, trades) = tradeSet.readAll(ts, Some(expiryDay), Some(tradesUpToDay))
+          val (fieldGroups, trades) = tradeSet.readAll(ts, Some(expiryDay), Some(tradesUpToDay.day))
           trades.map {
             tradeAndFields => {
               val trade = tradeAndFields.trade

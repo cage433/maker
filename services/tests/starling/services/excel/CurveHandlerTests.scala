@@ -4,7 +4,6 @@ import org.testng.annotations.Test
 import starling.utils.StarlingTest
 import org.mockito.Mockito._
 import starling.db.MarketDataStore
-import starling.daterange.Day
 import starling.pivot.controller.PivotTable
 import org.scalatest.matchers.ShouldMatchers
 import starling.gui.api._
@@ -12,6 +11,7 @@ import starling.curves.{EnvironmentSpecification, ClosesEnvironmentRule, CurveVi
 import starling.pivot.{PivotQuantity, Field, PivotFieldsState}
 import starling.quantity.UOM
 import starling.marketdata.ReferenceDataLookup
+import starling.daterange.{DayAndTime, Day}
 
 
 class CurveHandlerTests extends StarlingTest with ShouldMatchers {
@@ -25,7 +25,7 @@ class CurveHandlerTests extends StarlingTest with ShouldMatchers {
 
     val pricingGroup: PricingGroup = PricingGroup.Metals
     val selection: MarketDataSelection = MarketDataSelection(Some(pricingGroup))
-    val observationDay: Day = Day.today
+    val observationDay: DayAndTime = Day.today.endOfDay
     val environmentRule = ClosesEnvironmentRule.label
     val environmentSpecification = EnvironmentSpecificationLabel(observationDay, environmentRule)
     val dataIdentifier: MarketDataIdentifier = MarketDataIdentifier(selection, 123)
@@ -39,7 +39,7 @@ class CurveHandlerTests extends StarlingTest with ShouldMatchers {
 
     val value = curveHandler.curveValue("Price", Map(
       "Pricing Group" → pricingGroup.name,
-      "Day" → observationDay.toExcel,
+      "Day" → observationDay.day.toExcel,
       "Rule" → environmentRule.name), "Month", "<month>", "Market", "<market>")
 
     value should be === 123.456

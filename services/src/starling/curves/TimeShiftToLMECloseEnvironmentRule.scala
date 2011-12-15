@@ -16,9 +16,9 @@ class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLooku
   val observationTimeOfDay = ObservationTimeOfDay.LMEClose
   val label = EnvironmentRuleLabel("Time shift to " + observationTimeOfDay.name)
   val exchanges : Set[FuturesExchange] = Set(FuturesExchangeFactory.SHFE, FuturesExchangeFactory.LME)
-  def createEnv(observationDay: Day, reader: MarketDataReader) = {
+  def createEnv(observationDay: DayAndTime, reader: MarketDataReader) = {
     val pricesForLastClose = Market.futuresMarkets.filter(m => exchanges.contains(m.exchange)).flatMap { market => {
-      val closeDay = market.businessCalendar.thisOrPreviousBusinessDay(observationDay)
+      val closeDay = market.businessCalendar.thisOrPreviousBusinessDay(observationDay.day)
       try {
         val priceDataAtLastClose = reader.read(TimedMarketDataKey(closeDay.atTimeOfDay(market.closeTime), PriceDataKey(market))).asInstanceOf[PriceData]
         List( market -> (closeDay, priceDataAtLastClose) )
@@ -31,14 +31,14 @@ class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLooku
       closeDay != observationDay || observationTimeOfDay != market.closeTime
     }}
 
-    def previousEnv(day:Day, timeOfDay:ObservationTimeOfDay, overrides:Map[MarketDataType,ObservationTimeOfDay]) = {
-      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(day, timeOfDay), overrides, dataTypes)
-      Environment(new NamingAtomicEnvironment(new MarketDataCurveObjectEnvironment(day.endOfDay, slice, referenceDataLookup = referenceDataLookup), timeOfDay.name))
+    def previousEnv(day:DayAndTime, timeOfDay:ObservationTimeOfDay, overrides:Map[MarketDataType,ObservationTimeOfDay]) = {
+      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(day.day, timeOfDay), overrides, dataTypes)
+      Environment(new NamingAtomicEnvironment(new MarketDataCurveObjectEnvironment(day, slice, referenceDataLookup = referenceDataLookup), timeOfDay.name))
     }
 
     val env = {
-      val envDayAndTime = observationDay.endOfDay
-      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(observationDay, observationTimeOfDay), Map(SpotFXDataType → LondonClose), dataTypes)
+      val envDayAndTime = observationDay
+      val slice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(observationDay.day, observationTimeOfDay), Map(SpotFXDataType → LondonClose), dataTypes)
       new MarketDataCurveObjectEnvironment(envDayAndTime, slice, referenceDataLookup = referenceDataLookup) {
         override def curve(curveKey: CurveKey) = {
           curveKey match {
@@ -46,7 +46,7 @@ class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLooku
               val shiftMarket = FuturesExchangeFactory.LME.markets.find(_.commodity == market.commodity).getOrElse(throw new Exception("No LME " + market.commodity + " market found"))
               val (closeDay, closePrices) = pricesForLastClose(market)
 
-              val lastCloseEnv = previousEnv(closeDay, market.closeTime, Map())
+              val lastCloseEnv = previousEnv(closeDay.endOfDay, market.closeTime, Map())
               val currentEnv = previousEnv(observationDay, observationTimeOfDay, Map(SpotFXDataType->LondonClose))
               val priceUOM = shiftMarket.currency / market.uom
               val shiftInShiftingMarketCurrency = {
@@ -74,7 +74,7 @@ class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLooku
     new EnvironmentWithDomain {
       def environment = Environment(env)
       def markets = marketsX.toList
-      override def discounts = reader.readAll(ForwardRateDataType.name, observationDay.atTimeOfDay(ObservationTimeOfDay.Default)).map {
+      override def discounts = reader.readAll(ForwardRateDataType.name, observationDay.day.atTimeOfDay(ObservationTimeOfDay.Default)).map {
         case (key:ForwardRateDataKey, data:ForwardRateData) => key.ccy -> data
       }
 

@@ -55,7 +55,7 @@ class TimeShiftingEnvironmentRuleTests extends TestMarketTest with TestNGSuite w
 
     val frontPeriod = Market.LME_COPPER.frontPeriod(environmentDay)
 
-    val shiftedEnvironment = timeShiftingRule.createEnv(environmentDay, reader).environment
+    val shiftedEnvironment = timeShiftingRule.createEnv(environmentDay.endOfDay, reader).environment
 
     shiftedEnvironment.forwardPrice(Market.LME_COPPER, frontPeriod) should be === lmePriceAtLmeClose
     timeShiftedShanghaiPrice.uom should be === Market.SHANGHAI_COPPER.priceUOM
@@ -79,7 +79,7 @@ class TimeShiftingEnvironmentRuleTests extends TestMarketTest with TestNGSuite w
       ), dataTypes
     )
 
-    val shiftedEnvironment = timeShiftingRule.createEnv(environmentDay, reader).environment
+    val shiftedEnvironment = timeShiftingRule.createEnv(environmentDay.endOfDay, reader).environment
 
     shiftedEnvironment.forwardPrice(Market.LME_COPPER, Market.LME_COPPER.frontPeriod(environmentDay)) should be === lmePriceAtLmeClose
 

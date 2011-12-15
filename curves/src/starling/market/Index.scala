@@ -2,16 +2,13 @@ package starling.market
 
 import formula.FormulaIndex
 import rules._
-import starling.utils.CaseInsensitive
 import starling.curves._
 import starling.daterange._
 import starling.marketdata.PriceFixingsHistoryDataKey
-import starling.utils.cache.CacheFactory
-import starling.calendar.{HolidayTablesFactory, BusinessCalendars, BusinessCalendar, BrentMonth}
+import starling.calendar.BusinessCalendar
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern.Extractor
 import starling.quantity._
-import java.lang.IllegalStateException
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
@@ -73,7 +70,7 @@ trait Index extends KnownConversions {
 case class IndexSensitivity(coefficient : Double, index : Index)
 
 /**
- * The cacnonical example is the Ave 4 LME index. It's not a single index as it depends on both
+ * The canonical example is the Ave 4 LME index. It's not a single index as it depends on both
  * cash and 3 month prices, but it does have a single price for each day, which can be displayed in the UI
  * explanation of the valuation of physical forwards
  */
@@ -102,6 +99,23 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
   def isObservationDay(day: Day): Boolean = businessCalendar.isBusinessDay(day)
 
   protected def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity
+
+  // base implementation of average price for index, may be overridden in specific indices
+  def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
+    val observationDays = this.observationDays(averagingPeriod)
+    val prices = observationDays.map(fixingOrForwardPrice(env, _))
+
+    val price = Quantity.average(prices) match {
+      case nq : NamedQuantity => SimpleNamedQuantity("Average(" + this + "." + averagingPeriod + ")", nq)
+      case q : Quantity => q
+    }
+    rounding match {
+      case Some(dp) if env.environmentParameters.swapRoundingOK => {
+        price.round(dp)
+      }
+      case _ => price
+    }
+  }
 }
 
 /**
@@ -110,7 +124,7 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
 trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   override val name: String
 
-  def level: Level
+  def level : Level
 
   def fixing(env : InstrumentLevelEnvironment, observationDay : Day) = {
     env.quantity(IndexFixingKey(this, observationDay)) match {
@@ -191,8 +205,6 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   // There should really be a different index for this
   def observedOptionPeriod(observationDay: Day) : DateRange
 
-
-
   def indexes = Set(this)
 }
 
@@ -207,11 +219,10 @@ case class PublishedIndex(
   override val conversions: Conversions = Conversions.default,
   override val limSymbol: Option[LimSymbol] = None,
   override val precision : Option[Precision] = None,
-  override val level: Level = Level.Mid
-)
-  extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision) with SingleIndex
+  override val level: Level = Level.Mid) extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision) with SingleIndex
 {
   type marketType = CommodityMarket
+
   override def isObservationDay(day: Day): Boolean = super[SingleIndex].isObservationDay(day)
 
   override def convert(value: Quantity, uom: UOM): Option[Quantity] = {
@@ -260,12 +271,12 @@ case class FuturesFrontPeriodIndex(
   rollBeforeDays : Int,
   promptness : Int,
   override val precision: Option[Precision]
- ) extends SingleIndex { //with TitanPricingIndex {
+ ) extends SingleIndex {
 
   def futuresMarket = market
   val name = marketName
   lazy val level = market.exchange.fixingLevel
-  
+
   def observedPeriod(observationDay : Day) : DateRange = {
     val frontMonth = market.frontPeriod(observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays))
     val period = frontMonth match {
@@ -458,7 +469,11 @@ object LmeSingleIndices{
   val niCashOffer = new LmeCashSettlementIndex(Market.LME_NICKEL, level = Level.Ask)
   val ni3MBid = new LmeThreeMonthIndex(Market.LME_NICKEL, level = Level.Bid)
   val ni3MOffer = new LmeThreeMonthIndex(Market.LME_NICKEL, level = Level.Ask)
+}
 
+object ShfeIndices {
+  def shfeMonthVwap(market : FuturesMarket) = ShfeVwapMonthIndex(market)
+  val shfeAlMonthVwap = ShfeVwapMonthIndex(Market.SHANGHAI_ALUMINUIUM)
 }
 
 object FuturesFrontPeriodIndex {
@@ -494,12 +509,13 @@ case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LME
   }
 
   def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
-
 }
 
 case class LmeLowestOfFourIndex(market : FuturesMarket) extends IndexWithDailyPrices {
   private val cashIndex = LmeCashSettlementIndex(market, Level.Bid)
   private val threeMonthIndex = LmeThreeMonthIndex(market, Level.Bid)
+
+  //override def level(observationDay : Day) = Level.Bid
 
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     cashIndex.provideFixingOrForwardPrice(env, observationDay) min threeMonthIndex.provideFixingOrForwardPrice(env, observationDay)
@@ -535,3 +551,45 @@ case class LmeAve4MaxSettIndex(market : FuturesMarket) extends IndexWithDailyPri
   val name = "LME " + market.commodity + " ave 4 max sett"
 }
 
+/**
+ * special type of index using unweighted arithmetic average prices,
+ *   until official published monthly wwap prices are available and then using the vwap fixing instead
+ */
+object ShfeVwapMonthIndex {
+  def apply(market : FuturesMarket) = {
+    val name = "%s 1st %s" % (market.name, market.tenor.toString.toLowerCase)
+    new ShfeVwapMonthIndex(name, market)
+  }
+}
+
+/**
+ * Wraps a normal front futures market with handling for end of month official month vwap price fixings
+ */
+case class ShfeVwapMonthIndex(marketName : String, market : FuturesMarket) extends SingleIndex {
+
+  def level = Level.VwapMonthIndexLevel
+
+  // underlying index for "published" price fixings
+  private val baseFrontFuturesMarketIndex = FuturesFrontPeriodIndex(market)
+
+  // this rule may need changing but is literally the last business day (eod) of the markets business calendar by default for now
+  private def publicationDay(month : DateRange) = month.lastDay.thisOrPreviousBusinessDay(market.businessCalendar).endOfDay
+
+  // switch between published monthly vwap and official daily (unweighted) prices according to the environment's market day
+  override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
+
+    val pubDay = publicationDay(averagingPeriod)
+    if (env.marketDay >= pubDay)
+      env.indexFixing(this, pubDay.day)
+    else
+      baseFrontFuturesMarketIndex.averagePrice(averagingPeriod, rounding, env)
+  }
+
+  def observedOptionPeriod(observationDay: Day) = baseFrontFuturesMarketIndex.observedOptionPeriod(observationDay)
+
+  def observedPeriod(day : Day) = baseFrontFuturesMarketIndex.observedPeriod(day)
+
+  def storedFixingPeriodForDay(day: Day) = baseFrontFuturesMarketIndex.storedFixingPeriodForDay(day)
+
+  val name = marketName +  " Month VWAP"
+}

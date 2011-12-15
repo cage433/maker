@@ -75,7 +75,7 @@ class GuiBromptonActivator extends BromptonActivator {
       val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
 
       val curveIdentifier = {
-        val observationDay = Day.today.previousWeekday
+        val observationDay = Day.today.previousWeekday.endOfDay
         val mods = TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
 
         CurveIdentifierLabel(

@@ -83,7 +83,7 @@ object ValuationParametersPageComponent {
       }
 
       add(l("Observation Day"), "skip 1")
-      add(l2(ci.tradesUpToDay), "wrap")
+      add(l2(ci.observationDayAndTime), "wrap")
 
       add(l("Environment Rule"), "skip 1")
       add(l2(ci.environmentRule.name), "wrap")
@@ -96,10 +96,10 @@ object ValuationParametersPageComponent {
       }
 
       add(l("Forward Observation"), "skip 1")
-      add(l2(dayAndTimeToString(ci.valuationDayAndTime)), "wrap")
+      add(l2(dayAndTimeToString(ci.forwardValuationDayAndTime)), "wrap")
 
       add(l("Theta to"), "skip 1")
-      add(l2(dayAndTimeToString(ci.thetaDayAndTime)), "wrap")
+      add(l2(dayAndTimeToString(ci.thetaToDayAndTime)), "wrap")
 
       add(l("Live on"), "skip 1")
       add(l2(rp.expiryDay), "wrap")

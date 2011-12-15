@@ -28,21 +28,21 @@ import starling.reports.impl.{MarketDataStoreReportContext, AbstractReportContex
 case class CurveIdentifier(
         marketDataIdentifier:MarketDataIdentifier,
         environmentRule:EnvironmentRule,
-        observationDay:Day,             // The market data is observed on this day,
+        observationDayAndTime:DayAndTime,             // The market data is observed on this day,
                                         // HOWEVER trades are filtered on trade day using the valuation day field
         valuationDayAndTime:DayAndTime, //Typically the same as observationDay but can be moved forward
         thetaDayAndTime:DayAndTime,
         zeroInterestRates:Boolean, zeroVols:Boolean) {
-  override def toString = marketDataIdentifier + " " + observationDay
+  override def toString = marketDataIdentifier + " " + observationDayAndTime
 }
 
 class CurveIdentifierFactory(environmentRules: EnvironmentRules) {
   def unLabel(label:CurveIdentifierLabel):CurveIdentifier = CurveIdentifier(
     label.marketDataIdentifier,
     environmentRules.forLabel(label.environmentRule),
-    label.tradesUpToDay,
-    label.valuationDayAndTime,
-    label.thetaDayAndTime,
+    label.observationDayAndTime,
+    label.forwardValuationDayAndTime,
+    label.thetaToDayAndTime,
     label.envModifiers.contains(EnvironmentModifierLabel.zeroInterestRates),
     label.envModifiers.contains(EnvironmentModifierLabel.zeroVols)
   )
@@ -58,10 +58,9 @@ class ReportContextBuilder(marketDataStore:MarketDataStore) {
 
     if (curveIdentifier.marketDataIdentifier.isNull) {
       new AbstractReportContext(curveIdentifier, environmentSliders.toList) {
-        def atomicEnvironment(day: Day) = {
+        def atomicEnvironment(day: DayAndTime) = {
           curveIdentifier.environmentRule.createNullAtomicEnvironment(day)
         }
-        def observationDays(from: Day, to: Day) = SimpleDateRange(from, to).days.toList.map(ObservationDay)
         def recorded : Set[(ObservationPoint, MarketDataKey, MarketData)] = Set()
       }
     } else {
@@ -117,7 +116,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
     val reports: List[PivotReportData[_ <: PivotReportRow]] = selectedReportTypes.flatMap( reportType => {
       for ((context, slideDetails) <- contextAndSideDetails) yield {
 
-        val singleReportData: PivotReportData[_ <: PivotReportRow] = runSingleReport(reportType, curveIdentifier.observationDay, context, slideDetails, utps)
+        val singleReportData: PivotReportData[_ <: PivotReportRow] = runSingleReport(reportType, curveIdentifier.observationDayAndTime.day, context, slideDetails, utps)
 
         if (reportType == MtmPivotReport) {
           val mtmReportData = singleReportData.asInstanceOf[PivotReportData[Mtm]]
@@ -229,7 +228,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
 
   def readUTPs(reportParameters:ReportParameters) = {
 
-    val tradesUpToDay = reportParameters.curveIdentifier.valuationDayAndTime.day
+    val tradesUpToDay = reportParameters.curveIdentifier.forwardValuationDayAndTime.day
     val tradeSets: List[(TradeSet, Timestamp)] = if (reportParameters.runReports) {
       tradeStores.toTradeSets(reportParameters.tradeSelectionWithTimestamp)
     } else {
@@ -293,7 +292,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
     val pivots: List[PivotTableDataSource] = if (reportParameters.reportOptions.isEmpty) List() else tradeSets.map {
       case (tradeSet, timestamp) => {
         val tradesPivot = tradeSet.reportPivot(
-          reportParameters.curveIdentifier.valuationDayAndTime.day,
+          reportParameters.curveIdentifier.forwardValuationDayAndTime.day,
           reportParameters.expiryDay,
           timestamp,
           reportParameters.runReports)

@@ -14,7 +14,7 @@ class EnvironmentSpecificationLabelChooser(environmentSpecificationLabel0: Envir
 
   def revert() = this.suppressingSelf(environmentSpecification = environmentSpecificationLabel0)
 
-  val dayChooser = new DayChooser(environmentSpecificationLabel0.observationDay, enableFlags)
+  val dayChooser = new DayChooser(environmentSpecificationLabel0.observationDay.day, enableFlags)
   val ruleChooser = new EnvironmentRuleChooser(environmentSpecificationLabel0.environmentRule, rules)
 
   add(dayChooser, ruleChooser)
@@ -32,9 +32,9 @@ class EnvironmentSpecificationLabelChooser(environmentSpecificationLabel0: Envir
   def rule = ruleChooser.rule
   def rule_=(rule:EnvironmentRuleLabel) = ruleChooser.rule = rule
 
-  def environmentSpecification = EnvironmentSpecificationLabel(day, rule)
+  def environmentSpecification = EnvironmentSpecificationLabel(day.endOfDay, rule)
   def environmentSpecification_=(environmentSpecification: EnvironmentSpecificationLabel) = {
-    day = environmentSpecification.observationDay;
+    day = environmentSpecification.observationDay.day;
     rule = environmentSpecification.environmentRule
   }
 

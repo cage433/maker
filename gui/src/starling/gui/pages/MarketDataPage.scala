@@ -56,7 +56,7 @@ trait FC2Bookmark extends Bookmark {
  * For viewing (and uploading?) market data.
  */
 case class MarketDataPage(
-        marketDataPageIdentifier:MarketDataPageIdentifier,
+        marketDataIdentifier:MarketDataPageIdentifier,
         pageState : MarketDataPageState
         ) extends AbstractPivotPage(pageState.pivotPageState, pageState.edits) {
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
@@ -71,25 +71,25 @@ case class MarketDataPage(
   def text = "Market Data Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_market_data.png")
 
-  def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataPageIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
+  def selfPage(pivotPageState: PivotPageState, edits:PivotEdits) = new MarketDataPage(marketDataIdentifier, MarketDataPageState(pivotPageState, pageState.marketDataType, edits))
 
   def dataRequest(serverContext:ServerContext) = {
     val fc2Service = serverContext.lookup(classOf[FC2Facility])
-    fc2Service.readAllMarketData(marketDataPageIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
+    fc2Service.readAllMarketData(marketDataIdentifier, pageState.marketDataType, pageState.edits, pageState.pivotPageState.pivotFieldParams)
   }
 
   override def save(serverContext:ServerContext, edits:PivotEdits) = {
     val fc2Service = serverContext.lookup(classOf[FC2Facility])
-    fc2Service.saveMarketData(marketDataPageIdentifier, pageState.marketDataType, edits)
+    fc2Service.saveMarketData(marketDataIdentifier, pageState.marketDataType, edits)
   }
 
   override def postSave(i:Int, context:PageContext) {
-    marketDataPageIdentifier match {
+    marketDataIdentifier match {
       case mdpi:MarketDataPageIdentifier => {
         context.localCache.latestMarketDataVersionIfValid(mdpi.selection) match {
           case Some(v) => {
             val maxVersion = math.max(i, v)
-            val newPage = copy(marketDataPageIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(mdpi.selection, maxVersion)), pageState = pageState.copy(edits = PivotEdits.Null))
+            val newPage = copy(marketDataIdentifier=StandardMarketDataPageIdentifier(MarketDataIdentifier(mdpi.selection, maxVersion)), pageState = pageState.copy(edits = PivotEdits.Null))
             context.goTo(newPage)
           }
           case None =>
@@ -99,10 +99,10 @@ case class MarketDataPage(
   }
 
   override def latestPage(localCache:LocalCache) = {
-    marketDataPageIdentifier match {
+    marketDataIdentifier match {
       case StandardMarketDataPageIdentifier(mi@MarketDataIdentifier(_,SpecificMarketDataVersion(_))) => {
         localCache.latestMarketDataVersionIfValid(mi.selection) match {
-          case Some(v) => copy(marketDataPageIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)))
+          case Some(v) => copy(marketDataIdentifier=StandardMarketDataPageIdentifier(mi.copyVersion(v)))
           case _ => this
         }
       }
@@ -124,11 +124,11 @@ case class MarketDataPage(
       case _ => None
     }
     
-    if (singleObservationDay.isDefined && marketDataPageIdentifier.isCurrent) {
-      marketDataPageIdentifier match {
-        case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataPageIdentifier.selection, pageState)
-        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
-          ReportMarketDataBookmark(marketDataPageIdentifier.selection, pageState, starlingServer.createUserReport(x.reportParameters))
+    if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
+      marketDataIdentifier match {
+        case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, pageState)
+        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.observationDayAndTime == singleObservationDay.get => {
+          ReportMarketDataBookmark(marketDataIdentifier.selection, pageState, starlingServer.createUserReport(x.reportParameters))
         }
         case _ => PageBookmark(this)
       }
@@ -138,8 +138,8 @@ case class MarketDataPage(
   }
 
   override def configPanel(context:PageContext, pageData:PageData, tableSelection:() => TableSelection) = {
-    val availableMarketDataTypes = context.localCache.marketDataTypes(marketDataPageIdentifier.selection)
-    val selectedMarketDataType = pageState.marketDataType.orElse(if(marketDataPageIdentifier.selection.isNull) None else Some(MarketDataTypeLabel.Default))
+    val availableMarketDataTypes = context.localCache.marketDataTypes(marketDataIdentifier.selection)
+    val selectedMarketDataType = pageState.marketDataType.orElse(if(marketDataIdentifier.selection.isNull) None else Some(MarketDataTypeLabel.Default))
 
     //Save the layout as the default for use the next time this market data type is selected
     (pageState.marketDataType, pageState.pivotPageState.pivotFieldParams.pivotFieldState) match {
@@ -158,28 +158,28 @@ case class MarketDataPage(
 
         private val importButton = new Button {
           val observationDay = Day.today.previousWeekday
-          enabled = !marketDataPageIdentifier.selection.isNull
+          enabled = !marketDataIdentifier.selection.isNull
           tooltip = "Import market data for previous weekday"
           icon = StarlingIcons.icon("/icons/14x14_download_data.png")
 
           reactions += {
             case ButtonClicked(_) => {
               val day = observationDay
-              context.submit(ImportMarketDataRequest(marketDataPageIdentifier.selection, day.asInstanceOf[Day]))
+              context.submit(ImportMarketDataRequest(marketDataIdentifier.selection, day.asInstanceOf[Day]))
             }
           }
         }
 
         val pricingGroupSelector = new MarketDataSelectionComponent(context, None,
-          marketDataPageIdentifier.marketDataIdentifier, scala.swing.Orientation.Vertical, true)
+          marketDataIdentifier.marketDataIdentifier, scala.swing.Orientation.Vertical, true)
 
         private val snapshotButton = new Button {
-          enabled = !marketDataPageIdentifier.selection.isNull
+          enabled = !marketDataIdentifier.selection.isNull
           tooltip = "Snapshot this market data"
           icon = StarlingIcons.icon("/icons/14x14_camera_lens.png")
           reactions += {
             case ButtonClicked(_) => {
-              context.submit(SnapshotMarketDataRequest(marketDataPageIdentifier.marketDataIdentifier))
+              context.submit(SnapshotMarketDataRequest(marketDataIdentifier.marketDataIdentifier))
             }
           }
         }
@@ -211,9 +211,9 @@ case class MarketDataPage(
 
       val extraPanel2 = new MigPanel {
         border = RoundedBorder(colour = PivotTableBackgroundColour)
-        visible = marketDataPageIdentifier.filteredMarketData
+        visible = marketDataIdentifier.filteredMarketData
         val filterDataCheckbox = new CheckBox("Filter Market Data For Report") {
-          if (marketDataPageIdentifier.filteredMarketData) {
+          if (marketDataIdentifier.filteredMarketData) {
             selected = true
             visible = true
           } else {
@@ -235,13 +235,13 @@ case class MarketDataPage(
             case None =>
           }
           pricingGroupPanel.pricingGroupSelector.revert()
-          extraPanel2.filterDataCheckbox.selected = marketDataPageIdentifier.filteredMarketData
+          extraPanel2.filterDataCheckbox.selected = marketDataIdentifier.filteredMarketData
         }
       }
 
       reactions += {
         case SelectionChanged(extraPanel.dataTypeCombo) => {
-          MarketDataPage.goTo(context, marketDataPageIdentifier, Some(extraPanel.dataTypeCombo.selection.item), observationDays)
+          MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), observationDays)
         }
         case MarketDataSelectionChanged(mdi0) => {
           val mdt = if (extraPanel.dataTypeCombo.enabled && extraPanel.dataTypeCombo.selection.item.name.nonEmpty) {
@@ -254,7 +254,7 @@ case class MarketDataPage(
             mdt, observationDays
           )
         }
-        case ButtonClicked(extraPanel2.filterDataCheckbox) => {context.goTo(copy(marketDataPageIdentifier = StandardMarketDataPageIdentifier(marketDataPageIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
+        case ButtonClicked(extraPanel2.filterDataCheckbox) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
       }
       listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, extraPanel2.filterDataCheckbox)
     }

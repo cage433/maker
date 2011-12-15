@@ -16,7 +16,7 @@ case class MarketDataID(observationPoint: ObservationPoint, marketDataSet: Marke
   private val noComment: String = null
 
   def conditions : Map[String, Any] = Map(
-    "observationTime" -> observationPoint.timeName,
+    "observationTime" -> observationPoint.timeOfDay.shortName,
     "observationDay" -> observationPoint.day.getOrElse(null),
     "marketDataSet" -> marketDataSet.name,
     "marketDataType" -> StarlingXStream.write(subTypeKey.typeName),

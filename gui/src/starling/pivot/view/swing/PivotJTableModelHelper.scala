@@ -378,19 +378,36 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     type CellType = TableCell
 
     private val addedRows0 = new ListBuffer[Array[TableCell]]
-    private val blankCells = Array.fill(data0(0).length)(TableCell.BlankAddedCell).zipWithIndex.map{case (tc,c) => {
-      colHeaderData0.find(_(c).value.isMeasure) match {
-        case None => tc.copy(editable = false)
-        case Some(cc) => {
-          val f = cc(c).value.field
-          if (measureFields.contains(f)) {
-            tc
-          } else {
-            tc.copy(editable = false)
+    private val blankCells = {
+
+      def fieldOption(col:Int) = {
+        colHeaderData0.find(_(col).value.isMeasure) match {
+          case Some(cc) => Some(cc(col).value.field)
+          case None => {
+            val measureFields = fieldState.columns.allFieldAndIsMeasures.filter(_.isMeasure)
+            if (col == 0 && measureFields.size == 1) {
+              Some(measureFields.head.field)
+            } else {
+              None
+            }
           }
         }
       }
-    }}
+
+      Array.fill(data0(0).length)(TableCell.BlankAddedCell).zipWithIndex.map{case (tc,c) => {
+        fieldOption(c) match {
+          case None => tc.copy(editable = false)
+          case Some(field0) => {
+            if (measureFields.contains(field0)) {
+              tc
+            } else {
+              tc.copy(editable = false)
+            }
+          }
+        }
+      }}
+    }
+
     if (extraLine) {
       addedRows0 += blankCells
     }
@@ -448,7 +465,17 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def validState = !overrideMap.exists{case (_,tc) => tc.state == Error}
 
     def field(col:Int) = {
-      colHeaderData0.find(_(col).value.isMeasure).get(col).value.field
+      colHeaderData0.find(_(col).value.isMeasure) match {
+        case Some(cc) => cc(col).value.field
+        case None => {
+          val measureFields = fieldState.columns.allFieldAndIsMeasures.filter(_.isMeasure)
+          if (col == 0 && measureFields.size == 1) {
+            measureFields.head.field
+          } else {
+            throw new Exception("Can't find the specified field for column " + col)
+          }
+        }
+      }
     }
 
     def overrideEdits = overrideMap.toMap
@@ -693,8 +720,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     def collapseOrExpand(row:Int, col:Int, pivotTableView:PivotTableView) {}
 
     def acceptableValues(r:Int, c:Int) = {
-      val measureInfo = colHeaderData0.find(_(c).value.isMeasure).get(c)
-      val parser = editableInfo.get.fieldToParser(measureInfo.value.field)
+      val measureField = field(c)
+      val parser = editableInfo.get.fieldToParser(measureField)
       parser.acceptableValues
     }
 

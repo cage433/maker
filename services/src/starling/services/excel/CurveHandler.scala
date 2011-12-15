@@ -13,7 +13,7 @@ class CurveHandler(curveViewer: CurveViewer, marketDataStore: MarketDataStore) {
     val pricingGroup = PricingGroup.fromName(dataSourceParameters("Pricing Group").asInstanceOf[String])
     val marketDataIdentifier = marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(pricingGroup)))
     val observationDay = Day.fromExcel(dataSourceParameters("Day").asInstanceOf[Double])
-    val envSpec = EnvironmentSpecificationLabel(observationDay,
+    val envSpec = EnvironmentSpecificationLabel(observationDay.endOfDay,
       EnvironmentRuleLabel(dataSourceParameters("Rule").asInstanceOf[String]))
 
     val measureField: Field = Field(measure)
