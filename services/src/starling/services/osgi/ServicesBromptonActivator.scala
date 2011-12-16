@@ -18,6 +18,7 @@ import starling.daterange._
 import starling.gui.api.{EnabledDesks, PricingGroup, EnvironmentRuleLabel}
 import java.util.concurrent.{ScheduledExecutorService, ScheduledThreadPoolExecutor}
 import starling.utils.NamedDaemonThreadFactory
+import starling.props.ServerTypeLabel
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -108,7 +109,7 @@ class ServicesBromptonActivator extends BromptonActivator {
     context.registerService(classOf[ScheduledExecutorService], scheduledExecutorService)
     context.registerService(classOf[Notifier], new TimedNotifier(scheduledExecutorService))
 
-    if (props.QlikViewEnabled()) {
+    if (props.QlikViewEnabled() && props.ServerType() != ServerTypeLabel.Oil) {
       context.registerService(classOf[Receiver], new QlikViewUpdater(props.QlikViewServerUrl(), props.QlikViewSpotFXTask(),
         context.awaitService(classOf[Notifier])))
     }
