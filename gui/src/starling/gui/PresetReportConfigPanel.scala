@@ -1,12 +1,9 @@
 package starling.gui
 
 import api._
-import api.MarketDataIdentifier._
 import pages._
-import pages.MarketDataSelectionChanged._
 import starling.browser.common.GuiUtils._
 import swing._
-import event.SelectionChanged._
 import event.{SelectionChanged, ButtonClicked}
 import swing.Orientation._
 import collection.immutable.TreeSet
@@ -15,6 +12,7 @@ import collection.mutable.ListBuffer
 import starling.gui.StarlingLocalCache._
 import starling.browser.PageContext
 import starling.browser.common.{RoundedBorder, MigPanel}
+import java.awt.Font
 
 object ReportPreset extends Enumeration {
   type ReportPreset = Value
@@ -86,7 +84,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val cobPanel = new MigPanel("insets 0", "[p]unrel[p]unrel[p]") {
       val dayChangePanel = new MigPanel("insets 0, hidemode 3") {
         val dayChangeCheckBox = new CheckBox("Day Change") {
-          tooltip = "Day Change is calculated from this day (market data and valuation) to the observation day"
+          tooltip = "Day Change is calculated from this day (for curve data and market day) to the market day"
         }
         val dayChangeDayChooser = new DayChooser(observationDayChooser.day.previousBusinessDay(context.localCache.ukBusinessCalendar))
         val bookCloseLabel = new Label("Book close:") {
@@ -146,10 +144,10 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
         }
 
         reactions += {
-          case DayChangedEvent(`observationDayChooser`, d) => {
+          case DayChangedEvent(`observationDayChooser`, d,_) => {
             dayChangeDayChooser.day = d.previousBusinessDay(context.localCache.ukBusinessCalendar)
           }
-          case DayChangedEvent(`dayChangeDayChooser`, d) => updateRunButton()
+          case DayChangedEvent(`dayChangeDayChooser`, d,_) => updateRunButton()
           case ButtonClicked(`dayChangeCheckBox`) => {
             displayComponents(dayChangeCheckBox.selected)
             dayChangeDayChooser.enabled = dayChangeCheckBox.selected
@@ -180,8 +178,9 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       }
 
       val dayPanel = new MigPanel("insets 0") {
-        val observationDayLabel = new Label("<html><b>Observation day:</b></html>") {
-          tooltip = "Trades with a trade day after this day will be ignored"
+        val observationDayLabel = new Label("Curve Data:") {
+          tooltip = "Market data from this day will be used in valuations"
+          font = font.deriveFont(Font.BOLD)
         }
         val liveTradesCheckBox = new CheckBox("Live Trades Only") {
           tooltip = "No trades that have expired will be included"
@@ -197,7 +196,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
         }
 
         reactions += {
-          case DayChangedEvent(`observationDayChooser`, d) => updateRunButton()
+          case DayChangedEvent(`observationDayChooser`, d,_) => updateRunButton()
           case MarketDataSelectionChanged(mdi) => {
             val selection = mdi.selection
             val flaggedDays = context.localCache.populatedDays(selection).toSet
@@ -246,7 +245,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
   }
 
   add(buttonPanel, "sgy")
-  add(pricingGroupPanel, "sgy")
+  add(pricingGroupPanel, "ay top")
 
   private def isRealTime(rp:ReportParameters) = {
     val realTime = new ListBuffer[Boolean]()
@@ -270,7 +269,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val bookCloseShouldBe = allBookCloses.head
     rp.tradeSelectionWithTimestamp.deskAndTimestamp match {
       case None =>
-      case Some((desk, timestamp)) => {
+      case Some((_, timestamp)) => {
         realTime += (bookCloseShouldBe.closeDay == timestamp.closeDay)
       }
     }
@@ -314,7 +313,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val bookCloseShouldBe = allBookCloses.head
     rp.tradeSelectionWithTimestamp.deskAndTimestamp match {
       case None =>
-      case Some((desk, timestamp)) => {
+      case Some((_, timestamp)) => {
         cob += (bookCloseShouldBe.closeDay == timestamp.closeDay)
       }
     }
@@ -323,7 +322,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
   }
 
   def setupState(rp:ReportParameters) {
-    pricingGroupPanel.pricingGroupSelector.revert
+    pricingGroupPanel.pricingGroupSelector.revert()
 
     if (isRealTime(rp)) {
       buttonPanel.group.select(buttonPanel.realTimeButton)
@@ -515,5 +514,5 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     MarketDataIdentifier(marketDataSelectionTo, marketDataVersion)
   }
 
-  revert
+  revert()
 }

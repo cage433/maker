@@ -407,7 +407,7 @@ case class TradeSelectionPage(
       reactions += {
         case SelectionChanged(`deskCombo`) => generateNewPageFromState(true)
         case SelectionChanged(`timestampsCombo`) => generateNewPageFromState()
-        case DayChangedEvent(`tradeExpiryDayChooser`, day) => generateNewPageFromState()
+        case DayChangedEvent(`tradeExpiryDayChooser`, day,_) => generateNewPageFromState()
         case ButtonClicked(`deskCheckBox`) => generateNewPageFromState()
         case ButtonClicked(`intradayTradesCheckBox`) => generateNewPageFromState()
         case KeyPressed(`textIDField`, scala.swing.event.Key.Enter, m, _) => viewTrade(Modifiers.modifiersEX(m))

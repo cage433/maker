@@ -26,12 +26,22 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     reportParameters.curveIdentifier.marketDataIdentifier, showShapshotChooser = true) {
     reactions += { case MarketDataSelectionChanged(selection) => {
       ManualReportConfigPanel.this.publish(MarketDataChanged(ManualReportConfigPanel.this))
-      updateSnapshotButton
+      updateSnapshotButton()
     } }
   }
   val pricingGroupPanelPanel = new MigPanel {
+    val snapshotButton = new Button {
+      tooltip = "Import market data for the Curve Data day selected (and all from LIM)"
+      icon = StarlingIcons.icon("/icons/14x14_download_data.png")
+      reactions += {
+        case ButtonClicked(_) => {
+          context.submit(ImportMarketDataRequest(generateMarketDataIdentifier.selection, curveDataDayAndTimeChooser.day))
+        }
+      }
+    }
     border = RoundedBorder(colour = PivotTableBackgroundColour)
     add(pricingGroupPanel, "push, grow")
+    add(snapshotButton, "gapleft rel, ay top")
   }
 
   val optionsPanel = new MigPanel {
@@ -52,7 +62,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     listenTo(discountedCheckbox, zeroVolsCheckbox)
   }
 
-  val observationDayAndTimeChooser = new DayAndTimeChooser()
+  val curveDataDayAndTimeChooser = new DayAndTimeChooser()
 
    /**
    * The panel for all the day 2 valuation fields. In the context where pnl is not chosen, d2 is the only active valuation information.
@@ -63,32 +73,23 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val environmentRuleLabel = new ResizingLabel("Env Rule:") {
       tooltip = "The rule for selecting and deriving curves from market data"
     }
-    val snapshotButton = new Button {
-      tooltip = "Import and snapshot market data for the day selected"
-      icon = StarlingIcons.icon("/icons/14x14_download_data.png")
-      reactions += {
-        case ButtonClicked(_) => {
-          context.submit(ImportMarketDataRequest(generateMarketDataIdentifier.selection, observationDayAndTimeChooser.day))
-        }
-      }
-    }
     val environmentRule = new EnvironmentRuleChooser(
       reportParameters.curveIdentifier.environmentRule,
       context.localCache.environmentRulesForPricingGroup(reportParameters.curveIdentifier.marketDataIdentifier.selection.pricingGroup)
     )
 
-    val forwardObservationDayLabel = new ResizingLabel("Forward Observation:") {
-      tooltip = "The day used for time to expiry and discounting (usually the same as the observation day)"
+    val marketDayLabel = new ResizingLabel("Market Day:") {
+      tooltip = "Valuations need the 'current' day, in particular for discounts, forward FX, vols. Also trades with a trade day after this day are ignored. This day can not be before the curve data day."
     }
-    val forwardObservationDayAndTimeChooser = new DayAndTimeChooser(timeOfDay0 = TimeOfDay.StartOfDay)
+    val marketDayAndTimeChooser = new DayAndTimeChooser(timeOfDay0 = TimeOfDay.StartOfDay)
 
     val thetaToLabel = new ResizingLabel("Theta to:") {
-      tooltip = "Theta is calculated as the change between the forward observation day and this day (usually the business day after the observation day)"
+      tooltip = "Theta is calculated as the change between the market day and this day (usually the business day after the curve data day)"
     }
     val thetaToDayChooser = new DayChooser()
 
-    val observationDayLabel = new ResizingLabel("Observation day:") {
-      tooltip = "Trades with a trade day after this day will be ignored"
+    val curveDataLabel = new ResizingLabel("Curve Data:") {
+      tooltip = "Market data from this day will be used in valuations"
       font = font.deriveFont(Font.BOLD)
     }
 
@@ -102,18 +103,17 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     }
     val bookCloseChooser = new TimestampChooser(initialTradesAsOf, tradeSel.desk, context)
 
-    add(observationDayLabel)
-    add(observationDayAndTimeChooser)
-    add(observationDayAndTimeChooser.timeOfDayChooser, "split 2")
-    add(snapshotButton)
+    add(curveDataLabel)
+    add(curveDataDayAndTimeChooser)
+    add(curveDataDayAndTimeChooser.timeOfDayChooser)
     add(environmentRuleLabel)
     add(environmentRule)
     add(thetaToLabel)
     add(thetaToDayChooser, "wrap")
 
-    add(forwardObservationDayLabel)
-    add(forwardObservationDayAndTimeChooser)
-    add(forwardObservationDayAndTimeChooser.timeOfDayChooser)
+    add(marketDayLabel)
+    add(marketDayAndTimeChooser)
+    add(marketDayAndTimeChooser.timeOfDayChooser)
     add(bookCloseLabel)
     add(bookCloseChooser)
     add(liveOnLabel)
@@ -121,49 +121,49 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
     def updatePopulatedDays(selection:MarketDataSelection=pricingGroupPanel.selection.selection) {
       val flaggedDays = context.localCache.populatedDays(selection).toSet
-      observationDayAndTimeChooser.flagged = flaggedDays
-      forwardObservationDayAndTimeChooser.flagged = flaggedDays
+      curveDataDayAndTimeChooser.flagged = flaggedDays
+      marketDayAndTimeChooser.flagged = flaggedDays
       thetaToDayChooser.flagged = flaggedDays
     }
 
     reactions += {
-      case DayAndTimeChangedEvent(`observationDayAndTimeChooser`, dayAndTime) => {
+      case DayAndTimeChangedEvent(`curveDataDayAndTimeChooser`, dayAndTime, previousDayAndTime) => {
         val d = dayAndTime.day
         val timeOfDayToUse = if ((d >= Day.today) && (environmentRule.rule == EnvironmentRuleLabel.RealTime)) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
-        forwardObservationDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
-        if (liveOnDayChooser.day != d.startOfFinancialYear) {
+        marketDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
+      }
+      case DayAndTimeChangedEvent(`marketDayAndTimeChooser`, dayAndTime, previousDayAndTime) => {
+        val d = dayAndTime.day
+        thetaToDayChooser.day = d.nextBusinessDay(context.localCache.ukBusinessCalendar)
+        if (liveOnDayChooser.day == previousDayAndTime.day && liveOnDayChooser.day != d.startOfFinancialYear) {
           liveOnDayChooser.day = d
         }
       }
-      case DayAndTimeChangedEvent(`forwardObservationDayAndTimeChooser`, dayAndTime) => {
-        thetaToDayChooser.day = dayAndTime.day.nextBusinessDay(context.localCache.ukBusinessCalendar)
-      }
       case EnvironmentRuleLabelChangedEvent(_, _) => updateRunButton
       case ExcelObservationDay(_, _) | PricingGroupObservationDay(_, _) => updatePopulatedDays()
-      case DayChangedEvent(_,_) => updateRunButton
+      case DayChangedEvent(_,_,_) => updateRunButton
       case SelectionChanged(`bookCloseChooser`) => updateRunButton
       case MarketDataSelectionChanged(mdi) => {
         updatePopulatedDays(mdi.selection)
       }
     }
 
-    listenTo(pricingGroupPanel, observationDayAndTimeChooser, forwardObservationDayAndTimeChooser, liveOnDayChooser,
+    listenTo(pricingGroupPanel, curveDataDayAndTimeChooser, marketDayAndTimeChooser, liveOnDayChooser,
       environmentRule, thetaToDayChooser, bookCloseChooser.selection, context.remotePublisher)
 
     def setDays(ci:CurveIdentifierLabel, tradeExpiryDay:Day) {
       // Warning - the order you set these is important - to get round this don't listen to day choosers here.
-      observationDayAndTimeChooser.dayAndTime = ci.observationDayAndTime
-      forwardObservationDayAndTimeChooser.dayAndTime = ci.forwardValuationDayAndTime
+      curveDataDayAndTimeChooser.dayAndTime = ci.observationDayAndTime
+      marketDayAndTimeChooser.dayAndTime = ci.forwardValuationDayAndTime
       environmentRule.rule = ci.environmentRule
       thetaToDayChooser.day = ci.thetaToDayAndTime.day
       liveOnDayChooser.day = tradeExpiryDay
     }
   }
 
-  def updateSnapshotButton {
-    day2Panel.snapshotButton.enabled = pricingGroupPanel.selection.selection.pricingGroup.isDefined
+  def updateSnapshotButton() {
+    pricingGroupPanelPanel.snapshotButton.enabled = pricingGroupPanel.selection.selection.pricingGroup.isDefined
   }
-
 
   /**
    *  day 1 is the 'from' day in pnl
@@ -172,7 +172,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     border = RoundedBorder(colour = PivotTableBackgroundColour)
 
     val pnlFromCheckbox = new CheckBox("Day Change:") {
-      tooltip = "Day Change is calculated from this day (market data and valuation) to the observation day"
+      tooltip = "Day Change is calculated from this day (for curve data and market day) to the market day"
     }
     val pnlFromDayAndTimeChooser = new DayAndTimeChooser(timeOfDay0 = TimeOfDay.EndOfDay)
 
@@ -192,7 +192,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     add(tradesBookCloseChooser, "spanx")
 
     reactions += {
-      case DayChangedEvent(`observationDayAndTimeChooser`, d) => {
+      case DayChangedEvent(`curveDataDayAndTimeChooser`, d,_) => {
         pnlFromDayAndTimeChooser.day = d.previousBusinessDay(context.localCache.ukBusinessCalendar)
       }
       case ButtonClicked(`pnlFromCheckbox`) => {
@@ -204,7 +204,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         updateRunButton
       }
       case ButtonClicked(`useExcelButton`) => updateRunButton
-      case DayAndTimeChangedEvent(_,_) => updateRunButton
+      case DayAndTimeChangedEvent(_,_,_) => updateRunButton
       case SelectionChanged(`tradesBookCloseChooser`) => updateRunButton
       case MarketDataSelectionChanged(mdi) => {
         val selection = mdi.selection
@@ -217,7 +217,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       }
     }
 
-    listenTo(pricingGroupPanel, observationDayAndTimeChooser, pnlFromDayAndTimeChooser, pnlFromCheckbox,
+    listenTo(pricingGroupPanel, curveDataDayAndTimeChooser, pnlFromDayAndTimeChooser, pnlFromCheckbox,
       tradesBookCloseChooser.selection, useExcelButton)
 
     def setDays(canUseExcel:Boolean, pnlParams:Option[PnlFromParameters]) {
@@ -246,7 +246,8 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
   add(day1Panel, "sgy")
   add(day2Panel, "sgy")
-  add(optionsPanel, "sgy, wrap")
+//  add(optionsPanel, "sgy, wrap")
+  add(optionsPanel, "ay top, wrap")
   add(pricingGroupPanelPanel, "split, spanx")
 
   private def generateMarketDataIdentifier = {
@@ -269,9 +270,9 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val bookClose = day2Panel.bookCloseChooser.selectedTimestamp
     val tradeLiveOnDay = day2Panel.liveOnDayChooser.day
     val pnlFromDayAndTime = day1Panel.pnlFromDayAndTimeChooser.dayAndTime
-    val observationDayAndTime = observationDayAndTimeChooser.dayAndTime
+    val observationDayAndTime = curveDataDayAndTimeChooser.dayAndTime
     val environmentRule = day2Panel.environmentRule.rule
-    val forwardValuationDayAndTime = day2Panel.forwardObservationDayAndTimeChooser.dayAndTime
+    val forwardValuationDayAndTime = day2Panel.marketDayAndTimeChooser.dayAndTime
     val thetaDayAndTime: DayAndTime = day2Panel.thetaToDayChooser.day.endOfDay
 
     val marketDataVersion = mdi.marketDataVersion
