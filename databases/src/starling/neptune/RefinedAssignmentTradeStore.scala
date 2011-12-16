@@ -6,13 +6,14 @@ import starling.eai.TreeID
 import starling.db.RefinedAssignmentTradeSystem
 import starling.market.FuturesExchange
 import starling.utils.ImplicitConversions._
-import starling.tradestore.TradeStore
 import starling.instrument.TradeAttributes
 import starling.pivot._
 import starling.pivot.Field._
 import starling.instrument.TradeableType
 import starling.gui.api.Desk
 import starling.manager.Broadcaster
+import starling.tradeimport.ClosedDesks
+import starling.tradestore.{RichTradeStore, TradeStore}
 
 case class RefinedAssignmentTradeAttributes(
   groupCompany : String,
@@ -43,8 +44,8 @@ object RefinedAssignmentTradeAttributes {
 
 
 
-class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster)
-  extends TradeStore(db, broadcaster, RefinedAssignmentTradeSystem)
+class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster, closedDesks: ClosedDesks)
+  extends RichTradeStore(db, RefinedAssignmentTradeSystem, closedDesks: ClosedDesks)
 {
   val tradeAttributesFactory = RefinedAssignmentTradeAttributes
   def deskOption = Some(Desk.Titan)

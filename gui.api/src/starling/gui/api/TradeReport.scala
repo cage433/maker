@@ -115,6 +115,13 @@ case class EAIDeskInfo(book: Int) extends DeskInfo
 
 sealed case class Desk(name: String, pricingGroups: List[PricingGroup], deskInfo: Option[DeskInfo] = None) {
   override def toString = name
+
+  override def equals(obj: Any) = obj match {
+    case o: Desk => o.name == this.name
+    case _ => false
+  }
+
+  override lazy val hashCode = name.hashCode()
 }
 
 case class EnabledDesks(desks: Set[Desk])
@@ -141,12 +148,13 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
     case _ => None
   }
 
-  def eaiDeskFromID(bookID: Int) = eaiDesks.find {
-    case d@Desk(_, _, Some(info: EAIDeskInfo)) => info.book == bookID
-    case _ => false
-  }
+  def oilDesks = eaiDesks.toSet
 
-  def oilDesks = Set(GasolinePhysicalBargesAndARABlending, GasoilSpec, GasolineSpec, CrudeSpecNorthSea, HoustonDerivatives, NaphthaSpec)
+  private val bookIDDeskMap = eaiDesks.map{
+    case d@Desk(_, _, Some(info: EAIDeskInfo)) => info.book -> d
+  }.toMap
+
+  def eaiDeskFromID(bookID: Int) = bookIDDeskMap.get(bookID)
 }
 
 class TradeEvent
@@ -295,8 +303,15 @@ object CurveIdentifierLabel{
  * the integer id of the utp. However for Jon's spread delta report it was necessary
  * to combine rows based on the trade's associated strategy
  */
-case class UTPIdentifier(id : Int, attributes : Map[String, String] = Map()){
-  def getAttribute(key : String) = attributes.get(key)
+case class UTPIdentifier(id: Int, attributes: Map[String, String] = Map()) {
+  def getAttribute(key: String) = attributes.get(key)
+
+  override def equals(obj: Any) = obj match {
+    case u: UTPIdentifier => u.id == this.id
+    case _ => false
+  }
+
+  override def hashCode() = id
 }
 
 case class ReportErrors(errors:List[ReportError])

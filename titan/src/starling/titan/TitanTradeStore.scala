@@ -9,8 +9,9 @@ import collection.immutable.Map
 import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
 import starling.marketdata._
 import starling.pivot._
-import starling.tradestore.{TradeableFields, TradeRow, TradeStore}
 import starling.gui.api.Desk
+import starling.tradestore.{RichTradeStore, TradeableFields, TradeRow, TradeStore}
+import starling.tradeimport.ClosedDesks
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -35,8 +36,8 @@ object TitanTradeStore {
   val qtyLabels = List(quotaQuantity_str)
 }
 
-class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem, refDataLookup : ReferenceDataLookup)
-        extends TradeStore(db, broadcaster, tradeSystem) {
+class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem, refDataLookup : ReferenceDataLookup, closedDesks: ClosedDesks)
+        extends RichTradeStore(db, tradeSystem, closedDesks) {
   val tableName = "TitanTrade"
   def deskOption = Some(Desk.Titan)
   def createTradeAttributes(row:RichInstrumentResultSetRow) = {
@@ -81,7 +82,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     FieldDetails.coded("Benchmark Inco Term Code", refDataLookup.incoterms.values) :: Nil).map(f => f.field -> f).toMap.values.toList
 
   override def tradesChanged() = {
-   broadcaster.broadcast(TradesUpdated(Desk.Titan, cachedLatestTimestamp.get))
+    broadcaster.broadcast(TradesUpdated(Desk.Titan, latestKnownTimestamp.get))
   }
 
   def allStarlingTrades() = {
@@ -97,7 +98,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
 
   def getTradesForTitanTradeID(titanTradeID : String) : List[Trade] = {
     readLatestVersionOfAllTrades().flatMap{
-      case (_, TradeRow(_, _, trade)) if trade.titanTradeID == Some(titanTradeID) => Some(trade)
+      case (_, TradeRow(_, trade)) if trade.titanTradeID == Some(titanTradeID) => Some(trade)
       case _ => None
     }.toList
   }

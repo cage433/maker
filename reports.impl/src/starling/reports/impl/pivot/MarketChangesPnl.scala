@@ -409,7 +409,7 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
             }
       }.map {
         details => {
-          new AppendingMap(details.trade.fields.namedMaps + ("sd" -> Map[Field,Any](
+          details.trade.fields ++ Map[Field,Any](
             pnlComponentField -> details.label,
             pnlField -> details.pnl * details.scale,
             riskTypeField -> details.riskType,
@@ -417,7 +417,6 @@ class TradeChangesPnlPivotTableDataSource(tradeChangesFields:List[FieldDetailsGr
             riskMarketField -> details.riskMarket).addSome(
               riskPeriodField, details.period
             )
-          ))
         }
       }
     }

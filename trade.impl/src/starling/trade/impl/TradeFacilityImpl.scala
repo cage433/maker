@@ -247,9 +247,4 @@ class TradeFacilityImpl(
   def latestTradeTimestamp(desk:Desk):TradeTimestamp = tradeStores.closedDesks.latestTradeTimestamp(desk)
 
   private def intradayLatest = tradeStores.intradayTradeStore.intradayLatest
-
-  def selectLiveAndErrorTrades(day: Day, timestamp: Timestamp, desk: Desk, tradePredicate: TradePredicate):List[Trade] = {
-    deskTradeSets(Some(desk), tradePredicate).flatMap(_.selectLiveAndErrorTrades(day, timestamp))
-  }
-
 }

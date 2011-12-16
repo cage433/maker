@@ -164,6 +164,7 @@
       <library>
         <CLASSES>
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scalaz/scalaz-core_2.9.1/jars/scalaz-core_2.9.1-6.0.3.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.scalaz/scalaz-core_2.9.1/srcs/scalaz-core_2.9.1-6.0.3-sources.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -215,6 +216,24 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="manager" exported="" />
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.beust/jcommander/jars/jcommander-1.12.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/.ivy2/cache/org.beanshell/bsh/jars/bsh-2.0b4.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 

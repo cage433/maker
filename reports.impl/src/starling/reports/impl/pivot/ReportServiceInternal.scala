@@ -109,7 +109,7 @@ class PivotReportRunner(reportContextBuilder:ReportContextBuilder) {
   val reportTypes: List[PivotReportType] = List(GreeksPivotReport, ThetaPivotReport, MtmPivotReport)
   val reportOptionsAvailable = ReportOptionsAvailable(reportTypes.map(_.label), availableSlideParameters)
 
-  def runReport(curveIdentifier: CurveIdentifier, reportOptions: ReportOptions, utps : Map[UTPIdentifier, UTP]): ReportData = {
+  def runReport(curveIdentifier: CurveIdentifier, reportOptions: ReportOptions, utps : Map[UTPIdentifier, UTP]): ReportData = Log.infoWithTime("Run report: " + (curveIdentifier, reportOptions)) {
     val selectedReportTypes: List[PivotReportType] = reportTypes.filter(rt => reportOptions.containsReport(rt.name))
     val contextAndSideDetails: scala.List[(AbstractReportContext, SlideDetails)] = getContextAndSlideDetails(reportOptions, curveIdentifier)
 

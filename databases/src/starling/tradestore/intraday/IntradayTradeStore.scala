@@ -6,7 +6,6 @@ import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.instrument.TradeableType
 import starling.manager.Broadcaster
 import starling.pivot._
-import starling.tradestore.{TradeStore}
 import starling.daterange.{Day, Timestamp}
 import starling.eai.{TreeID, EAIStrategyDB}
 import starling.auth.{User, LdapUserLookup}
@@ -17,6 +16,8 @@ import starling.tradestore.eai.ExternalSortIndexPivotTreePathOrdering
 import starling.tradestore.TradeStore.StoreResults
 import starling.dbx.{QueryBuilder, Clause, Query}
 import starling.gui.api.{Desk, IntradayUpdated}
+import starling.tradeimport.ClosedDesks
+import starling.tradestore.{RichTradeStore, TradeStore}
 
 case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, dealID: Option[TreeID],
                                    trader: String, tradedFor: String, broker: String, comment: String, clearingHouse: String,
@@ -79,8 +80,9 @@ class IntradayTradeStore(
         db: RichDB,
         eaiStrategyDB: EAIStrategyDB,
         broadcaster: Broadcaster,
-        ldapSearch: LdapUserLookup
-        ) extends TradeStore(db, broadcaster, IntradayTradeSystem) {
+        ldapSearch: LdapUserLookup,
+        closedDesks: ClosedDesks
+        ) extends RichTradeStore(db, IntradayTradeSystem, closedDesks) {
 
   import IntradayTradeAttributes._
 

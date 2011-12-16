@@ -123,6 +123,10 @@ object CacheFactory extends Log {
     // TODO [23 Nov 2011] Get rid of all other memoize methods !
     def memoizeZ[K, V](key: K)(f: K => V) = memoize(key, f(key))
 
+    // A lot of the time you already have access to params for f and don't need them
+    // passed in again. Makes the code much clean and scala guesses at the types better.
+    def memoized[K, V](key: K)(f: => V) = memoize(key, f)
+
     /**
      * Returns the value for the key if the cache contains it
      *

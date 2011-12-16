@@ -165,11 +165,11 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   private def getSymbolOption(text: CaseInsensitive): Option[UOM] = UOMSymbol.fromName(text).map(UOM.asUOM)
 
-  private var uomCache = CacheFactory.getCache("UOM.fromString", unique = true)
+  private val uomFromStringCache = CacheFactory.getCache("UOM.fromString", unique = true)
   private val FXRegex = """(.*)([ ]?per[ ]?|/)(.*)""".r
 
   def fromStringOption(text: String): Option[UOM] = {
-    uomCache.memoize((text), (tuple: (String)) => {
+    uomFromStringCache.memoize((text), (tuple: (String)) => {
       text match {
         // check the length so that S/T doesn't fall in here. I don't know any FX that is 3 chars or less
         case FXRegex(num, _, dem) if text.length > 3 => (getSymbolOption(num.trim), getSymbolOption(dem.trim)) partialMatch {
@@ -210,6 +210,26 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
 
   def asUOM(uomSymbol: UOMSymbol): UOM = symbolToUOMMap(uomSymbol)
 
+  private val numeratorCache = CacheFactory.getCache("UOM.numeratorCache", unique = true)
+  def numeratorUOM(uom: UOM): UOM = uom match {
+    case UOM.NULL => UOM.NULL
+    case _ => {
+      numeratorCache.memoize(uom, UOM.fromSymbolMap(uom.asSymbolMap.filterValues(_ > 0), UOM.SCALAR))
+    }
+  }
+
+  private val denominatorCache = CacheFactory.getCache("UOM.denominatorUOM", unique = true)
+  def denominatorUOM(uom: UOM): UOM = uom match {
+    case UOM.NULL => UOM.SCALAR // matching logic from before refactor
+    case _ => {
+      denominatorCache.memoizeZ(uom) { _ =>
+        val fv = uom.asSymbolMap.filterValues(_ < 0)
+        val res = UOM.fromSymbolMap(fv, UOM.SCALAR)
+        res.inverse
+      }
+    }
+  }
+
   def decomposePrimes(n: Long): Map[Int, Int] = {
     def recurse(n: Long, primes: List[Int], acc: Map[Int, Int]): Map[Int, Int] = n match {
       case 0 => acc // Should only happen for the null unit
@@ -226,6 +246,8 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
     }
     recurse(n, UOM.primes, Map.empty[Int, Int])
   }
+
+  private val multCache = CacheFactory.getCache("UOM.multCache")
 }
 
 /**
@@ -267,7 +289,7 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
     (this, o) match {
       case (UOM(Ratio(1, 1), _, c), _) => (o, c)
       case (_, UOM(Ratio(1, 1), _, c)) => (this, c)
-      case _ => {
+      case _ => UOM.multCache.memoized((this, o)) {
         val notReduced = UOM(uType * o.uType, subType * o.subType, v * o.v)
         val uGCD = notReduced.uType.gcd
         if (uGCD > 1) {
@@ -277,7 +299,7 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
           if (decomposedU.values.sum == decomposedS.values.sum) {
             val reduced = notReduced.copy(uType = notReduced.uType.reduce, subType = notReduced.subType.reduce)
 
-            (reduced, 1.0)
+            (reduced, BigDecimal("1.0"))
           } else {
             def remove(pp: Long, primes: List[Long], removed: Int, max: Int): Long = if (removed < max) {
               val prime = primes.find(p => pp % p == 0).get
@@ -303,7 +325,7 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
             (reduced, multiplier)
           }
         } else {
-          (notReduced, 1.0)
+          (notReduced, BigDecimal("1.0"))
         }
       }
     }
@@ -378,19 +400,9 @@ case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM]
     }
   }
 
-  def numeratorUOM: UOM = this match {
-    case UOM.NULL => UOM.NULL
-    case _ => UOM.fromSymbolMap(asSymbolMap.filterValues(_ > 0), UOM.SCALAR)
-  }
+  def numeratorUOM: UOM = UOM.numeratorUOM(this)
 
-  def denominatorUOM: UOM = this match {
-    case UOM.NULL => UOM.SCALAR // matching logic from before refactor
-    case _ => {
-      val filterValues = asSymbolMap.filterValues(_ < 0)
-      val uom = UOM.fromSymbolMap(filterValues, UOM.SCALAR)
-      uom.inverse
-    }
-  }
+  def denominatorUOM: UOM = UOM.denominatorUOM(this)
 
   def replace(uom1: UOM, uom2: UOM) = {
     def recurse(u: UOM): UOM = {

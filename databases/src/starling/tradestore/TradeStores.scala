@@ -13,11 +13,15 @@ import starling.eai.{TreeID}
 import starling.utils.STable
 import starling.gui.api._
 import scala.collection.JavaConversions._
+import collection.Iterable
+import scalaz.Scalaz._
 
 
 trait DeskDefinition {
-  def tradeSets(predicate:TradePredicate):List[TradeSet]
-  def initialState:Option[PivotFieldsState] = None
+  def tradeSets(predicate: TradePredicate): List[TradeSet]
+
+  def initialState: Option[PivotFieldsState] = None
+
   def tradeTimestampForOffset(closeDay: Day): TradeTimestamp = throw new Exception("Not implemented for " + this)
 }
 
@@ -25,31 +29,34 @@ trait DeskDefinition {
  * Holds all the trades stores and has methods to retrieve the appropriate one
  */
 case class TradeStores(
-  closedDesks: ClosedDesks,
-  eaiTradeStores: Map[Desk,EAITradeStore],
-  intradayTradeStore: IntradayTradeStore,
-  titanTradeStore : TradeStore,
-  val enabledDesks:Set[Desk]
-) {
+                        closedDesks: ClosedDesks,
+                        eaiTradeStores: Map[Desk, EAITradeStore],
+                        intradayTradeStore: IntradayTradeStore,
+                        titanTradeStore: RichTradeStore,
+                        val enabledDesks: Set[Desk]
+                        ) {
 
-  def registerTradeImporter(key:Object, tradeImporter:TradeImporter) {
+  def registerTradeImporter(key: Object, tradeImporter: TradeImporter) {
     tradeImporters.put(key, tradeImporter)
   }
-  def unregister(key:Object) {
+
+  def unregister(key: Object) {
     tradeImporters.remove(key)
   }
 
-  val tradeImporters = new java.util.concurrent.ConcurrentHashMap[Object,TradeImporter]()
+  val tradeImporters = new java.util.concurrent.ConcurrentHashMap[Object, TradeImporter]()
 
-  private def label(fieldDetailsGroup:FieldDetailsGroup):FieldDetailsGroupLabel = FieldDetailsGroupLabel(fieldDetailsGroup.name, fieldDetailsGroup.fields.map(_.field.name))
+  private def label(fieldDetailsGroup: FieldDetailsGroup): FieldDetailsGroupLabel = FieldDetailsGroupLabel(fieldDetailsGroup.name, fieldDetailsGroup.fields.map(_.field.name))
 
-  def readTradeVersions(tradeID:TradeID):(STable,List[FieldDetailsGroupLabel],List[CostsLabel]) = {
-    storesFor(tradeID.tradeSystem).foreach { tradeStore => {
-      tradeStore.tradeHistory(tradeID) match {
-        case Some(res) => return (res._1, res._2.map(label(_)), res._3)
-        case None =>
+  def readTradeVersions(tradeID: TradeID): (STable, List[FieldDetailsGroupLabel], List[CostsLabel]) = {
+    storesFor(tradeID.tradeSystem).foreach {
+      tradeStore => {
+        tradeStore.tradeHistory(tradeID) match {
+          case Some(res) => return (res._1, res._2.map(label(_)), res._3)
+          case None =>
+        }
       }
-    }}
+    }
     throw new Exception("Trade " + tradeID + " not found")
 
   }
@@ -63,10 +70,11 @@ case class TradeStores(
         new TradeSet(EAITradeSystem, eaiStoreFor(desk),
           predicate.addFilter(Field("Desk"), Set(desk.name)))
       )
+
       override def initialState = Some(PivotFieldsState(
-        dataFields=List( Field("Trade Count") ),
-        rowFields=List( Field("Instrument"), Field("Market")),
-        filters=List( (Field("Strategy"), AllSelection))
+        dataFields = List(Field("Trade Count")),
+        rowFields = List(Field("Instrument"), Field("Market")),
+        filters = List((Field("Strategy"), AllSelection))
       ))
 
       override def tradeTimestampForOffset(closeDay: Day) = {
@@ -75,11 +83,11 @@ case class TradeStores(
     }
   }
 
-  def findImporter(tradeSystem:TradeSystem) = {
+  def findImporter(tradeSystem: TradeSystem) = {
     tradeImporters.values().find(_.tradeSystem == tradeSystem).getOrElse(throw new Exception("No importer found for " + tradeSystem))
   }
 
-  val deskDefinitions = Map[Desk,DeskDefinition](
+  val deskDefinitions = Map[Desk, DeskDefinition](
     Desk.Titan -> new DeskDefinition() {
       def tradeSets(predicate: TradePredicate) = List(
         new TradeSet(TitanTradeSystem, standardStoreFor(TitanTradeSystem), predicate)
@@ -87,27 +95,24 @@ case class TradeStores(
     }
   ) ++ Desk.eaiDesks.map(eaiDesk)
 
-  def eaiStoreFor(desk:Desk) = eaiTradeStores(desk)
+  def eaiStoreFor(desk: Desk) = eaiTradeStores(desk)
 
-  def standardStoreFor(tradeSystemName: TradeSystem):TradeStore = tradeSystemName match {
+  def standardStoreFor(tradeSystemName: TradeSystem): RichTradeStore = tradeSystemName match {
     case IntradayTradeSystem => intradayTradeStore
     case TitanTradeSystem => titanTradeStore
   }
 
-  def storesFor(tradeSystem:TradeSystem) = {
+  def storesFor(tradeSystem: TradeSystem): Iterable[RichTradeStore] = {
     tradeSystem match {
       case EAITradeSystem => {
-        val all = eaiTradeStores.values
-        val (loaded, notLoaded) = all.partition(_.isLoaded)
-        loaded.toList ::: notLoaded.toList
+        eaiTradeStores.values
       }
-      case _ => List( standardStoreFor(tradeSystem) )
+      case _ => List(standardStoreFor(tradeSystem))
     }
   }
 
-  def titanCurrentTimestamp = TradeTimestamp.makeMagicLatestTimestamp(
-      titanTradeStore.cachedLatestTimestamp.get()
-    )
+  def titanCurrentTimestamp = TradeTimestamp.makeMagicLatestTimestamp(titanTradeStore.latestKnownTimestamp.getOrElse(new Timestamp(0)))
+
   def closedDesksByDay: Map[Desk, Map[Day, List[TradeTimestamp]]] = {
     val closes = closedDesks.closedDesksByDay
     val titanLatestTradeTimestamp = titanCurrentTimestamp
@@ -131,11 +136,11 @@ case class TradeStores(
           case (desk, tradeTimestamp) => {
             List((Field("Entry Date"), GreaterThanSelection(tradeTimestamp.closeDay)), (Field("Desk"), SomeSelection(Set(desk.name))))
           }
-        }:::List((Field(IntradayTradeAttributes.subgroupName_str), SomeSelection(subgroupsToUse.toSet)))
+        } ::: List((Field(IntradayTradeAttributes.subgroupName_str), SomeSelection(subgroupsToUse.toSet)))
 
         List((new TradeSet(IntradayTradeSystem, intradayTradeStore,
           TradePredicate(predicate ::: tradeSelection.tradePredicate.filter, tradeSelection.tradePredicate.selection)),
-                ts))
+          ts))
       }
     }
 
@@ -155,18 +160,13 @@ case class TradeStores(
 }
 
 class TradeSet(
-        val tradeSystem:TradeSystem,
-        val tradeStore:TradeStore,
-        val tradePredicate:TradePredicate) {
+                val tradeSystem: TradeSystem,
+                val tradeStore: RichTradeStore,
+                val tradePredicate: TradePredicate) {
   val key = (tradeSystem, tradePredicate)
-  
-  def partitioningTradeColumns : List[Field] = {
+
+  def partitioningTradeColumns: List[Field] = {
     if (tradeSystem == EAITradeSystem) List(Field("Strategy")) else Nil
-  }
-
-
-  def selectLiveAndErrorTrades(marketDay: Day, timestamp: Timestamp): List[Trade] = {
-    tradeStore.selectLiveAndErrorTrades(tradePredicate, marketDay, timestamp)
   }
 
   def tradeIDFor(text: String) = {
@@ -177,19 +177,19 @@ class TradeSet(
     }
   }
 
-  def reportPivot(marketDay: Day, expiryDay: Day, timestamp: Timestamp, addRows:Boolean) =
+  def reportPivot(marketDay: Day, expiryDay: Day, timestamp: Timestamp, addRows: Boolean) =
     tradeStore.reportPivot(timestamp, marketDay, expiryDay, tradePredicate, partitioningTradeColumns, addRows)
 
   def utps(marketDay: Day, expiryDay: Day, timestamp: Timestamp) = {
     tradeStore.utps(timestamp, marketDay, expiryDay, tradePredicate, partitioningTradeColumns)
   }
 
-  def tradeChanges(t1: Timestamp, t2: Timestamp, expiryDay: Day) : TradeChanges = {
-    assert(t1 <= t2, "t1 should be on or before t2: " + (t1, t2))
+  def tradeChanges(t1: Timestamp, t2: Timestamp, expiryDay: Day): TradeChanges = {
+    assert(t1 <= t2, "t1 should be on or before t2: " +(t1, t2))
     tradeStore.tradeChanges(t1, t2, expiryDay, tradePredicate)
   }
 
-  def readAll(t:Timestamp, expiryDay: Option[Day] = None, marketDay: Option[Day] = None) = tradeStore.readAll(t, tradePredicate, expiryDay, marketDay)
+  def readAll(t: Timestamp, expiryDay: Option[Day] = None, marketDay: Option[Day] = None) = tradeStore.readAll(t, tradePredicate, expiryDay, marketDay)
 
   def pivot(expiryDay: Day, timestamp: Timestamp) = {
     tradeStore.pivot(timestamp, None, expiryDay, tradePredicate)

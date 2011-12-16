@@ -47,7 +47,7 @@ abstract class CommodityMarket(
 
   override def toString = name
 
-  override def hashCode = name.hashCode ^ eaiQuoteID.hashCode
+  override lazy val hashCode = name.hashCode ^ eaiQuoteID.hashCode
 
   def curveKey = ForwardCurveKey(this)
 

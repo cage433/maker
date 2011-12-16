@@ -7,11 +7,12 @@ import starling.instrument.TradeAttributes
 import starling.db.EAITradeSystem
 import starling.pivot._
 import starling.richdb.{RichInstrumentResultSetRow, RichDB}
-import starling.tradestore.{TradeStore}
 import collection.immutable.{List, Set}
 import starling.manager.Broadcaster
 import starling.dbx.QueryBuilder._
 import starling.gui.api.{EAIDeskInfo, Desk}
+import starling.tradeimport.ClosedDesks
+import starling.tradestore.{RichTradeStore, TradeStore}
 
 object EAITradeStore {
   val desk_str = "Desk"
@@ -24,6 +25,17 @@ object EAITradeStore {
   def tables: List[String] = Desk.eaiDesks.map {
     case Desk(_, _, Some(d:EAIDeskInfo)) => "EAITrade_book_" + d.book
   }
+}
+
+object EAITradeAttributes {
+  import EAITradeStore._
+
+  val deskField = Field(desk_str)
+  val dealIDField = Field(dealID_str)
+  val traderField = Field(trader_str)
+  val tradedForField = Field(tradedFor_str)
+  val brokerField = Field(broker_str)
+  val clearingField = Field(clearing_str)
 }
 
 case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID,
@@ -47,20 +59,23 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
     clearing_str -> clearingHouse
   )
 
-  override def createFieldValues = Map(
-    Field(desk_str) -> desk.name,
-    //Strategy is intentionally excluded as it needs to hold the path, not just the id, so it is added in #joiningTradeAttributeFieldValues
-    Field(dealID_str) -> dealID,
-    Field(trader_str) -> trader,
-    Field(tradedFor_str) -> tradedFor,
-    Field(broker_str) -> broker,
-    Field(clearing_str) -> clearingHouse
-  )
+  override def createFieldValues = {
+    import EAITradeAttributes._
+    Map(
+      deskField -> desk.name,
+      //Strategy is intentionally excluded as it needs to hold the path, not just the id, so it is added in #joiningTradeAttributeFieldValues
+      dealIDField -> dealID,
+      traderField -> trader,
+      tradedForField -> tradedFor,
+      brokerField -> broker,
+      clearingField -> clearingHouse
+    )
+  }
 }
 
 
-class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, desk:Desk) extends
-    TradeStore(db, broadcaster, EAITradeSystem) {
+class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrategyDB, desk:Desk, closedDesks: ClosedDesks) extends
+    RichTradeStore(db, EAITradeSystem, closedDesks) {
 
   val deskOption = Some(desk)
   lazy val usedStrategyIDs = new scala.collection.mutable.HashSet[Int]()
@@ -75,10 +90,26 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
     val bookID = desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book
     val strategyID = row.getInt("StrategyID")
     val dealID = row.getInt(dealID_str.replaceAll(" ", ""))
-    val trader = row.getStringOrNone(trader_str).getOrElse("")
-    val tradedFor = row.getStringOrNone(tradedFor_str.replaceAll(" ", "")).getOrElse("")
-    val broker = row.getStringOrNone(broker_str).getOrElse("")
-    val clearer = row.getStringOrNone(clearing_str.replaceAll(" ", "")).getOrElse("")
+    val trader = row.getStringOrNone(trader_str) match {
+      case Some("Undefined") => "Undefined"
+      case Some(t) => t
+      case None => ""
+    }
+    val tradedFor = row.getStringOrNone(tradedFor_str.replaceAll(" ", "")) match {
+      case Some("Undefined") => "Undefined"
+      case Some(t) => t
+      case None => ""
+    }
+    val broker = row.getStringOrNone(broker_str) match {
+      case Some("No Broker") => "No Broker"
+      case Some(t) => t
+      case None => ""
+    }
+    val clearer = row.getStringOrNone(clearing_str.replaceAll(" ", "")) match {
+      case Some("ClearPort") => "ClearPort"
+      case Some(t) => t
+      case None => ""
+    }
     EAITradeAttributes(TreeID(strategyID), TreeID(bookID), TreeID(dealID), trader, tradedFor, broker, clearer)
   }
 
@@ -100,8 +131,8 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
   }
 
   private def populateUsedIds() {
-    usedStrategyIDs.clear
-    usedStrategyIDs ++= db.queryWithResult("select distinct strategyID from " + tableName, Map()) { rs=> rs.getInt("strategyID") }
+//    usedStrategyIDs.clear
+//    usedStrategyIDs ++= db.queryWithResult("select distinct strategyID from " + tableName, Map()) { rs=> rs.getInt("strategyID") }
   }
   override def tradesChanged() = {
     populateUsedIds

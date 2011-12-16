@@ -42,7 +42,7 @@ trait Index extends KnownConversions {
     case _ => false
   }
 
-  override def hashCode = name.hashCode
+  override lazy val hashCode = name.hashCode
 
   /**
    * Swaps and asians often have start/end date not on month boundaries in EAI. In general they do mean the whole month

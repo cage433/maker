@@ -94,7 +94,7 @@ object Quantity {
     } else None
   }
 }
- 
+
 class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with Summable[Quantity] with Serializable {
   def ln = copy(value = Math.log(checkedValue(UOM.SCALAR)))
 
@@ -222,7 +222,12 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
   override def equals(other: Any) = other match {
     case Quantity(this.value, this.uom) => true
     case Quantity(_, this.uom) => false // different values, same uom - false
-    case q @ Quantity(_, UOM(this.uom.uType, _, _)) => compareInBaseUOM(q.asInstanceOf[Quantity]) // same main type, could be equal
+    case q@Quantity(v, UOM(this.uom.uType, _, _)) => if (v == 0.0 && v == this.value) {
+      true // we compare 0 cent/GAL and 0 usd/GAL enough that this makes sense
+    } else {
+      // same main type, could be equal
+      compareInBaseUOM(q.asInstanceOf[Quantity])
+    }
     case _ => false
   }
 

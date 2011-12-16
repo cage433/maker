@@ -62,7 +62,7 @@ case class UTP_Portfolio(portfolio : Map[UTP, Double]) extends Instrument {//} w
 
   def ++(other:UTP_Portfolio) = {
     val allKeys = portfolio.keySet ++ other.portfolio.keySet
-    UTP_Portfolio(Map() ++ allKeys.map{instrument=>instrument->(portfolio.getOrElse(instrument, 0.0) + other.portfolio.getOrElse(instrument, 0.0))})
+    UTP_Portfolio(allKeys.map{instrument=>instrument->(portfolio.getOrElse(instrument, 0.0) + other.portfolio.getOrElse(instrument, 0.0))}.toMap)
   }
  
 	/** Return a new UTP_Portfolio by adding a single instrument to this one
@@ -78,8 +78,7 @@ case class UTP_Portfolio(portfolio : Map[UTP, Double]) extends Instrument {//} w
 	}
 	def size : Int = portfolio.size 
 
-	def instruments : Set[UTP]= Set.empty ++ portfolio.keySet
-
+	def instruments : Set[UTP]= portfolio.keySet
 
   def describe{
 	  val fmt = new java.text.DecimalFormat("0.00")
@@ -91,7 +90,6 @@ case class UTP_Portfolio(portfolio : Map[UTP, Double]) extends Instrument {//} w
 	  }
 	}
   def details = Map[String, Any]()
-
 
   def asUtpPortfolio = this
 

@@ -16,7 +16,7 @@ class TitanTradeStoreManagerTests extends TestMarketSpec{
 
 //  @Test
 //  def testValuationChangedMakesEvent{
-    val tradeStore = new TitanTradeStore(null, null, null, null){
+    val tradeStore = new TitanTradeStore(null, null, null, null, null){
       val tradesByTitanId = Map[String, List[Trade]]()
       override def getTradesForTitanTradeID(titanTradeID: String) = tradesByTitanId.getOrElse(titanTradeID, Nil)
     }

@@ -9,6 +9,7 @@ import starling.curves._
 import starling.daterange.DateRangePeriod
 import starling.market.{Index, FuturesFrontPeriodIndex, FuturesMarket, Market}
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity}
+import com.google.common.collect.MapMaker
 
 /** A class which represents a futures trade
  */
@@ -70,7 +71,7 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
   def asUtpPortfolio(tradeDay:Day) = asUtpPortfolio
   def asUtpPortfolio = UTP_Portfolio(
     Map(
-      Future(market, delivery, Quantity(0.0, strike.uom), Quantity(1.0, volume.uom)) -> volume.value,
+      Future.createReuse(market, delivery, Quantity(0.0, strike.uom), Quantity(1.0, volume.uom)) -> volume.value,
       BankAccount(1.0(valuationCCY), Some(market), None, delivery) -> (-strike * volume).checkedValue(valuationCCY)
       )
   )
@@ -94,6 +95,18 @@ case class Future(market: FuturesMarket, delivery: DateRange, strike: Quantity, 
 object Future extends InstrumentType[Future] with TradeableType[Future] {
    val name = "Future"
 
+  val instances = new MapMaker().concurrencyLevel(16).weakValues().makeMap[(FuturesMarket, DateRange, Quantity, Quantity), Future]
+  def createReuse(market: FuturesMarket, delivery: DateRange, strike: Quantity, volume: Quantity) = {
+    instances.get((market, delivery, strike, volume)) match {
+      case null => {
+        val f = new Future(market, delivery, strike, volume)
+        instances.put((market, delivery, strike, volume), f)
+        f
+      }
+      case f => f
+    }
+  }
+
   def createTradeable(row: RichInstrumentResultSetRow) = {
     val futuresMarket = row.getFuturesMarket("Market")
     Future(futuresMarket, row.getDateRange("Period", Some(futuresMarket.tenor)), row.getQuantity("InitialPrice"), row.getQuantity("Quantity"))
@@ -101,6 +114,6 @@ object Future extends InstrumentType[Future] with TradeableType[Future] {
   def sample = {
     val leadMarket = Market.LME_LEAD
     import starling.quantity.UOM._
-    Future(leadMarket, Day(2009, 8, 3), 123(USD/MT), 550 (MT))
+    Future(leadMarket, Day(2019, 8, 3), 123(USD/MT), 550 (MT))
   }
 }
