@@ -701,7 +701,7 @@ object StarlingBuild extends Build{
       cp.map(_.data).getFiles.toList.foreach(println)
       val resourceDirs = cp.map(_.data).getFiles.toList.map(_.getPath).filter(_.endsWith("/classes")).map{s => s.replace("/classes", "/resources")}
       file.println("export CLASSPATH=" + (cp.map(_.data).getFiles.toList ::: resourceDirs).mkString(":"))
-      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xmx6000m'")
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=1024m -Xss512k -Xms6000m -Xmx6000m'")
       file.close()
       None
     }
@@ -730,7 +730,7 @@ object StarlingBuild extends Build{
       val allRelativePaths = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar" :: "lib/scala/lib_managed/scala-swing-jar-2.9.1.jar" :: relativeStarlingPaths ::: relativeExternalLibraryJarPaths
 
       file.println("export CLASSPATH=" + allRelativePaths.mkString(":"))
-      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=256 -Xmx6000m'")
+      file.println("export JAVA_OPTS='-server -XX:MaxPermSize=256 -Xms6000m -Xmx6000m'")
                   
       file.close()
       None

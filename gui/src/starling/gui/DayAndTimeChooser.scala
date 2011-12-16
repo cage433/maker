@@ -15,8 +15,16 @@ class DayAndTimeChooser(day0:Day = Day.today, timeOfDay0:TimeOfDay = TimeOfDay.S
   add(timeOfDayChooser, "hidemode 3")
 
   reactions += {
-    case DayChangedEvent(`dayChooser`, _) => publish(DayAndTimeChangedEvent(this, dayAndTime))
-    case TimeOfDayChangedEvent(`timeOfDayChooser`, _) => publish(DayAndTimeChangedEvent(this, dayAndTime))
+    case DayChangedEvent(`dayChooser`, _,previousDay) => {
+      val dat = dayAndTime
+      val odat = dayAndTime.copy(day = previousDay)
+      publish(DayAndTimeChangedEvent(this, dat, odat))
+    }
+    case TimeOfDayChangedEvent(`timeOfDayChooser`, _, prev) => {
+      val dat = dayAndTime
+      val odat = DayAndTime(dat.day, prev)
+      publish(DayAndTimeChangedEvent(this, dat, odat))
+    }
   }
 
   listenTo(dayChooser, timeOfDayChooser)
@@ -43,5 +51,5 @@ class DayAndTimeChooser(day0:Day = Day.today, timeOfDay0:TimeOfDay = TimeOfDay.S
   }
 }
 
-case class DayAndTimeChangedEvent(source: Component, dayAndTime:DayAndTime) extends Event
+case class DayAndTimeChangedEvent(source: Component, dayAndTime:DayAndTime, previousDayAndTime:DayAndTime) extends Event
 

@@ -287,7 +287,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           val version = context.localCache.latestMarketDataVersion(marketDataSelection)
 
           val enRule = pricingGroup match {
-            case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+            case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.MostRecentCloses
             case _ => EnvironmentRuleLabel.COB
           }
 

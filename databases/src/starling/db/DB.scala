@@ -173,7 +173,7 @@ trait DBTrait[RSR <: ResultSetRow] extends Log {
   protected def createWriter: DBWriter = new DBWriter(DBTrait.this, dataSource)
 
   private def logSql(sql: String) {
-    log.info(sql.replaceAll("\n", ""))
+    log.debug(sql.replaceAll("\n", ""))
   }
 }
 

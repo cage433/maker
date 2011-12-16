@@ -7,9 +7,10 @@ import pivotparsers.{DayPivotParser}
 import starling.quantity.Quantity
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-import starling.daterange.{ObservationTimeOfDay, Day}
+import starling.daterange.{Tenor, ObservationTimeOfDay, Day}
+import utils.TenorPivotParser
 
-case class CountryBenchmarkData(countryData: NestedMap[(NeptuneCountryCode, GradeCode), Day, Quantity]) extends MarketData {
+case class CountryBenchmarkData(countryData: NestedMap[(NeptuneCountryCode, GradeCode), Tenor, Quantity]) extends MarketData {
   def size = countryData.nestedSize
 }
 
@@ -22,18 +23,18 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   val areaField = FieldDetails("Area")
   val countryCodeField = FieldDetails.coded("Country", referenceData.countries.values)
   val gradeCodeField = FieldDetails.coded("Grade", referenceData.grades.values)
-  val effectiveFromField = FieldDetails("Effective From", DayPivotParser)
+  val effectiveMonthField = FieldDetails("Effective Month", TenorPivotParser)
   val benchmarkPriceField = FieldDetails.createMeasure("Benchmark Price",
     parser0 = PricePivotParser, formatter0 = PivotQuantitySetPivotFormatter)
 
   def extendedKeys = List(commodityField)
-  override def valueKeys = List(countryCodeField, gradeCodeField, effectiveFromField)
+  override def valueKeys = List(countryCodeField, gradeCodeField, effectiveMonthField)
   override def derivedFieldDetails = List(areaField)
   def valueFieldDetails = List(benchmarkPriceField)
 
   val initialPivotState = PivotFieldsState(
     dataFields = List(benchmarkPriceField.field),
-    rowFields = List(commodityField.field, countryCodeField.field, gradeCodeField.field, effectiveFromField.field),
+    rowFields = List(commodityField.field, countryCodeField.field, gradeCodeField.field, effectiveMonthField.field),
     filters = List(
       Field("Observation Day") -> SomeSelection(Set(UndefinedValue)),
       Field("Observation Time") -> SomeSelection(Set(ObservationTimeOfDay.RealTime.name))
@@ -44,7 +45,7 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
 
   def createValue(rows: List[Row]) = {
     val data = rows.map { row =>
-      (NeptuneCountryCode(row.string(countryCodeField)), GradeCode(row.string(gradeCodeField))) → (row[Day](effectiveFromField), row.quantity(benchmarkPriceField))
+      (NeptuneCountryCode(row.string(countryCodeField)), GradeCode(row.string(gradeCodeField))) → (row[Tenor](effectiveMonthField), row.quantity(benchmarkPriceField))
     }
 
     CountryBenchmarkData(data.toNestedMap)
@@ -53,12 +54,12 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
   protected def fieldValuesFor(key: CountryBenchmarkMarketDataKey) = Row(commodityField.field → key.commodity.name)
 
   def rows(key: CountryBenchmarkMarketDataKey, data: CountryBenchmarkData) = data.countryData.mapNested {
-    case ((countryCode, gradeCode), effectiveFrom, price) => Row(
+    case ((countryCode, gradeCode), effectiveMonth, price) => Row(
       commodityField.field → key.commodity.name,
       countryCodeField.field → countryCode.code,
       gradeCodeField.field → gradeCode.code,
       areaField.field → referenceData.areaFor(countryCode).map(_.name).getOrElse("Unknown"),
-      effectiveFromField.field → effectiveFrom,
+      effectiveMonthField.field → effectiveMonth,
       benchmarkPriceField.field → price.pq
     )
   }

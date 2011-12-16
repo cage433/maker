@@ -149,7 +149,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     new PageContext {
       def goTo(page:Page, modifiers:Modifiers, compToFocus:Option[AWTComp]) {
         val cf = if (compToFocus.isDefined) compToFocus else currentFocus
-        history(current).componentForFocus = cf
+        history(current).componentForFocus = cf.map(ctf => new SoftReference(ctf))
         if (modifiers.ctrl) {
           openTab(modifiers.shift, Left(page))
         } else {
@@ -201,7 +201,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val undoAction = Action("undoAction") {
-    history(current).componentForFocus = currentFocus
+    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
     currentComponent.resetDynamicState()
     val oldIndex = current
     current-=1
@@ -211,7 +211,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val backPageAction = new AbstractAction {
     def actionPerformed(e:ActionEvent) {
-      history(current).componentForFocus = currentFocus
+      history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
       currentComponent.resetDynamicState()
 
       // Look for a page that is different to the current one.
@@ -360,7 +360,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val redoAction = Action("redoAction") {
-    history(current).componentForFocus = currentFocus
+    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
     starlingBrowserUI.clearContentPanel()
     currentComponent.resetDynamicState()
     val oldIndex = current
@@ -1309,7 +1309,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private def sortOutFocus() {
     val pageInfo = history(current)
     val compToFocus = (if (pageInfo.componentForFocus.isDefined) {
-      pageInfo.componentForFocus
+      pageInfo.componentForFocus.get.get match {
+        case c@Some(_) => c
+        case _ => currentComponent.defaultComponentForFocus
+      }
     } else {
       currentComponent.defaultComponentForFocus
     }).getOrElse(currentComponent.peer)

@@ -20,7 +20,7 @@ class EnvironmentSpecificationLabelChooser(environmentSpecificationLabel0: Envir
   add(dayChooser, ruleChooser)
 
   reactions += {
-    case DayChangedEvent(`dayChooser`, _) => publish(EnvironmentSpecificationLabelChangedEvent(this, environmentSpecification))
+    case DayChangedEvent(`dayChooser`, _,_) => publish(EnvironmentSpecificationLabelChangedEvent(this, environmentSpecification))
     case EnvironmentRuleLabelChangedEvent(`ruleChooser`, _) => publish(EnvironmentSpecificationLabelChangedEvent(this, environmentSpecification))
   }
 

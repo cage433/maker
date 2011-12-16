@@ -123,8 +123,7 @@ trait TitanEdmTradeService extends Log {
       // temporary code, trademgmt are sending us null titan ids
       val (nullIds, validIds) = edmTrades.span(_.identifier == null)
       if (nullIds.size > 0) {
-        log.error("Null Titan trade IDs found!")
-        log.error("null ids \n%s\n%s".format(nullIds, validIds))
+        log.error("Null Titan trade IDs found!\n" + ("null ids \n%s\n%s".format(nullIds, validIds)))
         //assert(false, "Null titan ids found - fatal error")
       }
       edmTrades

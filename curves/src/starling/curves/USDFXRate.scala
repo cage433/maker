@@ -25,10 +25,11 @@ case class USDFXRate(
 case class USDFXRateCurveKey(ccy : UOM) extends NonHistoricalCurveKey[SpotFXData]{
   def marketDataKey = SpotFXDataKey(ccy)
   def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpotFXData) = {
+    val marketDataRate = marketData.rate.named("Market spot rate")
     val fxRate = {
       (marketData.rate.uom.numeratorUOM, marketData.rate.uom.denominatorUOM) match {
-        case (UOM.USD, _) => marketData.rate
-        case (_, UOM.USD) => marketData.rate.invert
+        case (UOM.USD, _) => marketDataRate
+        case (_, UOM.USD) => marketDataRate.invert
       }
     }
     USDFXRate(marketDayAndTime, fxRate)

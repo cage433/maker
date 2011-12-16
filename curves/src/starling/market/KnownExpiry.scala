@@ -111,15 +111,7 @@ trait KnownExpiry {
    */
   def frontMonth(dayAndTime: DayAndTime): Month = {
     assert(tenor == Month)
-    var month = dayAndTime.containingMonth
-    try {
-      while (expiryRule.lastTradingDay(month).endOfDay <= dayAndTime) {
-        month = month + 1
-      }
-    } catch {
-      case e: NoExpiryDataException => throw new Exception("Problem getting front month for " + this, e)
-    }
-    month
+    expiryRule.frontMonth(dayAndTime)
   }
 
   def nthPeriod(dayAndTime: DayAndTime, numPeriodsAhead: Int): DateRange = tenor match {

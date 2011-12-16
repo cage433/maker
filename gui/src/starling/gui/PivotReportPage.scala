@@ -3,7 +3,7 @@ package starling.gui
 import api._
 import pages._
 import swing._
-import event.{Event, ListSelectionChanged, ButtonClicked}
+import event.{ListSelectionChanged, ButtonClicked}
 import starling.pivot._
 import collection.mutable.ListBuffer
 import java.awt.datatransfer.StringSelection
@@ -72,24 +72,28 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
     val tradeSelection = reportParameters.tradeSelectionWithTimestamp.copy(deskAndTimestamp = deskAndTimestamp, intradaySubgroupAndTimestamp = intradaySubgroupAndTimestamp)
     val page1 = selfReportPage(reportParameters.copy(tradeSelectionWithTimestamp = tradeSelection))
+
+    def generateMarketDataIdentifier(mdi:MarketDataIdentifier) = {
+      mdi match {
+        case mi@MarketDataIdentifier(_,SpecificMarketDataVersion(_)) => {
+          localCache.latestMarketDataVersionIfValid(mi.selection) match {
+            case Some(v) => mi.copyVersion(v)
+            case _ => mdi
+          }
+        }
+        case _ => mdi
+      }
+    }
+
     val newPnlParameters:Option[PnlFromParameters] = page1.reportParameters.pnlParameters.map {
       pnlParameters => {
-        localCache.latestMarketDataVersionIfValid(pnlParameters.curveIdentifierFrom.marketDataIdentifier.selection) match {
-          case Some(v) => {
-            pnlParameters.copy(curveIdentifierFrom=pnlParameters.curveIdentifierFrom.copyVersion(v))
-          }
-          case _ => pnlParameters
-        }
+        val newMDI = generateMarketDataIdentifier(pnlParameters.curveIdentifierFrom.marketDataIdentifier)
+        pnlParameters.copy(curveIdentifierFrom = pnlParameters.curveIdentifierFrom.copy(marketDataIdentifier = newMDI))
       }
     }
-    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(page1.reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
-      case Some(v) => {
-        page1.reportParameters.curveIdentifier.copyVersion(v)
-      }
-      case _ => page1.reportParameters.curveIdentifier
-    }
 
-
+    val newMarketDataIdentifier = generateMarketDataIdentifier(page1.reportParameters.curveIdentifier.marketDataIdentifier)
+    val newCurveIdentifier = page1.reportParameters.curveIdentifier.copy(marketDataIdentifier = newMarketDataIdentifier)
 
     page1.selfReportPage(page1.reportParameters.copy(curveIdentifier=newCurveIdentifier, pnlParameters=newPnlParameters))
   }
