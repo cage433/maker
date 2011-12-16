@@ -89,24 +89,24 @@ class MetalValuationSnapshotCreatorTests extends StarlingTest{
     assertEquals(valuationChange(environmentWthNoMarketData, environmentWthNoMarketData, forwards), ValuationUnchanged)
   }
 
-  @Test
-  def testGoodForwardWithNoMarketData{
-    var forwards =  Map("foo" -> Right(goodForward))
-    var changeResult: ValuationChangeResult = valuationChange(environmentWthNoMarketData, environmentWthNoMarketData, forwards)
-    assertEquals(changeResult, OldAndNewValuationsNotAvailable)
-  }
-  @Test
-  def testGoodForwardWithNewMarketData{
-    var forwards =  Map("foo" -> Right(goodForward))
-    var changeResult: ValuationChangeResult = valuationChange(environmentWthNoMarketData, environmentWithMarketData, forwards)
-    assertEquals(changeResult, FirstNewValuation)
-     }
-
-  @Test
-  def testBadForwardWithNewMarketData {
-    var forwards = Map("foo" -> Right(badForward))
-    var changeResult: ValuationChangeResult = valuationChange(environmentWthNoMarketData, environmentWithMarketData, forwards)
-    assertEquals(changeResult, FirstNewValuation)
-  }
+//  @Test
+//  def testGoodForwardWithNoMarketData{
+//    var forwards =  Map("foo" -> Right(goodForward))
+//    var changeResult: ValuationChangeResult = valuationChange(environmentWthNoMarketData, environmentWthNoMarketData, forwards)
+//    assertEquals(changeResult, OldAndNewValuationsNotAvailable)
+//  }
+//  @Test
+//  def testGoodForwardWithNewMarketData{
+//    var forwards =  Map("foo" -> Right(goodForward))
+//    var changeResult: ValuationChangeResult = valuationChange(environmentWthNoMarketData, environmentWithMarketData, forwards)
+//    assertEquals(changeResult, FirstNewValuation)
+//     }
+//
+//  @Test
+//  def testBadForwardWithNewMarketData {
+//    var forwards = Map("foo" -> Right(badForward))
+//    var changeResult: ValuationChangeResult = valuationChange(environmentWthNoMarketData, environmentWithMarketData, forwards)
+//    assertEquals(changeResult, FirstNewValuation)
+//  }
 
 }

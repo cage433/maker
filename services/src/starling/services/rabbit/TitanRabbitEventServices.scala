@@ -55,7 +55,9 @@ case class TitanRabbitIdBroadcaster(publisher : Publisher, source : String = Tit
           Payloads.forObservationDay(observationDay) ::
           Payloads.forSnapshotId(snapshotID) :: Payloads.forTitanTradeId(changedTradeID) :: Nil)
       }
-      case MarketDataSnapshot(snapshotID, isValuationSnapshot, _) => createEvents(TitanStringLiterals.starlingMarketDataSnapshotIDSubject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Payloads.forIsValuationSnapshot(isValuationSnapshot) :: Nil)
+        
+      case RefinedMetalsManyValuationsChanged(snapshotID:SnapshotIDLabel) => createEvents(TitanStringLiterals.starlingMarketDataSnapshotIDSubject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Payloads.forIsValuationSnapshot(true) :: Nil)
+
       case SpotFXDataEvent(observationDay, currencies, snapshotIDLabel, isCorrection) => {
         createEvents(TitanStringLiterals.starlingSpotFXDataServiceSubject, verbFor(isCorrection),
           Payloads.forObservationDay(observationDay) ::

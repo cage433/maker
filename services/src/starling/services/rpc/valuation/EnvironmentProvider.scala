@@ -17,20 +17,13 @@ import scalaz.Scalaz._
 import starling.daterange.{DayAndTime, TimeOfDay, Day}
 
 trait EnvironmentProvider {
-  def metalsValuationSnapshots(observationDay : Option[Day]) = snapshots(None).filter(ss =>
-    ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals) &&  ss.snapshotType == SnapshotType.Valuation && ss.observationDay == observationDay.getOrElse(ss.observationDay)
-  )
   def metalsSnapshots(observationDay : Option[Day]) = snapshots(observationDay).filter(ss =>
     ss.marketDataSelection.pricingGroup == Some(PricingGroup.Metals)
   )
   def snapshots(observationDay : Option[Day]) : List[SnapshotID]
-  def environment(snapshotID : SnapshotID, observationDay : DayAndTime) : Environment
   def environment(marketDataVersion:MarketDataVersion, observationDay:DayAndTime):Environment
-  def makeValuationSnapshot(version:Int, observationDay : Day):SnapshotID
+  def makeValuationSnapshot(version:Int):SnapshotID
 
-  def valuationServiceEnvironment(snapshotID : SnapshotID, observationDay : DayAndTime, marketDay : Day): Environment = {
-    valuationServiceEnvironment(new SnapshotMarketDataVersion(snapshotID.label), observationDay, marketDay)
-  }
   def valuationServiceEnvironment(marketDataVersion:MarketDataVersion, observationDay : DayAndTime, marketDay : Day): Environment = {
     environment(marketDataVersion, observationDay).undiscounted.forwardState(marketDay.endOfDay)
   }
@@ -43,21 +36,15 @@ trait EnvironmentProvider {
     }
   }
 
-  def latestMetalsValuationSnapshot : SnapshotID = metalsValuationSnapshots(None).sortWith{
-    case (s1, s2) =>
-      if (s1.observationDay == s2.observationDay)
-        s1 > s2
-      else
-        s1.observationDay.get > s2.observationDay.get
-   }.head
+  def latestMetalsSnapshot : SnapshotID = metalsSnapshots(None).sortWith(_ > _).head
 
   /**
    * Used for generating events like 'has value changed'
    */
   def lastValuationSnapshotEnvironment: (SnapshotIDLabel, Environment) = {
-    val snapshotID = latestMetalsValuationSnapshot
-    val marketDay = snapshotID.observationDay.get
-    (snapshotID.label, environment(snapshotID, marketDay.endOfDay))
+    val snapshotID = latestMetalsSnapshot
+    val observationDay = Day.today.endOfDay
+    (snapshotID.label, environment(SnapshotMarketDataVersion(snapshotID.label), observationDay))
   }
 
 }
@@ -65,7 +52,7 @@ trait EnvironmentProvider {
 
 /**
  * Standard environment provider, contains snapshot id name (string) to SnapshotID cache
- *   and a means to get environments by snapshot id name
+ * and a means to get environments by snapshot id name
  */
 class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDataLookup: ReferenceDataLookup) extends EnvironmentProvider with Log {
 
@@ -73,24 +60,23 @@ class DefaultEnvironmentProvider(marketDataStore : MarketDataStore, referenceDat
 
   private var environmentCache = CacheFactory.getCache("ValuationService.environment", unique = true)
 
-  def environment(snapshotID: SnapshotID, marketDay : DayAndTime): Environment = {
-    environment(SnapshotMarketDataVersion(snapshotID.label), marketDay)
-//    val env = environment(SnapshotMarketDataVersion(snapshotID.label), snapshotID.snapshotDay)
-//    val marketDayToUse = List(marketDay.startOfDay, env.marketDay).sortWith(_>_).head
-//    env.forwardState(marketDayToUse)
+  def environment(snapshotID: SnapshotID, observationDay : DayAndTime): Environment = {
+    environment(SnapshotMarketDataVersion(snapshotID.label), observationDay)
   }
 
   def environment(marketDataVersion:MarketDataVersion, observationDay:DayAndTime):Environment = {
     environmentCache.memoize( (marketDataVersion, observationDay), {
       val reader = new NormalMarketDataReader(marketDataStore, MarketDataIdentifier(MetalsSelection, marketDataVersion))
-      new ClosesEnvironmentRule(referenceDataLookup = referenceDataLookup).createEnv(observationDay, reader).environment
+      new MostRecentClosesEnvironmentRule(referenceDataLookup = referenceDataLookup).createEnv(observationDay, reader).environment
     })
   }
 
   def snapshots(observationDay : Option[Day]) = marketDataStore.snapshots(observationDay)
 
 
-  def makeValuationSnapshot(version: Int, observationDay : Day) = {
-    marketDataStore.snapshot(MarketDataIdentifier(MetalsSelection, SpecificMarketDataVersion(version)), SnapshotType.Valuation, Some(observationDay))
+  def makeValuationSnapshot(version: Int) = {
+    marketDataStore.snapshot(MarketDataIdentifier(MetalsSelection, SpecificMarketDataVersion(version)), SnapshotType.Valuation)
   }
 }
+
+

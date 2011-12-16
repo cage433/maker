@@ -9,6 +9,8 @@ import starling.calendar.BusinessCalendar
 import starling.utils.ImplicitConversions._
 import starling.utils.Pattern.Extractor
 import starling.quantity._
+import java.lang.IllegalStateException
+import starling.pivot.MarketValue
 
 case class UnknownIndexException(msg: String, eaiQuoteID: Option[Int] = None) extends Exception(msg)
 
@@ -154,14 +156,14 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
 
   def storedFixingPeriodForDay(day:Day) : StoredFixingPeriod
 
-  def fixing(slice: MarketDataSlice, observationDay : Day, storedFixingPeriod: Option[StoredFixingPeriod]) = {
+  def fixing(slice: MarketDataSlice, observationDay : Day, storedFixingPeriod: Option[StoredFixingPeriod]): Quantity = {
     require(storedFixingPeriod.isEmpty)
     val key = PriceFixingsHistoryDataKey(market)
     val fixingHistory = slice.fixings(key, ObservationPoint(observationDay, observationTimeOfDay))
-    val fixing = try {
+    val fixing: MarketValue = try {
       fixingHistory.fixingFor(level, storedFixingPeriodForDay(observationDay))
     } catch {
-      case ex => throw new Exception("Index " + this + ", observation day " + observationDay + ", period " + storedFixingPeriod + ", " + ex.getMessage, ex)
+      case ex => throw new MissingMarketDataException("Index " + this + ", observation day " + observationDay + ", period " + storedFixingPeriod + ", " + ex.getMessage, ex)
     }
     fixing.toQuantity
   }
