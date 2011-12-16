@@ -3,42 +3,45 @@ package starling.instrument.physical
 import starling.curves.Environment
 import starling.market.{FuturesMarket, CommodityMarket, FuturesExchangeFactory, IndexWithDailyPrices}
 import starling.daterange._
-import starling.market.FuturesExchange
 import starling.quantity.{UOM, Quantity}
+import starling.quantity.UOM._
 
 trait TitanPricingSpec {
 
-//  def priceExcludingPremium(env : Environment) : Quantity
-
   def premiumExcludingVAT(env : Environment) : Quantity = {
-    val premiumInPremiumCurrency = if (isLiableToShanghaiVAT) (premium(env).named("Premium") / toDisplayVat(env.shanghaiVATRate)).named("Premium Excl VAT") else premium(env).named("Premium")
+    val p = premium(env).named("Premium")
+    val premiumInPremiumCurrency = vatLiableForCurrency(env, p) match {
+      case Some(vat) => (p / toDisplayVat(vat)).named("Premium Excl VAT")
+      case _ => p
+    }
     inValuationCurrency(env, premiumInPremiumCurrency)
   }
 
-  def premiumIncludingVAT(env : Environment) : Option[Quantity] = {
-    if (isLiableToShanghaiVAT)
-      Some(premiumExcludingVAT(env) * toDisplayVat(env.shanghaiVATRate))
-    else
-      None
+  def premiumIncludingVAT(env : Environment) : Quantity = {
+    val p = premiumExcludingVAT(env)
+    vatLiableForCurrency(env, p) match {
+      case Some(vat) => p * toDisplayVat(vat)
+      case _ => p
+    }
   }
 
   // ensure VAT is displayed in explanation in the form 120% rather than 20%, 0.2 + 1.0 or similar
-  private def toDisplayVat(vat : Quantity) = (vat + 1.0).unnamed.named("VAT")
+  protected def toDisplayVat(vat : Quantity) = (vat + 1.0).unnamed.named("VAT")
 
   def priceExcludingVATExcludingPremium(env: Environment): Quantity
 
   def priceExcludingVATIncludingPremium(env : Environment) : Quantity = priceExcludingVATExcludingPremium(env) + premiumExcludingVAT(env)
 
-  def priceIncludingVATExcludingPremium(env : Environment) = {
-    if (isLiableToShanghaiVAT){
-      Some(priceExcludingVATExcludingPremium(env) * toDisplayVat(env.shanghaiVATRate))
-    } else {
-      None
+  def priceIncludingVATExcludingPremium(env : Environment) : Quantity = {
+    val p = priceExcludingVATExcludingPremium(env)
+    vatLiableForCurrency(env, p) match {
+      case Some(vat) => p * toDisplayVat(vat)
+      case _ => p
     }
   }
 
-  def priceIncludingVATIncludingPremium(env : Environment) = {
-    priceIncludingVATExcludingPremium(env).map{prc => prc + inValuationCurrency(env, premium(env))}
+  def priceIncludingVATIncludingPremium(env : Environment) : Quantity = {
+    priceIncludingVATExcludingPremium(env) + inValuationCurrency(env, premium(env))
   }
   def valueExcludingVATExcludingPremium(env : Environment, quantity : Quantity) = {
     priceExcludingVATExcludingPremium(env) * quantity * env.discount(valuationCCY, settlementDay(env.marketDay))
@@ -47,32 +50,28 @@ trait TitanPricingSpec {
     priceExcludingVATIncludingPremium(env) * quantity * env.discount(valuationCCY, settlementDay(env.marketDay))
   }
   def valueIncludingVATExcludingPremium(env : Environment, quantity : Quantity) = {
-    priceIncludingVATExcludingPremium(env).map(_ * quantity * env.discount(valuationCCY, settlementDay(env.marketDay)))
+    priceIncludingVATExcludingPremium(env) * quantity * env.discount(valuationCCY, settlementDay(env.marketDay))
   }
   def valueIncludingVATIncludingPremium(env : Environment, quantity : Quantity) = {
-    priceIncludingVATIncludingPremium(env).map(_ * quantity * env.discount(valuationCCY, settlementDay(env.marketDay)))
+    priceIncludingVATIncludingPremium(env) * quantity * env.discount(valuationCCY, settlementDay(env.marketDay))
   }
 
   def settlementDay(marketDay: DayAndTime): Day
 
-//  def premiumCCY: Option[UOM] = {
-//    premium.uom.numeratorUOM match {
-//      case UOM.NULL => None
-//      case ccy => Some(ccy)
-//    }
-//  }
-
   def valuationCCY: UOM
   assert(valuationCCY != null, "Valuation currency is null")
 
-  protected def inValuationCurrency(env : Environment, p : Quantity) = {
+  protected def inValuationCurrency(env : Environment, p : Quantity) =
+    inCurrency(env, p, valuationCCY)
+
+  private def inCurrency(env : Environment, p : Quantity, ccy : UOM) = {
     if (p == Quantity.NULL)
       p
     else {
       val namedEnv = env.withNaming()
       val baseCurrency = p.numeratorUOM.inBaseCurrency
       val priceInBaseCurrency = p inUOM (baseCurrency / p.denominatorUOM)
-      val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay(namedEnv.marketDay)) 
+      val fxRate = namedEnv.forwardFXRate(ccy, priceInBaseCurrency.numeratorUOM, settlementDay(namedEnv.marketDay))
 
       priceInBaseCurrency * fxRate
     }
@@ -102,22 +101,22 @@ trait TitanPricingSpec {
 
   def indexOption: Option[IndexWithDailyPrices]
 
-  protected def isExchangeLiableToVAT(exchange : FuturesExchange) = exchange == FuturesExchangeFactory.SHFE  || exchange == FuturesExchangeFactory.EXBXG
-
-  protected def isLiableToShanghaiVAT = {
-    indexOption match {
-      case Some(index) => index.market match{
-        case fm : FuturesMarket => isExchangeLiableToVAT(fm.exchange)
-        case _ => false
+  private def vatLiableForCurrency(env : Environment, q : Quantity) = {
+    val numUom = q.numeratorUOM
+    if (numUom.isCurrency) {
+      numUom.inBaseCurrency match {
+        case CNY => Some(env.shanghaiVATRate)
+        case _ => None
       }
-      case None => false
     }
+    else None
   }
+
   protected def subtractVATIfLiable(env : Environment, price : Quantity) = {
-    if (isLiableToShanghaiVAT)
-      price / toDisplayVat(env.shanghaiVATRate)
-    else
-      price
+    vatLiableForCurrency(env, price) match {
+      case Some(vat) => price / toDisplayVat(vat)
+      case _ => price
+    }
   }
 
   def expiryDay: Day
@@ -177,11 +176,11 @@ case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
   def premium(env : Environment) = premium
 
   def expiryDay = TitanPricingSpec.calcSettlementDay(index, period.lastDay)
+
   def priceExcludingVATExcludingPremium(env : Environment) = {
     inValuationCurrency(env, subtractVATIfLiable(env, env.averagePrice(index, period)))
-//    val premiumExclVAT = subtractVATIfLiable(env, premium.named("Premium"))
-//    addPremiumConvertingIfNecessary(env, priceExclVAT, premiumExclVAT)
   }
+
   def futuresMarket : FuturesMarket = index.market.asInstanceOf[FuturesMarket]
 }
 
@@ -269,7 +268,14 @@ case class WeightedPricingSpec(specs: List[(Double, TitanPricingSpec)], valuatio
     markets.head
   }
 
-  override def isLiableToShanghaiVAT = isExchangeLiableToVAT(futuresMarket.exchange)
+  override def premiumExcludingVAT(env : Environment) : Quantity =
+    specs.map{ case (wt, spec) => inValuationCurrency(env, spec.premiumExcludingVAT(env)) * wt }.sum
+
+  override def premiumIncludingVAT(env : Environment) : Quantity =
+    specs.map{ case (wt, spec) => inValuationCurrency(env, spec.premiumIncludingVAT(env)) * wt }.sum
+
+  override def priceIncludingVATExcludingPremium(env : Environment) : Quantity =
+    specs.map{ case (wt, spec) => inValuationCurrency(env, spec.priceIncludingVATExcludingPremium(env)) * wt }.sum
 }
 
 case class InvalidTitanPricingSpecException(msg: String) extends Exception(msg)
@@ -290,10 +296,8 @@ case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesB
     }
   }
 
-  def priceExcludingVATExcludingPremium(env : Environment) = {
+  def priceExcludingVATExcludingPremium(env : Environment) =
     inValuationCurrency(env, subtractVATIfLiable(env, priceExclPremium(env)))
-    //, subtractVATIfLiable(env, premium.named("Premium")))
-  }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity
 
@@ -315,8 +319,6 @@ case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesB
 
   def expiryDay = settDay
 
-  override def isLiableToShanghaiVAT = isExchangeLiableToVAT(futuresMarket.exchange)
-
   def premium(env : Environment) = premium
 }
 
@@ -325,14 +327,12 @@ case class UnknownPricingFixation(fraction: Double, price: Quantity)
 
 
 case class UnknownPricingSpecification(
-                                        index: IndexWithDailyPrices,
-                                        month: Month,
-                                        fixations: List[UnknownPricingFixation],
-                                        declarationDay: Day,
-                                        premium: Quantity,
-                                        valuationCCY : UOM
-                                        )
-  extends TitanPricingSpec {
+              index: IndexWithDailyPrices,
+              month: Month,
+              fixations: List[UnknownPricingFixation],
+              declarationDay: Day,
+              premium: Quantity,
+              valuationCCY : UOM) extends TitanPricingSpec {
 
   def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, unfixedPriceDay(marketDay))
 
@@ -348,11 +348,8 @@ case class UnknownPricingSpecification(
     inValuationCurrency(env, fixedPayment) + inValuationCurrency(env, unfixedPayment)
   }
 
-  def priceExcludingVATExcludingPremium(env: Environment) = {
+  def priceExcludingVATExcludingPremium(env: Environment) =
     inValuationCurrency(env, subtractVATIfLiable(env, priceExclPremium(env)))
-//    val price = priceExclPremium(env)
-//    addPremiumConvertingIfNecessary(env, subtractVATIfLiable(env, price), subtractVATIfLiable(env, premium.named("Premium")))
-  }
 
   def fixedQuantity(marketDay: DayAndTime, totalQuantity: Quantity) = totalQuantity * fixations.map(_.fraction).sum
 

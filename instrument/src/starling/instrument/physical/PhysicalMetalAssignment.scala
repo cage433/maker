@@ -439,17 +439,29 @@ object CostsAndIncomeValuation{
     }
     def toMTO(q:Option[Quantity]) = q.map(toMT(_))
 
+    val priceExcludingVATIncludingPremium = toMT(pricingSpec.priceExcludingVATIncludingPremium(env))
+    val priceIncludingVATIncludingPremium = toMT(pricingSpec.priceIncludingVATIncludingPremium(env))
+    val priceExcludingVATExcludingPremium = toMT(pricingSpec.priceExcludingVATExcludingPremium(env))
+    val priceIncludingVATExcludingPremium = toMT(pricingSpec.priceIncludingVATExcludingPremium(env))
+    val premiumExcludingVAT = toMT(pricingSpec.premiumExcludingVAT(env))
+    val premiumIncludingVAT = toMT(pricingSpec.premiumIncludingVAT(env))
+
+    val valueExcludingVATIncludingPremium = pricingSpec.valueExcludingVATIncludingPremium(env, quantity)
+    val valueIncludingVATIncludingPremium = pricingSpec.valueIncludingVATIncludingPremium(env, quantity)
+    val valueIncludingVATExcludingPremium = pricingSpec.valueIncludingVATExcludingPremium(env, quantity)
+    val valueExcludingVATExcludingPremium = pricingSpec.valueExcludingVATExcludingPremium(env, quantity)
+
     PricingValuationDetails(
-      toMT(pricingSpec.priceExcludingVATIncludingPremium(env)),
-      toMTO(pricingSpec.priceIncludingVATIncludingPremium(env)),
-      toMT(pricingSpec.priceExcludingVATExcludingPremium(env)),
-      toMTO(pricingSpec.priceIncludingVATExcludingPremium(env)),
-      toMT(pricingSpec.premiumExcludingVAT(env)),
-      toMTO(pricingSpec.premiumIncludingVAT(env)),
-      pricingSpec.valueExcludingVATIncludingPremium(env, quantity),
-      pricingSpec.valueIncludingVATIncludingPremium(env, quantity),
-      pricingSpec.valueExcludingVATExcludingPremium(env, quantity),
-      pricingSpec.valueIncludingVATExcludingPremium(env, quantity),
+      priceExcludingVATIncludingPremium,
+      (if (priceIncludingVATIncludingPremium != priceExcludingVATIncludingPremium) Some(priceIncludingVATIncludingPremium) else None),
+      priceExcludingVATExcludingPremium,
+      (if (priceIncludingVATExcludingPremium != priceExcludingVATExcludingPremium) Some(priceIncludingVATExcludingPremium) else None),
+      premiumExcludingVAT,
+      (if (premiumIncludingVAT != premiumExcludingVAT) Some(premiumIncludingVAT) else None),
+      valueExcludingVATIncludingPremium,
+      (if (valueIncludingVATIncludingPremium != valueExcludingVATIncludingPremium) Some(valueIncludingVATIncludingPremium) else None),
+      valueExcludingVATExcludingPremium,
+      (if (valueIncludingVATExcludingPremium != valueExcludingVATExcludingPremium) Some(valueIncludingVATExcludingPremium) else None),
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,

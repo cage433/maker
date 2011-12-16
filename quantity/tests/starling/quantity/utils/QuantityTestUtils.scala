@@ -1,21 +1,30 @@
 package starling.quantity.utils
 
 import org.testng.Assert._
-import starling.quantity.{Quantity, UOM}
+import starling.quantity.Quantity
 import starling.pivot.PivotQuantity
 
 object QuantityTestUtils {
-  /** Assert that UOMs match and that values are within tolerance
+
+  /**
+   * Assert that UOMs match and that values are within tolerance
    */
-  def assertQtyEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = ""){
+  def assertQtyEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = "") {
     if(!actual.isAlmostEqual(expected, tol)) {
       throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual.toStringAllDecimalPlaces() + " != " + expected.toStringAllDecimalPlaces() + " )")
     }
   }
 
-  def assertQtyNotEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = ""){
+  def assertQtyNotEquals(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = "") {
     if(actual.isAlmostEqual(expected, tol)) {
-      throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual.toStringAllDecimalPlaces() + " != " + expected.toStringAllDecimalPlaces() + " )")
+      throw new java.lang.AssertionError("assertion failed: " + message + "(" + actual.toStringAllDecimalPlaces() + " == " + expected.toStringAllDecimalPlaces() + " )")
+    }
+  }
+
+  def assertQtyLessThan(actual : Quantity, expected : Quantity, tol : Double = 0.0, message : String = "") {
+    val t = Quantity(tol, actual.uom).inBaseUOM
+    if ((actual - t) >= expected) {
+      throw new AssertionError("assertion failed: " + message + "(" + actual.toStringAllDecimalPlaces() + " >= " + expected.toStringAllDecimalPlaces() + " )")
     }
   }
 
@@ -33,7 +42,8 @@ object QuantityTestUtils {
   }
 
 
-  /** Assert that the percentage difference between two quantities is small
+  /**
+   * Assert that the percentage difference between two quantities is small
    */
   def assertQtyClose(actual : Quantity, expected : Quantity, tol : Double = 1e-8, min : Double = 1e-9, message : String = ""){
     val actualBase = actual.inBaseUOM
