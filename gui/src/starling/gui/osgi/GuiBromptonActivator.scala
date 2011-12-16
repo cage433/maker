@@ -94,7 +94,7 @@ class GuiBromptonActivator extends BromptonActivator {
       val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
       val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
 
-      broadcaster.broadcast(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp, ReportSpecificChoices())))
+      broadcaster.broadcast(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp, ReportSpecificChoices(), true)))
     }
   }
 }

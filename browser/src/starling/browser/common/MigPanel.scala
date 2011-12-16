@@ -251,7 +251,7 @@ class ListXView[A] extends ListView[A] {
 }
 
 class ResizingLabel(text0:String="") extends Label(text0) {
-  minimumSize = new Dimension(10, minimumSize.height)
+  minimumSize = new Dimension(math.min(10, minimumSize.width), minimumSize.height)
 }
 
 class ResizingComboBox[A](items:Seq[A], model0:Option[ComboBoxModel]=None) extends ComboBox(items) {

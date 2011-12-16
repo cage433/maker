@@ -110,7 +110,7 @@ case class MainPivotReportPage(showParameters:Boolean, reportParameters:ReportPa
     }
     tradeID match {
       case Some(trID) => {
-        pageContext.goTo(ValuationParametersPage(trID, reportParameters, reportSpecificChoices), modifiers = modifiers)
+        pageContext.goTo(ValuationParametersPage(trID, reportParameters, reportSpecificChoices, true), modifiers = modifiers)
       }
       case None => None
     }
