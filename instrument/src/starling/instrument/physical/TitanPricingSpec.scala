@@ -322,11 +322,10 @@ case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesB
   def premium(env : Environment) = premium
 }
 
-
 case class UnknownPricingFixation(fraction: Double, price: Quantity)
 
 
-case class UnknownPricingSpecification(
+case class UnknownPricingSpec(
               index: IndexWithDailyPrices,
               month: Month,
               fixations: List[UnknownPricingFixation],

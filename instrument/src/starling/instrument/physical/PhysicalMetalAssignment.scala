@@ -175,7 +175,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     val index = futuresMarket.physicalMetalBenchmarkIndex
     val benchmarkLookupDay = TitanPricingSpec.representativeObservationDay(index, month, env.marketDay)
     val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, benchmarkLookupDay)
-    UnknownPricingSpecification(
+    UnknownPricingSpec(
       index,
       month,
       Nil,

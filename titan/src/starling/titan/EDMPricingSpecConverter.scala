@@ -126,7 +126,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           val qpMonth = Day.fromJodaDate(spec.qpMonth).containingMonth
           val index: IndexWithDailyPrices = getIndex(spec.market, spec.index)
           val declarationBy: Day = if (spec.declarationBy == null) qpMonth.lastDay.thisOrPreviousBusinessDay(index.businessCalendar) else Day.fromJodaDate(spec.declarationBy)
-          UnknownPricingSpecification(
+          UnknownPricingSpec(
              index,
              qpMonth,
              spec.fixations.filterNot(_.observedPrice == null)/* The non-real fixing has no price and should be ignored */.map{

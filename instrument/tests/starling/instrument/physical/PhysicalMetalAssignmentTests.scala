@@ -148,8 +148,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val specs = List(
       FixedPricingSpec(Market.LME_COPPER, Day(2013, 1, 1), List((0.3, Quantity(20, USD/MT)), (0.7, Quantity(25, USD/MT))), Quantity(1.5, USD/MT), EUR),
       FixedPricingSpec(Market.SHANGHAI_COPPER, Day(2013, 1, 1), List((0.3, Quantity(20, CNY/MT)), (0.7, Quantity(25, CNY/MT))), Quantity(1.5, CNY/MT), EUR),
-      UnknownPricingSpecification(LmeCashSettlementIndex(Market.LME_NICKEL, Level.Ask), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (USD/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
-      UnknownPricingSpecification(FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (CNY/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
+      UnknownPricingSpec(LmeCashSettlementIndex(Market.LME_NICKEL, Level.Ask), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (USD/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
+      UnknownPricingSpec(FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (CNY/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
       AveragePricingSpec(LmeThreeMonthIndex(Market.LME_ALUMINIUM, Level.Bid), Month(2012, 5), 1.5 (USD/MT), GBP),
       AveragePricingSpec(FuturesFrontPeriodIndex(Market.SHANGHAI_ALUMINUIUM), Month(2012, 5), 1.5 (USD/MT), GBP)
     )
