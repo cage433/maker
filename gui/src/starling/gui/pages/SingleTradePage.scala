@@ -260,6 +260,8 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
                val tradeTimestamp = context.localCache.deskCloses(desk).sortWith(_.timestamp >= _.timestamp).head
               (Some((d, tradeTimestamp)), None)
             } else {
+              // this won't give you a revision for an arbitrary timestamp, it will give you the closest
+              // book close on or before the rowTimeStamp
               val (timestamps, _) = context.localCache.deskCloses(desk).span(_.timestamp >= rowTimeStamp)
               val tradeTimestamp = timestamps.reverse.head
               (Some((d, tradeTimestamp)), None)
