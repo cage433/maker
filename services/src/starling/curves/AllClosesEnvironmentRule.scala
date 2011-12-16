@@ -115,6 +115,12 @@ case class AllClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup) ex
         case (key:ForwardRateDataKey, data:ForwardRateData) => key.ccy -> data
       }
 
+      override def benchmarks = {
+        marketDataReader.readAll(MarketDataTypeName.fromClass(classOf[CountryBenchmarkDataType]), ObservationPoint.RealTime).toList.map {
+          case (k:CountryBenchmarkMarketDataKey,d:CountryBenchmarkData)=> k->d
+        }
+      }
+
       override def spotFX = marketDataReader.readAll(SpotFXDataType.name, observationDay.day.atTimeOfDay(ObservationTimeOfDay.LondonClose)).map {
         case (key:SpotFXDataKey, _) => key.ccy
       }
@@ -139,7 +145,6 @@ case class AllClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup) ex
           ForwardStateEnvironment(Undiscounted(MarketDataCurveObjectEnvironment(dayAndTime, slice, false, referenceDataLookup)), marketDay)
        }
      }
-
 
      val envs = ((observationDay.day - numberOfDaysToLookBack) upto observationDay.day).filter(_.isWeekday).toList.reverse.flatMap(atomicEnvironments(_))
      val environmentX = Environment(CachingAtomicEnvironment(UseMostRecentAtomicEnvironmentWithData(envs)))
