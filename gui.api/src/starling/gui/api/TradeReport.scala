@@ -198,7 +198,6 @@ case class TradeTimestamp(timestamp:Timestamp, closeDay: Day, closeNumber: Int, 
 }
 
 case class TradeSelection(desk:Option[Desk], tradePredicate:TradePredicate, intradaySubgroup:Option[IntradayGroups]) {
-  println("Made a selection")
   def withDeskTimestamp(deskTimestamp: TradeTimestamp) = {
     assert(intradaySubgroup.isEmpty, "Can't create timestamped trade selection when using intradaySubgroup")
     new TradeSelectionWithTimestamp(desk.map((_, deskTimestamp)), tradePredicate, None)

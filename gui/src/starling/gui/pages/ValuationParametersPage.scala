@@ -37,12 +37,20 @@ case class ValuationParametersPage(tradeID:TradeIDLabel, reportParameters:Report
   override def bookmark(serverContext: StarlingServerContext, pd:PageData) = ValuationParametersBookmark(tradeID, serverContext.reportService.createUserReport(reportParameters), reportSpecificChoices, showParameters)
 
   override def latestPage(localCache:LocalCache) = {
-    val newCurveIdentifier = localCache.latestMarketDataVersionIfValid(reportParameters.curveIdentifier.marketDataIdentifier.selection) match {
-      case Some(v) => {
-        reportParameters.curveIdentifier.copyVersion(v)
+    def generateMarketDataIdentifier(mdi:MarketDataIdentifier) = {
+      mdi match {
+        case mi@MarketDataIdentifier(_,SpecificMarketDataVersion(_)) => {
+          localCache.latestMarketDataVersionIfValid(mi.selection) match {
+            case Some(v) => mi.copyVersion(v)
+            case _ => mdi
+          }
+        }
+        case _ => mdi
       }
-      case _ => reportParameters.curveIdentifier
     }
+
+    val newMDI = generateMarketDataIdentifier(reportParameters.curveIdentifier.marketDataIdentifier)
+    val newCurveIdentifier = reportParameters.curveIdentifier.copy(marketDataIdentifier = newMDI)
 
     val deskAndTimestamp = reportParameters.tradeSelectionWithTimestamp.deskAndTimestamp.map {
       case (desk, TradeTimestamp(_, TradeTimestamp.magicLatestTimestampDay, _, _)) => (desk, localCache.latestDeskTradeTimestamp(desk))
