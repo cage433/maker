@@ -72,7 +72,8 @@ trait TitanPricingSpec {
       val namedEnv = env.withNaming()
       val baseCurrency = p.numeratorUOM.inBaseCurrency
       val priceInBaseCurrency = p inUOM (baseCurrency / p.denominatorUOM)
-      val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay(namedEnv.marketDay)) 
+      val settlementDay_ : Day = settlementDay(namedEnv.marketDay)
+      val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay_).named("Forward FX (" + settlementDay_ + ")")
 
       priceInBaseCurrency * fxRate
     }
@@ -345,7 +346,12 @@ case class UnknownPricingSpecification(
       case (f, i) => f.price.named("Fix_" + i) * f.fraction
     }).named("Fixed")
     val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay(env.marketDay)) * unfixedFraction).named("Unfixed")
-    inValuationCurrency(env, fixedPayment) + inValuationCurrency(env, unfixedPayment)
+    if (fixedPayment.isZero)
+      inValuationCurrency(env, unfixedPayment)
+    else if (unfixedPayment.isZero)
+      inValuationCurrency(env, fixedPayment)
+    else
+      inValuationCurrency(env, fixedPayment) + inValuationCurrency(env, unfixedPayment)
   }
 
   def priceExcludingVATExcludingPremium(env: Environment) = {

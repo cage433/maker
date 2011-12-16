@@ -26,7 +26,7 @@ case class ExcelMarketListUpdate(values:List[String]) extends StarlingGUIEvent
 case class ExcelMarketDataUpdate(name:String, version:Int) extends StarlingGUIEvent
 case class TestEvent(text:String) extends StarlingGUIEvent
 case class RabbitEventReceived(latestTimestamp:Long) extends StarlingGUIEvent
-case class RefinedMetalsValuationChanged(observationDay:Day, snapshotID:SnapshotIDLabel, changedTradeId : String) extends Event
+case class RefinedMetalsValuationChanged(changedTradeId : String) extends Event
 case class RefinedMetalsManyValuationsChanged(snapshotID:SnapshotIDLabel) extends Event
 
 object PricingGroupMarketDataUpdate {

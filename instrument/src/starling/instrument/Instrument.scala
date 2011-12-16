@@ -14,8 +14,8 @@ import starling.varcalculator._
 import starling.utils.ImplicitConversions._
 import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
-import starling.quantity.{NamedQuantity, Quantity, UOM}
 import starling.marketdata.ReferenceDataLookup
+import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity, UOM}
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -69,7 +69,10 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
     val explained = explanation(env) in ccy match {
       case Some(ex) => ex
       case None => {
-        val spotFX = env.withNaming().spotFXRate(ccy, valuationCCY).named("Spot FX")
+        val spotFX = env.withNaming().spotFXRate(ccy, valuationCCY) match {
+          case nq : SimpleNamedQuantity => nq
+          case q => q.named("Spot FX")  // Only wrap with 'Spot FX' name if it is calculated, i.e. a product or inversion
+        }
         (explanation(env) * spotFX) inUOM ccy
       }
     }

@@ -296,7 +296,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val observationDayAndTimeUsed = rp.curveIdentifier.observationDayAndTime
     val nextBusinessDay = observationDayAndTimeUsed.nextBusinessDay(context.localCache.ukBusinessCalendar)
     val enRule = rp.curveIdentifier.marketDataIdentifier.selection.pricingGroup match {
-      case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+      case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.MostRecentCloses
       case _ => EnvironmentRuleLabel.COB
     }
 
@@ -466,7 +466,7 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
       val pnlFromDayAndTime = buttonPanel.cobPanel.dayChangePanel.dayChangeDayChooser.day.endOfDay
 
       val rule = marketDataSelection.pricingGroup match {
-        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.MostRecentCloses
         case _ => EnvironmentRuleLabel.COB
       }
 

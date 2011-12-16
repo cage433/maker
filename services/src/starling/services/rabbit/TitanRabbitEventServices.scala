@@ -50,10 +50,9 @@ case class TitanRabbitIdBroadcaster(publisher : Publisher, source : String = Tit
 
   def broadcast(event: swing.event.Event) = try {
     val events: Option[JSONArray] = event partialMatch {
-      case RefinedMetalsValuationChanged(observationDay, snapshotID, changedTradeID) => {
+      case RefinedMetalsValuationChanged(changedTradeID) => {
         createEvents(TitanStringLiterals.starlingValuationServiceSubject, UpdatedEventVerb,
-          Payloads.forObservationDay(observationDay) ::
-          Payloads.forSnapshotId(snapshotID) :: Payloads.forTitanTradeId(changedTradeID) :: Nil)
+        Payloads.forTitanTradeId(changedTradeID) :: Nil)
       }
         
       case RefinedMetalsManyValuationsChanged(snapshotID:SnapshotIDLabel) => createEvents(TitanStringLiterals.starlingMarketDataSnapshotIDSubject, CreatedEventVerb, Payloads.forSnapshotId(snapshotID) :: Payloads.forIsValuationSnapshot(true) :: Nil)

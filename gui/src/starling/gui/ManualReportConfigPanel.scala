@@ -284,7 +284,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         marketDataSelection.noExcel
       }
       val rule = marketDataSelection.pricingGroup match {
-        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+        case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.MostRecentCloses
         case _ => EnvironmentRuleLabel.COB
       }
 

@@ -23,8 +23,8 @@ class TitanEventHandler(broadcaster:Broadcaster,
 
   import Event._
 
-  def publishedChangedValueEvents(observationDay:Day, snapshotID:SnapshotIDLabel, tradeId:String) {
-    broadcaster.broadcast(RefinedMetalsValuationChanged(observationDay, snapshotID, tradeId))
+  def publishedChangedValueEvents(tradeId:String) {
+    broadcaster.broadcast(RefinedMetalsValuationChanged(tradeId))
   }
 
   /**
@@ -78,21 +78,21 @@ class TitanEventHandler(broadcaster:Broadcaster,
    * C&I have a bug whereby they only picked up the first trade id. No idea now why we published a 
    * list of trade ids. They'll fix eventually but for now we'll publish seperate events
    */
-  private def publishManyChangedValueEvents(env : Environment, snapshotID : SnapshotIDLabel, changedIDs : List[String]){
+  private def publishManyChangedValueEvents(changedIDs : List[String]){
     changedIDs.distinct.foreach{
       id => 
-        publishedChangedValueEvents(env.marketDay.day, snapshotID, id)
+        publishedChangedValueEvents(id)
     }
   }
   /**
    * handler for trademgmt trade events
    */
-  def publishOnChangedValues(results: Option[List[TitanTradeUpdateResult]], snapshotID: SnapshotIDLabel, env: Environment) {
+  def publishOnChangedValues(results: Option[List[TitanTradeUpdateResult]]) {
     results match {
       case Some(listOfResults) =>
         val changedForwardIDs: List[String] = listOfResults.flatMap(_.changedValueTitanTradeIds)
-        log.info("Assignments revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedForwardIDs.size))
-        publishManyChangedValueEvents(env, snapshotID, changedForwardIDs)
+        log.info("Assignments revalued for received event, number of changed valuations %d".format(changedForwardIDs.size))
+        publishManyChangedValueEvents(changedForwardIDs)
       case None =>
     }
   }
@@ -132,7 +132,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
       }
     }
 
-    publishOnChangedValues(results, snapshotID, env)
+    publishOnChangedValues(results)
 
     results
   }
@@ -153,8 +153,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
     val eventId = ev.key.identifier
     log.info("Logistics event %s received for ids { %s }".format(eventId, inventoryIds.mkString(", ")))
 
-    val marketDay = Day.today.previousWeekday
-    lazy val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
+    lazy val (_, env) = environmentProvider.lastValuationSnapshotEnvironment
 
     val results: Option[List[TitanTradeUpdateResult]] = ev.verb match {
       case UpdatedEventVerb => {
@@ -178,7 +177,6 @@ class TitanEventHandler(broadcaster:Broadcaster,
             Some(inventoryIds.map(id => titanTradeStoreManager.deleteInventory(id, eventId)))
           }
           case EDMLogisticsSalesAssignmentSubject => {
-            val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
             Some(inventoryIds.map(inventoryID => titanTradeStoreManager.removeSalesAssignment(env, inventoryID, eventId)))
           }
           case _ => None
@@ -186,7 +184,7 @@ class TitanEventHandler(broadcaster:Broadcaster,
       }
       case _ => None
     }
-    publishOnChangedValues(results, snapshotID, env)
+    publishOnChangedValues(results)
     results
   }
 
