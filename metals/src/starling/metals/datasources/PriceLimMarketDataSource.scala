@@ -69,8 +69,8 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     task("LME Metals", limDaily(LME.calendar, 20 H 00), lme, marketDataStore),
-    task("COMEX Metals", limDaily(COMEX.calendar, 15 H 30), comex, marketDataStore),
-    task("SHFE Metals", limDaily(SHFE.calendar, 15 H 00), shfe, marketDataStore)
+    task("COMEX Metals", limDaily(COMEX.calendar, 18 H 00), comex, marketDataStore),
+    task("SHFE Metals", limDaily(SHFE.calendar, 16 H 02), shfe, marketDataStore)
   )
 
 //  val exbxgMetals = new DataFlow(FuturesExchangeFactory.EXBXG, PricingGroup.Metals, Nil, metalsEmail, wuXiEmail, "Excel",

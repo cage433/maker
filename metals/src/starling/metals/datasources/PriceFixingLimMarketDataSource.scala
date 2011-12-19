@@ -44,7 +44,6 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     TaskDescription("Verify LME AMR1 Fixings Available", limDaily(LME.calendar, 12 H 30), notImplemented),
-  //      registerTasks(tasks(limDaily(LME, 13 H 15), TRAF.LME.{EUR, GBP, JPY} SpotFX
     TaskDescription("Verify LME OFFICIAL Fixings Available", limDaily(LME.calendar, 13 H 30), notImplemented),
     TaskDescription("Verify LME PMR1 LMEFixings Available", limDaily(LME.calendar, 16 H 30), notImplemented),
     TaskDescription("Verify LME UNOFFICIAL LMEFixings Available", limDaily(LME.calendar, 17 H 00), notImplemented),
@@ -66,7 +65,7 @@ object LMEFixings extends LimSource(List(Ask, Bid)) {
   private val rings = List(LME_AMR1, LME_Official, LME_PMR1, LME_Unofficial)
 
   def relationsFrom(connection: LIMConnection) = for (market <- LME.markets; ring <- rings; tenor <- tenors) yield {
-    (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%S.%S.%s" % (market.commodity, ring.shortName, tenor))
+    (LMEFixingRelation(ring, market, tenor), "TRAF.LME.%S.%S.%s" % (market.commodity.limName, ring.shortName, tenor))
   }
 
   def marketDataEntriesFrom(fixings: List[Prices[LMEFixingRelation]]) = {

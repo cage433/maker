@@ -5,9 +5,9 @@ import scalaz.Scalaz._
 
 
 trait RichOrdering {
-  implicit def enrichOrdering[T](ordering : Ordering[T]) = new RichOrdering[T](ordering)
+  implicit def enrichOrdering[T](ordering: Ordering[T]) = new RichOrdering[T](ordering)
 
-  class RichOrdering[T](ordering : Ordering[T]) {
+  class RichOrdering[T](ordering: Ordering[T]) {
     import ImplicitConversions._
 
     val untyped = new NamedOrdering[Any]("untyped", ordering) {
@@ -39,8 +39,14 @@ trait RichOrdering {
     }
   }
 
-  def lexicographicalOrdering[T](orderings: Ordering[T]*): Ordering[T] = new Ordering[T] {
-    def compare(x: T, y: T) = orderings.foldLeft(0)((res, ordering) => (res == 0) ? 0 | ordering.compare(x, y))
+  def lexicographicalOrdering[T] = new {
+    def apply[P1 <% Ordered[P1], P2 <% Ordered[P2]](first: T => P1, second: T => P2): Ordering[T] = new Ordering[T] {
+      def compare(x: T, y: T) = {
+        firstDifference(first(x).compareTo(first(y)) #:: second(x).compareTo(second(y)) #:: Stream.empty[Int])
+      }
+    }
+
+    private def firstDifference(comparisons: Stream[Int]): Int = comparisons.find(_ != 0) | 0
   }
 
   class OrderedOrdering[T <: Ordered[T]] extends Ordering[T] {
