@@ -575,7 +575,7 @@ case class ShfeVwapMonthIndex(marketName : String, market : FuturesMarket) exten
   private val baseFrontFuturesMarketIndex = FuturesFrontPeriodIndex(market)
 
   // this rule may need changing but is literally the last business day (eod) of the markets business calendar by default for now
-  private def publicationDay(month : DateRange) = month.lastDay.thisOrPreviousBusinessDay(market.businessCalendar).endOfDay
+  private def publicationDay(month : DateRange) = market.lastTradingDay(month).endOfDay // month.lastDay.thisOrPreviousBusinessDay(market.businessCalendar).endOfDay
 
   // switch between published monthly vwap and official daily (unweighted) prices according to the environment's market day
   override def averagePrice(averagingPeriod: DateRange, rounding: Option[Int], env : Environment): Quantity = {
