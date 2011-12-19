@@ -1,6 +1,5 @@
 package starling.reports.impl.pivot
 
-import starling.quantity.{UOM, Quantity}
 import starling.quantity.UOM._
 import starling.pivot.model._
 import starling.varcalculator._
@@ -18,6 +17,7 @@ import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import starling.gui.api.ReportSpecificOptions._
 import starling.marketdata.{PeriodComparator, PeriodFieldDetails}
 import starling.reports.pivot.OptionalPeriodLabel
+import starling.quantity.{Percentage, UOM, Quantity}
 
 trait PivotReportRow{
   def utpID : UTPIdentifier
@@ -91,7 +91,12 @@ trait PivotRowShareableByRiskFactor[T]{
       case BankAccount(_, None, Some(index : SingleIndex), period : DateRangePeriod) => {
         SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period.period, cleared = true)
       }
-
+      case CashInstrument(_, _, _, Some(Left(index : SingleIndex)), Some(DateRangePeriod(period))) if index.commodity == Freight && index.currency == WSC => {
+        // WSC Freight trades have a price uom of % as they are a % of Worldscale (which is USD/MT)
+        // the year could be wrong but we don't have enough information in the cash instrument
+        val year = period.firstDay.containingYear
+        FFA(index, 1.0(index.uom), Percentage(0), period, year, None, year)
+      }
       case CashInstrument(_, _, _, Some(Left(index : Index)), Some(DateRangePeriod(period))) => {
         // we default to a cleared swap with a common pricing rule. this may not be correct.
         SinglePeriodSwap(index, 0.0(index.priceUOM), 1.0(index.uom), period, cleared = true, pricingRule = CommonPricingRule)

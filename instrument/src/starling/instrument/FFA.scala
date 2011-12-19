@@ -100,6 +100,15 @@ case class FFA(
     }
   }
 
+  override def hedgingInstrument(env:Environment, diff:EnvironmentDifferentiable) = diff match {
+    case PriceDifferentiable(market:CommodityMarket, period) if Index.marketToPublishedIndexMap.contains(market) => {
+      val index = Index.marketToPublishedIndexMap(market)
+      assert(index == this.index, "Wrong index for this: " + (index, this))
+      Some(this.copy(volume = Quantity(1, volume.uom), fixed = Percentage(0.0)))
+    }
+    case _ => None
+  }
+
   override def priceRounding = FFA.priceRounding(index, roundingOverride)
 
   override def expiryDay() = Some(averagingPeriod.lastDay)
@@ -127,7 +136,7 @@ case class FFA(
   def periodKey = Some(averagingPeriod)
 }
 
-object FFA extends InstrumentType[SinglePeriodSwap] with TradeableType[FFA] {
+object FFA extends InstrumentType[FFA] with TradeableType[FFA] {
   val name = "FFA"
 
   def priceRounding(index: Index, roundingOverride: Option[Int]): Option[Int] = {

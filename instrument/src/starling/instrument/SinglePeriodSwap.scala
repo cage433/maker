@@ -1,7 +1,6 @@
 package starling.instrument
 
 import starling.market.rules.{PerQuoteRule, RoundingMethodRule, NoPricingRule, SwapPricingRule}
-import starling.market.{MultiIndex, SingleIndex, Index}
 import starling.curves.SwapPrice._
 import starling.daterange.DateRangePeriod._
 import starling.daterange.DateRange._
@@ -10,6 +9,7 @@ import starling.quantity.SimpleNamedQuantity._
 import starling.daterange.{DateRangePeriod, DayAndTime, Day, DateRange}
 import starling.curves.{SwapPrice, Environment}
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, UOM, Quantity}
+import starling.market.{Freight, MultiIndex, SingleIndex, Index}
 
 case class SinglePeriodSwap(
   index: Index,
