@@ -50,6 +50,7 @@ else
             nohup java \
                -DserverName=$SERVERNAME \
                -server \
+               -Xms6000m \
                -Xmx6000m \
                -XX:MaxPermSize=512m \
                -XX:+HeapDumpOnOutOfMemoryError \

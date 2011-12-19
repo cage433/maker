@@ -27,7 +27,7 @@ class NamedQuantityComponentLabel(text0:String, tooltip0:String=null) extends La
 }
 
 object NamedQuantityComponentHelper {
-  def panel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, depth:Int) = {
+  def panel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, depth:Int):MigPanel with UpdateableNamedQuantityComponent = {
     namedQuantity match {
       case binOp:BinOpNamedQuantity => new BinOpNamedQuantityPanel(binOp, fi, depth)
       case func:FunctionNamedQuantity if func.custom => new FunctionNamedQuantityPanel(func, fi, depth)
@@ -71,6 +71,11 @@ object NamedQuantityComponentHelper {
 }
 import NamedQuantityComponentHelper._
 
+object ExpandCollapseState {
+  val Blank = ExpandCollapseState(None, Nil)
+}
+case class ExpandCollapseState(expanded:Option[Boolean], children:List[ExpandCollapseState])
+
 class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
   background = backColour(depth)
   border = LineBorder(background.darker())
@@ -101,6 +106,8 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
             new Label("") with UpdateableNamedQuantityComponent{
               def updateExtraInfo(newFI: ExtraFormatInfo) {}
               def depth = 0
+              def expandCollapseState = ExpandCollapseState.Blank
+              def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {}
             }}
         }
       }
@@ -155,6 +162,20 @@ class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val d
   }
 
   expandCollapse()
+
+  def expandCollapseState = {
+    if (expandable) ExpandCollapseState(Some(expanded), expandedPanel.expandCollapseState :: Nil) else ExpandCollapseState.Blank
+  }
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    if (expandable && expandCollapseState.expanded.isDefined) {
+      if (expanded != expandCollapseState.expanded.get) {
+        expandCollapse()
+      }
+    }
+    if (expandCollapseState.children.nonEmpty) {
+      expandedPanel.applyExpandCollapseState(expandCollapseState.children.head)
+    }
+  }
 }
 
 class QuantityPanel(quantity:Quantity, fi:ExtraFormatInfo, val depth:Int) extends Label with UpdateableNamedQuantityComponent {
@@ -167,6 +188,8 @@ class QuantityPanel(quantity:Quantity, fi:ExtraFormatInfo, val depth:Int) extend
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     text = quantityText(quantity, newFI)
   }
+  def expandCollapseState = ExpandCollapseState.Blank
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {}
 }
 
 class FunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
@@ -192,6 +215,11 @@ class FunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFormatInfo,
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     funcLabel.tooltip = quantityText(func.result, newFI)
     allPanels.foreach(_.updateExtraInfo(newFI))
+  }
+
+  def expandCollapseState = ExpandCollapseState(None, allPanels.map(_.expandCollapseState).toList)
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    expandCollapseState.children.zip(allPanels).foreach{case (state, comp) => comp.applyExpandCollapseState(state)}
   }
 }
 
@@ -234,6 +262,10 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
     negativeHighlighter.setForeground(Color.RED)
     negativeHighlighter.setSelectedForeground(Color.RED)
 
+    val lShape = new LShape {
+      visible = false
+    }
+
     val jTable = new JXTable(generateTableModel(table)) with UpdateableNamedQuantityComponent {
       setVisible(false)
       setBackground(VerticalFunctionNamedQuantityPanel.this.background)
@@ -249,6 +281,12 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
         setModel(generateTableModel(table0))
         resizeTableColumnsToFit(this, PivotCellRenderer.MonoSpacedFont)
       }
+      def expandCollapseState = ExpandCollapseState(Some(isVisible), Nil)
+      def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+        val visible = expandCollapseState.expanded.getOrElse(false)
+        setVisible(visible)
+        lShape.visible = visible
+      }
     }
     allPanels += jTable
     val renderer = new DefaultTableCellRenderer {
@@ -260,10 +298,6 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
     }
     jTable.setDefaultRenderer(classOf[Object], renderer)
     resizeTableColumnsToFit(jTable, PivotCellRenderer.MonoSpacedFont)
-
-    val lShape = new LShape {
-      visible = false
-    }
 
     val detailsButtonPanel = new MigPanel("insets 1 2 1 2") {
       cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
@@ -299,6 +333,11 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
     funcPanel.label0.text = quantityText(func.result, newFI)
     funcPanel.funcLabel.tooltip = quantityText(func.result, newFI)
     allPanels.foreach(_.updateExtraInfo(newFI))
+  }
+
+  def expandCollapseState = ExpandCollapseState(None, allPanels.map(_.expandCollapseState).toList)
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    expandCollapseState.children.zip(allPanels).foreach{case (state, comp) => comp.applyExpandCollapseState(state)}
   }
 }
 
@@ -348,6 +387,17 @@ class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity, fi:ExtraFormatInfo, val 
     leftPanel.updateExtraInfo(newFI)
     rightPanel.updateExtraInfo(newFI)
   }
+
+  def expandCollapseState = ExpandCollapseState(None, List(leftPanel.expandCollapseState, rightPanel.expandCollapseState))
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    expandCollapseState.children match {
+      case state1 :: state2 :: Nil => {
+        leftPanel.applyExpandCollapseState(state1)
+        rightPanel.applyExpandCollapseState(state2)
+      }
+      case _ =>
+    }
+  }
 }
 
 class NegateNamedQuantityPanel(negate:NegateNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel("" , "[p]0[p]") with UpdateableNamedQuantityComponent {
@@ -363,6 +413,13 @@ class NegateNamedQuantityPanel(negate:NegateNamedQuantity, fi:ExtraFormatInfo, v
     negativeLabel.tooltip = quantityText(negate.quantity, newFI)
     negativePanel.updateExtraInfo(newFI)
   }
+
+  def expandCollapseState = ExpandCollapseState(None, negativePanel.expandCollapseState :: Nil)
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    if (expandCollapseState.children.nonEmpty) {
+      negativePanel.applyExpandCollapseState(expandCollapseState.children.head)
+    }
+  }
 }
 
 class InvertNamedQuantityPanel(invert:InvertNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
@@ -377,6 +434,13 @@ class InvertNamedQuantityPanel(invert:InvertNamedQuantity, fi:ExtraFormatInfo, v
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     invertLabel.tooltip = quantityText(invert.quantity, newFI)
     invertPanel.updateExtraInfo(newFI)
+  }
+
+  def expandCollapseState = ExpandCollapseState(None, invertPanel.expandCollapseState :: Nil)
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    if (expandCollapseState.children.nonEmpty) {
+      invertPanel.applyExpandCollapseState(expandCollapseState.children.head)
+    }
   }
 }
 
@@ -395,20 +459,27 @@ class RoundedNamedQuantityPanel(round:RoundedNamedQuantity, fi:ExtraFormatInfo, 
     roundLabel.tooltip = quantityText(round.quantity, newFI)
     roundPanel.updateExtraInfo(newFI)
   }
+
+  def expandCollapseState = ExpandCollapseState(None, roundPanel.expandCollapseState :: Nil)
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    if (expandCollapseState.children.nonEmpty) {
+      roundPanel.applyExpandCollapseState(expandCollapseState.children.head)
+    }
+  }
 }
 
 class TopNamedQuantityComponent(quantity:NamedQuantity, formatInfo:ExtraFormatInfo=PivotFormatter.DefaultExtraFormatInfo) extends MigPanel with UpdateableNamedQuantityComponent {
   val depth = -1
   background = ExplanationPanelBackgroundColour
-  val (panelToAdd, quantityValue) = quantity.quantity match {
+  val panelToAdd = quantity.quantity match {
     case nq:NamedQuantity => {
       val panel = new ExpandCollapsePanel(quantity, formatInfo, 0) {
         background = new Color(241,239,239)
         border = LineBorder(background.darker())
       }
-      (panel, nq.quantity)
+      panel
     }
-    case q:Quantity => (new QuantityPanel(q, formatInfo, 0), q)
+    case q:Quantity => new QuantityPanel(q, formatInfo, 0)
   }
 
   add(panelToAdd, "ay top")
@@ -416,10 +487,19 @@ class TopNamedQuantityComponent(quantity:NamedQuantity, formatInfo:ExtraFormatIn
   def updateExtraInfo(newFI:ExtraFormatInfo) {
     panelToAdd.updateExtraInfo(newFI)
   }
+
+  def expandCollapseState = ExpandCollapseState(None, panelToAdd.expandCollapseState :: Nil)
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {
+    if (expandCollapseState.children.nonEmpty) {
+      panelToAdd.applyExpandCollapseState(expandCollapseState.children.head)
+    }
+  }
 }
 
 trait UpdateableNamedQuantityComponent {
   def updateExtraInfo(newFI:ExtraFormatInfo)
+  def expandCollapseState:ExpandCollapseState
+  def applyExpandCollapseState(expandCollapseState:ExpandCollapseState)
   def depth:Int
 }
 

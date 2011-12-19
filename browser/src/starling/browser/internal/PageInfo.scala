@@ -12,7 +12,7 @@ class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookm
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
                var refreshPage:Option[(Page,Boolean)], val pageTime:Long,
                val timeTree:TimeTree,
-               var componentForFocus:Option[java.awt.Component]=None) {
+               var componentForFocus:Option[SoftReference[java.awt.Component]]=None) {
   def image:BufferedImage = {
     if (future == null) {
       null

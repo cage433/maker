@@ -8,7 +8,7 @@ object TimeTree {
       val sum = children.map(_.time).sum
       List( TimeTree("Self", Nil, time-sum))
     } else { Nil }
-    TimeTree(name, children.toList.reverse ::: remaining, time)
+    TimeTree(name, children.toList ::: remaining, time)
   }
 }
 case class TimeTree(val name:String, children:List[TimeTree], time:Long) {
@@ -20,7 +20,7 @@ case class TimeTree(val name:String, children:List[TimeTree], time:Long) {
 
 class MutableTimeTree(val name:String) extends Serializable {
   val children = new ArrayStack[TimeTree]()
-  def close(time:Long) = TimeTree.create(name, children, time)
+  def close(time:Long) = TimeTree.create(name, children.toList.reverse, time)
   def add(tree:TimeTree) {
     children.push(tree)
   }

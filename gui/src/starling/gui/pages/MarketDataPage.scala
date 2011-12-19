@@ -475,7 +475,7 @@ class MarketDataSelectionComponent(context:PageContext, maybeDesk:Option[Desk],
   }
 
   reactions += {
-    case MarketDataSnapshot(snapshotID, _, _) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
+    case MarketDataSnapshot(snapshotID) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
       snapshotsComboBoxModel.insertElementAt(SnapshotComboValue(Some(snapshotID)), 1)
     }
     case ExcelMarketListUpdate(values) => {

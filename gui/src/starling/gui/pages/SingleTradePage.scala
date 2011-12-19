@@ -16,8 +16,8 @@ import starling.daterange.{Day, TimeOfDay, Timestamp}
 import org.jdesktop.swingx.renderer.{DefaultTableRenderer, LabelProvider, StringValue}
 import swing.{Alignment, Component, Label}
 import starling.gui.StarlingLocalCache._
-import starling.browser.common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.browser._
+import common.{ResizingLabel, ButtonClickedEx, NewPageButton, MigPanel}
 import java.awt.{Dimension, Color}
 import starling.utils.{Log, SColumn, STable}
 
@@ -38,9 +38,9 @@ object SingleTradePageComponent {
         add(LabelWithSeparator(group.groupName), "spanx, growx, wrap")
         for (fieldName <- group.childNames) {
           if (columnIndexMap.contains(fieldName)) {
-            add(new Label(fieldName) {foreground = Color.BLUE}, "ay top, skip 1")
+            add(new ResizingLabel(fieldName) {foreground = Color.BLUE}, "ay top, skip 1")
             val value = tradeRow(columnIndexMap(fieldName)).asInstanceOf[TableCell]
-            val valueLabel = new Label {
+            val valueLabel = new ResizingLabel {
               xAlignment = Alignment.Left
               if (fieldName == "Strategy") {
                 // Make a special case for strategy so that it doesn't take up too much horizontal space.
@@ -287,7 +287,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           val version = context.localCache.latestMarketDataVersion(marketDataSelection)
 
           val enRule = pricingGroup match {
-            case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.AllCloses
+            case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.MostRecentCloses
             case _ => EnvironmentRuleLabel.COB
           }
 
@@ -330,7 +330,7 @@ class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParamet
       tooltip = "Show the parameters that were used to value this trade"
 
       reactions += {
-        case ButtonClickedEx(b, e) => context.goTo(ValuationParametersPage(tradeID, reportParameters0, ReportSpecificChoices()), Modifiers.modifiers(e.getModifiers))
+        case ButtonClickedEx(b, e) => context.goTo(ValuationParametersPage(tradeID, reportParameters0, ReportSpecificChoices(), true), Modifiers.modifiers(e.getModifiers))
       }
     }
     valuationParametersButton :: buttons

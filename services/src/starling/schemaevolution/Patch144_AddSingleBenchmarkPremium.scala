@@ -20,9 +20,6 @@ import starling.marketdata.{GradeCode, NeptuneCountryCode, CountryBenchmarkData,
  */
 class Patch144_AddSingleBenchmarkPremium extends Patch{
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
-    val entry = MarketDataEntry(ObservationPoint(Day(2011, 11, 1), ObservationTimeOfDay.Default), CountryBenchmarkMarketDataKey(Copper),
-      CountryBenchmarkData(Map((NeptuneCountryCode("SW2"), GradeCode("SMB")) → Map(Day(2011, 11, 1) → Quantity(999999, USD/MT)))))
-    starlingInit.marketDataStore.save(Map(
-      MarketDataSet.ManualMetals → List(entry)))
+    //not needed anymore are a later patch generates the data
   }
 }

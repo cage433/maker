@@ -55,6 +55,19 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
     def contractDeliveryDay = throw new UnsupportedOperationException
     def contractPricingSpec = throw new UnsupportedOperationException
   }
+
+  def benchmarkTenor(index: IndexWithDailyPrices, dayAndTime:DayAndTime, month: Month): Tenor = {
+    val tenor = {
+      val currentMonth = index.market match {
+        case fm: FuturesMarket if fm.exchange == FuturesExchangeFactory.SHFE => fm.frontMonth(dayAndTime)
+        case _ => dayAndTime.day.containingMonth
+      }
+      val offset = month - currentMonth
+      Tenor(Month, offset)
+    }
+    tenor
+  }
+
 }
 
 trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
@@ -173,8 +186,8 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     val month = benchmarkDeliveryDay.get.containingMonth
     val futuresMarket = contractPricingSpec.futuresMarket
     val index = futuresMarket.physicalMetalBenchmarkIndex
-    val benchmarkLookupDay = TitanPricingSpec.representativeDay(index, month, env.marketDay)
-    val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, benchmarkLookupDay)
+    val tenor = benchmarkTenor(index, env.marketDay, month)
+    val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, tenor)
     UnknownPricingSpecification(
       index,
       month,

@@ -143,6 +143,13 @@ class PivotJTableRowModel(helper: PivotJTableModelHelper, var rowHeaderData0:Arr
     (rowHeaderFieldToValues(rowIndex, Some(columnIndex)) ++ filterFieldToValues ++ rowFilters ++ columnFilters) //& keyFields
   }
 
+  def deleteKey(rowIndex:Int): Map[Field, SomeSelection] = {
+      val filterFieldToValues = fieldState.filtersInTheFilterArea.collect{case (f, SomeSelection(v)) => (f, SomeSelection(v))}
+      val columnFilters = fieldState.columnFilters
+
+      (rowHeaderFieldToValues(rowIndex, Some(numCols-1)) ++ filterFieldToValues ++ columnFilters) //& keyFields
+    }
+
   def rowsHaveBeenDeletedByTheMainTable(rows:List[Int]) {
     val cRange = (0 until numCols)
     rows.foreach(r => {

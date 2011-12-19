@@ -175,11 +175,11 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
         )
     }
     val expectedMtms : List[Quantity] = List(
-      8186616434.30(EUR),
+      8191103481.95(EUR),
       7035039114.50(EUR),
-      8912731247.18(EUR),
+      8917616273.77(EUR),
       7723125735.45(EUR),
-      12352886833.03(GBP),
+      12359657400.15(GBP),
       10714216405.08(GBP)
     )
 //    assignments.foreach{ass => println(ass.mtm(env))}

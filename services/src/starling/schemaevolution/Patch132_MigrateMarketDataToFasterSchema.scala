@@ -276,7 +276,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
     val refactoredData = try {
       StarlingXStream.read(cleanUpXml(xml))
     } catch {
-      case e => log.fatal(xml); log.fatal("broken version: " + version); throw e
+      case e => log.fatal(xml + "\nbroken version: " + version); throw e
     }
 
     dataTypes.fromName(key.typeName).castRows(key, key.unmarshallDB(refactoredData))

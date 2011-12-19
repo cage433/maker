@@ -72,7 +72,8 @@ trait TitanPricingSpec {
       val namedEnv = env.withNaming()
       val baseCurrency = p.numeratorUOM.inBaseCurrency
       val priceInBaseCurrency = p inUOM (baseCurrency / p.denominatorUOM)
-      val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay(namedEnv.marketDay)) 
+      val settlementDay_ : Day = settlementDay(namedEnv.marketDay)
+      val fxRate = namedEnv.forwardFXRate(valuationCCY, priceInBaseCurrency.numeratorUOM, settlementDay_).named("Forward FX (" + settlementDay_ + ")")
 
       priceInBaseCurrency * fxRate
     }
@@ -138,15 +139,15 @@ object TitanPricingSpec {
    * Used for unknown pricing spec and also benchmarks
    * Nothing in common really and its use for the latter is probably wrong
    */
-  def representativeDay(index :IndexWithDailyPrices, month : Month, marketDay : DayAndTime) : Day = {
+  def representativeObservationDay(index :IndexWithDailyPrices, month : Month, marketDay : DayAndTime) : Day = {
     val lme = FuturesExchangeFactory.LME
     index.market.asInstanceOf[FuturesMarket].exchange match {
       case `lme` => {
-        val thirdWednesday = month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14
-        if (marketDay >= thirdWednesday.endOfDay)
+        val thirdWednesdayIsObservedOnDay = (month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14).addBusinessDays(index.businessCalendar, -2)
+        if (marketDay >= thirdWednesdayIsObservedOnDay.endOfDay)
           month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
         else
-          thirdWednesday
+          thirdWednesdayIsObservedOnDay
       }
       case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
     }
@@ -336,8 +337,7 @@ case class UnknownPricingSpecification(
 
   def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, unfixedPriceDay(marketDay))
 
-
-  private def unfixedPriceDay(marketDay : DayAndTime) = TitanPricingSpec.representativeDay(index, month, marketDay)
+  private def unfixedPriceDay(marketDay : DayAndTime) = TitanPricingSpec.representativeObservationDay(index, month, marketDay)
 
   private def priceExclPremium(env : Environment) = {
     val totalFixed = fixations.map(_.fraction).sum
@@ -346,7 +346,12 @@ case class UnknownPricingSpecification(
       case (f, i) => f.price.named("Fix_" + i) * f.fraction
     }).named("Fixed")
     val unfixedPayment = (index.fixingOrForwardPrice(env, unfixedPriceDay(env.marketDay)) * unfixedFraction).named("Unfixed")
-    inValuationCurrency(env, fixedPayment) + inValuationCurrency(env, unfixedPayment)
+    if (fixedPayment.isZero)
+      inValuationCurrency(env, unfixedPayment)
+    else if (unfixedPayment.isZero)
+      inValuationCurrency(env, fixedPayment)
+    else
+      inValuationCurrency(env, fixedPayment) + inValuationCurrency(env, unfixedPayment)
   }
 
   def priceExcludingVATExcludingPremium(env: Environment) = {
