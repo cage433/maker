@@ -652,6 +652,47 @@ object PivotTableModel {
     compressedBucket.toMap
   }
 
+  private def possibleValuesToTree(pivotResult:PivotResult, fieldDetailsLookup:Map[Field,FieldDetails]) = {
+    pivotResult.possibleValues.map {
+      case (field, unsortedValues) => {
+        val fd = fieldDetailsLookup(field)
+        fd match {
+          case _:TreeFieldDetails => {
+            val pivotTreePaths = unsortedValues.filterNot(_ == UndefinedValue).castValues[PivotTreePath] { uncastable =>
+              throw new IllegalStateException("The value " + uncastable + " for " + field + " is not a PivotPathTree") }
+
+            field -> toTree(pivotTreePaths, fd.comparator)
+          }
+          case _ => {
+            val values = {
+              // We are using java sorting here because everything is java comparable where as strings are not scala ordered.
+              val unsortedPivotValuesOrUndefined = unsortedValues.map { value => {
+                val v1 = PivotValue.create(value)
+                v1.originalValue.getOrElse(v1.value.getOrElse(UndefinedValue))
+              } }
+              val (nullValues, normalValues) = unsortedPivotValuesOrUndefined.partition(v => {v == UndefinedValue || v == UndefinedValueNew})
+              val arrayOfObjects = normalValues.toArray.asInstanceOf[Array[Object]]
+              try {
+                val sorted = arrayOfObjects.sorted(new Ordering[Any]() {
+                  def compare(x:Any, y:Any) = {
+                    fd.comparator.compare(x, y)
+                  }
+                })
+                nullValues ::: sorted.toList
+              } catch {
+                case e =>
+                  println("Invalid objects, could not sort: " + fd.field)
+                  arrayOfObjects.foreach{x => println(x + ", " + x.getClass)}
+                  throw e
+              }
+            }
+            field -> TreePivotFilter(TreePivotFilterNode(AllFilterSelection, values.map(v => TreePivotFilterNode(v, Nil))))
+          }
+        }
+      }
+    }
+  }
+
   private def fieldIndexes(fields:List[Field], treeDepths:Map[Field,(Int,Int)], fieldDetailsLookup:Map[Field,FieldDetails]):Array[Int] = {
     fields.map {
       field => {
@@ -678,7 +719,7 @@ object PivotTableModel {
       val (mainTableBucket, rowAxisRoot, columnAxisRoot, maxDepths) = Log.infoWithTime("Generating bucket"){generateMainData(pivotState, pivotResult, fieldDetailsLookup, treeDepths, allEditableInfo0)}
       val mainTableBucketWithSubtotals = Log.debugWithTimeGapBottom("Adding subtotals"){withSubtotals(mainTableBucket)}
       val compressedMap = compress(mainTableBucketWithSubtotals)
-      val possibleValuesConvertedToTree = possibleValuesToTree(pivotResult.possibleValues.mapKeys(fieldDetailsLookup))
+      val possibleValuesConvertedToTree = possibleValuesToTree(pivotResult, fieldDetailsLookup)
       val rowFieldHeadingCount = fieldIndexes(pivotState.rowFields, treeDepths, fieldDetailsLookup)
       val fieldInfo = FieldInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)}, treeDepths.keySet.toList)
 
@@ -689,10 +730,6 @@ object PivotTableModel {
         columnAxisRoot.toGUIAxisNode(fieldDetailsLookup), possibleValuesConvertedToTree,
         TreeDetails(treeDepths, maxDepths), allEditableInfo0.editableInfo, fieldInfo, compressedMap, dataSource.zeroFields.toSet)
     }
-  }
-
-  private def possibleValuesToTree(possibleValues: Map[FieldDetails, scala.List[Any]]): Map[Field, TreePivotFilter] = {
-    possibleValues.map { case (fd, unsortedValues) => fd.field → fd.createFilter(unsortedValues) }
   }
 
   private def keyFieldsInAStateThatWouldStopAnExtraLineFromAppearing(keyFields:Set[Field], pfs:PivotFieldsState,
@@ -711,6 +748,20 @@ object PivotTableModel {
         }
       }
     })
+  }
+
+  def toTree(paths: scala.List[PivotTreePath], comparator: scala.Ordering[Any]): TreePivotFilter = {
+    val sortedPaths = paths.sorted(comparator)
+
+    Log.debug("toTree.sortedPaths (with comparator: %s):\n" % (comparator, sortedPaths.mkString("\n\t")))
+
+    val merged = TreePivotFilterNode.mergeForests(sortedPaths.map(_.toTree))
+
+    merged.size match {
+      case 0 => TreePivotFilter(TreePivotFilterNode("None", Nil))
+      case 1 => TreePivotFilter(merged.head.copy(children = merged))
+      case _ => throw new Exception("Expect all paths to have a common root node: " + sortedPaths.map(_.path.head))
+    }
   }
 }
 

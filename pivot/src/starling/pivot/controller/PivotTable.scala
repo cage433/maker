@@ -9,11 +9,9 @@ import java.lang.Boolean
 
 case class TreePivotFilter(root:TreePivotFilterNode) {
   def singleValue = root.children match {case v :: Nil => v.value}
-  def toStream: Stream[Any] = root.toStream
 }
 case class TreePivotFilterNode(value:Any, children:List[TreePivotFilterNode]) {
   def this(value:Any) = this(value, List())
-  def toStream: scala.Stream[Any] = value #:: children.toStream.flatMap(_.toStream)
 }
 
 object TreePivotFilterNode {

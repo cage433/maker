@@ -67,7 +67,7 @@ object PriceDataType extends MarketDataType {
   )
 
   def extendedKeys = List(marketField)
-  override def derivedFieldDetails = List(exchangeField, marketTenorField, marketCommodityField, validity)
+  override def derivedFieldDetails = List(exchangeField, marketTenorField, validity)
   override def valueKeys = List(periodField)
   def valueFieldDetails = List(priceField)
 

@@ -5,7 +5,6 @@ import starling.quantity._
 import starling.utils.sql.PersistAsBlob
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
-import collection.immutable.Map
 
 
 object Row {
@@ -44,21 +43,14 @@ case class Row(value: Map[Field, Any]) {
     val v = value.getOrElse(field, UndefinedValue)
     selection.values.contains(v)
   }
-
-  def matchesAll(selectionValues: Map[Field, Set[Any]]): Boolean = selectionValues.forall { case (field, valuesForField) =>
-    get[Any](field).map(value => valuesForField.contains(value)).getOrElse(true)
-  }
-
   def isEmpty = value.isEmpty
 
-  def isDefined(field: Field): Boolean = value.get(field) match {
+  def isDefined(field: Field) = value.get(field) match {
     case None => false
     case Some(UndefinedValue) => false
     case Some(UndefinedValueNew) => false
     case Some(_) => true
   }
-
-  def isDefined(fields: Iterable[Field]): Boolean = fields.forall(isDefined(_))
 
   def apply[T](fieldDetails: FieldDetails): T = apply(fieldDetails.field)
   def apply[T](field: Field): T = value(field).asInstanceOf[T]

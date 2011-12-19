@@ -16,7 +16,6 @@ import Market._
 import collection.immutable.Map
 import starling.lim.{LimNode, LIMService}
 import starling.db.{MarketDataSource, MarketDataStore}
-import starling.scheduler.TaskDescription
 
 
 abstract class LimMarketDataSourceTests[DS <: MarketDataSource] extends StarlingSpec with JMocker with TemporalSpec {

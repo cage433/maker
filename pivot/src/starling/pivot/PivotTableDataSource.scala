@@ -286,8 +286,7 @@ trait PivotValue {
   def value:Option[Any] //Current value, None if deleted or undefined in a new row
   def originalValue:Option[Any]
   def edits:PivotEdits
-  def valueOrOriginal:Option[Any] = value orElse originalValue
-  def originalOrValue:Option[Any] = originalValue orElse value
+  def valueOrOriginal:Option[Any] = if (value.isDefined) value else originalValue
   def axisValueValue:Any
   def valueForGrouping(newRowsAtBottom:Boolean):Any
 }
@@ -301,7 +300,7 @@ object PivotValue {
     row.get(field) match {
       case Some(value) => {
         value match {
-          case pv:PivotValue => pv.valueOrOriginal.getOrElse(UndefinedValue)
+          case pv:PivotValue => pv.value.getOrElse(pv.originalValue.getOrElse(UndefinedValue))
           case other => other
         }
       }

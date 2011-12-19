@@ -51,7 +51,7 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
   def timeName = observationPoint.timeOfDay.name
 
   def typeName = key.typeName
-  def fieldValues(marketDataType: MarketDataType): Row = marketDataType.fieldValues(key)
+  def fieldValues(marketDataType: MarketDataType) = marketDataType.fieldValues(key)
 
   def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 

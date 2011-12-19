@@ -5,6 +5,7 @@ import org.mockito.Mockito._
 import org.mockito.Matchers._
 import collection.immutable.Nil
 import org.testng.annotations.{BeforeTest, Test}
+import starling.utils.StarlingMatchers._
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import java.io.{PrintWriter, StringWriter}
 import starling.gui.api.{ReportParameters, UserReportData, UserReport}
