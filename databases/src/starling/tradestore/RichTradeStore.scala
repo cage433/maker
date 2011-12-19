@@ -272,7 +272,7 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
       }
       val measures = ds.fieldDetails.filter(fd => (fd.field.name != "Trade Count" && fd.field.name != "Version"))
       val pivotTable = PivotTableModel.createPivotTableData(ds, PivotFieldsState(rowFields = List(PField("Version")), dataFields = measures.map(_.field)))
-      Some(new PivotTableConverter(OtherLayoutInfo(), pivotTable).toSTable("Trade History"), fieldDetailsGroups0, costsVersions.toList)
+      Some(new PivotTableConverter(OtherLayoutInfo.Blank, pivotTable).toSTable("Trade History"), fieldDetailsGroups0, costsVersions.toList)
     } else {
       None
     }
