@@ -12,6 +12,8 @@ import starling.pivot._
 import starling.gui.StarlingIcons
 import starling.browser.common.GuiUtils._
 import starling.browser.common.{GuiUtils, RoundedBorder, FixedImagePanel, MigPanel}
+import starling.utils.ImplicitConversions._
+import scalaz.Scalaz._
 
 // The selected is a var rather than using the copy method as we need the objects to stay the same for filtering.
 case class CheckBoxListElement(var selected:Boolean, value:Any, label:String, var enabled:Boolean)
@@ -463,7 +465,7 @@ case class FilterHelper(tree:Tree, showOther:Boolean, valueToLabel:Any => String
                                                       transforms:Option[FilterWithOtherTransform]) = {
     def getDefaultMutableTreeNodeFromTreePivotFilterNode(treePivotFilterNode:TreePivotFilterNode) = {
       val value = treePivotFilterNode.value
-      val label = if (value == AllFilterSelection) "All" else valueToLabel(value)
+      val label = value.safeCast[LabeledFilterSelection].fold(_.label, valueToLabel(value))
       valueToLabelMap(value) = label
 
       val selected = transforms match {

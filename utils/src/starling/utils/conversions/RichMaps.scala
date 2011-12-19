@@ -29,6 +29,8 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def &(keys:Set[K]) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key)).toList.toMap
   def mapValue(key: K, f: V => V): Map[K,V] = map.updated(key, f(map(key)))
   def mapKeys[C](f: K => C): Map[C, V] = map.map(kv => (f(kv._1), kv._2))
+  def flatMapKeys[C](keyMapping: Map[K, C]): Map[C, V] = flatMapKeys(keyMapping.get(_))
+  def flatMapKeys[C](f: K => Option[C]): Map[C, V] = map.mapKeys(f).collectKeys { case key if key.isDefined => key.get }
   def contraMapKeys[C](f: C => K) = new MapView(map, f)
   def castKeys[C >: K]() = map.asInstanceOf[Map[C, V]]
   def addSome(key: K, value: Option[V]): Map[K,V] = value.map(v => map + key → v).getOrElse(map)
@@ -36,7 +38,7 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def reverse: Map[V, K] = map.map(_.swap)
   def collectKeys[C](pf: PartialFunction[K, C]): Map[C, V] = map.collect(pf *** identity[V] _)
   def collectValues[W](pf: PartialFunction[V, W]): Map[K, W] = map.collect(identity[K] _ *** pf)
-  def collectValuesO[W](f: V => Option[W]): Map[K, W] = map.mapValues(f).collectValues { case value if value.isDefined => value.get }
+  def flatMapValues[W](f: V => Option[W]): Map[K, W] = map.mapValues(f).collectValues { case value if value.isDefined => value.get }
   def zipMap[W](other: Map[K, W]): Map[K, (V, W)] = {
     val (m, o) = (map.filterKeys(other.keySet), other.filterKeys(map.keySet))
     m.map { case (key, value) => (key, (value, o(key)))}.toMap
@@ -57,7 +59,7 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def ifDefined[B](f: (Map[K, V] => B)): Option[B] = map.isEmpty ? none[B] | some(f(map))
   def withDefault(f : K => V) = new MapProxy[K, V]{val self = thisMap.map; override def default(k : K) = f(k)}
   def innerJoin[W](other: Map[V, W]): Map[K, W] = >>>(other)
-  def >>>[W](other: Map[V, W]): Map[K, W] = map.collectValuesO(other.get)
+  def >>>[W](other: Map[V, W]): Map[K, W] = map.flatMapValues(other.get)
   def combine(other: Map[K, V], combiner: (List[V]) => V): Map[K, V] = (map.toSeq ++ other.toSeq).toMultiMap.mapValues(combiner)
 }
 
@@ -71,6 +73,7 @@ class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map)
   def union(kv: (K, List[V])): Map[K, List[V]] = union(kv._1, kv._2)
   def union(other: Map[K, List[V]]): Map[K, List[V]] = map.combine(other, _.reverse.flatten.distinct)
   def flatMultiMap[W](f: ((K, V)) => W): Iterable[W] = map.flatMap(kvs => kvs._2.map(v => f(kvs._1, v)))
+  def reverseMultiMap: Map[V, K] = map.toList.map(kv => kv._1.pairWith(kv._2)).flatten.swap.toMap
 }
 
 class RichMutableMap[K, V](map: MMap[K, V]) {

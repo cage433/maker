@@ -1,11 +1,13 @@
 package starling.pivot
 
-
+import controller.{TreePivotFilterNode, TreePivotFilter}
 import java.io.Serializable
 import model.{UndefinedValueNew, UndefinedValue}
 import starling.quantity._
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
+import starling.utils.Log
+import collection.immutable.Map
 
 
 class Field(val name: String) extends Serializable {
@@ -382,6 +384,37 @@ class FieldDetails(val field:Field) {
   def isDataField = false
   def transformValueForGroupByField(a : Any) : Any = a
   def comparator:Ordering[Any] = GenericComparator.named(field.name)
+
+  def createFilter(unsortedValues: List[Any]): TreePivotFilter = {
+    val values = {
+      // We are using java sorting here because everything is java comparable where as strings are not scala ordered.
+      val unsortedPivotValuesOrUndefined = unsortedValues.map { PivotValue.create(_).originalOrValue.getOrElse(UndefinedValue) }
+      val (nullValues, normalValues) = unsortedPivotValuesOrUndefined.partition(_.isOneOf(UndefinedValue, UndefinedValueNew))
+      val listOfObjects = normalValues.asInstanceOf[List[Object]]
+      try {
+        val sorted = listOfObjects.sorted(comparator)
+        nullValues ::: sorted
+      } catch { case e =>
+        Log.debug("Invalid objects, could not sort: " + field)
+        listOfObjects.foreach { x => println(x + ", " + x.getClass) }
+        throw e
+      }
+    }
+
+    groupValues(values).map { case (group, grouped) =>
+      TreePivotFilterNode(LabeledFilterSelection(group.name), grouped.map(v => TreePivotFilterNode(v, Nil)))
+    } match {
+      case List(node) => TreePivotFilter(node)
+      case nodes => TreePivotFilter(TreePivotFilterNode(LabeledFilterSelection("All"), nodes))
+    }
+  }
+
+  def groupValues[T](values: List[T]): List[(ValueGroup, List[T])] = List(ValueGroup("All") → values)
+  def valuesToGroup[T](unsorted: List[T]): Map[T, ValueGroup] = groupValues(unsorted.sorted(comparator)).toMap.reverseMultiMap
+}
+
+case class ValueGroup(name: String) {
+  def toLabel = LabeledFilterSelection(name)
 }
 
 object GenericComparator extends Ordering[Any] {
@@ -413,11 +446,34 @@ object GenericComparator extends Ordering[Any] {
 }
 
 class TreeFieldDetails(name:String) extends FieldDetails(name) {
+  private val log = Log.forName(getClass.getName + "." + name)
+
   override def matches(filterValues: Set[Any], value: Any) = {
     val selectedPaths = filterValues.asInstanceOf[Set[PivotTreePath]]
     selectedPaths.exists(_.equalOrParentOf(value.asInstanceOf[PivotTreePath]))
   }
+
   override def formatter = TreePivotFormatter
+
+  override def createFilter(unsortedValues: List[Any]): TreePivotFilter = {
+    createFilterFromPaths(unsortedValues.filterNot(_ == UndefinedValue).castValues[PivotTreePath] {
+      uncastable => throw new IllegalStateException("The value " + uncastable + " for " + field + " is not a PivotTreePath")
+    })
+  }
+
+  private def createFilterFromPaths(paths: scala.List[PivotTreePath]): TreePivotFilter = {
+    val sortedPaths = paths.sorted(comparator)
+
+    log.debug("toTree.sortedPaths (with comparator: %s):\n" % (comparator, sortedPaths.mkString("\n\t")))
+
+    val merged = TreePivotFilterNode.mergeForests(sortedPaths.map(_.toTree))
+
+    merged.size match {
+      case 0 => TreePivotFilter(TreePivotFilterNode("None", Nil))
+      case 1 => TreePivotFilter(merged.head.copy(children = merged))
+      case _ => throw new Exception("Expect all paths to have a common root node: " + sortedPaths.map(_.path.head))
+    }
+  }
 }
 
 class StrategyFieldDetails(comparator0: Ordering[PivotTreePath]) extends TreeFieldDetails("Strategy") {

@@ -4,9 +4,9 @@ import controller.TreePivotFilter
 import java.io.Serializable
 import model.{UndefinedValueNew, UndefinedValue}
 import starling.utils.StarlingObject
-import collection.SortedMap
 import starling.utils.ImplicitConversions._
 import collection.immutable.{Map, TreeMap}
+import collection.{Traversable, SortedMap}
 
 object FieldChooserType extends Enumeration {
   type FieldChooserType = Value
@@ -51,7 +51,7 @@ case class LessThanOrEqualSelection(selection: Comparable[_]) extends Selection{
   def description = "Less than or equal: " + selection
 }
 
-case object AllFilterSelection
+case class LabeledFilterSelection(label: String)
 
 case class Totals(rowGrandTotal:Boolean, rowSubTotals:Boolean, columnGrandTotal:Boolean, columnSubTotals:Boolean) {
   def toggleRowGrandTotal = copy(rowGrandTotal = !rowGrandTotal)
@@ -90,6 +90,7 @@ case class FiltersList(filters:List[List[(Field,PossibleValuesFilter)]]) extends
     }
     FiltersList(chopped)
   }
+  def fields: Set[Field] = filters.flatMap(_._1).toSet
 }
 
 case class FilterWithOtherTransform(selection:Set[Any])
@@ -518,6 +519,12 @@ class PivotFieldsState(
 
   def filtersInTheFilterArea = {
     filters.filterNot{ case(f,_) => columns.contains(f) || rowFields.contains(f) }
+  }
+
+  def addMissingFilters(fields: Set[Field]) = {
+    val missingFilters: List[(Field, Selection)] = (fields -- allFieldsUsed.toSet).toList.map(_ → AllSelection)
+
+    copy(filters = missingFilters ::: filters)
   }
 
   def copy(
