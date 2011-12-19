@@ -130,6 +130,7 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
   val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
   val NaphthaSpec = Desk("Naphtha Spec", List(PricingGroup.Naphtha, LimOnly), Some(EAIDeskInfo(20)))
+  val CED = Desk("Central Execution Desk", List(PricingGroup.LondonDerivatives, System, LimOnly), Some(EAIDeskInfo(150)))
 
   val Titan = Desk("Titan", List(Metals))
 

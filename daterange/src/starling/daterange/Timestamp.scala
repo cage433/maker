@@ -43,15 +43,22 @@ case class Timestamp(instant : Long) extends Ordered[Timestamp] {
 }
 
 object Timestamp {
-  val pattern = "ddMMMyyyy HH:mm:ss.SSS"
+  val patterns = List("ddMMMyyyy HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss.SSS")
+  val pattern = patterns.head
 
   def now = new Timestamp
 
-  def parse(str : String) : Timestamp = {
-    val fmt = DateTimeFormat.forPattern(pattern)
-    val dateTime : DateTime = fmt.parseDateTime(str)
-    Timestamp(dateTime.getMillis)
-  }
+  def parse(str: String): Timestamp = patterns.flatMap {
+    pattern =>
+      try {
+        val fmt = DateTimeFormat.forPattern(pattern)
+        val dateTime: DateTime = fmt.parseDateTime(str)
+        Some(Timestamp(dateTime.getMillis))
+      }
+      catch {
+        case e: IllegalArgumentException => None
+      }
+  }.headOption.getOrElse(throw new IllegalArgumentException("Failed to parse " + str + " as Timestamp."))
 
   implicit object ordering extends Ordering[Timestamp]{
     def compare(lhs : Timestamp, rhs : Timestamp) : Int = lhs.compare(rhs)
