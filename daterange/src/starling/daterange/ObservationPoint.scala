@@ -47,9 +47,8 @@ case class ObservationTimeOfDay private (name: String, shortName: String) extend
   }
 }
 
-object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], (o:ObservationTimeOfDay) => o.name, true) {
+object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], (o:ObservationTimeOfDay) => o.shortName, true) {
   def apply(name: String): ObservationTimeOfDay = ObservationTimeOfDay(name, name)
-  def fromShortName(shortName: String): ObservationTimeOfDay = shortNames.getOrThrow(shortName)
 
   val Default = ObservationTimeOfDay("Default")
   val LMEClose = ObservationTimeOfDay("LME Close")
@@ -66,6 +65,4 @@ object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], 
   val LME_Unofficial = new ObservationTimeOfDay("LME Unofficial", "Unofficial")
   val LME_AMR1 = new ObservationTimeOfDay("LME AMR1", "AMR1")
   val LME_PMR1 = new ObservationTimeOfDay("LME PMR1", "PMR1")
-
-  private lazy val shortNames = values.toMapWithKeys(_.shortName)
 }

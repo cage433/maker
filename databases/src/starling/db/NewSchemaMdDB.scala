@@ -399,6 +399,6 @@ case class MarketDataExtendedKey(id: Int, marketDataSet: MarketDataSet, marketDa
 class KeyHelper(marketDataTypes: MarketDataTypes) {
   def marketDataExtendedKey(rs: ResultSetRow): MarketDataExtendedKey =
     MarketDataExtendedKey(rs.getInt("id"), MarketDataSet.fromName(rs.getString("marketDataSet")),
-      marketDataTypes.fromName(rs.getString("marketDataType")), ObservationTimeOfDay.fromShortName(rs.getString("observationTime")),
+      marketDataTypes.fromName(rs.getString("marketDataType")), ObservationTimeOfDay.fromName(rs.getString("observationTime")),
       rs.getObject[MarketDataKey]("marketDataKey"))
 }
