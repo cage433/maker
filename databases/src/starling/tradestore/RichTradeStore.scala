@@ -512,7 +512,9 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
         }
       }
     }
-    Map[UTPIdentifier, UTP]() ++ a
+    val utps = Map[UTPIdentifier, UTP]() ++ a
+    Log.info("Created " + utps.size + " UTPs for " + versions.size + " trades.")
+    utps
   }
 
   def pivotInitialState(tradeableTypes: Set[TradeableType[_]]): DefaultPivotState

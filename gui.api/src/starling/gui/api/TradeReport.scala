@@ -305,13 +305,6 @@ object CurveIdentifierLabel{
  */
 case class UTPIdentifier(id: Int, attributes: Map[String, String] = Map()) {
   def getAttribute(key: String) = attributes.get(key)
-
-  override def equals(obj: Any) = obj match {
-    case u: UTPIdentifier => u.id == this.id
-    case _ => false
-  }
-
-  override def hashCode() = id
 }
 
 case class ReportErrors(errors:List[ReportError])
