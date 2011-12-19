@@ -135,7 +135,8 @@ class SwapCalendarSpreadTests extends TestMarketTest with TestNGSuite {
     assertEquals(explanation.name, "(Front + Back)")
 
     val ex = "((((F_Avg - K) × Volume) × disc) + (((F_Avg - K) × Volume) × disc))"
-    assertEquals(explanation.format(1), ex)
+    val expl1 = explanation.format(1)
+    assertEquals(expl1, ex)
 
     val ex1 = "((((Round(Average(Dated Brent.08Jan2011 - 20Jan2011), 3) - 0.90 USD/bbl) × 100.00 bbl) × USD.07Mar2011) + (((Round(Average(Dated Brent.FEBRUARY 2011), 3) - 0.00 USD/bbl) × (100.00) bbl) × USD.07Mar2011))"
     assertEquals(explanation.format(2), ex1)

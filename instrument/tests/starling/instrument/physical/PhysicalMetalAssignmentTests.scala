@@ -66,7 +66,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     )
     val mtm = pma.mtm(env)
     val exp = pma.explanation(env)
-    assertQtyEquals(mtm, exp, 1e-6)
+    assertQtyEquals(mtm, exp, 1e-6, "explanation quantity does not match the mtm quantity")
     assertEquals(mtm.uom, contractPricingSpec.valuationCCY)
   }
 
@@ -174,16 +174,20 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
           GradeCode("Ok-ish")
         )
     }
+    
     val expectedMtms : List[Quantity] = List(
       8191103481.95(EUR),
-      7035039114.50(EUR),
+      8230995765.91(EUR), // 7035039114.50(EUR), // has changed due to change in VAT by currency, that happens after conversion to valuation currency
       8917616273.77(EUR),
       7723125735.45(EUR),
       12359657400.15(GBP),
       10714216405.08(GBP)
     )
-//    assignments.foreach{ass => println(ass.mtm(env))}
-    assignments.zip(expectedMtms).foreach{case (ass, expMtm) => assertQtyEquals(ass.mtm(env), expMtm, 1e-2)}
+    assignments.foreach{ass => println(ass.mtm(env))}
+    assignments.zip(expectedMtms).foreach {
+      case (ass, expMtm) =>
+        assertQtyEquals(ass.mtm(env), expMtm, 1e-2, "assignmentMtm does not match the expected value")
+    }
   }
 }
 

@@ -316,12 +316,12 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
         val priceExclVAT = spec.priceExcludingVATExcludingPremium(env)
         val priceInclVAT = spec.priceIncludingVATExcludingPremium(env)
         val vatRate = env.shanghaiVATRate
-        val priceWithHalfVat = priceExclVAT * ((vatRate / 2.0) + 1.0)
+        val halfVat = (vatRate / 2.0) + 1.0
 
         def expectedVat(valCcy : UOM) = if (valCcy == CNY) vatRate + 1.0 else Quantity(100.0, PERCENT)
 
         val expectedPriceInclVat = (spec match {
-          case WeightedPricingSpec(_, _) => (vatRate / 2.0) + 1.0
+          case WeightedPricingSpec(_, _) => halfVat
           case AveragePricingSpec(_, _, _, valCcy) => expectedVat(valCcy)
           case FixedPricingSpec(_, _, _, _, valCcy) => expectedVat(valCcy)
           case UnknownPricingSpec(_, _, _, _, _, valCcy) => expectedVat(valCcy)
