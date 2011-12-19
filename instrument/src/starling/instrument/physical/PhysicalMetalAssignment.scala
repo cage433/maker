@@ -189,7 +189,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
 
     val tenor = benchmarkTenor(index, env.marketDay, month)
     val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, tenor)
-    UnknownPricingSpec(
+    UnknownPricingSpecification(
       index,
       month,
       Nil,

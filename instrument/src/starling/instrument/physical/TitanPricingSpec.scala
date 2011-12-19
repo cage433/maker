@@ -322,7 +322,7 @@ case class FixedPricingSpec(futuresMarket : FuturesMarket, settDay: Day, pricesB
 case class UnknownPricingFixation(fraction: Double, price: Quantity)
 
 
-case class UnknownPricingSpec(
+case class UnknownPricingSpecification(
               index: IndexWithDailyPrices,
               month: Month,
               fixations: List[UnknownPricingFixation],

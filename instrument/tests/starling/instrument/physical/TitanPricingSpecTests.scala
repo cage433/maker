@@ -49,7 +49,7 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
       CNY
     )
 
-    val unknownPricingSpecification = UnknownPricingSpec(
+    val unknownPricingSpecification = UnknownPricingSpecification(
       FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER),
       Month(2012, 1),
       List(UnknownPricingFixation(0.4, Quantity(100, USD/MT))),
@@ -82,7 +82,7 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
         ),
         (
           0.6,
-          UnknownPricingSpec(
+          UnknownPricingSpecification(
             FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
             Month(2012, 1),
             List(UnknownPricingFixation(0.4, Quantity(100, CNY/MT))),
@@ -102,7 +102,7 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
           Month(2011, 12),
           Quantity(10, USD/MT),
           CNY),
-        UnknownPricingSpec(
+        UnknownPricingSpecification(
           FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
           Month(2012, 1),
           List(UnknownPricingFixation(0.4, Quantity(100, USD/MT))),
@@ -160,7 +160,7 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
         ),
         (
           0.5,
-          UnknownPricingSpec(
+          UnknownPricingSpecification(
             FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
             Month(2012, 1),
             List(UnknownPricingFixation(0.5, Quantity(100, USD/MT))),
@@ -171,7 +171,7 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
         ),
         (
           0.3,
-          UnknownPricingSpec(
+          UnknownPricingSpecification(
             FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
             Month(2012, 2),
             List(UnknownPricingFixation(0.5, Quantity(100, CNY/MT))),
@@ -248,7 +248,7 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
       USD
     )
 
-    val unknownPricingSpecification = UnknownPricingSpec(
+    val unknownPricingSpecification = UnknownPricingSpecification(
       FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER),
       Month(2012, 1),
       List(UnknownPricingFixation(0.4, Quantity(100, CNY/MT))),
@@ -324,7 +324,7 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
           case WeightedPricingSpec(_, _) => halfVat
           case AveragePricingSpec(_, _, _, valCcy) => expectedVat(valCcy)
           case FixedPricingSpec(_, _, _, _, valCcy) => expectedVat(valCcy)
-          case UnknownPricingSpec(_, _, _, _, _, valCcy) => expectedVat(valCcy)
+          case UnknownPricingSpecification(_, _, _, _, _, valCcy) => expectedVat(valCcy)
           case _ => priceExclVAT * (vatRate + 1.0)
         }) * priceExclVAT
 

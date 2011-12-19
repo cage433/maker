@@ -148,8 +148,8 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     val specs = List(
       FixedPricingSpec(Market.LME_COPPER, Day(2013, 1, 1), List((0.3, Quantity(20, USD/MT)), (0.7, Quantity(25, USD/MT))), Quantity(1.5, USD/MT), EUR),
       FixedPricingSpec(Market.SHANGHAI_COPPER, Day(2013, 1, 1), List((0.3, Quantity(20, CNY/MT)), (0.7, Quantity(25, CNY/MT))), Quantity(1.5, CNY/MT), EUR),
-      UnknownPricingSpec(LmeCashSettlementIndex(Market.LME_NICKEL, Level.Ask), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (USD/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
-      UnknownPricingSpec(FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (CNY/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
+      UnknownPricingSpecification(LmeCashSettlementIndex(Market.LME_NICKEL, Level.Ask), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (USD/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
+      UnknownPricingSpecification(FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER), Month(2012, 4), List(UnknownPricingFixation(0.2, 123.0 (CNY/MT))), Day(2012, 4, 30), 1.2 (USD/MT), EUR),
       AveragePricingSpec(LmeThreeMonthIndex(Market.LME_ALUMINIUM, Level.Bid), Month(2012, 5), 1.5 (USD/MT), GBP),
       AveragePricingSpec(FuturesFrontPeriodIndex(Market.SHANGHAI_ALUMINUIUM), Month(2012, 5), 1.5 (USD/MT), GBP)
     )
@@ -174,14 +174,15 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
           GradeCode("Ok-ish")
         )
     }
-    
+
+    // some values changed as a result of VAT by currency rather than exchange, previous expected numbers in comments below
     val expectedMtms : List[Quantity] = List(
       8191103481.95(EUR),
-      8230995765.91(EUR), // 7035039114.50(EUR), // has changed due to change in VAT by currency, that happens after conversion to valuation currency
+      8230995765.91(EUR), // was 7035039114.50(EUR)
       8917616273.77(EUR),
-      7723125735.45(EUR),
+      9036057110.48(EUR), // was 7723125735.45(EUR),
       12359657400.15(GBP),
-      10714216405.08(GBP)
+      12535633384.33(GBP) // was 10714216405.08(GBP)
     )
     assignments.foreach{ass => println(ass.mtm(env))}
     assignments.zip(expectedMtms).foreach {
