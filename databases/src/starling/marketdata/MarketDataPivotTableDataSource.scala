@@ -19,6 +19,7 @@ import starling.utils.cache.CacheFactory
 import collection.immutable.{Map, Iterable}
 import scalaz.Scalaz._
 import java.lang.IllegalStateException
+import starling.utils.ImplicitConversions
 
 /**
  * Represents raw market data as pivot data
@@ -86,27 +87,35 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
     case MarketDataSelection(Some(pricingGroup), _) => MarketDataStore.editableMarketDataSetFor(pricingGroup)
   }
 
-  private def buildModifiedRows(currentRows: scala.Iterable[Row], maybeEdits: Option[scala.List[(KeyFilter, KeyEdits)]]): List[Row] = {
+  private object EdittedState extends Enumeration {
+    type EdittedState = Value
+    val Current, Amended, Deleted = Value
+  }
+  import EdittedState._
+
+  private def buildModifiedRows(currentRows: List[(EdittedState, Row)], maybeEdits: Option[scala.List[(KeyFilter, KeyEdits)]]): List[(EdittedState, Row)] = {
     var modifiedRows = currentRows
 
     maybeEdits match {
       case Some(edits0) => {
         edits0.foreach {
           case (keyFilter, keyEdit) => {
-            val (affectedRows, ignoredRows) = modifiedRows.partition(keyFilter.matches)
+            val (affectedRows, ignoredRows) = modifiedRows.partition { case (_, row) => keyFilter.matches(row) }
             val fixedRows = keyEdit match {
-              case DeleteKeyEdit => Nil
+              case DeleteKeyEdit => {
+                affectedRows.map { case (_, row) => (Deleted, row) }
+              }
               case AmendKeyEdit(amends) => {
                 if (amends.values.toSet.contains(None)) {
                   Nil //Delete the row if the measure has been deleted
                 } else {
                   affectedRows.map {
-                    row => row ++ amends.filter(_._2.isDefined).mapValues(_.get)
+                    case (_, row) => (Amended, row ++ amends.filter(_._2.isDefined).mapValues(_.get))
                   }
                 }
               }
             }
-            modifiedRows = (fixedRows.toList ::: ignoredRows.toList)
+            modifiedRows = fixedRows ::: ignoredRows
             // modifiedRows = (fixedRows.toList ::: newRows ::: ignoredRows.toList) // doesn't this add duplicates of newRows ?
           }
         }
@@ -114,7 +123,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
       case None => {}
     }
 
-    modifiedRows.toList
+    modifiedRows
   }
 
   def checkForDuplicates(key:TimedMarketDataKey, rows:List[Row], message:String) {
@@ -155,7 +164,6 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
      (observationDayField.field → timedKey.day)}
   }
 
-
   def buildUpdates(timedKey: TimedMarketDataKey, editableSet: MarketDataSet,
                    maybeEdits: Option[scala.List[(KeyFilter, KeyEdits)]], newRows: scala.List[Row]): List[MarketDataUpdate] = {
 
@@ -163,41 +171,52 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
 
     latest match {
       case Some(v@VersionedMarketData(_, Some(readData))) => {
-        val currentRows = createRows(timedKey, readData)
-        val modifiedCurrentRows = buildModifiedRows(currentRows, maybeEdits)
+        val currentRows = Current.pairWith(createRows(timedKey, readData)).toList
+        val modifiedCurrentRows = buildModifiedRows(currentRows, maybeEdits).toMultiMap
+        val current = modifiedCurrentRows.getOrElse(Current, Nil)
+        val amended = modifiedCurrentRows.getOrElse(Amended, Nil)
+        val deleted = modifiedCurrentRows.getOrElse(Deleted, Nil)
 
-        val keysForNewData: Map[TimedMarketDataKey, List[Row]] = (modifiedCurrentRows ::: newRows).groupBy { row => {
-          val observationPoint = row.get[Any](observationDayField.field) match {
-            case None | Some(UndefinedValue) => ObservationPoint.RealTime
-            case Some(day:Day) => {
-              ObservationPoint(day, ObservationTimeOfDay.fromName(row.string(observationTimeField)))
-            }
-          }
-          TimedMarketDataKey(observationPoint, marketDataType.createKey(row))
-        } }
-
-        val updates = keysForNewData.map { case (key, rows) => buildUpdateForNewKey(key, timedKey, v, rows, editableSet) }.toList
-
-        keysForNewData.contains(timedKey) ? updates | (MarketDataUpdate(timedKey, None, Some(v)) :: updates)
-      }
-      case _ => {
-        val modifiedRows = maybeEdits.map(_.flatMap {
-          case (keyFilter, keyEdit) => {
-            keyEdit match {
-              case DeleteKeyEdit => Nil //Ignore, we can't override existing values with a 'delete'
-              case AmendKeyEdit(amends) => {
-                if (amends.values.toSet.contains(None)) {
-                  Nil //Ignore, we can't override existing values with a 'delete'
-                } else {
-                  Row(keyFilter.keys.mapValues(_.values.iterator.next) ++ marketDataType.defaultValue.value ++ amends.mapValues(_.get)) :: Nil
-                }
+        if (amended.isEmpty && deleted.isEmpty) {
+          createFirstEdit(maybeEdits, timedKey, newRows)
+        } else {
+          val keysForNewData: Map[TimedMarketDataKey, List[Row]] = (current ::: amended ::: newRows).groupBy { row => {
+            val observationPoint = row.get[Any](observationDayField.field) match {
+              case None | Some(UndefinedValue) => ObservationPoint.RealTime
+              case Some(day:Day) => {
+                ObservationPoint(day, ObservationTimeOfDay.fromName(row.string(observationTimeField)))
               }
             }
-          }
-        }).getOrElse(Nil)
-        List(MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(modifiedRows.toList ::: newRows)).toUpdate(None))
+            TimedMarketDataKey(observationPoint, marketDataType.createKey(row))
+          } }
+
+          val updates = keysForNewData.map { case (key, rows) => buildUpdateForNewKey(key, timedKey, v, rows, editableSet) }.toList
+
+          val res = keysForNewData.contains(timedKey) ? updates | (MarketDataUpdate(timedKey, None, Some(v)) :: updates)
+
+          res
+        }
       }
+      case _ => createFirstEdit(maybeEdits, timedKey, newRows)
     }
+  }
+
+  def createFirstEdit(maybeEdits: Option[scala.List[(KeyFilter, KeyEdits)]], timedKey: TimedMarketDataKey, newRows: scala.List[Row]): List[MarketDataUpdate] = {
+    val modifiedRows = maybeEdits.map(_.flatMap {
+      case (keyFilter, keyEdit) => {
+        keyEdit match {
+          case DeleteKeyEdit => Nil //Ignore, we can't override existing values with a 'delete'
+          case AmendKeyEdit(amends) => {
+            if (amends.values.toSet.contains(None)) {
+              Nil //Ignore, we can't override existing values with a 'delete'
+            } else {
+              Row(keyFilter.keys.mapValues(_.values.iterator.next) ++ marketDataType.defaultValue.value ++ amends.mapValues(_.get)) :: Nil
+            }
+          }
+        }
+      }
+    }).getOrElse(Nil)
+    List(MarketDataEntry(timedKey.observationPoint, timedKey.key, marketDataType.createValue(modifiedRows.toList ::: newRows)).toUpdate(None))
   }
 
   def editable = editableMarketDataSet.map { editableSet =>
