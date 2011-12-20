@@ -1,17 +1,14 @@
 package starling.titan
 
-import starling.daterange.Day
 import com.trafigura.trademgmt.internal.refinedmetal.{Metal, Market}
 import starling.instrument._
 import physical._
 import starling.quantity.{UOM, Quantity}
 import starling.titan.EDMConversions._
-import starling.daterange.DateRange
-import starling.market.IndexWithDailyPrices
 import starling.utils.ImplicitConversions._
-import starling.market.FuturesMarket
 import com.trafigura.edm.trademgmt.physicaltradespecs.{VolumeWeightedAverageUnknownPricingSpecificationIndex, VolumeWeightedAverageAveragePricingSpecificationIndex, PricingSpecification, FixedPricingSpecification, MonthAveragePricingSpecification, PartialAveragePricingSpecification, OptionalPricingSpecification, WeightedPricingSpecification, UnknownPricingSpecification => UNKPricingSpecification, CashAveragePricingSpecificationIndex, ThreeMonthAveragePricingSpecificationIndex, LowestOfFourAveragePricingSpecificationIndex, AverageOfFourAveragePricingSpecificationIndex, MaxSettlementAveragePricingSpecificationIndex, CashUnknownPricingSpecificationIndex, ThreeMonthUnknownPricingSpecificationIndex, LowestOfFourUnknownPricingSpecificationIndex, AverageOfFourUnknownPricingSpecificationIndex, MaxSettlementUnknownPricingSpecificationIndex, AveragePricingSpecificationIndexEnum, UnknownPricingSpecificationIndexEnum, PartialAverageDayQuantity}
-
+import starling.daterange.{Month, Day, DateRange}
+import starling.market._
 
 trait TitanIndexName {
   def name : String
@@ -83,12 +80,20 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
     // we have to jump through some hoops.
     maybeValuationCurrency : Option[UOM] = None
   ) : TitanPricingSpec = {
+    def averagingPeriod(index : IndexWithDailyPrices, month : Month) = index match {
+      case fi : FuturesFrontPeriodIndex if fi.futuresMarket.exchange == FuturesExchangeFactory.SHFE => fi.frontContractPeriod(month)
+      case vwi : ShfeVwapMonthIndex => vwi.baseFrontFuturesMarketIndex.frontContractPeriod(month)
+      case _ => month
+    }
+
     Option(edmPricingSpec) match {
       case Some(edmPSpec) => edmPSpec match {
         case spec : MonthAveragePricingSpecification => {
+          val index: IndexWithDailyPrices = getIndex(spec.market, spec.index)
+          val month: Month = Day.fromJodaDate(spec.qpMonth).containingMonth
           AveragePricingSpec(
-            getIndex(spec.market, spec.index),
-            Day.fromJodaDate(spec.qpMonth).containingMonth,
+            index,
+            averagingPeriod(index, month),
             spec.premium,
             maybeValuationCurrency.getOrElse(spec.currency)
           )
@@ -128,7 +133,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           val declarationBy: Day = if (spec.declarationBy == null) qpMonth.lastDay.thisOrPreviousBusinessDay(index.businessCalendar) else Day.fromJodaDate(spec.declarationBy)
           UnknownPricingSpecification(
              index,
-             qpMonth,
+             averagingPeriod(index, qpMonth),
              spec.fixations.filterNot(_.observedPrice == null)/* The non-real fixing has no price and should be ignored */.map{
                case fixation =>
                  val fraction = (fromTitanQuantity(fixation.fixedQuantity) / deliveryQuantity).checkedValue(UOM.SCALAR)

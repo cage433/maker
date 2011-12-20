@@ -150,12 +150,8 @@ object TitanPricingSpec {
   }
 }
 
-case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
+case class AveragePricingSpec(index: IndexWithDailyPrices, averagingPeriod: DateRange,
                               premium: Quantity, valuationCCY : UOM) extends TitanPricingSpec {
-  private def averagingPeriod = index match {
-    case fi : FuturesFrontPeriodIndex if fi.futuresMarket.exchange == FuturesExchangeFactory.SHFE => fi.frontContractPeriod(period.lastDay.containingMonth)
-    case _ => period
-  }
   val observationDays = index.observationDays(averagingPeriod)
   
   // Just a guess
@@ -330,7 +326,7 @@ case class UnknownPricingFixation(fraction: Double, price: Quantity)
 
 case class UnknownPricingSpecification(
               index: IndexWithDailyPrices,
-              month: Month,
+              observingPeriod : DateRange,
               fixations: List[UnknownPricingFixation],
               declarationDay: Day,
               premium: Quantity,
@@ -338,10 +334,6 @@ case class UnknownPricingSpecification(
 
   /**Bug in trade management. Neptune store 'no fixations' as a single fixation with zero price */
   private lazy val fixationsSansZeroPrice = fixations.filterNot(_.price.isZero)
-  private lazy val observingPeriod = index match {
-    case fi : FuturesFrontPeriodIndex if fi.market.exchange == FuturesExchangeFactory.SHFE => fi.frontContractPeriod(month)
-    case _ => month
-  }
   def settlementDay(marketDay: DayAndTime) = TitanPricingSpec.calcSettlementDay(index, unfixedPriceDay(marketDay))
 
   private def unfixedPriceDay(marketDay : DayAndTime) = TitanPricingSpec.representativeObservationDay(index, observingPeriod, marketDay)

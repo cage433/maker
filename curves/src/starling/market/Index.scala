@@ -577,7 +577,7 @@ case class ShfeVwapMonthIndex(marketName : String, market : FuturesMarket) exten
   def level = Level.VwapMonthIndexLevel
 
   // underlying index for "published" price fixings
-  private val baseFrontFuturesMarketIndex = FuturesFrontPeriodIndex(market)
+  val baseFrontFuturesMarketIndex = FuturesFrontPeriodIndex(market)
 
   // this rule may need changing but is literally the last business day (eod) of the markets business calendar by default for now
   private def publicationDay(month : DateRange) = market.lastTradingDay(month).endOfDay // month.lastDay.thisOrPreviousBusinessDay(market.businessCalendar).endOfDay
