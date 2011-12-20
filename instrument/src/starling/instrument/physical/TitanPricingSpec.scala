@@ -153,7 +153,7 @@ object TitanPricingSpec {
 case class AveragePricingSpec(index: IndexWithDailyPrices, period: DateRange,
                               premium: Quantity, valuationCCY : UOM) extends TitanPricingSpec {
   private def averagingPeriod = index match {
-    case fi : FuturesFrontPeriodIndex if fi.futuresMarket.exchange == FuturesExchangeFactory.SHFE => fi.frontContractPeriod(period.asInstanceOf[Month])
+    case fi : FuturesFrontPeriodIndex if fi.futuresMarket.exchange == FuturesExchangeFactory.SHFE => fi.frontContractPeriod(period.lastDay.containingMonth)
     case _ => period
   }
   val observationDays = index.observationDays(averagingPeriod)
