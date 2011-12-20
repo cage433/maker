@@ -335,6 +335,10 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     })
 
     assume(result != null, "Something went wrong storing the trades: " + trades) // sanity check
+
+    if(result.changed)
+      tradesChanged
+
     result
   }
 
