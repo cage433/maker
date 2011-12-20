@@ -60,7 +60,6 @@ class TradeStoreTest extends TestMarketTest with TestNGSuite {
     val closes = List(close1, close2, close3, close4)
 
     val cd = mock(classOf[ClosedDesks])
-    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1).map(c => (day, c, None))
 
     val store = new EAITradeStore(db, broadcaster, eAIStrategyDB, Desk.GasolineSpec, cd)
 
@@ -71,7 +70,10 @@ class TradeStoreTest extends TestMarketTest with TestNGSuite {
     val trade3a = Trade(TradeID(3, EAITradeSystem), Day.today, "cp", attr, Future.sample)
 
     val tradesA = List(trade1a, trade2a, trade3a)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List()
+
     val storedA = store.storeTrades((trade) => true, tradesA, close1)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1).map(c => (day, c, None))
 
     assertEquals(storedA.inserted, 3)
     assertEquals(storedA.updated, 0)
@@ -86,9 +88,9 @@ class TradeStoreTest extends TestMarketTest with TestNGSuite {
     val trade2b = trade2a.copy()
     val trade3b = trade3a.copy(tradeable = ErrorInstrument("error3"))
 
-    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2).map(c => (day, c, None))
     val tradesB = List(trade1b, trade2b, trade3b)
     val storedB = store.storeTrades((trade) => true, tradesB, close2)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2).map(c => (day, c, None))
 
     assertEquals(storedB.inserted, 0)
     assertEquals(storedB.updated, 2)
@@ -103,8 +105,8 @@ class TradeStoreTest extends TestMarketTest with TestNGSuite {
     val trade3c = trade3b.copy()
 
     val tradesC = List(trade2c, trade3c)
-    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2, close3).map(c => (day, c, None))
     val storedC = store.storeTrades((trade) => true, tradesC, close3)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2, close3).map(c => (day, c, None))
 
     assertEquals(storedC.inserted, 0)
     assertEquals(storedC.updated, 1)
@@ -113,13 +115,12 @@ class TradeStoreTest extends TestMarketTest with TestNGSuite {
 
     val tradesResultC = store.readLatestVersionOfAllTrades()
 
-
     assertEquals(tradesResultC.values.map(_.trade).toSet, tradesC.toSet)
 
     // do nothing
     val tradesD = tradesC
-    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2, close3, close4).map(c => (day, c, None))
     val storedD = store.storeTrades((trade) => true, tradesD, close4)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2, close3, close4).map(c => (day, c, None))
 
     assertEquals(storedD.inserted, 0)
     assertEquals(storedD.updated, 0)

@@ -68,7 +68,6 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     var res = curr
     db.query(sql, map) {
       rs => {
-        val timestamp = rs.getTimestamp("timestamp")
         val id = rs.getInt("ID")
         val trade = TradeStore.tradeFromRow(rs, tradeSystem, createTradeAttributes(rs))
         if (trade.isDeletedTrade) {
@@ -357,6 +356,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     }
 
     var currentID = findMaxID
+    val currentTrades = readLatestVersionOfAllTrades()
 
     private def nextID = {
       currentID += 1
@@ -469,7 +469,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     }
 
     def delete(tradeIDs: Set[TradeID], timestamp: Timestamp) {
-      val latestVersionOfTrades = readLatestVersionOfAllTrades().filter {
+      val latestVersionOfTrades = currentTrades.filter {
         case (id, _) => tradeIDs.contains(id)
       }
       delete(tradeIDs, latestVersionOfTrades, timestamp)
