@@ -7,7 +7,7 @@ import starling.utils.ImplicitConversions._
 
 
 class ConvertingPatcherTest extends WordSpec with ShouldMatchers {
-  val patcher = new ConvertingPatcher[From, To]("from", Some("to"))
+  val patcher = new ConvertingPatcher[From, To]("from", "to")
 
   "can convert top level class" in {
     patch(From(123)) should be === To(-123)

@@ -10,7 +10,9 @@ trait Convertable[To] {
   def convert: To
 }
 
-class ConvertingPatcher[From <: Convertable[To] : Manifest, To: Manifest](fromClassName: String, optToClassName: Option[String] = None) {
+class ConvertingPatcher[From <: Convertable[To] : Manifest, To: Manifest](fromClassName: String, toClassName: String) {
+  def this(fromClassName: String) = this(fromClassName, fromClassName)
+
   final def patch(xml: String): String = xml.contains(fromClassName) ? patch(XML.loadString(xml)).toString | xml
   final def patch(elem: Elem): Elem = elem.transform(transformNode).asInstanceOf[Elem]
   def predicate(from: From): Boolean = true
@@ -28,11 +30,5 @@ class ConvertingPatcher[From <: Convertable[To] : Manifest, To: Manifest](fromCl
 
   private val fromStream = StarlingXStream.createXStream.update(_.alias(fromClassName, manifest[From].erasure))
   private val toStream = StarlingXStream.createXStream.update(_.alias(toClassName, manifest[To].erasure))
-  private val toClassName = optToClassName | fromClassName
   private val toAttribute: MetaData = new UnprefixedAttribute("class", toClassName, scala.xml.Null)
-
-  case class Tagged[T](value: T, node: Node) {
-    def map[V](f: T => V) = copy(value = f(value))
-    def matchesTo = node.label == toClassName
-  }
 }
