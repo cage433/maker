@@ -165,7 +165,11 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
           Log.infoWithTime("Building trade history after " + startTimestamp) {
 
             val closes = closesFrom(startTimestamp, lastTimestamp).toIterator
-            var current = closes.next()
+            def nextCloseOrLatest = closes.hasNext match {
+              case true => closes.next
+              case false => lastTimestamp
+            }
+            var current = nextCloseOrLatest
             val sql = "select * from " + tableName + """ t
                                   where timestamp > :old
                                   """ + expStr + " order by id asc"
@@ -180,7 +184,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
                 if (timestamp > current) {
                   do {
                     versions() = versions() + ((current -> map))
-                    current = closes.next()
+                    current = nextCloseOrLatest
                   } while (current < timestamp)
                 }
 
@@ -193,10 +197,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
             }
             do {
               versions() = versions() + ((current -> map))
-              current = closes.hasNext match {
-                case true => closes.next
-                case false => lastTimestamp
-              }
+              current = nextCloseOrLatest
             } while (current < lastTimestamp)
             versions() = versions() + ((lastTimestamp -> map))
           }
