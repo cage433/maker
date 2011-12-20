@@ -381,17 +381,23 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
         costs_str -> PersistAsBlob(trade.costs)
       )
 
-      val details = Map(
+      def safeMerge(a: Map[String, Any], b: Map[String, Any]) = {
+        val aa = a.mapKeys(_.removeWhiteSpace)
+        val bb = b.mapKeys(_.removeWhiteSpace)
+        // if this asserts it is because there is an overlap in the use of a key between trade details and attributes
+        // for example, 'inventory id' was an attribute of a trade and a trade attribute at one point, without this check the value
+        // from one of those was lost on serialising the trade.
+        aa.keySet.map(_.toLowerCase).intersect(bb.keySet.map(_.toLowerCase)) |> (i => assert(i.isEmpty, "Collision on keys when creating trade: " + i))
+        aa ++ bb
+      }
+
+      val details = List(Map(
         "Id" -> nextID,
         "timestamp" -> timestamp,
         "expiryDay_cache" -> expiryDay
-      ) ++ justTradeDetails ++ trade.tradeable.persistedTradeableDetails ++ trade.attributes.details
+      ), justTradeDetails, trade.tradeable.persistedTradeableDetails, trade.attributes.details)
 
-      val normalisedNames = details.map {
-        case (field, value) => field.removeWhiteSpace -> value
-      }
-
-      normalisedNames
+      (Map[String,Any]() /: details)(safeMerge(_, _))
     }
 
     private var toInsertTradeTable = List[Map[String, Any]]()
@@ -448,6 +454,10 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
                 // This is usually, although not always, a warning sign that we've implemented trade comparison incorrectly
                 // and we're producing new versions of trades that haven't actually changed.
                 Log.warn("Trades apparently not equal but their strings are the same: " + updateTrade)
+                starling.utils.ReflectionEquals.fieldsThatDiffer(oldTradeRow.trade, updateTrade).map {
+                  diff =>
+                    Log.warn("Diff: " + diff)
+                }
               }
               writeUpdatedTrade(updateTrade, timestamp, oldTradeRow.id)
               updated += 1

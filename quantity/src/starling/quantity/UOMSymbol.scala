@@ -14,7 +14,7 @@ object UOMSymbol{
 
   // The compiler rejects assigning all the currencies in one go, so have to create 3 separate lists
   val zCurrencies@List(aed, aud, bgn, brl, cad, chf, cny, czk, dkk, eur, gbp, hkd, hrk, huf, idr) =
-    currencies("AED", "AUD", "BGN", "BRL", "CAD", "CHF", "CNY/RMB", "CZK", "DKK", "EUR", "GBP", "HKD", "HRK", "HUF", "IDR")
+    currencies("AED", "AUD", "BGN", "BRL", "CAD", "CHF", "CNY/RMB", "CZK", "DKK", "EUR/ECB", "GBP", "HKD", "HRK", "HUF", "IDR")
 
   val zCurrencies2@List(ils, inr, jpy, krw, ltl, lvl, mxn, myr, nad, nok, nzd, php, pln, ron, rub, sek) =
     currencies("ILS", "INR", "JPY", "KRW", "LTL", "LVL", "MXN", "MYR", "NAD", "NOK", "NZD", "PHP", "PLN", "RON", "RUB", "SEK")
@@ -33,7 +33,7 @@ object UOMSymbol{
   val US_CENT_SYMBOL = UOMSymbol("¢", "US CENT", "USC")
 
   val SHORT_TONNE_SYMBOL = UOMSymbol("S/T")
-  val TONNE_SYMBOL = UOMSymbol("MT", "TONNE")
+  val TONNE_SYMBOL = UOMSymbol("MT", "TONNE", "MTS")
   val C_TONNE_SYMBOL = UOMSymbol("c MT", "c TONNE")
   val KILO_TONNE_SYMBOL = UOMSymbol("KT", "KILOTONNE")
   val BARREL_SYMBOL = UOMSymbol("bbl", "BARREL", "BBLS")

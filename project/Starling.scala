@@ -11,6 +11,9 @@ import java.io.File
 
 object StarlingBuild extends Build{
 
+  scalacOptions += "-Ydebug"
+  scalacOptions += "-Ylog:inliner"
+
   val projectName = "starling"
   val scalaVer = "2.9.1"
   val amqpVersion = "1.7.2"

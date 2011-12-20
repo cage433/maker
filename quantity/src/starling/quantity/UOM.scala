@@ -10,9 +10,9 @@ import starling.utils.{StarlingEnum, CaseInsensitive}
 
 
 object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase = true) {
-  def apply(symbol: UOMSymbol): UOM = new UOM(Ratio(UOMType.unique.prime, 1), Ratio(symbol.prime, 1), 1.0)
+  protected def apply(symbol: UOMSymbol): UOM = new UOM(Ratio(UOMType.unique.prime, 1), Ratio(symbol.prime, 1), 1.0)
 
-  def apply(uomType: UOMType, symbol: UOMSymbol, scale: BigDecimal): UOM = new UOM(Ratio(uomType.prime, 1), Ratio(symbol.prime, 1), scale)
+  protected def apply(uomType: UOMType, symbol: UOMSymbol, scale: BigDecimal): UOM = new UOM(Ratio(uomType.prime, 1), Ratio(symbol.prime, 1), scale)
 
   override val Parse: Extractor[Any, UOM] = Extractor.from[Any]((a: Any) => fromStringOption(a.toString))
   val Currency: Extractor[Any, UOM] = Parse.filter(_.isCurrency)
@@ -263,8 +263,7 @@ object UOM extends StarlingEnum(classOf[UOM], (u: UOM) => u.toString, ignoreCase
  *     Cent - .01
  *     etc..
  */
-case class UOM(uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM] {
-
+case class UOM protected[quantity] (uType: Ratio, subType: Ratio, v: BigDecimal) extends Ordered[UOM] {
   def plus(o: UOM): Option[BigDecimal] = o match {
     case UOM(`uType`, `subType`, _) => Some(1.0)
     case UOM(`uType`, oSubType, oV) => Some(oV / v)
