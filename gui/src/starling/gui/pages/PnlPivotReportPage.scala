@@ -8,6 +8,7 @@ import swing.event.Event
 import starling.pivot.{PivotEdits, SomeSelection, Field, Selection}
 import starling.gui.StarlingServerContext
 import starling.browser.{Modifiers, Page, ServerContext, PageContext}
+import starling.gui.StarlingLocalCache._
 
 class PnlPivotReportPage
 
@@ -36,7 +37,8 @@ case class TradeChangesReportPage(tradeSelection:TradeSelection, from:TradeTimes
     tradeID match {
       case Some(trID) => {
         pageContext.goTo(
-          SingleTradePage(trID, tradeSelection.desk, TradeExpiryDay(tradeExpiryDay), tradeSelection.intradaySubgroup),
+          SingleTradePage(trID, tradeSelection.desk.map(d => (d, pageContext.localCache.latestDeskTradeTimestamp(d))),
+            TradeExpiryDay(tradeExpiryDay), tradeSelection.intradaySubgroup.map(g => (g, pageContext.localCache.latestTimestamp(g)))),
           modifiers = modifiers
         )
       }

@@ -21,12 +21,45 @@ import common.{ResizingLabel, ButtonClickedEx, NewPageButton, MigPanel}
 import java.awt.{Dimension, Color}
 import starling.utils.{Log, SColumn, STable}
 
-case class SingleTradePage(tradeID:TradeIDLabel, desk:Option[Desk], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends StarlingServerPage {
+case class SingleTradePage(tradeID:TradeIDLabel, deskAndTimestamp:Option[(Desk,TradeTimestamp)], tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[(IntradayGroups, Timestamp)]) extends StarlingServerPage {
   Log.info("Created single trade page")
   def text = "Trade " + tradeID
   def icon = StarlingIcons.im("/icons/tablenew_16x16.png")
-  def build(reader:StarlingServerContext) = TradeData(tradeID, reader.tradeService.readTradeVersions(tradeID), desk, tradeExpiryDay, intradayGroups)
+  def build(reader:StarlingServerContext) = TradeData(tradeID, reader.tradeService.readTradeVersions(tradeID), deskAndTimestamp, tradeExpiryDay, intradayGroups)
   def createComponent(context:PageContext, data:PageData, bookmark:Bookmark, browserSize:Dimension, previousPageData:Option[PreviousPageData]) = new SingleTradePageComponent(context, data)
+  override def latestPage(localCache:LocalCache) = {
+    val newDeskAndTimestamp = deskAndTimestamp match {
+      case Some((d,pp)) => {
+        val rr = localCache.latestDeskTradeTimestamp(d)
+        Some((d,rr))
+      }
+      case _ => deskAndTimestamp
+    }
+    val newIntradayGroups = intradayGroups match {
+      case Some((g,_)) => Some((g,localCache.latestTimestamp(g)))
+      case _ => intradayGroups
+    }
+    copy(deskAndTimestamp = newDeskAndTimestamp, intradayGroups = newIntradayGroups)
+  }
+  override def bookmark(serverContext:StarlingServerContext, pageData:PageData) = {
+    SingleTradePageBookmark(tradeID, deskAndTimestamp, tradeExpiryDay, intradayGroups)
+  }
+}
+
+case class SingleTradePageBookmark(tradeID:TradeIDLabel, deskAndTimestamp:Option[(Desk,TradeTimestamp)],
+                                   tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[(IntradayGroups,Timestamp)]) extends StarlingBookmark {
+  def daySensitive = false
+  def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
+    val newDeskAndTimestamp = deskAndTimestamp match {
+      case Some((d,t)) => Some((d, context.localCache.latestDeskTradeTimestamp(d)))
+      case _ => deskAndTimestamp
+    }
+    val newIntradayGroups = intradayGroups match {
+      case Some((g,_)) => Some((g,context.localCache.latestTimestamp(g)))
+      case _ => intradayGroups
+    }
+    SingleTradePage(tradeID, newDeskAndTimestamp, tradeExpiryDay, newIntradayGroups)
+  }
 }
 
 object SingleTradePageComponent {
@@ -245,13 +278,21 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
       val selection = jTable.getSelectedRow
       if (selection != -1) {
         val row = stable.data(selection)
-        val desk = data.desk
+        val desk:Option[Desk] = data.deskAndTimestamp.map(_._1)
         val rowTimeStamp = row(1).asInstanceOf[TableCell].value.asInstanceOf[Timestamp]
         val (deskAndTimestamp, intradaySubgroupAndTimestamp) = desk match {
           case None => {
             data.intradayGroups match {
-              case None => (None,None)
-              case Some(intradayGroups) => (None,Some((intradayGroups,rowTimeStamp)))
+              case Some((g,t)) => {
+                if(jTable.getRowCount - 1 == selection) {
+                  // we've selected the most up to date
+                  val l = context.localCache.latestTimestamp(g)
+                  (None, Some((g, l)))
+                } else {
+                  (None, Some((g,t)))
+                }
+              }
+              case _ => (None,None)
             }
           }
           case Some(d) => {
@@ -296,7 +337,7 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(
             MarketDataIdentifier(marketDataSelection, version),
             context.localCache.ukBusinessCalendar,
-            zeroInterestRates = (data.desk == Some(Desk.Titan))  // Metals don't want discounting during UAT
+            zeroInterestRates = (data.deskAndTimestamp.map(_._1) == Some(Desk.Titan))  // Metals don't want discounting during UAT
           )
           ci.copy(thetaToDayAndTime = ci.thetaToDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule)
         }
@@ -316,10 +357,31 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
     listenTo(button)
   }
   add(mainPanel, "push, grow")
+
+  override def getState:Option[ComponentState] = {
+    val selectedRow = mainPanel.historyTable.jTable.getSelectedRow
+    if (selectedRow == -1) {
+      None
+    } else {
+      Some(SingleTradePageComponentState(selectedRow))
+    }
+  }
+  override def setState(state:Option[ComponentState]) {
+    state match {
+      case Some(s:SingleTradePageComponentState) => {
+        mainPanel.historyTable.jTable.setRowSelectionInterval(s.selectedRow, s.selectedRow)
+      }
+      case _ =>
+    }
+  }
+  override def defaultComponentForFocus = Some(mainPanel.historyTable.jTable)
 }
 
-case class TradeData(tradeID:TradeIDLabel, tradeHistory:(STable,List[FieldDetailsGroupLabel],List[CostsLabel]), desk:Option[Desk],
-                        tradeExpiryDay:TradeExpiryDay, intradayGroups:Option[IntradayGroups]) extends PageData
+case class SingleTradePageComponentState(selectedRow:Int) extends ComponentState
+
+case class TradeData(tradeID:TradeIDLabel, tradeHistory:(STable,List[FieldDetailsGroupLabel],List[CostsLabel]),
+                     deskAndTimestamp:Option[(Desk,TradeTimestamp)], tradeExpiryDay:TradeExpiryDay,
+                     intradayGroups:Option[(IntradayGroups,Timestamp)]) extends PageData
 
 class SingleTradeMainPivotReportPage(val tradeID:TradeIDLabel, val reportParameters0:ReportParameters, val pivotPageState0:PivotPageState)
         extends MainPivotReportPage(true, reportParameters0, pivotPageState0) {

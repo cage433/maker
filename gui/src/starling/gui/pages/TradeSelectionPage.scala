@@ -71,7 +71,8 @@ case class TradeSelectionPage(
     tradeID match {
       case Some(trID) => {
         pageContext.goTo(
-          SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup),
+          SingleTradePage(trID, tradeSelection.desk.map(d => (d, pageContext.localCache.latestDeskTradeTimestamp(d))), tpp.expiry,
+            tradeSelection.intradaySubgroup.map(g => (g, pageContext.localCache.latestTimestamp(g)))),
           modifiers = modifiers
         )
       }
@@ -214,7 +215,7 @@ case class TradeSelectionPage(
         context.createAndGoTo(
         (serverContext:ServerContext) => {
           val tradeID = serverContext.lookup(classOf[TradeFacility]).tradeIDFor(desk, textID)
-          SingleTradePage(tradeID, Some(desk), expiry, None)
+          SingleTradePage(tradeID, Some((desk, context.localCache.latestDeskTradeTimestamp(desk))), expiry, None)
         }, { case e:UnrecognisedTradeIDException => {
           errorLabel.text = e.getMessage
           errorLabel.visible = true

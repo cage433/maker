@@ -185,8 +185,8 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
       reactions += {
         case ButtonClickedEx(b, e) => {
           val rp = data.reportParameters
-          val page = SingleTradePage(data.tradeID, rp.tradeSelectionWithTimestamp.desk, TradeExpiryDay(rp.expiryDay),
-            rp.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1))
+          val page = SingleTradePage(data.tradeID, rp.tradeSelectionWithTimestamp.deskAndTimestamp, TradeExpiryDay(rp.expiryDay),
+            rp.tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp)
           context.goTo(page, Modifiers.modifiers(e.getModifiers))
         }
       }

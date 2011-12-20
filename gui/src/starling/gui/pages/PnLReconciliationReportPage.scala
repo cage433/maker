@@ -34,7 +34,7 @@ case class PnLReconciliationReportPage(tradeSelectionWithTimestamp: TradeSelecti
     tradeID match {
       case Some(trID) => {
         pageContext.goTo(
-          SingleTradePage(trID, tradeSelectionWithTimestamp.desk, TradeExpiryDay(expiryDay), tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp.map(_._1)),
+          SingleTradePage(trID, tradeSelectionWithTimestamp.deskAndTimestamp, TradeExpiryDay(expiryDay), tradeSelectionWithTimestamp.intradaySubgroupAndTimestamp),
           modifiers = modifiers
         )
       }
