@@ -161,7 +161,7 @@ class MarketChangesPnl(d1: AtomicEnvironment, d2: AtomicEnvironment, utps : Map[
             riskType = riskType,
             riskCommodity = riskCommodity,
             marketName = marketName, 
-            period = period, 
+            period = period,
             pnl = pnl,
             priceChange = priceChange,
             d1Price = d1Price,
