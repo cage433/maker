@@ -303,6 +303,11 @@ case class FuturesFrontPeriodIndex(
    * This works for Comex and SFSE - may need to be overriden for others.
    */
   override def observationTimeOfDay = market.exchange.closeTime
+
+  /**
+   * The date range when a particular contract is the front 
+   */
+  def frontContractPeriod(month : Month) = market.lastTradingDay(month - 1).nextBusinessDay(businessCalendar) upto market.lastTradingDay(month)
 }
 
 abstract class MultiIndex(override val name: String) extends Index {
