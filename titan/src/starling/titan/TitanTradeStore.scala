@@ -57,7 +57,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val toleranceMinus = row.getPercentage("ToleranceMinus")
     val eventID = row.getString("EventID")
 
-    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, Option(inventoryID), groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventID)
+    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventID)
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {

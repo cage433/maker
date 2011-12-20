@@ -67,7 +67,6 @@ case class TitanTradeAttributes(
   quotaID : String,
   quotaQuantity : Quantity,
   titanTradeID : String,
-  inventoryID : Option[String],
   groupCompany : String,
   comment : String,
   submitted : Day,
@@ -97,7 +96,7 @@ case class TitanTradeAttributes(
     tolerancePlus_str -> tolerancePlus,
     toleranceMinus_str -> toleranceMinus,
     eventID_str -> eventID
-  ) ++  inventoryID.map{id => inventoryID_str -> id}
+  )
 
   override def createFieldValues = details.map{
     case (k, v) => Field(k) -> v
@@ -125,7 +124,6 @@ object TitanTradeAttributes{
       quotaID = "",
       quotaQuantity = Quantity.NULL,
       titanTradeID = titanTradeID,
-      inventoryID = None,
       groupCompany = "",
       comment = "",
       submitted = dummyDate,

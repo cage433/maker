@@ -148,12 +148,11 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                 grade = GradeCode(grade.code)
               )
             }
-            def makeTradeAttributes(inventoryID : Option[String]) = {
+            def makeTradeAttributes() = {
               TitanTradeAttributes(
                   quotaID,
                   quotaQuantity,
                   getTitanTradeId(trade),
-                  inventoryID,
                   groupCompany,
                   comments,
                   submittedDay,
@@ -168,7 +167,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               val trades = inventoryItems.map {
                 inv =>
                   val assignment = makeAssignment(inv.item.purchaseAssignment, inv, true)
-                  val attributes = makeTradeAttributes(Some(inv.id))
+                  val attributes = makeTradeAttributes()
                   Trade(
                     TradeID(ASSIGNMENT_PREFIX + inv.item.purchaseAssignment.oid.contents.toString, TitanTradeSystem),
                     submittedDay,
@@ -188,7 +187,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               val assignmentTrades = inventoryItems.map {
                 inv =>
                   val assignment = makeAssignment(inv.item.salesAssignment, inv, false)
-                  val attributes = makeTradeAttributes(Some(inv.id))
+                  val attributes = makeTradeAttributes()
                   Trade(
                     TradeID(ASSIGNMENT_PREFIX + inv.item.salesAssignment.oid.contents.toString, TitanTradeSystem),
                     submittedDay,
@@ -217,7 +216,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
                   benchmarkIncoTerm,
                   GradeCode(grade.code)
                 )
-                val attributes = makeTradeAttributes(None)
+                val attributes = makeTradeAttributes()
                 Some(Trade(
                   TradeID(QUOTA_PREFIX + quotaID, TitanTradeSystem),
                   submittedDay,

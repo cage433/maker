@@ -15,6 +15,7 @@ import starling.db.{MarketDataStore, SnapshotID}
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
 import com.trafigura.edm.logistics.inventory.InventoryItem
 import starling.instrument.Trade
+import starling.instrument.physical.PhysicalMetalAssignment
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
@@ -173,8 +174,8 @@ object EDMConversions {
       case tta : TitanTradeAttributes => Some(tta.titanTradeID)
       case _ => None
     }
-    def titanInventoryID : Option[String] = trade.attributes match {
-      case tta : TitanTradeAttributes => tta.inventoryID
+    def titanInventoryID : Option[String] = trade.tradeable match {
+      case pma : PhysicalMetalAssignment => Some(pma.inventoryID)
       case _ => None
     }
   }
