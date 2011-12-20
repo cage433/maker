@@ -43,15 +43,10 @@ class TitanSystemOfRecord(manager : TitanTradeStoreManager)
     manager.updateTradeStore("allTrade import request")
     val allTrades = manager.allStarlingTrades
 
-    val (worked, failed) = allTrades.map(_.tradeable).partition{ case a : PhysicalMetalAssignment => true; case _ => false }
-
-    log.info("Failed : \n" + failed.mkString("\n"))
-    log.info("Worked : \n" + worked.mkString("\n"))
-
     allTrades.map(f)
 
-    val dups = allTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
-    log.warn("dups found: \n" + dups.mkString("\n"))
+    val duplicates = allTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
+    assert(duplicates.isEmpty, "duplicates found: \n" + duplicates.mkString("\n"))
 
     val tradeErrors = allTrades.map(_.tradeable).collect{case ErrorInstrument(err) => err}
     (tradeErrors.size, tradeErrors.toSet)

@@ -312,12 +312,10 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     }
   }
 
-  def storeTrades(predicate: (Trade) => Boolean, trades: Iterable[Trade], timestamp: Timestamp): StoreResults = this.synchronized {
+  def storeTrades(predicate: (Trade) => Boolean, incomingTrades: Iterable[Trade], timestamp: Timestamp): StoreResults = this.synchronized {
     var result: StoreResults = null
     inTransaction(writer => {
-      val expiry = timestamp.day.startOfFinancialYear
-      val allTrades = readLatestVersionOfAllTrades(Some(expiry))
-      val incomingTrades = trades.filter(_.expiryDay.fold(_ >= expiry, true))
+      val allTrades = readLatestVersionOfAllTrades()
       val currentTrades = allTrades.filter(v => predicate(v._2.trade))
       val (added, updated, _) = writer.updateTrades(incomingTrades, currentTrades, timestamp)
 
@@ -333,7 +331,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
       result = StoreResults(added, deletedTradeIDs.size, updated, hash)
     })
 
-    assume(result != null, "Something went wrong storing the trades: " + trades) // sanity check
+    assume(result != null, "Something went wrong storing the trades: " + incomingTrades) // sanity check
 
     if(result.changed)
       tradesChanged

@@ -77,10 +77,10 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     implicit txn => {
       // titan tradestore asks for trades at arbitrary timestamp with no book closes
       // and no trade changes.
-      // so we pick the next nearest revision above the one asked for.
-      // we can pick from any revision that has a trade change.
-      val filtered = versions().keySet.filter(_ >= timestamp)
-      filtered.headOption match {
+      // so we pick the next nearest revision below the one asked for.
+      // we have all revisions that have a trade change so this is fine.
+      val filtered = versions().keySet.filter(_ <= timestamp)
+      filtered.lastOption match {
         case Some(v) => versions().apply(v)
         case _ => Map()
       }
