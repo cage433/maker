@@ -4,7 +4,6 @@ import starling.dbx.QueryBuilder._
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.manager.Broadcaster
 import starling.gui.api.{Desk, TradesUpdated}
-import starling.instrument.{Trade, TradeableType, TradeSystem}
 import EDMConversions._
 import collection.immutable.Map
 import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
@@ -15,6 +14,7 @@ import starling.tradestore.{RichTradeStore, TradeableFields, TradeRow, TradeStor
 import starling.tradeimport.ClosedDesks
 import starling.daterange.Timestamp
 import concurrent.stm._
+import starling.instrument.{TradeID, Trade, TradeableType, TradeSystem}
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -73,18 +73,17 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     )
   }
 
-  override protected def atVersion(timestamp:Timestamp) = atomic {
+  override protected def atVersion(timestamp:Timestamp): Map[TradeID, TradeRow] = atomic {
     implicit txn => {
       // titan tradestore asks for trades at arbitrary timestamp with no book closes
       // and no trade changes.
       // so we pick the next nearest revision above the one asked for.
       // we can pick from any revision that has a trade change.
       val filtered = versions().keySet.filter(_ >= timestamp)
-      val key = filtered.headOption match {
-        case Some(v) => v
-        case _ => throw new Exception("No version for timestamp: " + timestamp)
+      filtered.headOption match {
+        case Some(v) => versions().apply(v)
+        case _ => Map()
       }
-      versions().apply(key)
     }
   }
 

@@ -111,7 +111,7 @@ case class TradeStores(
     }
   }
 
-  def titanCurrentTimestamp = TradeTimestamp.makeMagicLatestTimestamp(titanTradeStore.latestKnownTimestamp.getOrElse(new Timestamp(0)))
+  def titanCurrentTimestamp = TradeTimestamp.makeMagicLatestTimestamp(titanTradeStore.latestKnownTimestamp.getOrElse(new Timestamp()))
 
   def closedDesksByDay: Map[Desk, Map[Day, List[TradeTimestamp]]] = {
     val closes = closedDesks.closedDesksByDay
