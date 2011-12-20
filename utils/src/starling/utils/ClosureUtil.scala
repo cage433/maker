@@ -18,7 +18,7 @@ object ClosureUtil {
 
   def decorate[T](message: => String)(action: => T): T = decorate(e => throw new Exception(message, e))(action)
   def decorate[T](f: Exception => Exception)(action: => T): T = try { action } catch { case e: Exception => throw f(e) }
-  def safely[T](action: => T): Either[Throwable, T] = catching(classOf[Exception]) either(action)
+  def safely[T](action: => T): Either[Throwable, T] = catching(classOf[Throwable]) either(action)
   def fails[T](action: => T): Boolean = safely(action).isLeft
   def succeeds[T](action: => T): Boolean = safely(action).isRight
   def forever(action: => Unit): Unit = while (true) action

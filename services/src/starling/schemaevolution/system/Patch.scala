@@ -31,10 +31,25 @@ object Patch {
     //Return the tuple of patch number and description
     (patchNumber.toInt, patchName)
   }
+
+
 }
 
 trait Patch {
+  implicit def enrichDBWriter(writer: DBWriter) = new {
+    def update(tableName: String, columnName: String)(updater: String => String) = {
+      writer.queryForUpdate("SELECT %s FROM %s".format(columnName, tableName)) { rs =>
+        {
+          val before: String = rs.getString(columnName)
+          val after: String = updater(before)
 
+          if (after != before) {
+            rs.update(Map(columnName → after))
+          }
+        }
+      }
+    }
+  }
   override def toString = patchNumber+":"+patchName
 
   val (patchNumber, patchName) = Patch.patchProps(getClass)
