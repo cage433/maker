@@ -14,6 +14,7 @@ import starling.gui.api.Desk
 import starling.manager.Broadcaster
 import starling.tradeimport.ClosedDesks
 import starling.tradestore.{RichTradeStore, TradeStore}
+import starling.daterange.Timestamp
 
 case class RefinedAssignmentTradeAttributes(
   groupCompany : String,
@@ -56,6 +57,10 @@ class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster, closedDes
       DrillDownInfo(PivotAxis( List(), List(Field("Pricing Type"), Field("Commodity Category")), List(), false)),
       instrumentFilteredDrillDown
     )
+  }
+
+  protected def closesFrom(from:Timestamp, to:Timestamp) = {
+    (to :: allTimestamps).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
   }
 
   override val tradeAttributeFieldDetails = List(groupCompany_str, exchange_str, hub_str, commodityCategory_str, contractNo_str,

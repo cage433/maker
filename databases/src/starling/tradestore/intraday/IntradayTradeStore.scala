@@ -146,6 +146,8 @@ class IntradayTradeStore(
     DefaultPivotState(pfs)
   }
 
+  protected def closesFrom(from:Timestamp, to:Timestamp) = List(to)
+
   val tableName = "IntradayTrades"
 
   /**

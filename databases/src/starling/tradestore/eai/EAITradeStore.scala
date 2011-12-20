@@ -85,6 +85,10 @@ class EAITradeStore(db: RichDB, broadcaster:Broadcaster, eaiStrategyDB:EAIStrate
 
   populateUsedIds()
 
+  protected def closesFrom(from:Timestamp, to:Timestamp) = {
+    (to :: closedDesks.closesForDesk(desk).map(_._2)).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
+  }
+
   def createTradeAttributes(row: RichInstrumentResultSetRow) = {
     import EAITradeStore._
     val bookID = desk.deskInfo.get.asInstanceOf[EAIDeskInfo].book

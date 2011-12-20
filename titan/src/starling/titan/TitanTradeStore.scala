@@ -1,5 +1,6 @@
 package starling.titan
 
+import starling.dbx.QueryBuilder._
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.manager.Broadcaster
 import starling.gui.api.{Desk, TradesUpdated}
@@ -12,6 +13,8 @@ import starling.pivot._
 import starling.gui.api.Desk
 import starling.tradestore.{RichTradeStore, TradeableFields, TradeRow, TradeStore}
 import starling.tradeimport.ClosedDesks
+import starling.daterange.Timestamp
+import concurrent.stm._
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -70,6 +73,24 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     )
   }
 
+  override protected def atVersion(timestamp:Timestamp) = atomic {
+    implicit txn => {
+      // titan tradestore asks for trades at arbitrary timestamp with no book closes
+      // and no trade changes.
+      // so we pick the next nearest revision above the one asked for.
+      // we can pick from any revision that has a trade change.
+      val filtered = versions().keySet.filter(_ >= timestamp)
+      val key = filtered.headOption match {
+        case Some(v) => v
+        case _ => throw new Exception("No version for timestamp: " + timestamp)
+      }
+      versions().apply(key)
+    }
+  }
+
+  protected def closesFrom(from:Timestamp, to:Timestamp) = {
+    (to :: allTimestamps).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
+  }
 
   override val tradeAttributeFieldDetails =
     TitanTradeStore.labels.map{ label => FieldDetails(label)} ++ TitanTradeStore.qtyLabels.map(lbl => new QuantityLabelFieldDetails(lbl))

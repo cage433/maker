@@ -15,6 +15,7 @@ import collection.immutable.TreeMap
 import starling.gui.api.Desk
 import starling.tradeimport.ClosedDesks
 import starling.tradestore.{RichTradeStore, TradeStore}
+import starling.daterange.Timestamp
 
 
 case class RefinedFixationTradeAttributes (
@@ -63,6 +64,10 @@ class RefinedFixationTradeStore(db: RichDB, broadcaster:Broadcaster, closedDesks
         List(Field("Trade Count"))
       )
     DefaultPivotState(pfs)
+  }
+
+  protected def closesFrom(from:Timestamp, to:Timestamp) = {
+    (to :: allTimestamps).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
   }
 
   val tableName = "RefinedFixation"

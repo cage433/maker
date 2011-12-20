@@ -40,9 +40,9 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     default
   }
 
-  private lazy val latestToAvailable: Ref[Option[Timestamp]] = Ref(maxTimestamp())
+  private def latestToAvailable = maxTimestamp
   private val earliestExpiryDay: Ref[Option[Day]] = Ref(Option(Day.today.startOfFinancialYear))
-  private val versions: Ref[TreeMap[Timestamp, Map[TradeID, TradeRow]]] = Ref(new TreeMap[Timestamp, Map[TradeID, TradeRow]]())
+  protected val versions: Ref[TreeMap[Timestamp, Map[TradeID, TradeRow]]] = Ref(new TreeMap[Timestamp, Map[TradeID, TradeRow]]())
 
   def deskOption: Option[Desk]
 
@@ -81,17 +81,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     res
   }
 
-  private def closesFrom(from: Timestamp, to: Timestamp): List[Timestamp] = {
-    assert(from < to)
-    deskOption match {
-      case Some(desk) => {
-        (to :: closedDesks.closesForDesk(desk).map(_._2)).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
-      }
-      case _ => {
-        List(to)
-      }
-    }
-  }
+  protected def closesFrom(from: Timestamp, to: Timestamp): List[Timestamp]
 
   private def refresh(to: Timestamp, expiry: Option[Day]): Unit = atomic {
     implicit txn => {
@@ -120,7 +110,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
 
       val fetchOlder = needToRefreshBecauseOfRequestedOlderExpiry || currentFrom.fold(from < _, true)
       val fetchNewer = needToRefreshBecauseOfRequestedOlderExpiry || currentTo.fold(to > _, true)
-      val endTimestamp = latestToAvailable()
+      val endTimestamp = latestToAvailable
 
       if (endTimestamp.isDefined && (fetchNewer || fetchOlder)) {
         val lastTimestamp = endTimestamp.get max to
@@ -206,7 +196,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     }
   }
 
-  def latestKnownTimestamp: Option[Timestamp] = latestToAvailable.single.get
+  def latestKnownTimestamp: Option[Timestamp] = latestToAvailable
 
   /**
    * Usages of this have no interest in expiry day (e.g. user enters trade id in gui), so we need to
@@ -232,15 +222,21 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     new TreeMap[Timestamp, TradeRow]() ++ res.toMap
   }
 
+  protected def atVersion(timestamp:Timestamp) = atomic {
+    implicit txn => {
+      versions().apply(timestamp)
+    }
+  }
+
   def readLatestVersionOfAllTrades(expiry: Option[Day] = None): Map[TradeID, TradeRow] = atomic {
     implicit txn => {
       val newest = versions().keySet.maxOr(new Timestamp(0))
-      latestToAvailable() match {
+      latestToAvailable match {
         case Some(ts) => {
           if (ts > newest) {
             refresh(ts, expiry)
           }
-          versions().apply(ts)
+          atVersion(ts)
         }
         case _ => Map.empty
       }
@@ -250,7 +246,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
   def readAll(timestamp: Timestamp, expiryDay: Option[Day], marketDay: Option[Day]): Map[TradeID, TradeRow] = atomic {
     implicit txn => {
       refresh(timestamp, expiryDay)
-      val trades = versions().apply(timestamp)
+      val trades = atVersion(timestamp)
       if (marketDay.isDefined || expiryDay.isDefined) {
         Log.infoWithTime("Filtering trades in readAll") {
           trades.filter {
@@ -294,6 +290,21 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     res.flatMap(identity)
   }
 
+  protected def allTimestamps:List[Timestamp] = {
+    val q = (
+      select("distinct(timestamp) ts")
+        from (tableName + " t")
+        orderBy ("ts" asc)
+      )
+    val res = db.queryWithResult(q) {
+      row => {
+        if (row.isNull("ts")) None
+        else Some(row.getTimestamp("ts"))
+      }
+    }
+    res.flatten
+  }
+
   private def inTransaction(f: Writer => Unit) {
     db.inTransaction(java.sql.Connection.TRANSACTION_READ_COMMITTED) {
       dbWriter => dbWriter.withIdentityInsert(tableName) {
@@ -322,11 +333,6 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
       val hash = tradesHash(predicate)
       result = StoreResults(added, deletedTradeIDs.size, updated, hash)
     })
-
-    atomic {
-      implicit txn =>
-        latestToAvailable.swap(Some(timestamp))
-    }
 
     assume(result != null, "Something went wrong storing the trades: " + trades) // sanity check
     result
