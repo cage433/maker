@@ -48,7 +48,7 @@ case class TimeSlideParameters(daysToSlide:Int, stepNumber:Int) extends Environm
   }
 }
 case class SpotFXSlideParameters(dP:Quantity, stepNumber:Int) extends EnvironmentSlider {
-  // TODO [24 May 2010]
+  // TODO [24 May 2010] Implement SpotFXSlideParameters.slide
   def slide(env:Environment) = env
 }
 case object DoNotSlideSlideParameters extends EnvironmentSlider {
