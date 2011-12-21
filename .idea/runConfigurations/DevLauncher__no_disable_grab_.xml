@@ -7,7 +7,7 @@
       </pattern>
     </extension>
     <option name="MAIN_CLASS_NAME" value="starling.launcher.DevLauncher" />
-    <option name="VM_PARAMETERS" value="-server -XX:MaxPermSize=512m -Xss128k -Xms6000m -Xmx6000m" />
+    <option name="VM_PARAMETERS" value="-server -XX:MaxPermSize=512m -Xss128k -Xms6000m -Xmx6000m -XX:-UseConcMarkSweepGC -verbose:gc -XX:+PrintGCTimeStamps -XX:+PrintGCDetails" />
     <option name="PROGRAM_PARAMETERS" value="" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
