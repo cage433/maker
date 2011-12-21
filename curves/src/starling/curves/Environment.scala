@@ -83,8 +83,8 @@ case class Environment(
   def shanghaiVATRate = instrumentLevelEnv.shanghaiVATRate
 
 
-  def benchmarkPremium(commodity: Commodity, countryCode: NeptuneCountryCode, gradeCode : GradeCode, day: Day): Quantity =
-    instrumentLevelEnv.quantity(CountryBenchmarkAtomicKey(commodity, countryCode, gradeCode, day, referenceDataLookup))
+  def benchmarkPremium(commodity: Commodity, countryCode: NeptuneCountryCode, gradeCode : GradeCode, tenor:Tenor): Quantity =
+    instrumentLevelEnv.quantity(CountryBenchmarkAtomicKey(commodity, countryCode, gradeCode, tenor, referenceDataLookup))
 
   def freightParity(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
                     destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) = {
@@ -146,32 +146,23 @@ case class Environment(
 
   def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange): Quantity = averagePrice(index, averagingPeriod, None)
 
-  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]): Quantity = averagePriceCache.memoize(
-    (index, averagingPeriod, rounding),
-    (tuple: (Index, DateRange, Option[Int])) => {
-      val observationDays = index.observationDays(averagingPeriod)
-      val prices = observationDays.map(index.fixingOrForwardPrice(this, _))
+  // now average price is called on index which allows it to be polymorphically overridden for particular implementations
+  // it's memoized here as env is not persisted but index is (and memoizing anon classes can not be persisted)
+  def averagePrice(index: IndexWithDailyPrices, averagingPeriod: DateRange, rounding: Option[Int]) : Quantity =
+    averagePriceCache.memoize(
+      (index, averagingPeriod, rounding),
+      (tuple: (IndexWithDailyPrices, DateRange, Option[Int])) =>
+        index.averagePrice(averagingPeriod, rounding, this)
+    )
 
-      val price = Quantity.average(prices) match {
-        case nq : NamedQuantity => SimpleNamedQuantity("Average(" + index + "." + averagingPeriod + ")", nq)
-        case q : Quantity => q
-      }
-      rounding match {
-        case Some(dp) if environmentParameters.swapRoundingOK => {
-          price.round(dp)
-        }
-        case _ => price
-      }
+  def fixingOrForwardPrice(index : SingleIndex, observationDay : Day) = {
+    val price = if (observationDay.endOfDay <= marketDay) {
+      indexFixing(index, observationDay)
     }
-   )
-
-   def fixingOrForwardPrice(index : SingleIndex, observationDay : Day) = {
-     val price = if (observationDay.endOfDay <= marketDay) {
-       indexFixing(index, observationDay)
-     } else {
-       indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted = false)
-     }
-     price
+    else {
+      indexForwardPrice(index, observationDay, ignoreShiftsIfPermitted = false)
+    }
+    price
   }
 
   def indexFixing(index: SingleIndex, fixingDay: Day) : Quantity = {
@@ -491,9 +482,5 @@ case class Environment(
 
 object Environment{
   def apply(instrumentLevelEnv : AtomicEnvironment) : Environment = new Environment(new DefaultInstrumentLevelEnvironment(instrumentLevelEnv))
-}
-
-case class ObservationDay(day:Day) extends Ordered[ObservationDay] {
-  def compare(other:ObservationDay) = day - other.day
 }
 

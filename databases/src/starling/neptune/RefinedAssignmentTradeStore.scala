@@ -6,13 +6,15 @@ import starling.eai.TreeID
 import starling.db.RefinedAssignmentTradeSystem
 import starling.market.FuturesExchange
 import starling.utils.ImplicitConversions._
-import starling.tradestore.TradeStore
 import starling.instrument.TradeAttributes
 import starling.pivot._
 import starling.pivot.Field._
 import starling.instrument.TradeableType
 import starling.gui.api.Desk
 import starling.manager.Broadcaster
+import starling.tradeimport.ClosedDesks
+import starling.tradestore.{RichTradeStore, TradeStore}
+import starling.daterange.Timestamp
 
 case class RefinedAssignmentTradeAttributes(
   groupCompany : String,
@@ -43,8 +45,8 @@ object RefinedAssignmentTradeAttributes {
 
 
 
-class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster)
-  extends TradeStore(db, broadcaster, RefinedAssignmentTradeSystem)
+class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster, closedDesks: ClosedDesks)
+  extends RichTradeStore(db, RefinedAssignmentTradeSystem, closedDesks: ClosedDesks)
 {
   val tradeAttributesFactory = RefinedAssignmentTradeAttributes
   def deskOption = Some(Desk.Titan)
@@ -55,6 +57,10 @@ class RefinedAssignmentTradeStore(db: RichDB, broadcaster:Broadcaster)
       DrillDownInfo(PivotAxis( List(), List(Field("Pricing Type"), Field("Commodity Category")), List(), false)),
       instrumentFilteredDrillDown
     )
+  }
+
+  protected def closesFrom(from:Timestamp, to:Timestamp) = {
+    (to :: allTimestamps).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
   }
 
   override val tradeAttributeFieldDetails = List(groupCompany_str, exchange_str, hub_str, commodityCategory_str, contractNo_str,

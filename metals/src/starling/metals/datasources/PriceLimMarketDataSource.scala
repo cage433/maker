@@ -20,20 +20,11 @@ import com.lim.mimapi.RelType
 
 
 object PriceLimMarketDataSource extends scalaz.Options {
-  import LIMService.TopRelation._
   import LIMService.TopRelation.Trafigura._
 
   val sources = List(
     new PriceLimSource(new LMELIMRelation(Bloomberg.Metals.Lme, FuturesExchangeFactory.LME)),
     new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX)),
-
-    // Import from LIM based source (i.e. not Bloomberg) temporarily,
-    // Futures.Shfe.(Lead or Steel).Close is actually a settlement price (see reasoning in PriceFixingLimMarketDataSource) but
-    // this is intended just for UAT.
-    new PriceLimSource(new MonthlyLIMRelation(Futures.Shfe, FuturesExchangeFactory.SHFE, "", Set(RelType.FUTURES)) {
-      override def marketPredicate(market: FuturesMarket) = market == Market.SHANGHAI_LEAD
-    }),
-
     new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE)))
 
   class LMELIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
@@ -49,12 +40,10 @@ object PriceLimMarketDataSource extends scalaz.Options {
 
     def this(node: LimNode, exchange: FuturesExchange) = this(node, exchange, "TRAF.", Set(RelType.CATEGORY))
 
-    def marketPredicate(market: FuturesMarket) = true
-
     val extractor = Extractor.regex[Option[LimPrice]](prefix + """%s\.([^_]+)_(\d\d\d\d\D)""" % exchange.name) {
       case List(lim, deliveryMonth) =>
 
-      val optMarket = exchange.markets.find(_.limSymbol.map(_.name) == Some(lim)).filter(marketPredicate)
+      val optMarket = exchange.markets.find(_.limSymbol.map(_.name) == Some(lim))
       val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
 
       (optMarket, optMonth) match {
@@ -80,15 +69,15 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     task("LME Metals", limDaily(LME.calendar, 20 H 00), lme, marketDataStore),
-    task("COMEX Metals", limDaily(COMEX.calendar, 15 H 30), comex, marketDataStore),
-    task("SHFE Metals", limDaily(SHFE.calendar, 15 H 00), shfe, marketDataStore)
+    task("COMEX Metals", limDaily(COMEX.calendar, 18 H 00), comex, marketDataStore),
+    task("SHFE Metals", limDaily(SHFE.calendar, 16 H 02), shfe, marketDataStore)
   )
 
 //  val exbxgMetals = new DataFlow(FuturesExchangeFactory.EXBXG, PricingGroup.Metals, Nil, metalsEmail, wuXiEmail, "Excel",
 //    "WuXi Metals") with NullMarketDataEventSource
 //      tasks(daily(SFE, 16 H 30), availabilityBroadcaster.verifyPricesAvailable(exbxgMetals), verifyPricesValid(exbxgMetals))
 
-  private lazy val limMetalMarketsForExchanges@List(lme, comex, limSourcedShfe, shfe) = sources.map(pricesSource => {
+  private lazy val limMetalMarketsForExchanges@List(lme, comex, shfe) = sources.map(pricesSource => {
     pricesSource.exchange.markets.filter(_.limSymbol.isDefined).filter(isMetal).filter(correspondsToBloombergImport(pricesSource.node))
   } )
 

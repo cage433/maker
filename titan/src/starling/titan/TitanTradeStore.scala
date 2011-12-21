@@ -1,16 +1,20 @@
 package starling.titan
 
+import starling.dbx.QueryBuilder._
 import starling.richdb.{RichDB, RichInstrumentResultSetRow}
 import starling.manager.Broadcaster
 import starling.gui.api.{Desk, TradesUpdated}
-import starling.instrument.{Trade, TradeableType, TradeSystem}
 import EDMConversions._
 import collection.immutable.Map
 import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuota, PhysicalMetalForward}
 import starling.marketdata._
 import starling.pivot._
-import starling.tradestore.{TradeableFields, TradeRow, TradeStore}
 import starling.gui.api.Desk
+import starling.tradestore.{RichTradeStore, TradeableFields, TradeRow, TradeStore}
+import starling.tradeimport.ClosedDesks
+import starling.daterange.Timestamp
+import concurrent.stm._
+import starling.instrument.{TradeID, Trade, TradeableType, TradeSystem}
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -35,8 +39,8 @@ object TitanTradeStore {
   val qtyLabels = List(quotaQuantity_str)
 }
 
-class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem, refDataLookup : ReferenceDataLookup)
-        extends TradeStore(db, broadcaster, tradeSystem) {
+class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSystem, refDataLookup : ReferenceDataLookup, closedDesks: ClosedDesks)
+        extends RichTradeStore(db, tradeSystem, closedDesks) {
   val tableName = "TitanTrade"
   def deskOption = Some(Desk.Titan)
   def createTradeAttributes(row:RichInstrumentResultSetRow) = {
@@ -53,7 +57,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val toleranceMinus = row.getPercentage("ToleranceMinus")
     val eventID = row.getString("EventID")
 
-    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, Option(inventoryID), groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventID)
+    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventID)
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {
@@ -69,6 +73,23 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     )
   }
 
+  override protected def atVersion(timestamp:Timestamp): Map[TradeID, TradeRow] = atomic {
+    implicit txn => {
+      // titan tradestore asks for trades at arbitrary timestamp with no book closes
+      // and no trade changes.
+      // so we pick the next nearest revision below the one asked for.
+      // we have all revisions that have a trade change so this is fine.
+      val filtered = versions().keySet.filter(_ <= timestamp)
+      filtered.lastOption match {
+        case Some(v) => versions().apply(v)
+        case _ => Map()
+      }
+    }
+  }
+
+  protected def closesFrom(from:Timestamp, to:Timestamp) = {
+    (to :: allTimestamps).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
+  }
 
   override val tradeAttributeFieldDetails =
     TitanTradeStore.labels.map{ label => FieldDetails(label)} ++ TitanTradeStore.qtyLabels.map(lbl => new QuantityLabelFieldDetails(lbl))
@@ -81,7 +102,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     FieldDetails.coded("Benchmark Inco Term Code", refDataLookup.incoterms.values) :: Nil).map(f => f.field -> f).toMap.values.toList
 
   override def tradesChanged() = {
-   broadcaster.broadcast(TradesUpdated(Desk.Titan, cachedLatestTimestamp.get))
+    broadcaster.broadcast(TradesUpdated(Desk.Titan, latestKnownTimestamp.get))
   }
 
   def allStarlingTrades() = {
@@ -97,7 +118,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
 
   def getTradesForTitanTradeID(titanTradeID : String) : List[Trade] = {
     readLatestVersionOfAllTrades().flatMap{
-      case (_, TradeRow(_, _, trade)) if trade.titanTradeID == Some(titanTradeID) => Some(trade)
+      case (_, TradeRow(_, trade)) if trade.titanTradeID == Some(titanTradeID) => Some(trade)
       case _ => None
     }.toList
   }

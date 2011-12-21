@@ -6,7 +6,6 @@ import starling.richdb.{RichInstrumentResultSetRow, RichDB}
 import starling.eai.TreeID
 import starling.db.RefinedFixationTradeSystem
 import starling.utils.ImplicitConversions._
-import starling.tradestore.{TradeStore}
 import starling.pivot._
 import starling.instrument.TradeAttributes
 
@@ -14,6 +13,9 @@ import starling.pivot.Field._
 import starling.instrument.{TradeableType}
 import collection.immutable.TreeMap
 import starling.gui.api.Desk
+import starling.tradeimport.ClosedDesks
+import starling.tradestore.{RichTradeStore, TradeStore}
+import starling.daterange.Timestamp
 
 
 case class RefinedFixationTradeAttributes (
@@ -36,8 +38,8 @@ case class RefinedFixationTradeAttributes (
 object RefinedFixationTradeStore {
 }
 
-class RefinedFixationTradeStore(db: RichDB, broadcaster:Broadcaster)
-  extends TradeStore(db, broadcaster, RefinedFixationTradeSystem)
+class RefinedFixationTradeStore(db: RichDB, broadcaster:Broadcaster, closedDesks: ClosedDesks)
+  extends RichTradeStore(db, RefinedFixationTradeSystem, closedDesks)
 {
 
   def deskOption = Some(Desk.Titan)
@@ -62,6 +64,10 @@ class RefinedFixationTradeStore(db: RichDB, broadcaster:Broadcaster)
         List(Field("Trade Count"))
       )
     DefaultPivotState(pfs)
+  }
+
+  protected def closesFrom(from:Timestamp, to:Timestamp) = {
+    (to :: allTimestamps).distinct.filter(t => t > from && t <= to).sortWith(_ < _)
   }
 
   val tableName = "RefinedFixation"

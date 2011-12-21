@@ -391,7 +391,7 @@ case class MarketDataExtendedKey(id: Int, marketDataSet: MarketDataSet, marketDa
                                  time: ObservationTimeOfDay, marketDataKey: MarketDataKey) extends DBKey[MarketDataExtendedKey] {
 
   lazy val dbMap = Map("marketDataSet" → marketDataSet.name, "marketDataType" → marketDataType.name.name,
-    "observationTime" → time.name, "marketDataKey" → new PersistAsBlob(marketDataKey))
+    "observationTime" → time.shortName, "marketDataKey" → new PersistAsBlob(marketDataKey))
 
   def sameValuesAs(that: MarketDataExtendedKey) = that.copy(id = id) == this
 }

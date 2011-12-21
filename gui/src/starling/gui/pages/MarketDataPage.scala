@@ -21,6 +21,7 @@ import starling.reports.facility.ReportFacility
 import starling.pivot.model.UndefinedValue
 import starling.pivot.Field._
 import starling.pivot._
+import starling.gui.osgi.StarlingBrowserBundle
 
 
 class FC2Context(val service:FC2Facility)
@@ -30,7 +31,7 @@ abstract class AbstractFC2PivotPage(pivotPageState:PivotPageState, edits:PivotEd
 }
 
 trait FC2Page extends Page {
-  def bundle = "StarlingServer"
+  def bundle = StarlingBrowserBundle.BundleName
   type SC = FC2Context
   def createServerContext(sc:ServerContext) = new FC2Context(sc.lookup(classOf[FC2Facility]))
 }
@@ -62,7 +63,7 @@ case class MarketDataPage(
   def this(mdi:MarketDataIdentifier, pageState : MarketDataPageState) = this(StandardMarketDataPageIdentifier(mdi), pageState)
 
 
-  def bundle = "StarlingServer"
+  def bundle = StarlingBrowserBundle.BundleName
 
   type SC = ServerContext
 
@@ -127,7 +128,7 @@ case class MarketDataPage(
     if (singleObservationDay.isDefined && marketDataIdentifier.isCurrent) {
       marketDataIdentifier match {
         case x:StandardMarketDataPageIdentifier => MarketDataBookmark(marketDataIdentifier.selection, pageState)
-        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.tradesUpToDay == singleObservationDay.get => {
+        case x:ReportMarketDataPageIdentifier if x.reportParameters.curveIdentifier.observationDayAndTime == singleObservationDay.get => {
           ReportMarketDataBookmark(marketDataIdentifier.selection, pageState, starlingServer.createUserReport(x.reportParameters))
         }
         case _ => PageBookmark(this)
@@ -170,44 +171,8 @@ case class MarketDataPage(
           }
         }
 
-        val pricingGroupSelector = new MarketDataSelectionComponent(context, None, marketDataIdentifier.selection, scala.swing.Orientation.Vertical)
-
-        val snapshotsComboBoxModel = new DefaultComboBoxModel
-        val snapshotsComboBox = new ComboBox[SnapshotComboValue](List(SnapshotComboValue(None))) { // Got to pass a list in - not very good but we remove it straight away.
-          peer.setModel(snapshotsComboBoxModel)
-          snapshotsComboBoxModel.removeAllElements()
-
-          {val snapshots = context.localCache.snapshots(None).getOrElse(marketDataIdentifier.selection, List())
-            SnapshotComboValue(None) :: snapshots.map(ss=>SnapshotComboValue(Some(ss))).toList}.foreach(snapshotsComboBoxModel.addElement(_))
-
-          listenTo(context.remotePublisher)
-          reactions += {
-            case MarketDataSnapshot(snapshotID, _, _) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
-              snapshotsComboBoxModel.insertElementAt(SnapshotComboValue(Some(snapshotID)), 1)
-            }
-          }
-
-          def initialize() {
-            selection.item = {
-              val mdi = marketDataIdentifier.marketDataIdentifier
-              mdi.marketDataVersion match {
-                case SnapshotMarketDataVersion(ss) => SnapshotComboValue(Some(ss))
-                case SpecificMarketDataVersion(version) => SnapshotComboValue(None)
-              }
-            }
-          }
-          initialize()
-          def value = {
-            selection.item match {
-              case SnapshotComboValue(Some(ss)) => SnapshotMarketDataVersion(ss)
-              case SnapshotComboValue(None) => SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(marketDataIdentifier.selection))
-            }
-          }
-        }
-        val snapshotsPanel = new MigPanel("insets 0") {
-          add(new Label("as of:") {tooltip = "Market data as of selected date or current"})
-          add(snapshotsComboBox, "pushx, grow")
-        }
+        val pricingGroupSelector = new MarketDataSelectionComponent(context, None,
+          marketDataIdentifier.marketDataIdentifier, scala.swing.Orientation.Vertical, true)
 
         private val snapshotButton = new Button {
           enabled = !marketDataIdentifier.selection.isNull
@@ -220,10 +185,9 @@ case class MarketDataPage(
           }
         }
 
-        add(pricingGroupSelector, "grow")
+        add(pricingGroupSelector, "grow, spany")
         add(importButton, "ay top, wrap")
-        add(snapshotsPanel, "gapleft unrel, grow")
-        add(snapshotButton)
+        add(snapshotButton, "skip 1, ay bottom")
       }
 
       val extraPanel = new MigPanel("hidemode 3") {
@@ -266,13 +230,12 @@ case class MarketDataPage(
       add(extraPanel2, "ay top, growx, hidemode 3")
 
       override def revert() {
-        this.suppressing(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel2.filterDataCheckbox) {
+        this.suppressing(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, extraPanel2.filterDataCheckbox) {
           selectedMarketDataType match {
             case Some(mdt) => extraPanel.dataTypeCombo.selection.item = mdt
             case None =>
           }
-          pricingGroupPanel.pricingGroupSelector.selection = marketDataIdentifier.selection
-          pricingGroupPanel.snapshotsComboBox.initialize()
+          pricingGroupPanel.pricingGroupSelector.revert()
           extraPanel2.filterDataCheckbox.selected = marketDataIdentifier.filteredMarketData
         }
       }
@@ -281,15 +244,20 @@ case class MarketDataPage(
         case SelectionChanged(extraPanel.dataTypeCombo) => {
           MarketDataPage.goTo(context, marketDataIdentifier, Some(extraPanel.dataTypeCombo.selection.item), observationDays)
         }
-        case SelectionChanged(pricingGroupPanel.snapshotsComboBox) =>
-          context.goTo(copy(marketDataIdentifier=StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier.copy(marketDataVersion = pricingGroupPanel.snapshotsComboBox.value)), pageState = pageState.copy(edits = PivotEdits.Null)))
-        case MarketDataSelectionChanged(selection) => MarketDataPage.goTo(context,
-          StandardMarketDataPageIdentifier(MarketDataIdentifier(selection, context.localCache.latestMarketDataVersion(selection))),
-          None, observationDays
-        )
+        case MarketDataSelectionChanged(mdi0) => {
+          val mdt = if (extraPanel.dataTypeCombo.enabled && extraPanel.dataTypeCombo.selection.item.name.nonEmpty) {
+            Some(extraPanel.dataTypeCombo.selection.item)
+          } else {
+            None
+          }
+          MarketDataPage.goTo(context,
+            StandardMarketDataPageIdentifier(mdi0),
+            mdt, observationDays
+          )
+        }
         case ButtonClicked(extraPanel2.filterDataCheckbox) => {context.goTo(copy(marketDataIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier.marketDataIdentifier), pageState = pageState.copy(edits = PivotEdits.Null)))}
       }
-      listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, pricingGroupPanel.snapshotsComboBox.selection, extraPanel2.filterDataCheckbox)
+      listenTo(extraPanel.dataTypeCombo.selection, pricingGroupPanel.pricingGroupSelector, extraPanel2.filterDataCheckbox)
     }
 
     Some(ConfigPanels(List(configPanel), new Label(""), Action("BLA"){}))
@@ -367,7 +335,7 @@ object MarketDataPage {
   }
 }
 
-case class MarketDataSelectionChanged(selection:MarketDataSelection) extends Event
+case class MarketDataSelectionChanged(selection:MarketDataIdentifier) extends Event
 
 object MarketDataSelectionComponent {
   def storeMarketDataSelection(pageContext:PageContext, selection:MarketDataSelection) {
@@ -377,15 +345,20 @@ object MarketDataSelectionComponent {
   }
 }
 
-class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Desk],
-                                   marketDataSelection:MarketDataSelection,
-                                   orientation:scala.swing.Orientation.Value=scala.swing.Orientation.Horizontal)
+class MarketDataSelectionComponent(context:PageContext, maybeDesk:Option[Desk],
+                                   marketDataIdentifier:MarketDataIdentifier,
+                                   orientation:scala.swing.Orientation.Value=scala.swing.Orientation.Horizontal,
+                                   showShapshotChooser:Boolean=false)
         extends MigPanel("insets 0") with Revertable {
 
+  private val marketDataSelection = marketDataIdentifier.selection
 
-  def revert() {this.suppressingSelf(selection = marketDataSelection)}
+  def revert() {
+    this.suppressingSelf(selection = marketDataIdentifier)
+    updateStateOfComponents()
+  }
 
-  private val pricingGroups = pageContext.localCache.pricingGroups(maybeDesk)
+  private val pricingGroups = context.localCache.pricingGroups(maybeDesk)
   private val pricingGroupCheckBox = new CheckBox {
     text = "Pricing Group:"
     selected = marketDataSelection.pricingGroup.isDefined
@@ -393,42 +366,37 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
   }
 
   private val pricingGroupCombo = if (pricingGroups.isEmpty) {
-    new ComboBox(List(PricingGroup(""))) {
-      enabled=false
-    }
+    new ComboBox(List(PricingGroup("")))
   } else {
     new ResizingComboBox(pricingGroups) {
       marketDataSelection.pricingGroup match {
         case Some(pg) => selection.item = pg
         case None => {
-          pageContext.getSettingOption(StandardUserSettingKeys.PricingGroupDefault) match {
+          context.getSettingOption(StandardUserSettingKeys.PricingGroupDefault) match {
             case Some(pg) => selection.item = pg
             case None =>
           }
         }
       }
-      enabled = marketDataSelection.pricingGroup.isDefined
     }
   }
 
   private val excelCheckBox = new CheckBox {
     text = "Excel Market Data:"
-    enabled = !pageContext.localCache.excelDataSets.isEmpty
+    enabled = !context.localCache.excelDataSets.isEmpty
     selected = marketDataSelection.excel.isDefined && enabled
   }
-  private val excelCombo : ComboBox[String] = createExcelCombo(pageContext.localCache.excelDataSets)
+  private val excelCombo : ComboBox[String] = createExcelCombo(context.localCache.excelDataSets)
 
   private def createExcelCombo(values:List[String]) = {
-    if (pageContext.localCache.excelDataSets.isEmpty) {
-      new ComboBox(List("")) {
-        enabled = false
-      }
+    if (context.localCache.excelDataSets.isEmpty) {
+      new ComboBox(List(""))
     } else {
       new ResizingComboBox(values) {
         if (marketDataSelection.excel.isDefined) {
           selection.item = marketDataSelection.excel.get
         } else {
-          pageContext.getSettingOption(StandardUserSettingKeys.ExcelMarketDataDefault) match {
+          context.getSettingOption(StandardUserSettingKeys.ExcelMarketDataDefault) match {
             case Some(excel) => selection.item = excel
             case None =>
           }
@@ -438,7 +406,35 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
     }
   }
 
-  def selection_=(se:MarketDataSelection) {
+  private val snapshotsComboBoxModel = new DefaultComboBoxModel
+  private val snapshotsComboBox = new ResizingComboBox[SnapshotComboValue](List(SnapshotComboValue(None)), Some(snapshotsComboBoxModel)) { // Got to pass a list in - not very good but we remove it straight away.
+    snapshotsComboBoxModel.removeAllElements()
+
+    {val snapshots = context.localCache.snapshots(None).getOrElse(marketDataIdentifier.selection, List())
+      val snapshotComboValues = SnapshotComboValue(None) :: snapshots.map(ss=>SnapshotComboValue(Some(ss))).toList
+      snapshotComboValues.foreach(snapshotsComboBoxModel.addElement(_))}
+
+    def initialize(mdv:MarketDataVersion) {
+      selection.item = {
+        mdv match {
+          case SnapshotMarketDataVersion(ss) => SnapshotComboValue(Some(ss))
+          case SpecificMarketDataVersion(version) => SnapshotComboValue(None)
+        }
+      }
+    }
+
+    initialize(marketDataIdentifier.marketDataVersion)
+
+    def valueForSelection(mds:MarketDataSelection) = {
+      selection.item match {
+        case SnapshotComboValue(Some(ss)) => SnapshotMarketDataVersion(ss)
+        case SnapshotComboValue(None) => SpecificMarketDataVersion(context.localCache.latestMarketDataVersion(mds))
+      }
+    }
+  }
+
+  def selection_=(mdi:MarketDataIdentifier) {
+    val se = mdi.selection
     se.pricingGroup match {
       case Some(pg) => {
         pricingGroupCheckBox.selected = true
@@ -461,21 +457,27 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
         excelCombo.enabled = false
       }
     }
+    snapshotsComboBox.initialize(mdi.marketDataVersion)
   }
 
-  def selection = MarketDataSelection(
-    if (pricingGroupCheckBox.selected) Some(pricingGroupCombo.selection.item.asInstanceOf[PricingGroup]) else None,
-    if (excelCheckBox.selected) Some(excelCombo.selection.item) else None
-  )
+  def selection = {
+    val mds = MarketDataSelection(
+      if (pricingGroupCheckBox.selected) Some(pricingGroupCombo.selection.item.asInstanceOf[PricingGroup]) else None,
+      if (excelCheckBox.selected) Some(excelCombo.selection.item) else None
+    )
+    MarketDataIdentifier(mds, snapshotsComboBox.valueForSelection(mds))
+  }
 
   def fireNewSelection() {
-    val se = selection
-    MarketDataSelectionComponent.storeMarketDataSelection(pageContext, se)
-    publish(MarketDataSelectionChanged(se))
+    val mdi = selection
+    MarketDataSelectionComponent.storeMarketDataSelection(context, mdi.selection)
+    publish(MarketDataSelectionChanged(mdi))
   }
 
-  listenTo(pageContext.remotePublisher)
   reactions += {
+    case MarketDataSnapshot(snapshotID) if (snapshotID.marketDataSelection == marketDataIdentifier.selection) => {
+      snapshotsComboBoxModel.insertElementAt(SnapshotComboValue(Some(snapshotID)), 1)
+    }
     case ExcelMarketListUpdate(values) => {
       val currentSelection = excelCombo.selection.item
       excelCheckBox.enabled = true
@@ -487,15 +489,23 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
       }
     }
   }
+  listenTo(context.remotePublisher)
 
-  reactions += {
-    case ButtonClicked(`pricingGroupCheckBox`) => { pricingGroupCombo.enabled = pricingGroupCheckBox.selected; fireNewSelection() }
-    case SelectionChanged(`pricingGroupCombo`) => fireNewSelection()
-    case ButtonClicked(`excelCheckBox`) => { excelCombo.enabled = excelCheckBox.selected; fireNewSelection() }
-    case SelectionChanged(`excelCombo`) => fireNewSelection()
+  private def updateStateOfComponents() {
+    pricingGroupCombo.enabled = pricingGroupCheckBox.selected && !pricingGroups.isEmpty
+    excelCombo.enabled = excelCheckBox.selected && !context.localCache.excelDataSets.isEmpty
+    snapshotsComboBox.enabled = pricingGroupCombo.enabled && !excelCombo.enabled
   }
 
-  listenTo(pricingGroupCheckBox, pricingGroupCombo.selection, excelCheckBox, excelCombo.selection)
+  reactions += {
+    case ButtonClicked(`pricingGroupCheckBox`) => { updateStateOfComponents(); fireNewSelection() }
+    case SelectionChanged(`pricingGroupCombo`) => fireNewSelection()
+    case ButtonClicked(`excelCheckBox`) => { updateStateOfComponents(); fireNewSelection() }
+    case SelectionChanged(`excelCombo`) => fireNewSelection()
+    case SelectionChanged(`snapshotsComboBox`) => fireNewSelection()
+  }
+
+  listenTo(pricingGroupCheckBox, pricingGroupCombo.selection, excelCheckBox, excelCombo.selection, snapshotsComboBox.selection)
 
   val layoutInfo = orientation match {
     case scala.swing.Orientation.Vertical => "wmin 50lp, pushx, growx, wrap"
@@ -504,7 +514,21 @@ class MarketDataSelectionComponent(pageContext:PageContext, maybeDesk:Option[Des
   add(pricingGroupCheckBox)
   add(pricingGroupCombo, layoutInfo)
   add(excelCheckBox)
-  add(excelCombo, "wmin 50lp, pushx, growx")
+  val excelLayoutInfo = orientation match {
+    case scala.swing.Orientation.Vertical if showShapshotChooser => "wmin 50lp, pushx, growx, wrap"
+    case scala.swing.Orientation.Horizontal if showShapshotChooser => "wmin 50lp, pushx, growx, gapright rel"
+    case _ => "wmin 50lp, pushx, growx"
+  }
+  add(excelCombo, excelLayoutInfo)
+  if (showShapshotChooser) {
+    val snapshotLayoutInfo = orientation match {
+      case scala.swing.Orientation.Vertical => "gapleft unrel, split, spanx"
+      case scala.swing.Orientation.Horizontal => ""
+    }
+    add(new Label("as of:"), snapshotLayoutInfo)
+    add(snapshotsComboBox, "wmin 50lp, growx")
+  }
+  updateStateOfComponents()
 }
 
 case class SnapshotComboValue(maybeSnapshot:Option[SnapshotIDLabel]) {

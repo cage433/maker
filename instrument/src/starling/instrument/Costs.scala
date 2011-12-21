@@ -24,11 +24,11 @@ abstract class Costs(cashInstrumentType: CashInstrumentType, counterParty: Strin
   }
 
   def asUtpPortfolio(tradeDay:Day) = {
-    val utps = Map[UTP, Double]() ++ costs.map {
+    val utps: Map[UTP, Double] = costs.map {
       case b: CashInstrument => {
         (b.copy(volume = new Quantity(1.0, b.volume.uom)) -> b.volume.value)
       }
-    }
+    }.toMap
     UTP_Portfolio(utps)
   }
 

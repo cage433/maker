@@ -28,10 +28,11 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
 
   def day = currentDay
   def day_=(d:Day) {
+    val oldDay = currentDay
     currentDay = d
     dayField.text = if (showDay) d.toString("EEE dd MMM") else d.toString("dd MMM")
     dayField.monthView.day = d
-    publish(DayChangedEvent(this, d))
+    publish(DayChangedEvent(this, d, oldDay))
   }
 
   override def background_=(c:Color) {
@@ -193,4 +194,4 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
   day = day0
 }
 
-case class DayChangedEvent(source: Component, day: Day) extends Event
+case class DayChangedEvent(source: Component, day: Day, previousDay:Day) extends Event

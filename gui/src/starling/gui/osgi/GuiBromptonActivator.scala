@@ -75,7 +75,7 @@ class GuiBromptonActivator extends BromptonActivator {
       val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
 
       val curveIdentifier = {
-        val observationDay = Day.today.previousWeekday
+        val observationDay = Day.today.previousWeekday.endOfDay
         val mods = TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
 
         CurveIdentifierLabel(
@@ -94,9 +94,13 @@ class GuiBromptonActivator extends BromptonActivator {
       val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
       val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
 
-      broadcaster.broadcast(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp, ReportSpecificChoices())))
+      broadcaster.broadcast(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp, ReportSpecificChoices(), true)))
     }
   }
+}
+
+object StarlingBrowserBundle {
+  val BundleName = "StarlingServer"
 }
 
 import StarlingLocalCache._
@@ -105,7 +109,7 @@ class StarlingBrowserBundle(
                              reportService:ReportFacility,
                              fc2Service:FC2Facility,
                              tradeService:TradeFacility) extends BrowserBundle {
-  def bundleName = "StarlingServer"
+  def bundleName = StarlingBrowserBundle.BundleName
   def marshal(obj: AnyRef) = GuiStarlingXStream.write(obj)
   override def userPage(context:PageContext) = Some( UserDetailsPage(context.localCache.currentUser) )
 

@@ -115,6 +115,13 @@ case class EAIDeskInfo(book: Int) extends DeskInfo
 
 sealed case class Desk(name: String, pricingGroups: List[PricingGroup], deskInfo: Option[DeskInfo] = None) {
   override def toString = name
+
+  override def equals(obj: Any) = obj match {
+    case o: Desk => o.name == this.name
+    case _ => false
+  }
+
+  override lazy val hashCode = name.hashCode()
 }
 
 case class EnabledDesks(desks: Set[Desk])
@@ -130,6 +137,7 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
   val CrudeSpecNorthSea = Desk("Crude Spec North Sea", List(Crude, LimOnly), Some(EAIDeskInfo(197)))
   val HoustonDerivatives = Desk("Houston Derivatives", List(BarryEckstein, LimOnly), Some(EAIDeskInfo(190)))
   val NaphthaSpec = Desk("Naphtha Spec", List(PricingGroup.Naphtha, LimOnly), Some(EAIDeskInfo(20)))
+  val CED = Desk("Central Execution Desk", List(PricingGroup.LondonDerivatives, System, LimOnly), Some(EAIDeskInfo(150)))
 
   val Titan = Desk("Titan", List(Metals))
 
@@ -140,12 +148,13 @@ object Desk extends StarlingEnum(classOf[Desk], (d: Desk) => d.name, ignoreCase 
     case _ => None
   }
 
-  def eaiDeskFromID(bookID: Int) = eaiDesks.find {
-    case d@Desk(_, _, Some(info: EAIDeskInfo)) => info.book == bookID
-    case _ => false
-  }
+  def oilDesks = eaiDesks.toSet
 
-  def oilDesks = Set(GasolinePhysicalBargesAndARABlending, GasoilSpec, GasolineSpec, CrudeSpecNorthSea, HoustonDerivatives, NaphthaSpec)
+  private val bookIDDeskMap = eaiDesks.map{
+    case d@Desk(_, _, Some(info: EAIDeskInfo)) => info.book -> d
+  }.toMap
+
+  def eaiDeskFromID(bookID: Int) = bookIDDeskMap.get(bookID)
 }
 
 class TradeEvent
@@ -198,7 +207,6 @@ case class TradeTimestamp(timestamp:Timestamp, closeDay: Day, closeNumber: Int, 
 }
 
 case class TradeSelection(desk:Option[Desk], tradePredicate:TradePredicate, intradaySubgroup:Option[IntradayGroups]) {
-  println("Made a selection")
   def withDeskTimestamp(deskTimestamp: TradeTimestamp) = {
     assert(intradaySubgroup.isEmpty, "Can't create timestamped trade selection when using intradaySubgroup")
     new TradeSelectionWithTimestamp(desk.map((_, deskTimestamp)), tradePredicate, None)
@@ -263,19 +271,16 @@ object EnvironmentModifierLabel {
 case class CurveIdentifierLabel(
         marketDataIdentifier:MarketDataIdentifier,
         environmentRule:EnvironmentRuleLabel,
-        tradesUpToDay:Day, //trades with a trade day after this value are ignored
-        valuationDayAndTime:DayAndTime, //typically the same as tradesUpToDay but can be moved forward
-        thetaDayAndTime:DayAndTime,
+        observationDayAndTime:DayAndTime, //trades with a trade day after this value are ignored
+        forwardValuationDayAndTime:DayAndTime, //typically the same as tradesUpToDay but can be moved forward
+        thetaToDayAndTime:DayAndTime,
         envModifiers:SortedSet[EnvironmentModifierLabel]) {
 
   def copyVersion(version: Int) = copy(marketDataIdentifier = marketDataIdentifier.copyVersion(version))
-
-  def forwardObservationDayAndTime: DayAndTime = if (valuationDayAndTime.day > tradesUpToDay) valuationDayAndTime else
-    valuationDayAndTime.nextBusinessDay(BusinessCalendar.WeekdayBusinessCalendar)
 }
 
 object CurveIdentifierLabel{
-  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, calendar : BusinessCalendar, zeroInterestRates : Boolean) = {
+  def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, calendar : BusinessCalendar, zeroInterestRates : Boolean = false) = {
     val day = Day.today.previousWeekday // don't use a calendar as we don't know which one
     val timeOfDayToUse = if (day >= Day.today) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
     val envModifiers = if (zeroInterestRates)
@@ -285,7 +290,7 @@ object CurveIdentifierLabel{
     CurveIdentifierLabel(
       marketDataIdentifier,
       EnvironmentRuleLabel.COB,
-      day,
+      day.endOfDay,
       day.atTimeOfDay(timeOfDayToUse),
       day.nextBusinessDay(calendar).endOfDay,
       envModifiers
@@ -298,8 +303,8 @@ object CurveIdentifierLabel{
  * the integer id of the utp. However for Jon's spread delta report it was necessary
  * to combine rows based on the trade's associated strategy
  */
-case class UTPIdentifier(id : Int, attributes : Map[String, String] = Map()){
-  def getAttribute(key : String) = attributes.get(key)
+case class UTPIdentifier(id: Int, attributes: Map[String, String] = Map()) {
+  def getAttribute(key: String) = attributes.get(key)
 }
 
 case class ReportErrors(errors:List[ReportError])

@@ -6,15 +6,22 @@ import java.util.concurrent.atomic.{AtomicLong, AtomicInteger}
 import java.lang.String
 import starling.utils.cache.CacheFactory.{StatsListener, Stats, Cache, CacheImpl}
 import java.util.concurrent._
+import collection.JavaConversions._
 
-class SimpleCacheImpl(soft: Boolean) extends CacheImpl {
-  private val caches = new MapMaker().concurrencyLevel(16).makeMap[String, FutureTask[SimpleCache]]
+class SimpleCacheImpl(val soft: Boolean) extends CacheImpl {
+  private val caches:ConcurrentMap[String, FutureTask[SimpleCache]] = new MapMaker().concurrencyLevel(16).makeMap[String, FutureTask[SimpleCache]]
 
   def get(name: String, statsListener: StatsListener, unique: Boolean): Cache = {
     if(!unique)
       putIfAbsent(caches, name, new SimpleCache(statsListener, soft))._1
     else
       new SimpleCache(statsListener, soft)
+  }
+  def clear{
+    if (soft)
+      caches.clear
+    else
+      throw new Exception("Won't clear a non-soft cache what you really wanted?")
   }
 }
 

@@ -9,4 +9,4 @@
 #
 # Requires an alias 'scala_' pointing to the most recent scala. Can't just put scala on the path as it makes IntelliJ cry
 
-export JAVA_OPTS="-XX:MaxPermSize=512m -Xss128m -Xmx6000m -Dprops.location=./props.conf -javaagent:lib/jrebel/jrebel.jar" && (scala_ -Yrepl-sync -i repl/ImportsForRepl.scala || echo "Usage: . bin/starling (requires scala_ alias)")
+export JAVA_OPTS="-XX:MaxPermSize=512m -Xss128m -Xms6000m -Xmx6000m -XX:-UseConcMarkSweepGC -verbose:gc -XX:+PrintGCTimeStamps -XX:+PrintGCDetails -Dprops.location=./props.conf -javaagent:lib/jrebel/jrebel.jar" && (scala_ -Yrepl-sync -i repl/ImportsForRepl.scala || echo "Usage: . bin/starling (requires scala_ alias)")

@@ -9,13 +9,9 @@ import starling.quantity.Quantity
 import starling.quantity.utils.QuantityTestUtils._
 import starling.marketdata._
 import starling.curves._
-import Quantity._
 import starling.market._
-import starling.market.FuturesFrontPeriodIndex._
 
-/**
- * Commenting out until everything settles down - AMc 29/9/11
- */
+
 class PhysicalMetalAssignmentTests extends StarlingTest {
 
   val marketDay = Day(2011, 10, 17).endOfDay
@@ -66,7 +62,7 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     )
     val mtm = pma.mtm(env)
     val exp = pma.explanation(env)
-    assertQtyEquals(mtm, exp, 1e-6)
+    assertQtyEquals(mtm, exp, 1e-6, "explanation quantity does not match the mtm quantity")
     assertEquals(mtm.uom, contractPricingSpec.valuationCCY)
   }
 
@@ -174,20 +170,25 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
           GradeCode("Ok-ish")
         )
     }
+
+    // some values changed as a result of VAT by currency rather than exchange, previous expected numbers in comments below
     val expectedMtms : List[Quantity] = List(
-      8186616434.30(EUR),
-      7035039114.50(EUR),
-      8912731247.18(EUR),
-      7723125735.45(EUR),
-      12352886833.03(GBP),
-      10714216405.08(GBP)
+      8191103481.95(EUR),
+      8267155945.58(EUR),
+      8917616273.77(EUR),
+      9070782523.64(EUR),
+      12359657400.15(GBP),
+      12590704535.06(GBP)
     )
-//    assignments.foreach{ass => println(ass.mtm(env))}
-    assignments.zip(expectedMtms).foreach{case (ass, expMtm) => assertQtyEquals(ass.mtm(env), expMtm, 1e-2)}
+
+    assignments.foreach{ass => println(ass.mtm(env))}
+    assignments.zip(expectedMtms).foreach {
+      case (ass, expMtm) =>
+        assertQtyEquals(ass.mtm(env), expMtm, 1e-2, "assignmentMtm does not match the expected value")
+    }
   }
 }
 
 object PhysicalMetalAssignmentTests extends App{
-  println("Hello")
   new PhysicalMetalAssignmentTests().testValuationSnapshots
 }

@@ -9,11 +9,12 @@ import service.StarlingGUIEvent
 import swing.event.{Event, ButtonClicked}
 import swing._
 import collection.mutable.{Stack => MStack}
+import starling.gui.osgi.StarlingBrowserBundle
 
 case class EventViewerPage() extends Page {
   def text = "Event Viewer"
   override def icon = StarlingIcons.im("/icons/16x16_event.png")
-  def bundle = RootBrowserBundle.bundleName
+  def bundle = StarlingBrowserBundle.BundleName
   def build(serverContext: String) = null
   type SC = String
   def createServerContext(sc: ServerContext) = ""

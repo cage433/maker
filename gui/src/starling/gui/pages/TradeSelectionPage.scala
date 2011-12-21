@@ -21,6 +21,8 @@ import common.{ButtonClickedEx, NewPageButton, MigPanel}
 import starling.gui.utils.RichReactor._
 import starling.browser.common.RichCheckBox._
 import starling.trade.facility.TradeFacility
+import scalaz.Scalaz._
+import collection.immutable.TreeSet
 
 /**
  * Page that allows you to select trades.
@@ -69,7 +71,8 @@ case class TradeSelectionPage(
     tradeID match {
       case Some(trID) => {
         pageContext.goTo(
-          SingleTradePage(trID, tradeSelection.desk, tpp.expiry, tradeSelection.intradaySubgroup),
+          SingleTradePage(trID, tradeSelection.desk.map(d => (d, pageContext.localCache.latestDeskTradeTimestamp(d))), tpp.expiry,
+            tradeSelection.intradaySubgroup.map(g => (g, pageContext.localCache.latestTimestamp(g)))),
           modifiers = modifiers
         )
       }
@@ -212,7 +215,7 @@ case class TradeSelectionPage(
         context.createAndGoTo(
         (serverContext:ServerContext) => {
           val tradeID = serverContext.lookup(classOf[TradeFacility]).tradeIDFor(desk, textID)
-          SingleTradePage(tradeID, Some(desk), expiry, None)
+          SingleTradePage(tradeID, Some((desk, context.localCache.latestDeskTradeTimestamp(desk))), expiry, None)
         }, { case e:UnrecognisedTradeIDException => {
           errorLabel.text = e.getMessage
           errorLabel.visible = true
@@ -310,7 +313,20 @@ case class TradeSelectionPage(
                 MarketDataIdentifier(selection, version)
               }
 
-              CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar, zeroInterestRates = (desk == Some(Desk.Titan))) // Metals don't want discounting during UAT
+              desk match {
+                case Some(Desk.Titan) => {
+                  val today = Day.today.endOfDay
+                  CurveIdentifierLabel(
+                    marketDataIdentifier,
+                    EnvironmentRuleLabel.MostRecentCloses,
+                    today,
+                    today,
+                    today.nextBusinessDay(context.localCache.ukBusinessCalendar),
+                    TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
+                  )
+                }
+                case _ => CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar)
+              }
             }
 
             val rp = ReportParameters(
@@ -407,7 +423,7 @@ case class TradeSelectionPage(
       reactions += {
         case SelectionChanged(`deskCombo`) => generateNewPageFromState(true)
         case SelectionChanged(`timestampsCombo`) => generateNewPageFromState()
-        case DayChangedEvent(`tradeExpiryDayChooser`, day) => generateNewPageFromState()
+        case DayChangedEvent(`tradeExpiryDayChooser`, day,_) => generateNewPageFromState()
         case ButtonClicked(`deskCheckBox`) => generateNewPageFromState()
         case ButtonClicked(`intradayTradesCheckBox`) => generateNewPageFromState()
         case KeyPressed(`textIDField`, scala.swing.event.Key.Enter, m, _) => viewTrade(Modifiers.modifiersEX(m))

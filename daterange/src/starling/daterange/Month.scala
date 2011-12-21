@@ -105,6 +105,7 @@ object Month extends TenorType with Serializable {
 
   lazy val monthRegex: Regex = new Regex("(" + (months ++ shortMonths).mkString("", "|", "") + """)\s*[ -]?\s*(.*)""")
   lazy val monthNumRegex: Regex = """([0-9]{2})/([0-9]{2,4})""".r
+  lazy val monthYearFirstRegex: Regex = """([0-9]{4})\-([0-9]{2})""".r
 
   /**
    * parses the following formats:
@@ -127,6 +128,7 @@ object Month extends TenorType with Serializable {
         val y = Year.parse(yearStr)
         val m = shortMonths.indexOf(monthName.substring(0, 3)) + 1
         Month(y.yearNumber, m)
+      case monthYearFirstRegex(yearNum, monthNum) => Month(yearNum.toInt, monthNum.toInt)
       case	_ => {
         ReutersDeliveryMonthCodes.parse(text) match {
           case Some(month) => month

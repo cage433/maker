@@ -69,7 +69,7 @@ class ReportFacilityImpl(
       tradeStore.readTrade(tradeID, Some(timestamp)) match {
         case None =>
         case Some(trade) => {
-          val tradeValuation = reportService.singleTradeReport(trade, curveIdentifierFactory.unLabel(curveIdentifier), reportSpecificChoices)
+          val tradeValuation = reportService.singleTradeReport(trade.trade, curveIdentifierFactory.unLabel(curveIdentifier), reportSpecificChoices)
 
           val (stable, fieldDetailsGroups, _) = tradeStores.readTradeVersions(tradeID)
           val cols = stable.columns

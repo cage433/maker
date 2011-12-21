@@ -39,7 +39,7 @@ trait RichElems {
         override def transform(node: Node) = f(node)
       })
 
-      transformer.transform(elem).asInstanceOf[Node]
+      transformer.transform(elem).head
     }
   }
 }

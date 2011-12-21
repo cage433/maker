@@ -33,20 +33,16 @@ object UnionPivotTableDataSource {
 }
 
 class UnionPivotTableDataSource(a:PivotTableDataSource, b:PivotTableDataSource) extends PivotTableDataSource {
-
-  private val aFields = Set() ++ a.fieldDetails.map(_.field)
-  private val bFields = Set() ++ b.fieldDetails.map(_.field)
-
   val fieldDetailsGroups = UnionPivotTableDataSource.unionFieldDetails(a.fieldDetailsGroups, b.fieldDetailsGroups)
 
   val fieldDetailsMap = Map() ++ fieldDetails.map { f => f.field -> f }
-  private def pivotResult(fields:Set[Field], pfs:PivotFieldsState, pivotTableDataSource:PivotTableDataSource):PivotResult = {
+  private def pivotResult(pfs:PivotFieldsState, pivotTableDataSource:PivotTableDataSource):PivotResult = {
     pivotTableDataSource.data(pfs)
   }
   def data(pfs : PivotFieldsState) = {
     val executorService = Executors.newFixedThreadPool(2, NamedThreadFactory("union worker"))
-    val futureA = executorService.submit(new Callable[PivotResult]{def call = pivotResult(aFields, pfs, a)})
-    val futureB = executorService.submit(new Callable[PivotResult]{def call = pivotResult(bFields, pfs, b)})
+    val futureA = executorService.submit(new Callable[PivotResult]{def call = pivotResult(pfs, a)})
+    val futureB = executorService.submit(new Callable[PivotResult]{def call = pivotResult(pfs, b)})
     val resultA = futureA.get
     val resultB = futureB.get
     executorService.shutdown()

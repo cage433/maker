@@ -12,8 +12,8 @@ trait EnvironmentRule {
   val label: EnvironmentRuleLabel
   val pricingGroups: List[PricingGroup]
   def name: String = label.name
-  def createEnv(observationDay: Day, marketDataReader: MarketDataReader): EnvironmentWithDomain
-  def createNullAtomicEnvironment(observationDay: Day):NullAtomicEnvironment = throw new Exception("Not implemented for " + this)
+  def createEnv(observationDay: DayAndTime, marketDataReader: MarketDataReader): EnvironmentWithDomain
+  def createNullAtomicEnvironment(observationDay: DayAndTime):NullAtomicEnvironment = throw new Exception("Not implemented for " + this)
 }
 
 class EnvironmentRules {

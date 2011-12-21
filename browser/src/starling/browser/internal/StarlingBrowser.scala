@@ -3,7 +3,7 @@ package starling.browser.internal
 import HomePage.StarlingNamePanel
 import starling.browser._
 import osgi.BundleAdded
-import service.{StarlingGUIEvent, BookmarkLabel}
+import service.BookmarkLabel
 import starling.browser.common._
 import java.util.concurrent.{ThreadFactory, Executors}
 import scala.swing.Swing._
@@ -23,7 +23,7 @@ import com.googlecode.transloader.clone.SerializationCloningStrategy
 import java.awt.event._
 import utilspage.UtilsPage
 import starling.manager.{TimeTree, Profiler}
-import collection.mutable.{LinkedList, ArrayBuffer}
+import collection.mutable.ArrayBuffer
 
 trait CurrentPage {
   def page:Page
@@ -69,7 +69,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     focusable = false
   }
   private var threadSequence = 0
-  private val componentBufferWindow = 2
   private val history = new ArrayBuffer[PageInfo]
   private var current = -1
 
@@ -150,7 +149,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     new PageContext {
       def goTo(page:Page, modifiers:Modifiers, compToFocus:Option[AWTComp]) {
         val cf = if (compToFocus.isDefined) compToFocus else currentFocus
-        history(current).componentForFocus = cf
+        history(current).componentForFocus = cf.map(ctf => new SoftReference(ctf))
         if (modifiers.ctrl) {
           openTab(modifiers.shift, Left(page))
         } else {
@@ -202,7 +201,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val undoAction = Action("undoAction") {
-    history(current).componentForFocus = currentFocus
+    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
     currentComponent.resetDynamicState()
     val oldIndex = current
     current-=1
@@ -212,7 +211,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val backPageAction = new AbstractAction {
     def actionPerformed(e:ActionEvent) {
-      history(current).componentForFocus = currentFocus
+      history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
       currentComponent.resetDynamicState()
 
       // Look for a page that is different to the current one.
@@ -361,7 +360,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val redoAction = Action("redoAction") {
-    history(current).componentForFocus = currentFocus
+    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
     starlingBrowserUI.clearContentPanel()
     currentComponent.resetDynamicState()
     val oldIndex = current
@@ -761,7 +760,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     } else {
       message0.take(messageLength)
     }
-    starlingBrowserUI.setYesNoMessage(message, description, b => userSelected(b), windowMethods)
+    val componentToFocus = Option(KeyboardFocusManager.getCurrentKeyboardFocusManager.getFocusOwner)
+    starlingBrowserUI.setYesNoMessage(message, description, b => userSelected(b), windowMethods, componentToFocus)
   }
 
   def setContent(content:Component, cancelAction:Option[()=> Unit]) {
@@ -794,7 +794,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   def setDefaultButton(button:Option[Button]) {windowMethods.setDefaultButton(button)}
   def getDefaultButton = windowMethods.getDefaultButton
-  def requestFocusInCurrentPage() {currentComponent.requestFocusInWindow()}
+  def requestFocusInCurrentPage() {currentComponent.defaultComponentForFocus.map(_.requestFocusInWindow())}
 
   def submit[R](submitRequest:SubmitRequest[R], onComplete:R => Unit, keepScreenLocked:Boolean) {
     submitCount += 1
@@ -1293,12 +1293,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       bookmarkButton.refresh()
     }
 
-    // We don't want to keep components hanging about as they take up a lot of memory.
-    for (i <- 0 to (current - componentBufferWindow)) {
-      history(i).pageComponent = None
-    }
-    for (i <- (current + componentBufferWindow) until history.size) {
-      history(i).pageComponent = None
+    // We don't want to keep components hanging about as they take up a lot of memory - they are soft cached.
+    for (i <- 0 until history.size) {
+      if (i != current) {
+        history(i).pageComponent = None
+      }
     }
 
     // Let the page know that it has been shown.
@@ -1310,7 +1309,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   private def sortOutFocus() {
     val pageInfo = history(current)
     val compToFocus = (if (pageInfo.componentForFocus.isDefined) {
-      pageInfo.componentForFocus
+      pageInfo.componentForFocus.get.get match {
+        case c@Some(_) => c
+        case _ => currentComponent.defaultComponentForFocus
+      }
     } else {
       currentComponent.defaultComponentForFocus
     }).getOrElse(currentComponent.peer)
@@ -1419,8 +1421,8 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
     }})
   }
 
-  // This method has to be called on the EDT.
   def build(logPageTime:(TimeTree=>Unit), page:Page, then:(Page,PageResponse)=>Unit) {
+    assert(javax.swing.SwingUtilities.isEventDispatchThread, "This must be called on the EDT")
     if (pageDataCache.contains(page)) {
       then(page,pageDataCache(page))
     } else {
@@ -1448,7 +1450,6 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
       }
     }
   }
-  def readCached(page:Page) = pageDataCache(page)
 }
 
 class PageResponse

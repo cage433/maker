@@ -21,6 +21,10 @@ object CacheFactory extends Log {
   private val cacheCount = new AtomicInteger(0)
   private val cacheStats = new MapMaker().concurrencyLevel(16).makeMap[String, Stats]
 
+  def clearAllCaches = caches.values.foreach{
+    case c : SimpleCacheImpl if c.soft => c.clear
+    case _ =>
+  }
   private val statsThread = {
     import scala.collection.JavaConversions._
     
@@ -118,6 +122,10 @@ object CacheFactory extends Log {
     // Written so that the type of the input to f can be inferred
     // TODO [23 Nov 2011] Get rid of all other memoize methods !
     def memoizeZ[K, V](key: K)(f: K => V) = memoize(key, f(key))
+
+    // A lot of the time you already have access to params for f and don't need them
+    // passed in again. Makes the code much clean and scala guesses at the types better.
+    def memoized[K, V](key: K)(f: => V) = memoize(key, f)
 
     /**
      * Returns the value for the key if the cache contains it

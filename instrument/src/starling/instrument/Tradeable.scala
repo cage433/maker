@@ -102,7 +102,7 @@ object TradeableType {
     ("Cash Instrument Type", classOf[CashInstrumentType]),
     ("Commodity", classOf[String]),
     ("Contract Index", classOf[Option[IndexWithDailyPrices]]),
-    ("Premium", classOf[Quantity]),
+    //("Premium", classOf[Quantity]),
     ("Exchange", classOf[FuturesExchange]),
     ("Inventory ID", classOf[String]),
     ("Inventory Quantity", classOf[Quantity]),

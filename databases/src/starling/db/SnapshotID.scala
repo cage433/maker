@@ -8,7 +8,6 @@ case class SnapshotID(
         timestamp : Timestamp,
         marketDataSelection : MarketDataSelection,
         snapshotType : SnapshotType,
-        observationDay : Option[Day],
         version:Int
         ) extends Ordered[SnapshotID] {
 
@@ -33,7 +32,6 @@ object SnapshotID {
     rs.getTimestamp("snapshotTime"),
     rs.getObject[MarketDataSelection]("marketDataSelection"),
     SnapshotType(rs.getString("snapshotType")),
-    rs.getDayOption("observationDay"),
     rs.getInt("commitid")
   )
 }

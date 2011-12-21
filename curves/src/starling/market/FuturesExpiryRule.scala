@@ -33,6 +33,18 @@ trait FuturesExpiryRule {
     case DateRangePeriod(dr) => commoditySpreadOptionExpiryDay(dr)
   }
 
+  def frontMonth(dayAndTime:DayAndTime) = {
+    var month = dayAndTime.containingMonth
+    try {
+      while (lastTradingDay(month).endOfDay <= dayAndTime) {
+        month = month + 1
+      }
+    } catch {
+      case e: NoExpiryDataException => throw new Exception("Problem getting front month for " + name, e)
+    }
+    month
+  }
+
   /**
    * Expiry day for Asian Option.
    */

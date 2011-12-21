@@ -12,6 +12,7 @@ import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
 import starling.instrument.physical._
 import starling.quantity.{Quantity, Percentage}
 import starling.titan.EDMConversions._
+import runtime.ScalaRunTime
 
 
 // represent logistics inventory values needed for pricing metals
@@ -42,15 +43,10 @@ class TitanSystemOfRecord(manager : TitanTradeStoreManager)
     manager.updateTradeStore("allTrade import request")
     val allTrades = manager.allStarlingTrades
 
-    val (worked, failed) = allTrades.map(_.tradeable).partition{ case a : PhysicalMetalAssignment => true; case _ => false }
-
-    log.info("Failed : \n" + failed.mkString("\n"))
-    log.info("Worked : \n" + worked.mkString("\n"))
-
     allTrades.map(f)
 
-    val dups = allTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
-    log.warn("dups found: \n" + dups.mkString("\n"))
+    val duplicates = allTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
+    assert(duplicates.isEmpty, "duplicates found: \n" + duplicates.mkString("\n"))
 
     val tradeErrors = allTrades.map(_.tradeable).collect{case ErrorInstrument(err) => err}
     (tradeErrors.size, tradeErrors.toSet)
@@ -66,7 +62,6 @@ case class TitanTradeAttributes(
   quotaID : String,
   quotaQuantity : Quantity,
   titanTradeID : String,
-  inventoryID : Option[String],
   groupCompany : String,
   comment : String,
   submitted : Day,
@@ -96,10 +91,22 @@ case class TitanTradeAttributes(
     tolerancePlus_str -> tolerancePlus,
     toleranceMinus_str -> toleranceMinus,
     eventID_str -> eventID
-  ) ++  inventoryID.map{id => inventoryID_str -> id}
+  )
 
   override def createFieldValues = details.map{
     case (k, v) => Field(k) -> v
+  }
+
+  override def hashCode() = ScalaRunTime._hashCode(copy(eventID = ""))
+
+  // We don't want to use eventID in hashCode and equals as it changes every time a trade
+  // is published on the bus, even if the trade has not changed. If we include it in hashCode
+  // and equals it looks like the trade has changed and we store a new revision.
+  override def equals(obj:Any) = obj match {
+    case other:TitanTradeAttributes => {
+      ScalaRunTime._equals(this, other.copy(eventID = this.eventID))
+    }
+    case _ => false
   }
 }
 
@@ -112,7 +119,6 @@ object TitanTradeAttributes{
       quotaID = "",
       quotaQuantity = Quantity.NULL,
       titanTradeID = titanTradeID,
-      inventoryID = None,
       groupCompany = "",
       comment = "",
       submitted = dummyDate,

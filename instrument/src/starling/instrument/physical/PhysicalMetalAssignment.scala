@@ -11,9 +11,7 @@ import starling.marketdata.{IncotermCode, GradeCode, ContractualLocationCode, Ne
 import starling.market.{Commodity, NeptuneCommodity}
 import starling.market.Copper
 import starling.market.Aluminium
-import starling.utils.Log
 import starling.titan.valuation.AssignmentValuation
-import starling.quantity.UOM._
 import starling.curves.{MissingMarketDataException, Environment}
 
 
@@ -29,7 +27,7 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
   val benchmarkDeliveryDayLabel = "benchmarkDeliveryDay"
   val benchmarkCountryCodeLabel = "benchmarkCountryCode"
   val benchmarkIncoTermCodeLabel = "benchmarkIncoTermCode"
-  val premiumLabel = "premium"
+  //val premiumLabel = "premium"
   val exchangeLabel = "exchange"
   val contractIndexLabel = "contractIndex"
   val benchmarkIndexLabel = "benchmarkIndex"
@@ -57,6 +55,19 @@ object PhysicalMetalAssignmentOrUnassignedSalesQuota{
     def contractDeliveryDay = throw new UnsupportedOperationException
     def contractPricingSpec = throw new UnsupportedOperationException
   }
+
+  def benchmarkTenor(index: IndexWithDailyPrices, dayAndTime:DayAndTime, month: Month): Tenor = {
+    val tenor = {
+      val currentMonth = index.market match {
+        case fm: FuturesMarket if fm.exchange == FuturesExchangeFactory.SHFE => fm.frontMonth(dayAndTime)
+        case _ => dayAndTime.day.containingMonth
+      }
+      val offset = month - currentMonth
+      Tenor(Month, offset)
+    }
+    tenor
+  }
+
 }
 
 trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
@@ -84,7 +95,7 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
       contractLocationCodeLabel -> contractLocationCode.code,
       contractIncoTermCodeLabel -> contractIncoTermCode.code,
       quantityLabel -> quantity,
-      premiumLabel -> contractPricingSpec.premium,
+      //premiumLabel -> contractPricingSpec.premium,
       gradeCodeLabel -> grade.code,
       directionLabel -> (if (isPurchase) "P" else "S")
     ) ++ contractPricingSpec.indexOption.map(contractIndexLabel -> _) ++
@@ -175,11 +186,12 @@ trait PhysicalMetalAssignmentOrUnassignedSalesQuota extends UTP with Tradeable {
     val month = benchmarkDeliveryDay.get.containingMonth
     val futuresMarket = contractPricingSpec.futuresMarket
     val index = futuresMarket.physicalMetalBenchmarkIndex
-    val benchmarkLookupDay = TitanPricingSpec.representativeDay(index, month, env.marketDay)
-    val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, benchmarkLookupDay)
+
+    val tenor = benchmarkTenor(index, env.marketDay, month)
+    val benchmark = env.benchmarkPremium(commodity, benchmarkCountryCode.get, grade, tenor)
     UnknownPricingSpecification(
       index,
-      month,
+      TitanPricingSpec.averagingPeriod(index, month),
       Nil,
       month.lastDay,
       benchmark,
@@ -441,17 +453,29 @@ object CostsAndIncomeValuation{
     }
     def toMTO(q:Option[Quantity]) = q.map(toMT(_))
 
+    val priceExcludingVATIncludingPremium = toMT(pricingSpec.priceExcludingVATIncludingPremium(env))
+    val priceIncludingVATIncludingPremium = toMT(pricingSpec.priceIncludingVATIncludingPremium(env))
+    val priceExcludingVATExcludingPremium = toMT(pricingSpec.priceExcludingVATExcludingPremium(env))
+    val priceIncludingVATExcludingPremium = toMT(pricingSpec.priceIncludingVATExcludingPremium(env))
+    val premiumExcludingVAT = toMT(pricingSpec.premiumExcludingVAT(env))
+    val premiumIncludingVAT = toMT(pricingSpec.premiumIncludingVAT(env))
+
+    val valueExcludingVATIncludingPremium = pricingSpec.valueExcludingVATIncludingPremium(env, quantity)
+    val valueIncludingVATIncludingPremium = pricingSpec.valueIncludingVATIncludingPremium(env, quantity)
+    val valueIncludingVATExcludingPremium = pricingSpec.valueIncludingVATExcludingPremium(env, quantity)
+    val valueExcludingVATExcludingPremium = pricingSpec.valueExcludingVATExcludingPremium(env, quantity)
+
     PricingValuationDetails(
-      toMT(pricingSpec.priceExcludingVATIncludingPremium(env)),
-      toMTO(pricingSpec.priceIncludingVATIncludingPremium(env)),
-      toMT(pricingSpec.priceExcludingVATExcludingPremium(env)),
-      toMTO(pricingSpec.priceIncludingVATExcludingPremium(env)),
-      toMT(pricingSpec.premiumExcludingVAT(env)),
-      toMTO(pricingSpec.premiumIncludingVAT(env)),
-      pricingSpec.valueExcludingVATIncludingPremium(env, quantity),
-      pricingSpec.valueIncludingVATIncludingPremium(env, quantity),
-      pricingSpec.valueExcludingVATExcludingPremium(env, quantity),
-      pricingSpec.valueIncludingVATExcludingPremium(env, quantity),
+      priceExcludingVATIncludingPremium,
+      (if (priceIncludingVATIncludingPremium != priceExcludingVATIncludingPremium) Some(priceIncludingVATIncludingPremium) else None),
+      priceExcludingVATExcludingPremium,
+      (if (priceIncludingVATExcludingPremium != priceExcludingVATExcludingPremium) Some(priceIncludingVATExcludingPremium) else None),
+      premiumExcludingVAT,
+      (if (premiumIncludingVAT != premiumExcludingVAT) Some(premiumIncludingVAT) else None),
+      valueExcludingVATIncludingPremium,
+      (if (valueIncludingVATIncludingPremium != valueExcludingVATIncludingPremium) Some(valueIncludingVATIncludingPremium) else None),
+      valueExcludingVATExcludingPremium,
+      (if (valueIncludingVATExcludingPremium != valueExcludingVATExcludingPremium) Some(valueIncludingVATExcludingPremium) else None),
       pricingSpec.isComplete(env.marketDay),
       pricingSpec.fixedQuantity(env.marketDay, quantity),
       pricingSpec.pricingType,

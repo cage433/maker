@@ -50,7 +50,12 @@ else
             nohup java \
                -DserverName=$SERVERNAME \
                -server \
+               -Xms6000m \
                -Xmx6000m \
+               -XX:-UseConcMarkSweepGC \
+               -verbose:gc \
+               -XX:+PrintGCTimeStamps \
+               -XX:+PrintGCDetails \
                -XX:MaxPermSize=512m \
                -XX:+HeapDumpOnOutOfMemoryError \
                -Dcom.sun.management.jmxremote.port=$JMX_PORT \

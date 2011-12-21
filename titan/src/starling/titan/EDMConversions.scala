@@ -15,6 +15,7 @@ import starling.db.{MarketDataStore, SnapshotID}
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
 import com.trafigura.edm.logistics.inventory.InventoryItem
 import starling.instrument.Trade
+import starling.instrument.physical.PhysicalMetalAssignment
 
 case class InvalidUomException(msg : String) extends Exception(msg)
 
@@ -173,16 +174,15 @@ object EDMConversions {
       case tta : TitanTradeAttributes => Some(tta.titanTradeID)
       case _ => None
     }
-    def titanInventoryID : Option[String] = trade.attributes match {
-      case tta : TitanTradeAttributes => tta.inventoryID
+    def titanInventoryID : Option[String] = trade.tradeable match {
+      case pma : PhysicalMetalAssignment => Some(pma.inventoryID)
       case _ => None
     }
   }
 
   val starlingCurrencyToEdmCurrency = edmCurrencies.toMapWithValues(_.name.toString) + (UOMSymbol.cny → "RMB")
-  val edmCurrencyToStarlingCurrency : Map[String, UOMSymbol] = starlingCurrencyToEdmCurrency.map(_.swap)
 
-  implicit def toStarlingCurrency(edmCurrency : TitanCurrency) : UOM = UOM(edmCurrencyToStarlingCurrency(edmCurrency.name))
+  implicit def toStarlingCurrency(edmCurrency : TitanCurrency) : UOM = UOM.fromString(edmCurrency.name)
 
   val starlingUomSymbolToEdmUom = starlingCurrencyToEdmCurrency ++ Map(
     TONNE_SYMBOL -> "MTS",

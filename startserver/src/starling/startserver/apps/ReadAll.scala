@@ -15,7 +15,7 @@ object ReadAll {
       val tradeStores = lookup(classOf[TradeStores])
       for (tradeStore <- tradeStores.all) {
         Log.infoWithTime("Reading all trades for " + tradeStore.tableName) {
-          tradeStore.readAll()
+          tradeStore.readLatestVersionOfAllTrades()
           println("Trade Count for " + tradeStore.tableName + " = " + tradeStore.tradeCount)
         }
       }

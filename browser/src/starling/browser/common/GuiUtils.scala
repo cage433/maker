@@ -23,7 +23,7 @@ object GuiUtils {
       separator.repaint()
     }
     val colour = GuiUtils.BlueTextColour
-    private val textLabel = new Label(text) {
+    private val textLabel = new ResizingLabel(text) {
       font = UIManager.getFont("TitledBorder.font")
       foreground = colour
     }

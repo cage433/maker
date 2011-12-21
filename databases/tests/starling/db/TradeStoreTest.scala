@@ -29,33 +29,21 @@ import starling.props.PropsHelper
 import starling.gui.api.{Desk, EAIDeskInfo}
 import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 import org.scalatest.testng.TestNGSuite
+import starling.tradeimport.ClosedDesks
 
-class EAITradeStoreTest extends TestMarketTest with TestNGSuite {
-  lazy val dataTypes = new MarketDataTypes(ReferenceDataLookup.Null)
-  lazy val marketDataStore = new DBMarketDataStore(new NewSchemaMdDB(db, dataTypes), new MarketDataSnapshots(db), MarketDataSources.Null, Broadcaster.Null, dataTypes)
-
-  var db : RichDB = _
-  var connection : Connection = _
-
-  @BeforeMethod
-  def initialise {
-    connection = DBTest.getConnection("jdbc:h2:mem:EAITradeStoreTest;create=true")
-    val ds = new SingleConnectionDataSource(connection, true)
-    db = new TestDB(ds, new RichResultSetRowFactory)
-    db.inTransaction{
-      writer => {
-        writer.update(create_table)
-      }
-    }
-  }
-
-  @AfterMethod
-  def tearDown() {
-    connection.close()
-  }
+class TradeStoreTest extends TestMarketTest with TestNGSuite {
 
   @Test
   def testStoreTrades {
+    val connection: Connection = DBTest.getConnection("jdbc:h2:mem:EAITradeStoreTest;create=true")
+    val ds = new SingleConnectionDataSource(connection, true)
+    var db: RichDB = new TestDB(ds, new RichResultSetRowFactory)
+    db.inTransaction {
+      writer => {
+        writer.update(TradeStoreTest.create_table)
+      }
+    }
+
     val broadcaster = new Broadcaster() {
       def broadcast(event: Event) = {}
     }
@@ -64,7 +52,16 @@ class EAITradeStoreTest extends TestMarketTest with TestNGSuite {
     when(eAIStrategyDB.pathFor(any(classOf[TreeID]))) thenReturn PivotTreePath("test [54418]")
     when(eAIStrategyDB.getStrategyFromDealId(any(classOf[TreeID]))) thenReturn Some(TreeID(54418))
 
-    val store = new EAITradeStore(db, broadcaster, eAIStrategyDB, Desk.GasolineSpec)
+    val day = Day.today
+    val close1 = new Timestamp(1)
+    val close2 = new Timestamp(2)
+    val close3 = new Timestamp(3)
+    val close4 = new Timestamp(4)
+    val closes = List(close1, close2, close3, close4)
+
+    val cd = mock(classOf[ClosedDesks])
+
+    val store = new EAITradeStore(db, broadcaster, eAIStrategyDB, Desk.GasolineSpec, cd)
 
     val attr = EAITradeAttributes(TreeID(1), TreeID(149), TreeID(3), "trader", "tradedfor", "broker", "clearinghouse")
 
@@ -73,46 +70,85 @@ class EAITradeStoreTest extends TestMarketTest with TestNGSuite {
     val trade3a = Trade(TradeID(3, EAITradeSystem), Day.today, "cp", attr, Future.sample)
 
     val tradesA = List(trade1a, trade2a, trade3a)
-    val storedA = store.storeTrades((trade) => true, tradesA, new Timestamp)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List()
+
+    val storedA = store.storeTrades((trade) => true, tradesA, close1)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1).map(c => (day, c, None))
 
     assertEquals(storedA.inserted, 3)
     assertEquals(storedA.updated, 0)
     assertEquals(storedA.deleted, 0)
     assertEquals(storedA.changed, true)
 
-    assertEquals(store.readLatestVersionOfAllTrades.size, 3)
+    val tradesResultA = store.readLatestVersionOfAllTrades()
+    assertEquals(tradesResultA.values.map(_.trade).toSet, tradesA.toSet)
 
+    // change a trade
     val trade1b = trade1a.copy(attributes = attr.copy(strategyID = TreeID(66)))
     val trade2b = trade2a.copy()
     val trade3b = trade3a.copy(tradeable = ErrorInstrument("error3"))
 
     val tradesB = List(trade1b, trade2b, trade3b)
-    val storedB = store.storeTrades((trade) => true, tradesB, new Timestamp)
+    val storedB = store.storeTrades((trade) => true, tradesB, close2)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2).map(c => (day, c, None))
 
     assertEquals(storedB.inserted, 0)
     assertEquals(storedB.updated, 2)
     assertEquals(storedB.deleted, 0)
     assertEquals(storedB.changed, true)
 
+    val tradesResultB = store.readLatestVersionOfAllTrades()
+    assertEquals(tradesResultB.values.map(_.trade).toSet, tradesB.toSet)
+
+    // delete and change a trade
     val trade2c = trade2b.copy(tradeable = CommoditySwap.sample.copy(_volume = Quantity(12.123, MT)))
     val trade3c = trade3b.copy()
 
     val tradesC = List(trade2c, trade3c)
-    val storedC = store.storeTrades((trade) => true, tradesC, new Timestamp)
+    val storedC = store.storeTrades((trade) => true, tradesC, close3)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2, close3).map(c => (day, c, None))
 
     assertEquals(storedC.inserted, 0)
     assertEquals(storedC.updated, 1)
     assertEquals(storedC.deleted, 1)
     assertEquals(storedC.changed, true)
 
-    val storedD = store.storeTrades((trade) => true, tradesC, new Timestamp)
+    val tradesResultC = store.readLatestVersionOfAllTrades()
+
+    assertEquals(tradesResultC.values.map(_.trade).toSet, tradesC.toSet)
+
+    // do nothing
+    val tradesD = tradesC
+    val storedD = store.storeTrades((trade) => true, tradesD, close4)
+    when(cd.closesForDesk(any(classOf[Desk]))) thenReturn List(close1, close2, close3, close4).map(c => (day, c, None))
 
     assertEquals(storedD.inserted, 0)
     assertEquals(storedD.updated, 0)
     assertEquals(storedD.deleted, 0)
     assertEquals(storedD.changed, false)
-  }
 
+    val tradesResultD = store.readLatestVersionOfAllTrades()
+    assertEquals(tradesResultD.values.map(_.trade).toSet, tradesD.toSet)
+
+    val history = store.singTradeHistory(TradeID(1, EAITradeSystem))
+    assertEquals(history(close1).trade, trade1a)
+    assertEquals(history(close2).trade, trade1b)
+    assertEquals(history(close3).trade.tradeable.tradeableType, DeletedInstrument)
+
+    assertEquals(store.readTrade(TradeID(1, EAITradeSystem), Some(close1)).get.trade, trade1a)
+    assertEquals(store.readTrade(TradeID(1, EAITradeSystem), Some(close2)).get.trade, trade1b)
+    assertEquals(store.readTrade(TradeID(1, EAITradeSystem), None).get.trade.tradeable.tradeableType, DeletedInstrument)
+
+    db.inTransaction {
+      writer => {
+        writer.update("drop table EAITRADE_BOOK_149")
+      }
+    }
+    connection.close()
+  }
+}
+
+object TradeStoreTest {
 
   val create_table = """
     CREATE TABLE EAITRADE_BOOK_149

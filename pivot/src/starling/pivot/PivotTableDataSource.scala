@@ -251,7 +251,7 @@ case class PivotTreePath(path:List[String]) {
       path == chopped
     }
   }
-  override def toString = path.mkString("/")
+  override lazy val toString = path.mkString("/")
   def lastElement = {
     if (path.nonEmpty) {
       path.last

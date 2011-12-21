@@ -35,7 +35,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
   }
 
   override def configPanel(pageContext:PageContext, data:PageData, tableSelection:() => TableSelection) = {
-    val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier.selection)
+    val marketDataSelectionPanel = new MarketDataSelectionComponent(pageContext, None, marketDataIdentifier)
     val marketDataSelectionPanelPanel = new MigPanel {
       border = RoundedBorder(colour = GuiUtils.PivotTableBackgroundColour)
       add(marketDataSelectionPanel, "push, grow")
@@ -64,7 +64,7 @@ case class CurvePage(curveLabel: CurveLabel, pivotPageState: PivotPageState) ext
     }
 
     marketDataSelectionPanel.reactions += {
-      case MarketDataSelectionChanged(selection) => { pageContext.goTo(latest(copySelection(selection)), Modifiers.None) }
+      case MarketDataSelectionChanged(mdi) => { pageContext.goTo(latest(copySelection(mdi.selection)), Modifiers.None) }
     }
 
     def updatePopulatedDays() {
@@ -103,7 +103,7 @@ case class CurveBookmark(curveType:CurveTypeLabel, envRuleLabel:EnvironmentRuleL
   def daySensitive = true
   def createFC2Page(day0:Option[Day], fc2Context:FC2Context, context:PageContext) = {
     val day = day0.get
-    val newEnvironmentSpecification = EnvironmentSpecificationLabel(day, envRuleLabel)
+    val newEnvironmentSpecification = EnvironmentSpecificationLabel(day.endOfDay, envRuleLabel)
     val newMarketDataIdentifier = fc2Context.service.latestMarketDataIdentifier(selection)
     val newCurveLabel = CurveLabel(curveType, newMarketDataIdentifier, newEnvironmentSpecification)
     CurvePage(newCurveLabel, pivotPageState)

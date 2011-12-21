@@ -1,10 +1,11 @@
 package starling.curves
 
-import starling.market.Commodity
 import starling.quantity.Quantity
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
-import starling.daterange.{Day, Period, DayAndTime}
+import collection.immutable.Map
+import starling.daterange._
+import starling.market._
 
 /**
  * Class for atomic benchmark data
@@ -49,10 +50,10 @@ case class AreaBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : 
   }
 }
 
-case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, grade : GradeCode, day: Day, refData : ReferenceDataLookup,
+case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, grade : GradeCode, tenor:Tenor, refData : ReferenceDataLookup,
   override val ignoreShiftsIfPermitted: Boolean = false
 )
-  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity, refData), (country, grade, day), ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity, refData), (country, grade, tenor), ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
@@ -81,24 +82,21 @@ case class CountryBenchmarkCurveKey(commodity : Commodity, refData : ReferenceDa
 /**
  * Benchmark Location Curve for benchmarks using grade and location as keys
  */
-case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : CountryBenchmarkData, refData : ReferenceDataLookup) extends CurveObject {
-  val countryData = marketData.countryData.withDefaultValue(Map.empty[Day, Quantity])
+case class CountryBenchmarkCurveObject(marketDayAndTime : DayAndTime,
+                                       marketData : CountryBenchmarkData,
+                                       refData : ReferenceDataLookup) extends CurveObject {
+  val countryData = marketData.countryData.withDefaultValue(Map.empty[Tenor, Quantity])
   type CurveValuesType = Quantity
 
   def apply(point : AnyRef) = point match {
-    case (country: NeptuneCountryCode, grade : GradeCode, day: Day) => {
+    case (country: NeptuneCountryCode, grade : GradeCode, tenor: Tenor) => {
       try {
-        countryData((country, grade)).keys.toList.sortWith(_ > _).find(_ <= day) match {
+        countryData((country, grade)).keys.toList.sortWith(_ > _).find(_ <= tenor) match {
           case None =>
             throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade),
-              long = "No benchmark for country %s (%s), grade code %s (%s), day %s" %(refData.countryFor(country), country, refData.gradeFor(grade), grade, day))
-          case Some(effectiveDay) => countryData((country, grade))(effectiveDay)
+              long = "No benchmark for country %s (%s), grade code %s (%s), day %s" %(refData.countryFor(country), country, refData.gradeFor(grade), grade, tenor))
+          case Some(tenor) => countryData((country, grade))(tenor)
         }
-//        val (days, benchmarks) = countryData((country, grade)).sorted.unzip
-//        if (benchmarks.isEmpty)
-//          throw new MissingMarketDataException("No benchmarks for country " + refData.countryFor(country) + ", grade code " + refData.gradeFor(grade),
-//            long = "No benchmarks for country %s (%s), grade code %s (%s)" %(refData.countryFor(country), country, refData.gradeFor(grade), grade))
-//        InverseConstantInterpolation.interpolate(days.toArray, benchmarks.toArray, day)
       } catch {
         case _ : MissingMarketDataException => Quantity.NULL
       }

@@ -9,7 +9,8 @@ import valuation.QuotaValuation
 import com.trafigura.services.TitanSnapshotIdentifier
 import starling.titan.EDMConversions._
 import starling.db.SnapshotID
-import starling.daterange.{TimeOfDay, Day}
+import starling.daterange.{DayAndTime, TimeOfDay, Day}
+import starling.gui.api.SnapshotMarketDataVersion
 
 /**
  * Valuation service implementations
@@ -23,32 +24,24 @@ case class ValuationService(
   /**
    * Use a valuation snapshot if it occurred recently, with the market data from its associated
    * observation day. If no suitable valuation snapshot exists then us the most recent from last night.
-   * In either case the market day is today
+   * In either case the market day is today.sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
    */
-  def bestValuationIdentifier() = {
+  private def bestValuationIdentifier() = {
     val today = Day.today
-    val latestMetalsValuationSnapshot = environmentProvider.latestMetalsValuationSnapshot
-    var latestValuationObservationDay = latestMetalsValuationSnapshot.observationDay.get
-    if (latestValuationObservationDay < today.addWeekdays(-3)){
-      val snapshotID = environmentProvider.metalsSnapshots(None).filter(_.snapshotDay >= today).headOption.getOrElse(throw new Exception("No metals snapshots found"))
-      (snapshotID, today.previousWeekday, today)
-    } else {
-      (latestMetalsValuationSnapshot, latestValuationObservationDay, today)
-    }
+    val snapshotID = environmentProvider.metalsSnapshots(None).headOption.getOrElse(throw new Exception("No metals snapshots found"))
+    (snapshotID, today, today)
   }
   
-  def latestSnapshotID() : TitanSnapshotIdentifier = environmentProvider.latestMetalsValuationSnapshot.toSerializable
-
   private def marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier]) : (TitanMarketDataIdentifier, Environment) = {
-    def makeEnv(snapshotID : SnapshotID, observationDay : Day, marketDay : Day) = environmentProvider.valuationServiceEnvironment(snapshotID, observationDay, marketDay)
+    def makeEnv(snapshotID : SnapshotID, observationDay : DayAndTime, marketDay : Day) = environmentProvider.valuationServiceEnvironment(new SnapshotMarketDataVersion(snapshotID.label), observationDay, marketDay)
     maybeMarketDataIdentifier match {
       case Some(tmdi @ TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotIdentifier), observationDay, marketDay)) => {
         val snapshotID = environmentProvider.snapshotIDFromIdentifier(snapshotIdentifier)
-        (tmdi, makeEnv(snapshotID, observationDay, marketDay))
+        (tmdi, makeEnv(snapshotID, observationDay.endOfDay, marketDay))
       }
       case None => {
         val (snapshotID, observationDay, marketDay) = bestValuationIdentifier()
-        (TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay), makeEnv(snapshotID, observationDay, marketDay))
+        (TitanMarketDataIdentifier(TitanSnapshotIdentifier(snapshotID.identifier), observationDay, marketDay), makeEnv(snapshotID, observationDay.endOfDay, marketDay))
       }
     }
   }
@@ -84,23 +77,5 @@ case class ValuationService(
     }
   }
 
-  /**
-   * Return all snapshots that are valid for a given observation day, ordered from most recent to oldest
-   */
-  def marketDataValuationSnapshotIDs(observationDay: Option[Day] = None): List[TitanSnapshotIdentifier] = {
-    environmentProvider.metalsValuationSnapshots(observationDay).sortWith(_ > _).map{id => TitanSnapshotIdentifier(id.identifier)}
-  }
-
-}
-
-object ValuationService{
-  def buildEnvironment(
-    provider : EnvironmentProvider,
-    snapshotID : SnapshotID,
-    observationDay : Day,
-    marketDay : Day
-  ) : Environment = {
-    provider.environment(snapshotID, observationDay).undiscounted.forwardState(marketDay.endOfDay)
-  }
 }
 

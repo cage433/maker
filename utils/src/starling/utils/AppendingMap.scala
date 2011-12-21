@@ -31,7 +31,7 @@ import collection.immutable.SortedMap
  * could be implemented but it's not needed for the moment.
  *
  */
-
+@deprecated("Since scala 2.8 appending to immutable maps has been very fast - uses hash trie maps")
 class AppendingMap[A, B](val namedMaps : Map[String,Map[A, B]]) extends scala.collection.immutable.Map[A, B]{
   def -(key: A) = throw new UnsupportedOperationException()
 

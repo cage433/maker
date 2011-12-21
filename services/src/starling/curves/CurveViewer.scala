@@ -8,7 +8,7 @@ import collection.immutable.List
 import starling.db.{MarketDataReader, NormalMarketDataReader, MarketDataStore}
 import starling.gui.api.{EnvironmentSpecificationLabel, CurveLabel, CurveTypeLabel, MarketDataIdentifier}
 import starling.quantity.UOM
-import starling.marketdata.ForwardRateData
+import starling.marketdata.{CountryBenchmarkData, CountryBenchmarkMarketDataKey, ForwardRateData}
 
 case class CurveSpecification(curveType: CurveType, marketDataIdentifier: MarketDataIdentifier,
                               environmentSpecification: EnvironmentSpecification)
@@ -18,7 +18,8 @@ class CurveViewer(marketDataStore : MarketDataStore, environmentRules: Environme
                             CurveTypeLabel("Implied Vol") -> ImpliedVolCurveTypeFactory,
                             CurveTypeLabel("Swap Vol") -> SwapVolScheduleFactory,
                             CurveTypeLabel("Discount") -> DiscountCurveType,
-                            CurveTypeLabel("Forward FX") -> ForwardFXCurveType
+                            CurveTypeLabel("Forward FX") -> ForwardFXCurveType,
+                            CurveTypeLabel("Benchmarks") -> BenchmarkCurveType
   )
   val curveTypes = curveTypeLookup.keys.toList
 
@@ -56,4 +57,5 @@ trait EnvironmentWithDomain {
   def marketVols: List[MarketOptionData] = Nil
   def discounts:List[(UOM,ForwardRateData)] = Nil
   def spotFX:List[UOM] = Nil
+  def benchmarks:List[(CountryBenchmarkMarketDataKey,CountryBenchmarkData)] = Nil
 }

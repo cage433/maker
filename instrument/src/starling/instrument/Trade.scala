@@ -59,6 +59,8 @@ case class Trade(
   def deltaStepType() = throw new UnsupportedOperationException()
 
   def premium: Option[Quantity] = Trade.extractPremium(costs)
+
+  override lazy val hashCode: Int = tradeID.hashCode()
 }
 
 object Trade {

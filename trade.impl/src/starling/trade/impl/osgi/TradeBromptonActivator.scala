@@ -49,20 +49,19 @@ class TradeBromptonActivator extends BromptonActivator {
     val starlingDB = starlingRichDB.db
 
     val neptuneRichDB = new RichDB(props.NeptuneDatabase(), new RichResultSetRowFactory)
+    val closedDesks = new ClosedDesks(broadcaster, starlingDB)
 
     val eaiSqlServerDB = DB(props.EAIReplica())
     val strategyDB = new EAIStrategyDB(eaiSqlServerDB)
     val eaiTradeStores = Desk.eaiDesks.map{case desk@Desk(_, _, Some(_:EAIDeskInfo)) => desk ->
-      new EAITradeStore(starlingRichDB, broadcaster, strategyDB, desk)}.toMap
-    val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup)
+      new EAITradeStore(starlingRichDB, broadcaster, strategyDB, desk, closedDesks)}.toMap
+    val intradayTradesDB = new IntradayTradeStore(starlingRichDB, strategyDB, broadcaster, ldapUserLookup, closedDesks)
 
     val eaiStarlingDB = DB(props.EAIStarlingSqlServer())
     val eaiDealBookMapping = new EAIDealBookMapping(eaiSqlServerDB)
 
     val neptuneReferenceDataLookup = DBReferenceDataLookup(neptuneRichDB)
-    val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem, neptuneReferenceDataLookup)
-
-    val closedDesks = new ClosedDesks(broadcaster, starlingDB)
+    val titanTradeStore = new TitanTradeStore(starlingRichDB, broadcaster, TitanTradeSystem, neptuneReferenceDataLookup, closedDesks)
 
     val tradeStores = new TradeStores(
       closedDesks,
