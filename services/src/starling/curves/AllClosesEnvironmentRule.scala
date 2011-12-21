@@ -137,16 +137,14 @@ case class AllClosesEnvironmentRule(referenceDataLookup: ReferenceDataLookup) ex
    def createEnv(observationDay: DayAndTime, marketDataReader: MarketDataReader): EnvironmentWithDomain = {
      val marketDay: DayAndTime = observationDay
 
-     def atomicEnvironments(marketDataDay: Day): List[AtomicEnvironment] = {
-       val slice = marketDataSlice(marketDataReader, marketDataDay)
-       val marketDataDaysAndTimes = List(marketDataDay.startOfDay, marketDataDay.endOfDay).filterNot(_ > observationDay)
-       marketDataDaysAndTimes.map{
-         dayAndTime =>
-          ForwardStateEnvironment(Undiscounted(MarketDataCurveObjectEnvironment(dayAndTime, slice, false, referenceDataLookup)), marketDay)
-       }
+     def atomicEnvironments(marketDataDayAndTime: DayAndTime): AtomicEnvironment = {
+       val slice = marketDataSlice(marketDataReader, marketDataDayAndTime.day)
+       ForwardStateEnvironment(Undiscounted(MarketDataCurveObjectEnvironment(marketDataDayAndTime, slice, false, referenceDataLookup)), marketDay)
      }
 
-     val envs = ((observationDay.day - numberOfDaysToLookBack) upto observationDay.day).filter(_.isWeekday).toList.reverse.flatMap(atomicEnvironments(_))
+     val observationDaysAndTimes = ((observationDay.day - numberOfDaysToLookBack) upto observationDay.day).filter(_.isWeekday).toList.flatMap{day => List(day.startOfDay, day.endOfDay)}
+     val envs = observationDaysAndTimes.filterNot(_ > observationDay).sortWith(_ > _).map(atomicEnvironments(_))
+//       flatMap(atomicEnvironments(_)).sortWith(_.marketDay > _.marketDay)
      val environmentX = Environment(CachingAtomicEnvironment(UseMostRecentAtomicEnvironmentWithData(envs)))
 
      new EnvironmentWithDomain {
