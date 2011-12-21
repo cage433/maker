@@ -57,7 +57,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     add(zeroVolsCheckbox)
 
     reactions += {
-      case ButtonClicked(_) => updateRunButton
+      case ButtonClicked(_) => updateRunButton()
     }
     listenTo(discountedCheckbox, zeroVolsCheckbox)
   }
@@ -128,21 +128,25 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
     reactions += {
       case DayAndTimeChangedEvent(`curveDataDayAndTimeChooser`, dayAndTime, previousDayAndTime) => {
-        val d = dayAndTime.day
-        val timeOfDayToUse = if ((d >= Day.today) && (environmentRule.rule == EnvironmentRuleLabel.RealTime)) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
-        marketDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
+        if (marketDayAndTimeChooser.day == previousDayAndTime.day) {
+          val d = dayAndTime.day
+          val timeOfDayToUse = if ((d >= Day.today) && (environmentRule.rule == EnvironmentRuleLabel.RealTime)) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
+          marketDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
+        }
       }
       case DayAndTimeChangedEvent(`marketDayAndTimeChooser`, dayAndTime, previousDayAndTime) => {
         val d = dayAndTime.day
-        thetaToDayChooser.day = d.nextBusinessDay(context.localCache.ukBusinessCalendar)
+        if (thetaToDayChooser.day == previousDayAndTime.day.nextBusinessDay(context.localCache.ukBusinessCalendar)) {
+          thetaToDayChooser.day = d.nextBusinessDay(context.localCache.ukBusinessCalendar)
+        }
         if (liveOnDayChooser.day == previousDayAndTime.day && liveOnDayChooser.day != d.startOfFinancialYear) {
           liveOnDayChooser.day = d
         }
       }
-      case EnvironmentRuleLabelChangedEvent(_, _) => updateRunButton
+      case EnvironmentRuleLabelChangedEvent(_, _) => updateRunButton()
       case ExcelObservationDay(_, _) | PricingGroupObservationDay(_, _) => updatePopulatedDays()
-      case DayChangedEvent(_,_,_) => updateRunButton
-      case SelectionChanged(`bookCloseChooser`) => updateRunButton
+      case DayChangedEvent(_,_,_) => updateRunButton()
+      case SelectionChanged(`bookCloseChooser`) => updateRunButton()
       case MarketDataSelectionChanged(mdi) => {
         updatePopulatedDays(mdi.selection)
       }
@@ -201,11 +205,11 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         val tradesBookCloseEnabled = tradesBookCloseChooser.validSelection && pnlFromCheckbox.selected
         tradesBookCloseChooser.enabled = tradesBookCloseEnabled
         tradesAsOfLabel.enabled = tradesBookCloseEnabled
-        updateRunButton
+        updateRunButton()
       }
-      case ButtonClicked(`useExcelButton`) => updateRunButton
-      case DayAndTimeChangedEvent(_,_,_) => updateRunButton
-      case SelectionChanged(`tradesBookCloseChooser`) => updateRunButton
+      case ButtonClicked(`useExcelButton`) => updateRunButton()
+      case DayAndTimeChangedEvent(_,_,_) => updateRunButton()
+      case SelectionChanged(`tradesBookCloseChooser`) => updateRunButton()
       case MarketDataSelectionChanged(mdi) => {
         val selection = mdi.selection
         val flaggedDays = context.localCache.populatedDays(selection).toSet
@@ -220,11 +224,12 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     listenTo(pricingGroupPanel, curveDataDayAndTimeChooser, pnlFromDayAndTimeChooser, pnlFromCheckbox,
       tradesBookCloseChooser.selection, useExcelButton)
 
-    def setDays(canUseExcel:Boolean, pnlParams:Option[PnlFromParameters]) {
+    def setDays(canUseExcel:Boolean, pnlParams:Option[PnlFromParameters], defaultDay:Day) {
       pnlParams match {
         case None => {
           pnlFromCheckbox.selected = false
           pnlFromDayAndTimeChooser.enabled = false
+          pnlFromDayAndTimeChooser.day = defaultDay
           useExcelButton.enabled = false
           tradesBookCloseChooser.enabled = false
           tradesAsOfLabel.enabled = false
@@ -335,12 +340,12 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     )    
   }
 
-  def updateRunButton {
+  def updateRunButton() {
     publish(UpdateRunButtonEvent(this))
   }
 
   reactions += {
-    case _ : MarketDataSnapshot => updateRunButton
+    case _ : MarketDataSnapshot => updateRunButton()
   }
   listenTo(context.remotePublisher)
 
@@ -352,7 +357,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       rp.expiryDay)
 
     val canUseExcel = rp.curveIdentifier.marketDataIdentifier.selection.excel.isDefined
-    day1Panel.setDays(canUseExcel, rp.pnlParameters)
+    day1Panel.setDays(canUseExcel, rp.pnlParameters, rp.curveIdentifier.observationDayAndTime.day.previousBusinessDay(context.localCache.ukBusinessCalendar))
 
     val envMods = rp.curveIdentifier.envModifiers
     optionsPanel.discountedCheckbox.selected = !envMods.contains(EnvironmentModifierLabel.zeroInterestRates)
@@ -366,12 +371,12 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       }
     }
 
-    updateSnapshotButton
+    updateSnapshotButton()
   }
 
   override def revert() {
     setupState(reportParameters)
-    updateRunButton
+    updateRunButton()
   }
 
   setupState(reportParameters)

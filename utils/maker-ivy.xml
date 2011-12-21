@@ -1,0 +1,28 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="trafigura" module="utils" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+  </configurations>
+  <dependencies defaultconfmapping="*->default,sources">
+    <dependency org="net.liftweb" name="lift-json_2.9.0" rev="2.4-M2" />
+    <dependency org="spy" name="spymemcached" rev="2.7.3"/>
+
+    <dependency org="org.scala-lang" name="scala-swing" rev="${scala_version}" />
+    <dependency org="cglib" name="cglib-nodep" rev="${cglib_version}" />
+    <dependency org="joda-time" name="joda-time" rev="${joda_version}" />
+    <dependency org="com.rabbitmq" name="amqp-client" rev="${rabbit_version}" />
+    <dependency org="log4j" name="log4j" rev="1.2.16" />
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="${slf4j_version}" />
+    <dependency org="com.google.collections" name="google-collections" rev="${google_collection_version}" />
+    <dependency org="commons-codec" name="commons-codec" rev="1.4" />
+    <dependency org="commons-io" name="commons-io" rev="${commons_io_version}" />
+    <dependency org="colt" name="colt" rev="1.0.3" />
+    <dependency org="com.thoughtworks.xstream" name="xstream" rev="${xstream_version}" />
+    <dependency org="org.scala-tools" name="scala-stm_${scala_version}" rev="0.3" />
+    <dependency org="org.testng" name="testng" rev="5.8" >
+      <artifact name="testng" type="jar" ext="jar" e:classifier="jdk15" />
+      <artifact name="testng" type="source" ext="jar" e:classifier="jdk15" />
+    </dependency>
+    <dependency org="org.mockito" name="mockito-all" rev="1.8.2" />
+  </dependencies>
+</ivy-module>

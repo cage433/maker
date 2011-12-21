@@ -366,9 +366,15 @@ object StarlingHomeButtons {
           val deskWithTime = initial._1.flatMap(d => context.localCache.latestTimestamp(d).map(ts => (d, ts)))
           val intradayWithTime = initial._2.map(groups => (groups, context.localCache.latestTimestamp(groups)))
 
+          val today = Day.today
+          val tradeExpiryDay = deskWithTime match {
+            case Some((Desk.Titan, _)) => today.startOfFinancialYear
+            case _ => today
+          }
+
           TradeSelectionPage(TradePageParameters(
             deskWithTime, intradayWithTime,
-            TradeExpiryDay(Day.today)), PivotPageState(false, PivotFieldParams(true, None)))
+            TradeExpiryDay(tradeExpiryDay)), PivotPageState(false, PivotFieldParams(true, None)))
         }
       }
     }

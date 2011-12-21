@@ -313,19 +313,20 @@ case class TradeSelectionPage(
                 MarketDataIdentifier(selection, version)
               }
 
-              CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar) |> {
-                label =>
-                  desk match {
-                    case Some(Desk.Titan) => label.copy(
-                      envModifiers = label.envModifiers ++ TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates),
-                      environmentRule = EnvironmentRuleLabel.MostRecentCloses
-                    )
-                    case _ => label
-                  }
+              desk match {
+                case Some(Desk.Titan) => {
+                  val today = Day.today.endOfDay
+                  CurveIdentifierLabel(
+                    marketDataIdentifier,
+                    EnvironmentRuleLabel.MostRecentCloses,
+                    today,
+                    today,
+                    today.nextBusinessDay(context.localCache.ukBusinessCalendar),
+                    TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
+                  )
+                }
+                case _ => CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar)
               }
-//              , zeroInterestRates = (desk == Some(Desk.Titan)) /*Metals don't want discounting during UAT*/) :> {
-//                label =>
-//              }
             }
 
             val rp = ReportParameters(

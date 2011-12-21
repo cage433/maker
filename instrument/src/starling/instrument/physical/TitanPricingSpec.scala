@@ -137,18 +137,27 @@ object TitanPricingSpec {
    * Used for unknown pricing spec and also benchmarks
    * Nothing in common really and its use for the latter is probably wrong
    */
-  def representativeObservationDay(index :IndexWithDailyPrices, month : DateRange, marketDay : DayAndTime) : Day = {
+  def representativeObservationDay(index :IndexWithDailyPrices, observingPeriod : DateRange, marketDay : DayAndTime) : Day = {
     val lme = FuturesExchangeFactory.LME
     index.market.asInstanceOf[FuturesMarket].exchange match {
       case `lme` => {
-        val thirdWednesdayIsObservedOnDay = (month.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14).addBusinessDays(index.businessCalendar, -2)
+        val thirdWednesdayIsObservedOnDay = (observingPeriod.firstDay.dayOnOrAfter(DayOfWeek.wednesday) + 14).addBusinessDays(index.businessCalendar, -2)
         if (marketDay >= thirdWednesdayIsObservedOnDay.endOfDay)
-          month.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
+          observingPeriod.lastDay.thisOrPreviousBusinessDay(index.businessCalendar)
         else
           thirdWednesdayIsObservedOnDay
       }
-      case _ => month.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
+      case _ => observingPeriod.lastDay.thisOrPreviousBusinessDay(index.market.businessCalendar)
     }
+  }
+
+  /**
+   * Shanghai uses Contract based averaging, rather than Calendar based
+   */
+  def averagingPeriod(index: IndexWithDailyPrices, month: Month) = index match {
+    case fi: FuturesFrontPeriodIndex if fi.futuresMarket.exchange == FuturesExchangeFactory.SHFE => fi.frontContractPeriod(month)
+    case vwi: ShfeVwapMonthIndex => vwi.baseFrontFuturesMarketIndex.frontContractPeriod(month)
+    case _ => month
   }
 }
 

@@ -1,0 +1,46 @@
+<ivysettings>
+  <property name="scala_version" value="2.9.1"/>
+  <property name="tradinghub_version" value="2.17"/>
+  <property name="commons_io_version" value="1.3.2"/>
+  <property name="jetty_version" value="6.1.26"/>
+  <property name="spring_version" value="3.0.5.RELEASE"/>
+  <property name="slf4j_version" value="1.6.1"/>
+  <property name="cglib_version" value="2.2"/>
+  <property name="google_collection_version" value="1.0"/>
+  <property name="xstream_version" value="1.3.1"/>
+  <property name="rabbit_version" value="1.7.2"/>
+  <property name="javax_servlet_version" value="2.5"/>
+  <property name="joda_version" value="1.6"/>
+  <settings>
+    <settings name="default" transitive="false"/>
+  </settings>
+
+    <settings defaultResolver="default"/>
+    <resolvers>
+        <filesystem name="local">
+          <!--<ivy pattern="${ivy.cache.dir}/[module]/ivy-[revision].xml"/>-->
+          <!--<artifact pattern="${ivy.cache.dir}/[module]/[artifact]-[revision](-[classifier]).[ext]"/>-->
+        </filesystem>
+        <ibiblio name="central" m2compatible="true"/>
+        <ibiblio name="scala-tools" m2compatible="true" root="http://repository.jboss.org/nexus/content/repositories/scala-tools-releases"/>
+        <ibiblio name="sonatype" m2compatible="true" root="http://oss.sonatype.org/content/repositories/springsource-milestones"/>
+        <!--<ibiblio name="trafigura" m2compatible="true" root="http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/"/>-->
+
+        <ibiblio name="starling-releases" m2compatible="true" root="http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/"/>
+
+        <ibiblio name="alfresco" m2compatible="true" root="http://maven.alfresco.com/nexus/content/groups/public/"/>
+        <chain name="default" returnFirst="true">
+          <resolver ref="local"/>
+
+          <resolver ref="starling-releases"/>
+            
+          <resolver ref="central"/>
+          <resolver ref="scala-tools"/>
+          <resolver ref="sonatype"/>
+          <!--<resolver ref="trafigura"/>-->
+          <resolver ref="alfresco"/>
+        </chain>
+    </resolvers>
+
+</ivysettings>
+
