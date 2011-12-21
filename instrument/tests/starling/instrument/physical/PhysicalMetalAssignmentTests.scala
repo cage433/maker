@@ -9,13 +9,9 @@ import starling.quantity.Quantity
 import starling.quantity.utils.QuantityTestUtils._
 import starling.marketdata._
 import starling.curves._
-import Quantity._
 import starling.market._
-import starling.market.FuturesFrontPeriodIndex._
 
-/**
- * Commenting out until everything settles down - AMc 29/9/11
- */
+
 class PhysicalMetalAssignmentTests extends StarlingTest {
 
   val marketDay = Day(2011, 10, 17).endOfDay
@@ -178,12 +174,13 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     // some values changed as a result of VAT by currency rather than exchange, previous expected numbers in comments below
     val expectedMtms : List[Quantity] = List(
       8191103481.95(EUR),
-      8267156041.71(EUR),
+      8267155945.58(EUR),
       8917616273.77(EUR),
-      9070782518.03(EUR),
+      9070782523.64(EUR),
       12359657400.15(GBP),
-      12590704727.94(GBP)
+      12590704535.06(GBP)
     )
+
     assignments.foreach{ass => println(ass.mtm(env))}
     assignments.zip(expectedMtms).foreach {
       case (ass, expMtm) =>
@@ -193,6 +190,5 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
 }
 
 object PhysicalMetalAssignmentTests extends App{
-  println("Hello")
   new PhysicalMetalAssignmentTests().testValuationSnapshots
 }

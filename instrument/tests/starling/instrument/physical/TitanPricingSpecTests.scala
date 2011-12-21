@@ -173,7 +173,7 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
         (
           0.3,
           UnknownPricingSpecification(
-            FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
+            FuturesFrontPeriodIndex(Market.LME_ZINC),
             Month(2012, 2),
             List(UnknownPricingFixation(0.5, Quantity(100, CNY/MT))),
             Day(2012, 1, 31),
