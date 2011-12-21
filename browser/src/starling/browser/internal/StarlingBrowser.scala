@@ -1421,8 +1421,8 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
     }})
   }
 
-  // This method has to be called on the EDT.
   def build(logPageTime:(TimeTree=>Unit), page:Page, then:(Page,PageResponse)=>Unit) {
+    assert(javax.swing.SwingUtilities.isEventDispatchThread, "This must be called on the EDT")
     if (pageDataCache.contains(page)) {
       then(page,pageDataCache(page))
     } else {
@@ -1450,7 +1450,6 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
       }
     }
   }
-  def readCached(page:Page) = pageDataCache(page)
 }
 
 class PageResponse
