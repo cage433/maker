@@ -39,6 +39,8 @@ case class Inventory(item: InventoryItem) {
 class TitanSystemOfRecord(manager : TitanTradeStoreManager)
   extends SystemOfRecord with Log {
 
+  // TODO Louis - 21.12.2011
+  // This should be fixed so that it doesn't store trades in the tradestore
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
     manager.updateTradeStore("allTrade import request")
     val allTrades = manager.allStarlingTrades
