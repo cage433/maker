@@ -12,6 +12,7 @@ import starling.curves.DiscountRateKey
 import starling.utils.Log
 import starling.quantity.UOM
 
+
 class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
 
   val marketDay = Day(2011, 12, 1).endOfDay
@@ -207,11 +208,11 @@ class TitanPricingSpecTests extends FunSuite with TestMarketTest with Log {
   }
 }
 
-class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log {
 
-  // Create an environment where all prices are 100 ccy/MT
-  // and all exchange rates are 1.0
-  // An assignment that is priced half off USD and half off CNY should have a VAT adjustment of 17% / 2
+/**
+ * Tests focused on valuations involving currencies on markets subject to vat and some not subject to vat
+ */
+class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log {
 
   val marketDay = Day(2011, 12, 1).endOfDay
 
@@ -222,7 +223,7 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
       case IndexFixingKey(index, _) => Quantity(100, index.priceUOM)
       case ShanghaiVATRateKey() => Quantity(17, PERCENT)
       case USDFXRateKey(ccy) => fxRates(ccy)
-      case DiscountRateKey(ccy, day, _) => new Quantity(math.exp(- zeroRates(ccy) * day.endOfDay.timeSince(marketDay)))
+      case DiscountRateKey(ccy, day, _) => new Quantity(1.0) // remove discounting in these tests so the cross-currency numbers are easier to reconcile
     }
   )
 
@@ -232,23 +233,19 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
     CNY -> Quantity(1.0, USD/CNY)
   )
 
-  val zeroRates = Map(
-    EUR -> 0.1,
-    GBP -> 0.2,
-    CNY -> 0.2,
-    USD -> 0.25
-  )
 
   test("Prices mixed inclusive/exclusive of VAT are sensible") {
 
-    val averagePricingSpec = AveragePricingSpec(
+    val averagePricingSpecWithVat = AveragePricingSpec(
       FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
       Month(2011, 12),
       Quantity(10, CNY/MT),
       USD
     )
 
-    val unknownPricingSpecification = UnknownPricingSpecification(
+    val averagePricingSpecWithoutVat = averagePricingSpecWithVat.copy(index = FuturesFrontPeriodIndex(Market.LME_ZINC))
+
+    val unknownPricingSpecificationWithVat = UnknownPricingSpecification(
       FuturesFrontPeriodIndex(Market.SHANGHAI_COPPER),
       Month(2012, 1),
       List(UnknownPricingFixation(0.4, Quantity(100, CNY/MT))),
@@ -257,7 +254,9 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
       USD
     )
 
-    val fixedPricingSpec = FixedPricingSpec(
+    val unknownPricingSpecificationWithoutVat = unknownPricingSpecificationWithVat.copy(index = FuturesFrontPeriodIndex(Market.LME_COPPER))
+
+    val fixedPricingSpecWithVat = FixedPricingSpec(
       Market.SHANGHAI_COPPER,
       Day(2012, 2, 1),
       List(
@@ -268,14 +267,16 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
       USD
     )
 
-    val multiVatRateWeightedSpec1 = WeightedPricingSpec(
+    val fixedPricingSpecWithoutVat = fixedPricingSpecWithVat.copy(futuresMarket = Market.LME_COPPER)
+
+    val multiVatRateWeightedSpecWithHalfVat = WeightedPricingSpec(
       List(
         (
           0.5,
           AveragePricingSpec(
-            FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
+            FuturesFrontPeriodIndex(Market.LME_ZINC),
             Month(2011, 12),
-            Quantity(10, USD/MT),
+            Quantity(0, USD/MT),
             USD
           )
         ),
@@ -284,7 +285,7 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
           AveragePricingSpec(
             FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
             Month(2011, 12),
-            Quantity(7, CNY/MT),
+            Quantity(0, CNY/MT),
             CNY
           )
         ),
@@ -293,7 +294,7 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
           AveragePricingSpec(
             FuturesFrontPeriodIndex(Market.SHANGHAI_ZINC),
             Month(2011, 12),
-            Quantity(3, CNY/MT),
+            Quantity(0, CNY/MT),
             CNY
           )
         )
@@ -301,34 +302,38 @@ class TitanPricingSpecTestsForVat extends FunSuite with TestMarketTest with Log 
       USD
     )
 
-    val partiallyVatAdjustedSpecs = List(
-      averagePricingSpec,
-      averagePricingSpec.copy(valuationCCY = CNY),
-      unknownPricingSpecification,
-      unknownPricingSpecification.copy(valuationCCY = CNY),
-      fixedPricingSpec,
-      fixedPricingSpec.copy(valuationCCY = CNY),
-      multiVatRateWeightedSpec1,
-      multiVatRateWeightedSpec1.copy(valuationCCY = CNY))
+    val partiallyVatAdjustedSpecs : List[TitanPricingSpec] = List(
+      averagePricingSpecWithVat,
+      averagePricingSpecWithoutVat,
+      unknownPricingSpecificationWithVat,
+      unknownPricingSpecificationWithoutVat,
+      fixedPricingSpecWithVat,
+      fixedPricingSpecWithoutVat,
+      multiVatRateWeightedSpecWithHalfVat
+    )
 
     partiallyVatAdjustedSpecs.foreach(spec => {
       try {
         val priceExclVAT = spec.priceExcludingVATExcludingPremium(env)
         val priceInclVAT = spec.priceIncludingVATExcludingPremium(env)
-        val vatRate = env.shanghaiVATRate
-        val halfVat = (vatRate / 2.0) + 1.0
 
-        def expectedVat(valCcy : UOM) = if (valCcy == CNY) vatRate + 1.0 else Quantity(100.0, PERCENT)
+        val vatRate = env.shanghaiVATRate
+
+        val fullVat = vatRate + 1.0
+        val halfVat = (vatRate / 2.0) + 1.0
+        val zeroVat = Quantity(100.0, PERCENT)
+
+        def expectedVat(ccy : UOM) = if (ccy == CNY) fullVat else zeroVat
 
         val expectedPriceInclVat = (spec match {
           case WeightedPricingSpec(_, _) => halfVat
-          case AveragePricingSpec(_, _, _, valCcy) => expectedVat(valCcy)
-          case FixedPricingSpec(_, _, _, _, valCcy) => expectedVat(valCcy)
-          case UnknownPricingSpecification(_, _, _, _, _, valCcy) => expectedVat(valCcy)
-          case _ => priceExclVAT * (vatRate + 1.0)
+          case AveragePricingSpec(idx, _, _, valCcy) => expectedVat(idx.currency)
+          case FixedPricingSpec(idx, _, _, _, valCcy) => expectedVat(idx.currency)
+          case UnknownPricingSpecification(idx, _, _, _, _, valCcy) => expectedVat(idx.currency)
+          case _ => priceExclVAT * fullVat
         }) * priceExclVAT
 
-        assertQtyEquals(priceInclVAT, expectedPriceInclVat, 1e-6, "spec " + spec + " partially inclusive and exclusive * vat should not be the same")
+        assertQtyEquals(priceInclVAT, expectedPriceInclVat, 1.0, "spec " + spec + " average of inclusive and exclusive times average vat should be in the same ballpark")
         assert(priceInclVAT.numeratorUOM === spec.valuationCCY, "spec " + spec + ", price mismatch against valuation currency")
       }
       catch {
