@@ -174,7 +174,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
                 case uomValue if (previousInserts.get(valueKey) == Some(uomValue)) => { deletes.remove(valueKey); None }
                 case uomValue => Some(valueKey → uomValue)
               }
-            } }
+            }}
           }.getOrElse(Nil).toMap
 
           (deletes.toMap ++ inserts)

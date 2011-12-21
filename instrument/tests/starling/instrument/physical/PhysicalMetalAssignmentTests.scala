@@ -178,11 +178,11 @@ class PhysicalMetalAssignmentTests extends StarlingTest {
     // some values changed as a result of VAT by currency rather than exchange, previous expected numbers in comments below
     val expectedMtms : List[Quantity] = List(
       8191103481.95(EUR),
-      8230995765.91(EUR),
+      8267156041.71(EUR),
       8917616273.77(EUR),
-      9036057110.48(EUR),
+      9070782518.03(EUR),
       12359657400.15(GBP),
-      12535633384.33(GBP)
+      12590704727.94(GBP)
     )
     assignments.foreach{ass => println(ass.mtm(env))}
     assignments.zip(expectedMtms).foreach {

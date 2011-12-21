@@ -80,11 +80,6 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
     // we have to jump through some hoops.
     maybeValuationCurrency : Option[UOM] = None
   ) : TitanPricingSpec = {
-    def averagingPeriod(index : IndexWithDailyPrices, month : Month) = index match {
-      case fi : FuturesFrontPeriodIndex if fi.futuresMarket.exchange == FuturesExchangeFactory.SHFE => fi.frontContractPeriod(month)
-      case vwi : ShfeVwapMonthIndex => vwi.baseFrontFuturesMarketIndex.frontContractPeriod(month)
-      case _ => month
-    }
 
     Option(edmPricingSpec) match {
       case Some(edmPSpec) => edmPSpec match {
@@ -93,7 +88,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           val month: Month = Day.fromJodaDate(spec.qpMonth).containingMonth
           AveragePricingSpec(
             index,
-            averagingPeriod(index, month),
+            TitanPricingSpec.averagingPeriod(index, month),
             spec.premium,
             maybeValuationCurrency.getOrElse(spec.currency)
           )
@@ -133,7 +128,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           val declarationBy: Day = if (spec.declarationBy == null) qpMonth.lastDay.thisOrPreviousBusinessDay(index.businessCalendar) else Day.fromJodaDate(spec.declarationBy)
           UnknownPricingSpecification(
              index,
-             averagingPeriod(index, qpMonth),
+             TitanPricingSpec.averagingPeriod(index, qpMonth),
              spec.fixations.filterNot(_.observedPrice == null)/* The non-real fixing has no price and should be ignored */.map{
                case fixation =>
                  val fraction = (fromTitanQuantity(fixation.fixedQuantity) / deliveryQuantity).checkedValue(UOM.SCALAR)

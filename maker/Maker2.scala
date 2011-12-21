@@ -20,3 +20,5 @@ val osgirun = Project(
 val booter = project("booter")
 val concurrent = project("concurrent") dependsOn utils
 val quantity = project("quantity") dependsOn utils
+val osgiManager = project("osgimanager") dependsOn (manager, utils)
+val singleClasspathManager = project("singleclasspathmanager") dependsOn (manager, utils, osgiManager)
