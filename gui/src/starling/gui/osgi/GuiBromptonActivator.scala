@@ -75,15 +75,15 @@ class GuiBromptonActivator extends BromptonActivator {
       val tradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
 
       val curveIdentifier = {
-        val observationDay = Day.today.previousWeekday.endOfDay
+        val observationDay = Day.today.endOfDay
         val mods = TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
 
         CurveIdentifierLabel(
           MarketDataIdentifier(marketDataSelection, marketDataVersion),
-          EnvironmentRuleLabel.AllCloses,
+          EnvironmentRuleLabel.MostRecentCloses,
           observationDay,
-          Day.today.endOfDay,
-          Day.today.nextWeekday.atTimeOfDay(TimeOfDay.EndOfDay),
+          observationDay,
+          observationDay.day.nextWeekday.endOfDay,
           mods
         )
       }
@@ -92,7 +92,7 @@ class GuiBromptonActivator extends BromptonActivator {
       val reportOptions = new ReportOptions(slidableReportOptions, None, None)
 
       val tradeIDLabel = TradeIDLabel(tradeID, TradeSystemLabel("Titan", "ti"))
-      val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today, None, true)
+      val rp = ReportParameters(tradeSelection, curveIdentifier, reportOptions, Day.today.startOfFinancialYear, None, true)
 
       broadcaster.broadcast(GotoPageEvent(ValuationParametersPage(tradeIDLabel, rp, ReportSpecificChoices(), true)))
     }
