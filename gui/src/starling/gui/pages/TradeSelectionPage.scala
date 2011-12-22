@@ -520,10 +520,10 @@ case class TradeSelectionPage(
   override def bookmark(serverContext:StarlingServerContext, pd:PageData):Bookmark = {
     val today = Day.today
     val isLatestLiveOn = tpp.expiry.exp == today
-    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk0, t) => (t, serverContext.tradeService.latestTradeTimestamp(desk0))}
-    val isLatestBookClose = latestTimestamp match {
-      case Some((t1,t2)) => t1 == t2
-      case _ => true
+    val latestTimestamp = tpp.deskAndTimestamp.map{case (desk0, t) => (serverContext.tradeService.latestTradeTimestamp(desk0))}
+    val isLatestBookClose = tpp.deskAndTimestamp match {
+      case Some((_, TradeTimestamp(_, TradeTimestamp.magicLatestTimestampDay, _, _))) => true
+      case other => false
     }
     val desk = tpp.deskAndTimestamp.map(_._1)
     val intraday = tpp.intradaySubgroupAndTimestamp.map(_._1)
@@ -531,8 +531,8 @@ case class TradeSelectionPage(
       TradeSelectionBookmark(desk, intraday, pivotPageState, false)
     } else {
       val isLiveOnStartOfYear = latestTimestamp match {
-        case Some((ts, _)) => ts.closeDay.startOfFinancialYear == tpp.expiry.exp
-        case None => today.startOfFinancialYear == tpp.expiry.exp
+        case Some(ts) => ts.timestamp.day.startOfFinancialYear == tpp.expiry.exp
+        case _ => today.startOfFinancialYear == tpp.expiry.exp
       }
       if (isLiveOnStartOfYear && isLatestBookClose) {
         TradeSelectionBookmark(desk, intraday, pivotPageState, true)
@@ -547,12 +547,12 @@ case class TradeSelectionBookmark(desk:Option[Desk], intradaySubgroups:Option[In
                                   pivotPageState:PivotPageState, useStartOfYear:Boolean) extends StarlingBookmark {
   def daySensitive = false
   def createStarlingPage(day:Option[Day], serverContext:StarlingServerContext, context:PageContext) = {
-    val latestBookClose = desk.map{desk => (desk, context.localCache.latestTimestamp(desk).get)}
+    val latestBookClose = desk.map{desk => (desk, context.localCache.latestDeskTradeTimestamp(desk))}
     val latestIntraday = intradaySubgroups.map(intra => (intra, context.localCache.latestTimestamp(intra)))
     val today = Day.today
     val tradesLiveOn = if (useStartOfYear) {
       latestBookClose match {
-        case Some((_,timestamp)) => timestamp.closeDay.startOfFinancialYear
+        case Some((_,timestamp)) => timestamp.timestamp.day.startOfFinancialYear
         case _ => today.startOfFinancialYear
       }
     } else {
