@@ -82,7 +82,14 @@ class ReportFacilityImpl(
         }
       }
     }}
-    throw new Exception(tradeID + " not found")
+    val tradeType = if (tradeID.id.toLowerCase.startsWith("a")) {
+      "Asignment '"
+    } else if (tradeID.id.toLowerCase.startsWith("q")) {
+      "Quota '"
+    } else {
+      "Trade '"
+    }
+    throw new Exception(tradeType + tradeID.id + "' not found")
   }
 
   def clearCache {
