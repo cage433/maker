@@ -221,9 +221,13 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
     new TreeMap[Timestamp, TradeRow]() ++ res.toMap
   }
 
-  protected def atVersion(timestamp:Timestamp)= atomic {
+  protected def atVersion(timestamp:Timestamp):Map[TradeID, TradeRow] = atomic {
     implicit txn => {
-      versions().apply(timestamp)
+      if (versions().nonEmpty) {
+        versions().apply(timestamp)
+      } else {
+        Map.empty
+      }
     }
   }
 

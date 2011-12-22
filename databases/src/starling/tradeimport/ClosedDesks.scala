@@ -55,7 +55,7 @@ class ClosedDesks(broadcaster: Broadcaster, db: DB) {
   }
 
   def closesForDesk(desk: Desk): List[(Day, Timestamp, Option[String])] = {
-    closedTimes(desk)
+    closedTimes.get(desk).getOrElse(Nil)
   }
 
   private def closedTimes: Map[Desk, List[(Day, Timestamp, Option[String])]] = {
