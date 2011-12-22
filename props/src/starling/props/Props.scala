@@ -117,9 +117,15 @@ class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String
   object TitanLogisticsServiceUrl extends StringProperty(LogisticsServiceLocation() + RestEasyRpcMount)
 
   // Titan Rabbit related configuration
-  object TitanRabbitBrokerHost  extends StringProperty("")
-  object TitanRabbitUserName  extends StringProperty("trafiguraDev")
-  object TitanRabbitPassword  extends StringProperty("trafiguraDev")
+  object TitanRabbitBrokerHost extends StringProperty("")
+  object TitanRabbitBrokerPort extends IntProperty(5672)
+  object TitanRabbitUserName extends StringProperty("trafiguraDev")
+  object TitanRabbitPassword extends StringProperty("trafiguraDev")
+  object TitanRabbitRoutingKey extends StringProperty("RoutingKey")
+
+  // control over key rabbit queue properties, useful during dev, defaults are suitable for production
+  object TitanRabbitQueueDurable extends BooleanProperty(true)
+  object TitanRabbitQueueAutoDelete extends BooleanProperty(false)
 
   def titanRabbitHostSet = TitanRabbitBrokerHost() != ""
 }

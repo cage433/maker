@@ -95,16 +95,20 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
 
   val rabbitProperties = ||> { new BasicProperties() } { _.setDeliveryMode(2) }
 
+  // props configurable properties
   val rabbitmq_host = props.TitanRabbitBrokerHost()
-  val rabbitmq_port = 5672
+  val rabbitmq_port = props.TitanRabbitBrokerPort()
   val rabbitmq_username = props.TitanRabbitUserName()
   val rabbitmq_password = props.TitanRabbitPassword()
-  val rabbitmq_routingKey = "RoutingKey"
+  val rabbitmq_publisher_autoDelete = props.TitanRabbitQueueAutoDelete()
+  val rabbitmq_durable = props.TitanRabbitQueueDurable()
+  val rabbitmq_routingKey = props.TitanRabbitRoutingKey()
+
+  // the rest are defaulted as they are more unlikely to change
   val rabbitmq_connectAttempts = 1
   val rabbitmq_virtualHost = "/"
   val rabbitmq_exchangeName = "Trafigura.Events"
   val rabbitmq_baseQueueName = "Trafigura.Events"
-  val rabbitmq_durable = true
   val rabbitmq_requestedHeartbeat = 0
   val rabbitmq_requestedChannelMax = 0
   val rabbitmq_requestedFrameMax = 0
@@ -113,7 +117,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
   val rabbitmq_immediate = false
   val rabbitmq_passive = false
   val rabbitmq_exclusive = false
-  val rabbitmq_publisher_autoDelete = false
+
   val rabbitmq_basicPropertiesDefault = rabbitProperties
   val rabbitmq_makeQueueNameUnique = false
 
