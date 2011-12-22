@@ -144,6 +144,7 @@ class StarlingInit( val props: Props,
 
   private val production = props.Production()
   private val serverName = props.ServerName()
+  private val serverType = props.ServerType()
   private val guiColour = if (production || props.UseProductionColour()) None else Some(PropsHelper.createColour(serverName))
   val gitCommit = {
     try {
@@ -164,7 +165,7 @@ class StarlingInit( val props: Props,
       case e => "git not found on path"
     }
   }
-  val version = Version(serverName, hostname, props.StarlingDatabase().url, gitCommit, production, guiColour)
+  val version = Version(serverName, hostname, props.StarlingDatabase().url, gitCommit, production, guiColour, serverType.name)
 
   val environmentRules = new EnvironmentRules
   val curveViewer = new CurveViewer(marketDataStore, environmentRules)

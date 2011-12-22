@@ -28,7 +28,7 @@ object CannedBrowserService extends BrowserService {
     UserDetails("Dev", "dev user"),
     UserSettingsLabel(Nil),
     Nil,
-    Version("name", "hostname", "db", "gitcommit", false, None)
+    Version("name", "hostname", "db", "gitcommit", false, None, "Dev")
   )
 
   def saveSettings(settings: UserSettingsLabel) {println("We don't save canned settings")}

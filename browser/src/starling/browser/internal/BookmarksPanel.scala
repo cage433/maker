@@ -81,17 +81,21 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
     border = LineBorder(GuiUtils.BorderColour)
     enabled = valuationDayShouldBeEnabled
 
-    val c = Calendar.getInstance()
-    val now = new java.util.Date()
-    c.setTime(now)
-    val dayOfWeek = c.get(Calendar.DAY_OF_WEEK)
-    c.add(Calendar.DAY_OF_WEEK, -1)
-    while (c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
-      c.add(Calendar.DAY_OF_WEEK, -1)
+    def updateDefaultSelectedDay() {
+      val c = Calendar.getInstance()
+      if (context.localCache.localCache.contains(LocalCache.Version) && "FC2" != context.localCache.version.serverType) {
+        val now = new java.util.Date()
+        c.setTime(now)
+        val dayOfWeek = c.get(Calendar.DAY_OF_WEEK)
+        c.add(Calendar.DAY_OF_WEEK, -1)
+        while (c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
+          c.add(Calendar.DAY_OF_WEEK, -1)
+        }
+      }
+      date = c.getTime
     }
-    date = c.getTime
-
     traversable = true
+    updateDefaultSelectedDay()
   }
 
   def updateSelectedBookmark(b:Bookmark) {
@@ -193,7 +197,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   }
 
   reactions += {
-    case BundleAdded(_) => rebuildBookmarks()
+    case BundleAdded(_) => {rebuildBookmarks();dayPicker.updateDefaultSelectedDay()}
     case BookmarksUpdate(_) => rebuildBookmarks()
     case MouseClicked(`bookmarksListView`,_,m,2,_) => goToBookmark(Modifiers.modifiersEX(m))
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => deleteBookmark()
