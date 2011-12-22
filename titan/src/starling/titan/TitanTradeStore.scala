@@ -15,6 +15,7 @@ import starling.tradeimport.ClosedDesks
 import starling.daterange.Timestamp
 import concurrent.stm._
 import starling.instrument.{TradeID, Trade, TradeableType, TradeSystem}
+import java.lang.String
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -29,12 +30,12 @@ object TitanTradeStore {
   val contractFinalised_str = "Contract Finalised"
   val tolerancePlus_str = "Tolerance Plus"
   val toleranceMinus_str = "Tolerance Minus"
-  val eventID_str = "Event ID" // this is the unique id of the event that resulted in this version of the trade
+  val eventIDs_str = "Event IDs" // The ids of the events that resulted in this version of the trade
 
   val labels = List(quotaID_str, assignmentID_str, titanTradeID_str,
                     inventoryID_str, groupCompany_str, comment_str,
                     submitted_str, shape_str, contractFinalised_str,
-                    tolerancePlus_str, toleranceMinus_str, eventID_str)
+                    tolerancePlus_str, toleranceMinus_str, eventIDs_str)
 
   val qtyLabels = List(quotaQuantity_str)
 }
@@ -47,7 +48,6 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val quotaID = row.getString("quotaID")
     val quotaQuantity = row.getQuantity("quotaQuantity")
     val titanTradeID = row.getString("titanTradeID")
-    val inventoryID = row.getString("inventoryID")
     val groupCompany = row.getString("groupCompany")
     val comment = Option(row.getString("Comment")).getOrElse("")
     val submitted = row.getDay("Submitted")
@@ -55,9 +55,9 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val contractFinalised = row.getString("ContractFinalised")
     val tolerancePlus = row.getPercentage("TolerancePlus")
     val toleranceMinus = row.getPercentage("ToleranceMinus")
-    val eventID = row.getString("EventID")
+    val eventIDs = row.getString("EventIDs").split(",").toList
 
-    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventID)
+    TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventIDs)
   }
 
   def pivotInitialState(tradeableTypes:Set[TradeableType[_]]) = {

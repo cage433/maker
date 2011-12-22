@@ -1,0 +1,11 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="trafigura" module="utils" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+  </configurations>
+  <dependencies defaultconfmapping="*->default,sources">
+    <dependency org="jfree" name="jfreechart" rev="1.0.0"/>
+    <dependency org="jfree" name="jcommon" rev="1.0.0"/>
+    <dependency org="javax.servlet" name="servlet-api" rev="2.5"/>
+  </dependencies>
+</ivy-module>

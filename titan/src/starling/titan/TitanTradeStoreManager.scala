@@ -3,20 +3,22 @@ package starling.titan
 import starling.curves.Environment
 import starling.daterange.Timestamp
 import EDMConversions._
-import collection.immutable.Map
-import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 import starling.tradestore.TradeStore.StoreResults
 import starling.utils.ImplicitConversions._
 import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
+import starling.utils.{Startable, Log}
 import com.trafigura.edm.common.units.TitanId
 import starling.instrument.{ErrorInstrument, Trade}
 import starling.utils.{TimingInfo, Stopwatch, Startable, Log}
+import com.trafigura.edm.logistics.inventory.{LogisticsInventoryResponse, CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
+import scala.collection.mutable
+import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
+import collection.immutable.{List, Map}
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,
                              private val logisticsServices : TitanLogisticsServices,
                              private val ready : () => Unit) extends Log with Startable {
-  import scala.collection.mutable
   type InventoryID = String
   val edmTrades = mutable.Set[EDMPhysicalTrade]()
   val edmInventoryItems = mutable.Map[InventoryID, InventoryItem]()
@@ -45,7 +47,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
 
   def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
     val inventoryByQuotaID : Map[TitanId, Traversable[InventoryItem]] = edmInventoryLeaves.flatMap{
-      inv : InventoryItem => 
+      inv : InventoryItem =>
         val quotaNames = inv.purchaseAssignment.quotaTitanId :: Option(inv.salesAssignment).map(_.quotaTitanId).toList
         quotaNames.map(_ → inv)
     }.groupValues
@@ -55,6 +57,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
   def removeTrade(titanTradeID : String) {
     edmTrades.retain(_.identifier.value != titanTradeID)
   }
+
   def edmInventoryLeaves : List[InventoryItem] = {
     log.logWithTime("Took %d to get inv leaves", 10) {
       val allInventoryIds = edmInventoryItems.keySet
@@ -94,7 +97,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
   }
 
   def updateInventory(inventoryID : String) {
-    val logisticsResponse = logisticsServices.inventoryService.service.getInventoryById(inventoryID.toInt)
+    val logisticsResponse: LogisticsInventoryResponse = logisticsServices.inventoryService.service.getInventoryById(inventoryID.toInt)
     assert(logisticsResponse.associatedInventory.size == 1, "Expected a single piece of inventory")
     val newInventory = logisticsResponse.associatedInventory.head
 
@@ -109,17 +112,136 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
   }
 }
 
+
+case class TitanServiceCache2(
+  private val refData: TitanTacticalRefData,
+  private val edmTradeServices: TitanEdmTradeService,
+  private val logisticsServices: TitanLogisticsServices,
+  private val edmQuotaDetails: mutable.Set[TradeManagementQuotaDetails],
+  private val edmInventoryItems: mutable.Map[String, LogisticsInventory],
+  private val isQuotaFullyAllocated: mutable.Map[String, Boolean]
+
+) extends Log with Startable {
+  type InventoryID = String
+
+  private val lock = new Object
+//  override def start = initialiseCaches
+//
+//  def initialiseCaches{
+//    edmQuotaDetails.clear
+//    edmQuotaDetails ++= edmTradeServices.getAllCompletedPhysicalTrades().flatMap{tr => TradeManagementQuotaDetails(refData, tr, "Get All")}
+//
+//    val allInventory = logisticsServices.inventoryService.service.getAllInventory()
+//
+//    edmInventoryItems.clear
+//    edmInventoryItems ++= allInventory.associatedInventory.filter(i => i.status != CancelledInventoryItemStatus).map{inv => inv.id -> LogisticsInventory(inv, "Get All")}
+//    isQuotaFullyAllocated.clear
+//    isQuotaFullyAllocated ++= allInventory.associatedQuota.map(q => q.quotaTitanId.toString -> q.fullyAllocated)
+//  }
+
+  private val quotaIDToInventory = scala.collection.mutable.Map[String, List[LogisticsInventory]]()
+
+  private def addInventoryToQuotaIDToInventoryMap(inv : LogisticsInventory){
+    inv.quotaIDs.foreach{
+       qId =>
+         quotaIDToInventory += (qId -> (inv :: quotaIDToInventory.getOrElse(qId, Nil)))
+    }
+  }
+  private def removeInvFromQuotaIDToInventoryMap(inv : LogisticsInventory){
+    inv.quotaIDs.foreach{
+      quotaID =>
+        quotaIDToInventory.update(quotaID, quotaIDToInventory.getOrElse(quotaID, Nil).filterNot(_ == inv))
+    }
+  }
+
+  edmInventoryLeaves.foreach(addInventoryToQuotaIDToInventoryMap)
+
+  private def edmInventoryLeaves : List[LogisticsInventory] = {
+    val allInventoryIds = edmInventoryItems.keySet
+    val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentID}.toSet
+    allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+  }
+
+
+  def removeInventory(inventoryID : String) {
+    lock.synchronized {
+      edmInventoryItems.get(inventoryID).foreach {
+        inv =>
+          edmInventoryItems -= inventoryID
+          inv.saleAssignment.foreach {
+            ass =>
+              isQuotaFullyAllocated.retain {
+                case (qID, _) => qID != ass.quotaID
+              }
+          }
+          removeInvFromQuotaIDToInventoryMap(inv)
+      }
+    }
+  }
+
+  def updateInventory(inventoryID : String, eventID : String) {
+    lock.synchronized{
+
+      val logisticsResponse: LogisticsInventoryResponse = logisticsServices.inventoryService.service.getInventoryById(inventoryID.toInt)
+      assert(logisticsResponse.associatedInventory.size == 1, "Expected a single piece of inventory")
+      val newInventory = logisticsResponse.associatedInventory.head
+
+      val newQuotas = logisticsResponse.associatedQuota
+      assert(newQuotas.size >= 1 && newQuotas.size <= 2, "Expected one or two quotas")
+
+      log.debug("inventory update, got inventory:\n %s, \n%s \nwith quotas \n%s\n".format(inventoryID, newInventory, newQuotas.map(q => (q.quotaName, q.fullyAllocated))))
+
+      var inventory: LogisticsInventory = LogisticsInventory(newInventory, eventID)
+      edmInventoryItems.get(inventoryID).foreach(removeInvFromQuotaIDToInventoryMap)
+      edmInventoryItems += (newInventory.id -> inventory)
+      isQuotaFullyAllocated ++= newQuotas.map(q => q.quotaTitanId.toString -> q.fullyAllocated)
+      addInventoryToQuotaIDToInventoryMap(inventory)
+    }
+  }
+
+  def removeTrade(titanTradeID : String) {
+    lock.synchronized{
+      val quotaIDs = edmQuotaDetails.filter(_.titanTradeID != titanTradeID).map(_.quotaID)
+      quotaIDToInventory.retain{case (quotaID, _) => !quotaIDs.contains(quotaID)}
+      edmQuotaDetails.retain(_.titanTradeID != titanTradeID)
+    }
+  }
+
+  def updateTrade(titanTradeID : String, eventID : String): List[Trade] = {
+    lock.synchronized {
+      edmQuotaDetails.retain(_.titanTradeID != titanTradeID)
+      val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
+
+      assert(newTrade.state == CompletedTradeState, "Unexpected state for trade " + newTrade.state + ", expected " + CompletedTradeState)
+      var quotaDetails = TradeManagementQuotaDetails.buildListOfQuotaDetails(refData, newTrade, eventID)
+      edmQuotaDetails ++= quotaDetails
+      quotaDetails.flatMap(buildTradesForQuota)
+    }
+  }
+
+  private val forwardBuilder = new PhysicalMetalForwardBuilder2(refData)
+  def buildTradesForQuota(qd : TradeManagementQuotaDetails) : List[Trade] = {
+    val quotaID = qd.quotaID
+    val invItems = quotaIDToInventory.getOrElse(quotaID, Nil)
+    val fullyAllocated = isQuotaFullyAllocated.getOrElse(quotaID, false)
+    forwardBuilder.build(qd, invItems, fullyAllocated)
+  }
+
+  def buildAllTrades : List[Trade] = {
+    edmQuotaDetails.flatMap(buildTradesForQuota).toList
+  }
+}
+
+
+
 /**
  * Manage the trade store trades via changes at trade, quota, inventory and assignment level
  */
-case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : TitanTradeStore) extends Log with Startable {
+case class TitanTradeStoreManager(cache : TitanServiceCache2, titanTradeStore : TitanTradeStore, rabbitReadyFn: () => Unit) extends Log with Startable {
 
   override def start = cache.start
 
   def allStarlingTrades = titanTradeStore.allStarlingTrades()
-
-  def edmInventoryItems_ = Map() ++ cache.edmInventoryItems
-  def edmLogisticsQuotas_ = Set() ++ cache.edmLogisticsQuotas
 
   /**
    * Returns list of trade ids that have changed value
@@ -130,7 +252,7 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     val result = try {
 
       val existingFwds = titanTradeStore.getAllForwards()
-      cache.updateInventory(inventoryID)
+      cache.updateInventory(inventoryID, eventID)
       val tradeStoreResult = updateTradeStore(eventID)
       val updatedFwds = titanTradeStore.getAllForwards()
 
@@ -159,8 +281,7 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     log.info(">>updateTradeStore eventID %s".format(eventID))
 
     val sw = new Stopwatch()
-    val pmfBuilder = cache.tradeForwardBuilder
-    val updatedStarlingTrades = cache.edmTrades.flatMap(trade => pmfBuilder.apply(trade, eventID))
+    val updatedStarlingTrades = cache.buildAllTrades
     log.info("Got %d updated starling trades, took %s".format(updatedStarlingTrades.size, sw.toString))
 
     val duplicates = updatedStarlingTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
@@ -172,7 +293,7 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     val duplicatedErrorStarlingTrades = duplicates.values.map(trades => {
       val trade = trades.head
       Trade(trade.tradeID,
-        TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade.titanTradeID.getOrElse("No Titan Trade Id available"), eventID),
+        TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade.titanTradeID.getOrElse("No Titan Trade Id available"), List(eventID)),
         ErrorInstrument(new Exception("Duplicate trade id found")))
     }).toList
 
@@ -196,9 +317,8 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     val result = try {
 
       val existingFwd = titanTradeStore.getForward(titanTradeID)
-      val newEDMTrade = cache.updateTrade(titanTradeID)
 
-      val newStarlingTrades : List[Trade] = cache.tradeForwardBuilder(newEDMTrade, eventID)
+      val newStarlingTrades : List[Trade] = cache.updateTrade(titanTradeID, eventID)
 
       val tradeStoreResult = titanTradeStore.storeTrades(
         {trade : Trade => trade.titanTradeID == Some(titanTradeID)},
@@ -272,10 +392,22 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
   }
 }
 
-object TitanTradeStoreManager{
-  def apply(refData : TitanTacticalRefData, titanTradeStore : TitanTradeStore,
-            edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices, rabbitReadyFn : () => Unit) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices, rabbitReadyFn), titanTradeStore)
-}
+//object TitanTradeStoreManager{
+  //<<<<<<< HEAD
+  //def apply(refData : TitanTacticalRefData, titanTradeStore : TitanTradeStore,
+    //edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices, rabbitReadyFn : () => Unit) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices, rabbitReadyFn), titanTradeStore)
+  //||||||| merged common ancestors
+  //def apply(refData : TitanTacticalRefData, titanTradeStore : TitanTradeStore,
+    //edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices), titanTradeStore)
+  //=======
+  //def apply(
+    //refData : TitanTacticalRefData,
+    //titanTradeStore : TitanTradeStore,
+    //edmTradeServices : TitanEdmTradeService,
+    //logisticsServices : TitanLogisticsServices
+    //) : TitanTradeStoreManager = null// TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices), titanTradeStore)
+  //>>>>>>> Persisted external service data
+  //}
 
 case class TitanTradeUpdateResult(
       tradeStoreResults : StoreResults,

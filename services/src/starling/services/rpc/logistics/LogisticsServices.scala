@@ -30,7 +30,6 @@ case class DefaultTitanLogisticsInventoryServices(props: Props) extends TitanLog
 
   lazy val service : EdmInventoryServiceWithGetAllInventory =
     new EdmInventoryServiceResourceProxy(ProxyFactory.create(classOf[EdmInventoryServiceResource], logisticsServiceURL, clientExecutor)) {
-      def getAllInventoryLeaves() : List[InventoryItem] = LogisticServices.findLeaves(getAllInventory().associatedInventory)
 
       def getAllInventory() : LogisticsInventoryResponse = {
         enableLogisticsAPIs(props) // temporary measure until we address this properly
@@ -51,12 +50,12 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
   import FileUtils._
   import LogisticServices._
   println("starting file mocked titan logistics services")
-  val inventoryFile = "/tests/valuationservice/testdata/logisticsEdmInventory.json"
-  val inventoryPath = getFileUrl(inventoryFile)
-  val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => LogisticsInventoryResponse.fromJson(new JSONObject(s)).asInstanceOf[LogisticsInventoryResponse]).head
+  private val inventoryFile = "/tests/valuationservice/testdata/logisticsEdmInventory.json"
+  private val inventoryPath = getFileUrl(inventoryFile)
+  private val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => LogisticsInventoryResponse.fromJson(new JSONObject(s)).asInstanceOf[LogisticsInventoryResponse]).head
   
-  var inventoryMap : Map[String, InventoryItem] = loadedInventory.associatedInventory.map(i => i.oid.contents.toString -> i).toMap
-  val quotaMap : Map[String, LogisticsQuota] = loadedInventory.associatedQuota.map(q => q.quotaName -> q).toMap
+  private var inventoryMap : Map[String, InventoryItem] = loadedInventory.associatedInventory.map(i => i.oid.contents.toString -> i).toMap
+  private val quotaMap : Map[String, LogisticsQuota] = loadedInventory.associatedQuota.map(q => q.quotaName -> q).toMap
 
   lazy val service : EdmInventoryServiceWithGetAllInventory = new EdmInventoryService() {
     def getInventoryById(inventoryId : Int) : LogisticsInventoryResponse = {
@@ -68,7 +67,6 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
     }
 
     def getInventoryTreeByPurchaseQuotaId(quotaId : String) : LogisticsInventoryResponse = null //inventoryMap.values.toList.filter(_.purchaseAssignment.quotaName == quotaId)
-    def getAllInventoryLeaves() : List[InventoryItem] = findLeaves(getAllInventoryItems())
     def getInventoryByGroupCompanyId(groupCompanyMappingCode : String) = loadedInventory
     def getAllInventory() : LogisticsInventoryResponse = getInventoryByGroupCompanyId("")
     def getAllInventoryItems() : List[InventoryItem] = inventoryMap.values.toList
@@ -104,10 +102,6 @@ case class LogisticsJsonMockDataFileGenerator(titanEdmTradeService : TitanServic
 }
 
 object LogisticServices {
-
-  // temporary work around to find leaves of the logistics inventory tree from all inventory (some maybe intermediate inventory)
-  def findLeaves(inventory : List[InventoryItem]) : List[InventoryItem] =
-    inventory.filter(item => !inventory.exists(i => i.parentId == Some(item.oid)))
 
   def main(args : Array[String]) {
     val props = PropsHelper.defaultProps

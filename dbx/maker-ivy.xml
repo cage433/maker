@@ -1,0 +1,13 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="trafigura" module="maths" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+  </configurations>
+  <dependencies defaultconfmapping="*->default,sources">
+    <dependency org="com.jolbox" name="bonecp" rev="0.7.1.RELEASE"/>
+    <dependency org="org.springframework" name="spring-jdbc" rev="3.0.5.RELEASE"/>
+    <dependency org="jtds" name="jtds" rev="1.2.5"/>
+    <dependency org="com.oracle" name="ojdbc6" rev="11.2.0.1.0"/>
+  </dependencies>
+</ivy-module>
+

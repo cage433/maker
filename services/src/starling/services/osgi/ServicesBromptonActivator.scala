@@ -19,6 +19,10 @@ import starling.gui.api.{EnabledDesks, PricingGroup, EnvironmentRuleLabel}
 import java.util.concurrent.{ScheduledExecutorService, ScheduledThreadPoolExecutor}
 import starling.utils.NamedDaemonThreadFactory
 import starling.props.ServerTypeLabel
+import starling.services.rabbit.{DefaultTitanRabbitEventServices, TitanRabbitEventServices}
+import starling.services.rpc.refdata.DefaultTitanServices
+import starling.services.rpc.logistics.DefaultTitanLogisticsServices
+import starling.titan.{TitanLogisticsServices, TitanServices}
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -112,6 +116,12 @@ class ServicesBromptonActivator extends BromptonActivator {
     if (props.QlikViewEnabled() && props.ServerType() != ServerTypeLabel.Oil) {
       context.registerService(classOf[Receiver], new QlikViewUpdater(props.QlikViewServerUrl(), props.QlikViewSpotFXTask(),
         context.awaitService(classOf[Notifier])))
+    }
+
+    if (props.ServerType() == ServerTypeLabel.FC2){
+      context.registerService(classOf[TitanRabbitEventServices], new DefaultTitanRabbitEventServices(props))
+      context.registerService(classOf[TitanServices], new DefaultTitanServices(props))
+      context.registerService(classOf[TitanLogisticsServices], new DefaultTitanLogisticsServices(props))
     }
 
     starlingInit.start

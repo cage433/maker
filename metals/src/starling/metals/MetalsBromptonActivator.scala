@@ -4,16 +4,13 @@ import datasources._
 import swing.event.Event
 
 import starling.curves._
-import starling.databases.utils.{RabbitMessageSender, RabbitBroadcaster}
 import starling.manager._
 import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 import starling.services.jmx.StarlingJMX
-import starling.services.rabbit.{TitanRabbitIdBroadcaster, MockTitanRabbitEventServices, DefaultTitanRabbitEventServices}
 import starling.services.rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
 import starling.services.rpc.valuation._
 import starling.metals.trinity.XRTGenerator
 import starling.services.trinity.{FCLGenerator}
-import starling.titan.{TitanTradeStoreManager, TitanSystemOfRecord, TitanTradeStore}
 import starling.tradestore.TradeStores
 import starling.utils._
 import starling.utils.ImplicitConversions._
@@ -23,6 +20,7 @@ import com.trafigura.services.ResteasyServiceApi
 import org.joda.time.Period
 import starling.scheduler.{TaskDescription, Scheduler}
 import starling.services._
+import rabbit.{TitanRabbitEventServices, TitanRabbitIdBroadcaster, MockTitanRabbitEventServices, DefaultTitanRabbitEventServices}
 import rpc.refdata.LogisticsService
 import starling.db._
 import starling.lim.LIMService
@@ -35,13 +33,12 @@ import com.trafigura.services.Logistics.LogisticsServiceApi
 import java.util.Timer
 import starling.daterange.{Notifier, TimedNotifier, TimeOfDay}
 import java.util.concurrent.ScheduledExecutorService
+import starling.titan._
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
 
     val props = context.awaitService(classOf[starling.props.Props])
-    val startRabbit = true
-    val testMode = false
 
     val marketDataStore = context.awaitService(classOf[MarketDataStore])
     val referenceDataLookup = context.awaitService(classOf[ReferenceDataLookup])
@@ -52,12 +49,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       tradeStores.titanTradeStore.asInstanceOf[TitanTradeStore]
     }
 
-    val titanRabbitEventServices = if (!testMode) {
-      new DefaultTitanRabbitEventServices(props)
-    }
-    else {
-      new MockTitanRabbitEventServices()
-    }
+    val titanRabbitEventServices = context.awaitService(classOf[TitanRabbitEventServices])
 
     val rabbitReadyFn = if (props.RabbitEnabled()) {
       context.onStopped(titanRabbitEventServices.stop)
@@ -68,8 +60,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     val osgiBroadcaster = context.awaitService(classOf[Broadcaster])
 
     val broadcaster = new CompositeBroadcaster(
-      props.rabbitHostSet                       → new RabbitBroadcaster(new RabbitMessageSender(props.RabbitHost())),
-      (startRabbit && props.titanRabbitHostSet) → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)
+      props.titanRabbitHostSet → TitanRabbitIdBroadcaster(titanRabbitEventServices.rabbitEventPublisher)
     )
 
     context.registerService(classOf[Receiver], new Receiver() {
@@ -79,19 +70,21 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val environmentProvider = new DefaultEnvironmentProvider(marketDataStore, referenceDataLookup)
 
-    import starling.services.rpc.refdata.{FileMockedTitanServices, DefaultTitanServices}
+    val titanServices = context.awaitService(classOf[TitanServices])
+    val logisticsServices = context.awaitService(classOf[TitanLogisticsServices])
 
-    val (titanServices, logisticsServices) = if (!testMode) (
-      new DefaultTitanServices(props),
-      new DefaultTitanLogisticsServices(props)
-    )
-    else (
-      new FileMockedTitanServices(),
-      new FileMockedTitanLogisticsServices()
-    )
 
     val titanTradeStoreManager: TitanTradeStoreManager = {
-      val manager = TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices, rabbitReadyFn)
+      val manager = TitanTradeStoreManager(
+        TitanServiceCache2(
+          titanServices, titanServices, logisticsServices,
+          new PersistentSet(props.QuotaDetailsCacheFile()),
+          new PersistentMap(props.LogisticsInventoryCacheFile()),
+          new PersistentMap(props.IsQuotaFullyAllocatedCacheFile())
+        ),
+        titanTradeStore,
+        rabbitReadyFn
+      )
       context.onStarted { manager.start }
       manager
     }

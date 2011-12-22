@@ -27,7 +27,7 @@ case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, d
 
   private lazy val desk = Desk.eaiDeskFromID(bookID.id).fold(_.name, bookID.id.toString)
 
-  def details = Map(
+  def persistedDetails = Map(
     "Book ID" -> bookID.id,
     strategyID_str -> (if (strategyID.isEmpty) TreeID(0) else strategyID.get),
     dealID_str -> (if (dealID.isEmpty) TreeID(0) else dealID.get),

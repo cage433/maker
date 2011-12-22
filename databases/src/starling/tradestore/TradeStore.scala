@@ -397,7 +397,7 @@ abstract class TradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks: Clo
         "Id" -> nextID,
         "timestamp" -> timestamp,
         "expiryDay_cache" -> expiryDay
-      ), justTradeDetails, trade.tradeable.persistedTradeableDetails, trade.attributes.details)
+      ), justTradeDetails, trade.tradeable.persistedTradeableDetails, trade.attributes.persistedDetails)
 
       (Map[String,Any]() /: details)(safeMerge(_, _))
     }

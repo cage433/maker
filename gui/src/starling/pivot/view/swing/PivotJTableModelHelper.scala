@@ -20,6 +20,7 @@ import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import swing.event.{Event, MouseClicked, KeyPressed, KeyTyped}
 import java.awt.event.{ActionEvent, KeyEvent}
+import starling.utils.Log
 
 case class OverrideDetails(text:String, state:EditableCellState)
 case class TableValue(value:AnyRef, row:Int, column:Int)
@@ -1174,10 +1175,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         updatedEdits = updatedEdits.withAddedRow(row)
       }}
 
-      println("---")
-      println("ALL EDITS")
-      println(updatedEdits)
-      println("---")
+      Log.debug("---\nALL EDITS\n" + updatedEdits + "\n---")
 
       updatedEdits
     }

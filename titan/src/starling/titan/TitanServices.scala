@@ -53,7 +53,6 @@ object JMXEnabler extends Log {
  */
 object LogisticsServices {
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object {
-    def getAllInventoryLeaves() : List[InventoryItem]
     def getAllInventory() : LogisticsInventoryResponse
   }
 }

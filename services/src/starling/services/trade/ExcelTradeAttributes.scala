@@ -7,7 +7,7 @@ import starling.eai.instrumentreaders.EAISystemOfRecord
 import starling.tradestore.intraday.IntradayTradeAttributes
 
 class ExcelTradeAttributes(attributes: Map[String, Any]) extends TradeAttributes {
-  def details = attributes.map {
+  def persistedDetails = attributes.map {
     case (k, v) => ExcelTradeAttributes.normalForm(k) -> v
   }
 }

@@ -52,3 +52,6 @@ set-classpath.sh
 project/deployment/artifacts
 bin/deploy-classpath.sh
 .idea/misc.xml
+*/.maker
+*/java-classes
+*/maker-lib

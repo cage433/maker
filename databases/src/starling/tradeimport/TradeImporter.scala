@@ -34,15 +34,7 @@ class TradeImporter(val tradeSystem:TradeSystem, systemOfRecord: SystemOfRecord,
     log.infoWithTime("Running trade import for " + systemOfRecord + " with timestamp " + writeTimestamp) {
       val trades = allTrades match {
         case Some(t) => t
-        case None => {
-          val temp = ArrayBuffer[Trade]()
-          systemOfRecord.allTrades {
-            t => {
-              temp += t
-            }
-          }
-          temp
-        }
+        case None => systemOfRecord.allTrades
       }
       assert(trades.map(_.tradeID).toSet.size == trades.size, "Duplicate trade ids!")
       tradeStore.storeTrades( (trade) => true, trades, writeTimestamp).changed

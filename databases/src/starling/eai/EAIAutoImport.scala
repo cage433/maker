@@ -106,7 +106,7 @@ class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiSt
             var done = false
             var retryCount = 0
 
-            var trades: ArrayBuffer[Trade] = null
+            var trades: Seq[Trade] = null
             val systemOfRecord: EAISystemOfRecord = new EAISystemOfRecord(externalDB, bookToImport, downloadID)
 
             // try to read in all the trades. if we fail with a DeadlockLoserDataAccessException then we backoff
@@ -114,11 +114,7 @@ class EAIAutoImport(runEvery: Int, starlingDB: RichDB, externalDB: RichDB, eaiSt
             while (!done) {
               trades = ArrayBuffer[Trade]()
               try {
-                systemOfRecord.allTrades {
-                  t => {
-                    trades += t
-                  }
-                }
+                trades = systemOfRecord.allTrades
                 done = true
               } catch {
                 case e: DeadlockLoserDataAccessException if retryCount < maxRetries => {

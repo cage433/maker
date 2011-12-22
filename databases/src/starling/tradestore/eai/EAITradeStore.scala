@@ -50,7 +50,7 @@ case class EAITradeAttributes(strategyID: TreeID, bookID: TreeID, dealID: TreeID
   lazy val desk = Desk.eaiDeskFromID(bookID.id).getOrElse(throw new Exception("Invalid book id: " + bookID.id))
 
   import EAITradeStore._
-  def details = Map(
+  def persistedDetails = Map(
     "StrategyID" -> strategyID.id,
     dealID_str -> dealID.id,
     trader_str -> trader,

@@ -128,6 +128,10 @@ class Props(starlingProps:Map[String,PropertyValue], trafiguraProps : Map[String
   object TitanRabbitQueueAutoDelete extends BooleanProperty(false)
 
   def titanRabbitHostSet = TitanRabbitBrokerHost() != ""
+
+  object QuotaDetailsCacheFile extends StringProperty(".edm_caches/quota_details")
+  object LogisticsInventoryCacheFile extends StringProperty(".edm_caches/logistics_inventory")
+  object IsQuotaFullyAllocatedCacheFile extends StringProperty(".edm_caches/is_quota_fully_allocated")
 }
 
 object Props {

@@ -24,5 +24,6 @@
       <artifact name="testng" type="source" ext="jar" e:classifier="jdk15" />
     </dependency>
     <dependency org="org.mockito" name="mockito-all" rev="1.8.2" />
+    <dependency org="org.scalaz" name="scalaz-core_2.9.1" rev="6.0.3"/>
   </dependencies>
 </ivy-module>

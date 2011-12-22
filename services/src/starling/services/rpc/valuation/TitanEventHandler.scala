@@ -100,36 +100,29 @@ class TitanEventHandler(broadcaster:Broadcaster,
   def tradeMgmtTradeEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
     log.info("handler: Got a trade event to process, ID %s event %s".format(ev.key.identifier, ev.toString))
 
-    val tradePayloads = ev.content.body.payloads.filter(p => Event.RefinedMetalTitanIdPayload == p.payloadType)
+    val tradePayloads = ev.content.body.payloads.filter(p => RefinedMetalTitanIdPayload == p.payloadType)
     val tradeIds: List[String] = tradePayloads.map(p => p.key.identifier)
-    val titanIds: List[TitanId] = tradeIds.map(id => TitanId(id))
     val eventId = ev.key.identifier
     log.info("Trade event %s received for ids { %s }".format(eventId, tradeIds.mkString(", ")))
 
-    val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
 
-    val results = ev.subject match {
-      case TradeSubject => {
-        ev.verb match {
-          case UpdatedEventVerb => {
-            val completed = ev.content.body.payloads.filter(p => TradeStatusPayload == p.payloadType).filter(p => p.key.identifier.equalsIgnoreCase("completed")).size > 0
-            if (completed) {
-              val results = tradeIds.map(id => titanTradeStoreManager.updateTrade(env, id, eventId))
-              val changedIDs = results.flatMap(_.changedValueTitanTradeIds)
+    val results = (ev.subject, ev.verb) match {
+      case (TradeSubject, UpdatedEventVerb) => {
+        ev.content.body.payloads.find(p => TradeStatusPayload == p.payloadType && p.key.identifier.equalsIgnoreCase("completed")).map{
+          _ =>
+          val (snapshotID, env) = environmentProvider.lastValuationSnapshotEnvironment
+          val results = tradeIds.map(id => titanTradeStoreManager.updateTrade(env, id, eventId))
+          val changedIDs = results.flatMap(_.changedValueTitanTradeIds)
 
-              log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedIDs.size))
-              Some(results)
-            }
-            else None
-          }
-          case CreatedEventVerb => None // not handled, everything is driven from updated/cancelled events
-          case CancelledEventVerb | RemovedEventVerb => {
-            Log.info("Cancelled / deleted event received for %s".format(titanIds))
-            Some(tradeIds.map(id => titanTradeStoreManager.deleteTrade(id, eventId)))
-          }
-          case _ => None
+          log.info("Trades revalued for received event using snapshot %s number of changed valuations %d".format(snapshotID, changedIDs.size))
+          results
         }
       }
+      case (TradeSubject, CancelledEventVerb | RemovedEventVerb) => {
+        Log.info("Cancelled / deleted event received for %s".format(tradeIds))
+        Some(tradeIds.map(id => titanTradeStoreManager.deleteTrade(id, eventId)))
+      }
+      case _ => None
     }
 
     publishOnChangedValues(results)
@@ -141,52 +134,35 @@ class TitanEventHandler(broadcaster:Broadcaster,
    * handler for logistics assignment events
    */
   def logisticsInventoryEventHander(ev: Event) : Option[List[TitanTradeUpdateResult]] = {
-    log.info("handler: Got a logistics event to process,  ID %s event %s".format(ev.key.identifier, ev.toString))
+    val eventId = ev.key.identifier
 
     // get inventory ids from inventory or sales assignment subjects (sales assignment is what is raised when a sales quota is fully allocated/deallocated)
-    val payloads = ev.content.body.payloads
-    val inventoryIds: List[String] = if (Event.EDMLogisticsInventorySubject.equalsIgnoreCase(ev.subject) || EDMLogisticsSalesAssignmentSubject.equalsIgnoreCase(ev.subject)) {
-      payloads.filter(p => Event.EDMLogisticsInventoryIdPayload.equalsIgnoreCase(p.payloadType)).map(p => getID(p))
+    val inventoryIds: List[String] = ev.subject match {
+      case EDMLogisticsInventorySubject | EDMLogisticsSalesAssignmentSubject => {
+        val payloads = ev.content.body.payloads
+        payloads.filter(p => EDMLogisticsInventoryIdPayload.equalsIgnoreCase(p.payloadType)).map(_.key.identifier)
+      }
+      case _ => Nil
     }
-    else Nil
 
-    val eventId = ev.key.identifier
     log.info("Logistics event %s received for ids { %s }".format(eventId, inventoryIds.mkString(", ")))
 
     lazy val (_, env) = environmentProvider.lastValuationSnapshotEnvironment
 
-    val results: Option[List[TitanTradeUpdateResult]] = ev.verb match {
-      case UpdatedEventVerb => {
+    val results: Option[List[TitanTradeUpdateResult]] = (ev.verb, ev.subject) match {
+      case (UpdatedEventVerb | CreatedEventVerb, EDMLogisticsInventorySubject | EDMLogisticsSalesAssignmentSubject) => {
         val results: List[TitanTradeUpdateResult] = inventoryIds.map(id => titanTradeStoreManager.updateInventory(env, id, eventId))
         Some(results)
       }
-      case CreatedEventVerb => {
-        Log.info("New event received for %s".format(inventoryIds))
-        ev.subject match {
-          case EDMLogisticsInventorySubject | EDMLogisticsSalesAssignmentSubject => {
-            val results = inventoryIds.map(id => titanTradeStoreManager.updateInventory(env, id, eventId))
-            Some(results)
-          }
-          case _ => None
-        }
+      case (CancelledEventVerb | RemovedEventVerb, EDMLogisticsInventorySubject) => {
+        Some(inventoryIds.map(id => titanTradeStoreManager.deleteInventory(id, eventId)))
       }
-      case CancelledEventVerb | RemovedEventVerb => {
-        Log.info("Cancelled / deleted event received for %s".format(inventoryIds))
-        ev.subject match {
-          case EDMLogisticsInventorySubject => {
-            Some(inventoryIds.map(id => titanTradeStoreManager.deleteInventory(id, eventId)))
-          }
-          case EDMLogisticsSalesAssignmentSubject => {
-            Some(inventoryIds.map(inventoryID => titanTradeStoreManager.removeSalesAssignment(env, inventoryID, eventId)))
-          }
-          case _ => None
-        }
+      case (CancelledEventVerb | RemovedEventVerb, EDMLogisticsSalesAssignmentSubject) => {
+        Some(inventoryIds.map(inventoryID => titanTradeStoreManager.removeSalesAssignment(env, inventoryID, eventId)))
       }
       case _ => None
     }
     publishOnChangedValues(results)
     results
   }
-
-  private def getID(payload : Payload) = payload.key.identifier
 }

@@ -26,7 +26,7 @@ case class RefinedFixationTradeAttributes (
 )
   extends TradeAttributes
 {
-  def details = Map(
+  def persistedDetails = Map(
     groupCompany_str -> groupCompany,
     exchange_str -> exchange,
     contractNo_str -> contractNo,

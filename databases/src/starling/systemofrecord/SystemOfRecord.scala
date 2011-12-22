@@ -13,12 +13,7 @@ import starling.dbx.Query
 
 
 trait SystemOfRecord {
-
-  /**
-   * Return is a count of the number of errors, together with the set of
-   * unique errors
-   */
-  def allTrades(f: Trade => Unit) : (Int, Set[String])
+  def allTrades : Seq[Trade]
 }
 
 abstract class SystemOfRecordBackedByADatabase(externalDB : RichDB) extends SystemOfRecord{
@@ -27,9 +22,9 @@ abstract class SystemOfRecordBackedByADatabase(externalDB : RichDB) extends Syst
    * f is called with each Trade read in.
    * Returns a unique error count and a set of unique errors
    */
-  protected def allTrades(query : String, parameters : Map[String, Any])(f: Trade => Unit) : (Int, Set[String]) = {
+  protected def allTrades(query : String, parameters : Map[String, Any]) : Seq[Trade] = {
     var uniqueErrors = Set[String]()
-    var errorCount = 0
+    var trades : List[Trade] = Nil
     externalDB.query(query, parameters) {
       rs => {
         try {
@@ -44,11 +39,10 @@ abstract class SystemOfRecordBackedByADatabase(externalDB : RichDB) extends Syst
                 Log.warn("Error Trade: " + e + " " + nullTrade.tradeID + " " + nullTrade.tradeDay)
                 uniqueErrors = uniqueErrors + e.toString
               }
-              errorCount += 1
               nullTrade.copyWithInstrument(ErrorInstrument(StackTraceToString.string(e).trim))
             }
           }
-          f(trade)
+          trades = trade :: trades
         }
         catch {
           case e:AssertionError => throw e
@@ -56,14 +50,14 @@ abstract class SystemOfRecordBackedByADatabase(externalDB : RichDB) extends Syst
         }
       }
     }
-    (errorCount, uniqueErrors)
+    trades
   }
 
-  protected def allTrades(q: Query)(f: Trade => Unit) : (Int, Set[String]) = {
+  protected def allTrades(q: Query) : Seq[Trade] = {
 
     val renderer: SqlRenderer = new SqlRenderer()
     val sql = renderer.render(q)
-    allTrades(sql.query, sql.parameters)(f)
+    allTrades(sql.query, sql.parameters)
   }
 
   protected def createInstrument(rs: RichResultSetRow): Tradeable = {

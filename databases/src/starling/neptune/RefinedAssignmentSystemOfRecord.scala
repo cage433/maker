@@ -232,11 +232,9 @@ class RefinedAssignmentSystemOfRecord(externalDB : RichDB) extends SystemOfRecor
     new Trade(assignmentID, assignmentDay, counterparty, attributes, NullInstrument())
   }
   
-  def allTrades(f: (Trade) => Unit) = {
-    allTrades(assignmentsQuery, Map[String, Any]())(f)
+  def allTrades = {
+    allTrades(assignmentsQuery, Map[String, Any]())
   }
-
-  def trade(tradeID: String)(f: (Trade) => Unit) = allTrades( assignmentsQuery + " and ASSIGNMENT_NO = " + tradeID, Map[String, Any]())(f)
 
   val readers = List(RefinedAssignmentReader)
 }

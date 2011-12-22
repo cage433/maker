@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+	<info organisation="titan" module="titan_2.9.1" revision="SNAPSHOT" status="release" publication="20111221211522">
+		<description>
+		titan
+		</description>
+	</info>
+	<configurations>
+		<conf name="compile" visibility="public" description=""/>
+		<conf name="runtime" visibility="public" description="" extends="compile"/>
+		<conf name="test" visibility="public" description="" extends="runtime"/>
+		<conf name="provided" visibility="public" description=""/>
+		<conf name="optional" visibility="public" description=""/>
+		
+		
+		
+		
+		<conf name="sources" visibility="public" description=""/>
+		<conf name="docs" visibility="public" description=""/>
+		<conf name="pom" visibility="public" description=""/>
+	</configurations>
+	<publications>
+		<artifact name="titan_2.9.1" type="pom" ext="pom" conf="pom"/>
+		<artifact name="titan_2.9.1" type="jar" ext="jar" conf="compile"/>
+		<artifact name="titan_2.9.1" type="src" ext="jar" conf="sources" e:classifier="sources"/>
+		<artifact name="titan_2.9.1" type="doc" ext="jar" conf="docs" e:classifier="javadoc"/>
+	</publications>
+	<dependencies>
+		<dependency org="curves" name="curves_2.9.1" rev="SNAPSHOT" conf="test->test">
+			
+			
+			
+			
+		</dependency>
+		<dependency org="databases" name="databases_2.9.1" rev="SNAPSHOT" conf="compile->default(compile)">
+			
+			
+			
+			
+		</dependency>
+		<dependency org="org.scala-lang" name="scala-library" rev="2.9.1" conf="compile->default(compile)"/>
+		<dependency org="com.trafigura.titan" name="model-logistics-public-scala-bindings" rev="1.4" conf="compile->default(compile)"/>
+		<dependency org="com.trafigura.titan" name="model-trademgmt-public-scala-bindings" rev="1.1" conf="compile->default(compile)"/>
+		<dependency org="org.slf4j" name="slf4j-api" rev="1.6.1" conf="compile->default(compile)"/>
+		<dependency org="dom4j" name="dom4j" rev="1.6.1" conf="compile->default(compile)"/>
+		<dependency org="com.rabbitmq" name="amqp-client" rev="1.7.2" conf="compile->default(compile)"/>
+		<dependency org="joda-time" name="joda-time" rev="1.6" conf="compile->default(compile)"/>
+		<dependency org="org.codehaus.jettison" name="jettison" rev="1.1" conf="compile->default(compile)"/>
+		<dependency org="commons-httpclient" name="commons-httpclient" rev="3.1" conf="compile->default(compile)"/>
+		<dependency org="com.trafigura.tradinghub" name="scala-hub-support" rev="2.17" conf="compile->default(compile)"/>
+		<dependency org="com.trafigura.tradinghub" name="persistence-support" rev="2.17" conf="compile->default(compile)"/>
+		<dependency org="org.jboss.resteasy" name="jaxrs-api" rev="2.2.2.GA" conf="compile->default(compile)"/>
+		<dependency org="net.databinder" name="dispatch-http_2.9.1" rev="0.8.6" conf="compile->default(compile)">
+			
+			
+		</dependency>
+		<dependency org="net.databinder" name="dispatch-core_2.9.1" rev="0.8.6" conf="compile->default(compile)">
+			
+			
+		</dependency>
+		<dependency org="org.apache.httpcomponents" name="httpclient" rev="4.1.2" conf="compile->default(compile)"/>
+		<dependency org="org.apache.httpcomponents" name="httpcore" rev="4.1.2" conf="compile->default(compile)"/>
+		<dependency org="commons-logging" name="commons-logging" rev="1.1.1" conf="compile->default(compile)"/>
+		<exclude org="*" module="*" artifact="jcl-over-slf4j" type="*" ext="*" matcher="exact"/>
+		<exclude org="*" module="*" artifact="junit" type="*" ext="*" matcher="exact"/>
+		<exclude org="org.scala-lang" module="scala-library" artifact="*" type="jar" ext="*" matcher="exact"/>
+		<exclude org="org.scala-lang" module="scala-compiler" artifact="*" type="jar" ext="*" matcher="exact"/>
+		<override org="org.scala-lang" module="scala-library" matcher="exact" rev="2.9.1"/>
+		<override org="org.scala-lang" module="scala-compiler" matcher="exact" rev="2.9.1"/>
+	</dependencies>
+</ivy-module>

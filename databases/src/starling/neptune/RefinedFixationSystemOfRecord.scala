@@ -125,7 +125,7 @@ class RefinedFixationSystemOfRecord(externalDB : RichDB) extends SystemOfRecordB
     new Trade(splitID, contractDate, counterparty, attributes, NullInstrument())
   }
 
-  private def allTrades(sql : String)(f : (Trade) => Unit) : (Int, Set[String]) = {
+  private def allTrades(sql : String): Seq[Trade] = {
     var uniqueErrors = Set[String]()
     var errorCount = 0
     val tradeFixations = scala.collection.mutable.Map[Trade, List[RefinedFixation]]()
@@ -153,18 +153,13 @@ class RefinedFixationSystemOfRecord(externalDB : RichDB) extends SystemOfRecordB
         }
       }
     }
-    tradeFixations.foreach{
+    tradeFixations.map{
       case (trade, fixationsList) =>
-        f(trade.copyWithInstrument(RefinedFixationsForSplit(fixationsList)))
-    }
-    (errorCount, uniqueErrors)
+        trade.copyWithInstrument(RefinedFixationsForSplit(fixationsList))
+    }.toList
   }
 
-  def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = allTrades(fixationsQuery)(f)
-
-  def trade(tradeID: String)(f: (Trade) => Unit) {
-    allTrades(fixationsQuery + " SPD.SPLIT_ID = " + tradeID)(f)
-  }
+  def allTrades  = allTrades(fixationsQuery)
 
   def readers = throw unsupported
 }

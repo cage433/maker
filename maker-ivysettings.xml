@@ -26,13 +26,13 @@
         <ibiblio name="sonatype" m2compatible="true" root="http://oss.sonatype.org/content/repositories/springsource-milestones"/>
         <!--<ibiblio name="trafigura" m2compatible="true" root="http://nexus.global.trafigura.com:8081/nexus/content/repositories/tooling-releases/"/>-->
 
-        <ibiblio name="starling-releases" m2compatible="true" root="http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/"/>
+        <!--<ibiblio name="starling-releases" m2compatible="true" root="http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-test/"/>-->
 
         <ibiblio name="alfresco" m2compatible="true" root="http://maven.alfresco.com/nexus/content/groups/public/"/>
         <chain name="default" returnFirst="true">
           <resolver ref="local"/>
 
-          <resolver ref="starling-releases"/>
+          <!--<resolver ref="starling-releases"/>-->
             
           <resolver ref="central"/>
           <resolver ref="scala-tools"/>

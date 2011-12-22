@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+	<info organisation="reports-impl" module="reports-impl_2.9.1" revision="SNAPSHOT" status="release" publication="20111221211524">
+		<description>
+		reports-impl
+		</description>
+	</info>
+	<configurations>
+		<conf name="compile" visibility="public" description=""/>
+		<conf name="runtime" visibility="public" description="" extends="compile"/>
+		<conf name="test" visibility="public" description="" extends="runtime"/>
+		<conf name="provided" visibility="public" description=""/>
+		<conf name="optional" visibility="public" description=""/>
+		
+		
+		
+		
+		<conf name="sources" visibility="public" description=""/>
+		<conf name="docs" visibility="public" description=""/>
+		<conf name="pom" visibility="public" description=""/>
+	</configurations>
+	<publications>
+		<artifact name="reports-impl_2.9.1" type="pom" ext="pom" conf="pom"/>
+		<artifact name="reports-impl_2.9.1" type="jar" ext="jar" conf="compile"/>
+		<artifact name="reports-impl_2.9.1" type="src" ext="jar" conf="sources" e:classifier="sources"/>
+		<artifact name="reports-impl_2.9.1" type="doc" ext="jar" conf="docs" e:classifier="javadoc"/>
+	</publications>
+	<dependencies>
+		<dependency org="services" name="services_2.9.1" rev="SNAPSHOT" conf="compile->default(compile);test->test">
+			
+			
+			
+			
+		</dependency>
+		<dependency org="org.scala-lang" name="scala-library" rev="2.9.1" conf="compile->default(compile)"/>
+		<exclude org="*" module="*" artifact="jcl-over-slf4j" type="*" ext="*" matcher="exact"/>
+		<exclude org="*" module="*" artifact="junit" type="*" ext="*" matcher="exact"/>
+		<exclude org="org.scala-lang" module="scala-library" artifact="*" type="jar" ext="*" matcher="exact"/>
+		<exclude org="org.scala-lang" module="scala-compiler" artifact="*" type="jar" ext="*" matcher="exact"/>
+		<override org="org.scala-lang" module="scala-library" matcher="exact" rev="2.9.1"/>
+		<override org="org.scala-lang" module="scala-compiler" matcher="exact" rev="2.9.1"/>
+	</dependencies>
+</ivy-module>

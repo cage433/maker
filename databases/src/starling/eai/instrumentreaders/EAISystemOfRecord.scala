@@ -62,26 +62,8 @@ case class EAISystemOfRecord(externalDB: RichDB, bookID: Int, downloadID: Int) e
     Reflection.listClassesOfType("starling.eai.instrumentreaders.physical", classOf[InstrumentReader]).map(c => c.newInstance)
   }
 
-  def allTrades(f: (Trade) => Unit): (Int, Set[String]) = {
-    queries.map(allTrades(_)(f)).reduceLeft((b, a) => (a._1 + b._1, a._2 ++ b._2))
-  }
-
-  def trade(tradeID: String)(f: (Trade) => Unit) = {
-    val queries = generateQueries(tradeID.head.toUpper match {
-      case 'O' => List(etOptions, otcOptions)
-      case 'F' => List(futures)
-      case 'S' => List(swaps, swapSpreads, cfds)
-      case 'C' => List(clearportSwaps)
-      case 'P' => List(cargos)
-      case 'N' => List(costs)
-    })
-    var found = List[Trade]()
-    queries.foreach(query => allTrades(query and ("aspectid" eql tradeID))(t => found ::= t))
-    found match {
-      case t :: Nil => f(t)
-      case Nil =>
-      case _ => throw new Exception("Found multiple matches: " + found)
-    }
+  def allTrades : Seq[Trade] = {
+    queries.flatMap(allTrades(_))
   }
 
   protected def createNullTrade(rs: RichResultSetRow) = {

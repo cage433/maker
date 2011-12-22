@@ -1,0 +1,10 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="trafigura" module="maths" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+  </configurations>
+  <dependencies defaultconfmapping="*->default,sources">
+    <dependency org="org.apache.commons" name="commons-math" rev="2.1"/>
+  </dependencies>
+</ivy-module>
+
