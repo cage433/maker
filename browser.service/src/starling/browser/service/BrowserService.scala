@@ -2,7 +2,7 @@ package starling.browser.service
 
 case class UserSettingsEntry(bundle:String, key:String, value:String)
 case class UserSettingsLabel(userSettings:List[UserSettingsEntry])
-case class BookmarkLabel(name:String, bundleName:String, bookmark:String)
+case class BookmarkLabel(owner:String, name:String, bundleName:String, bookmark:String, shared:Boolean)
 case class PageLogInfo(text:String,shortText:String,pageString:String, time:java.util.Date)
 case class UserLoggedIn(user:String) extends StarlingGUIEvent
 case class UserDetails(username:String, fullName:String, realUsername:Option[String]=None)

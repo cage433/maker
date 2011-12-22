@@ -3,18 +3,27 @@ package starling.browser.internal
 import scala._
 import swing._
 import swing.event.{MousePressed, ButtonClicked}
-import javax.swing.{JPopupMenu, BorderFactory}
 import scala.swing.Swing._
-import starling.browser.{ServerContext, SubmitRequest, PageContext, Bookmark}
+import starling.browser.{ServerContext, SubmitRequest, PageContext}
 import starling.browser.service.{BookmarksUpdate, BookmarkLabel}
 import java.awt.{Polygon, Graphics2D, Dimension, Color, RenderingHints, KeyboardFocusManager}
 import starling.browser.common.{RoundedBorder, RoundedBackground, GuiUtils, MigPanel}
+import javax.swing.JPopupMenu
+
+object BookmarkState extends Enumeration {
+  type BookmarkState = Value
+  val Known, KnownShared, Unknown = Value
+}
+
+import BookmarkState._
 
 class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:PageBuilder) extends NavigationButton {
   val noBookmarkIcon = BrowserIcons.icon("/icons/22x22_empty_star.png")
   val noBookmarkIconCal = BrowserIcons.icon("/icons/22x22_empty_star_cal.png")
   val bookmarkedIcon = BrowserIcons.icon("/icons/22x22_bookmark.png")
   val bookmarkedIconCal = BrowserIcons.icon("/icons/22x22_bookmark_cal.png")
+  val sharedBookmarkedIcon = BrowserIcons.icon("/icons/22x22_half_star.png")
+  val sharedBookmarkedIconCal = BrowserIcons.icon("/icons/22x22_half_star_cal.png")
 
   def setSavePanel(setup:Boolean) {
     holderPanel.update(savePanel, setup)
@@ -29,6 +38,12 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
   }
   private def getText:String = savePanel.nameField.text
   private def clearUp() {savePanel.clearUp()}
+
+  val sharedCheckbox = new CheckBox("Shared") {
+    tooltip = "Share this bookmark with all other users"
+    background = Color.WHITE
+    mnemonic = swing.event.Key.S
+  }
 
   val replacePanel = new MigPanel with RoundedBackground {
     border = RoundedBorder(Color.RED)
@@ -49,7 +64,7 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
           def saveBookmark(a:Unit) {
             val bundleName = currentPage.page.bundle
             val bundle = pageBuilder.bundleFor(bundleName)
-            val bookmarkLabel = BookmarkLabel(bookmarkName, bundleName, bundle.marshal(currentPage.bookmark))
+            val bookmarkLabel = BookmarkLabel(context.localCache.currentUserName, bookmarkName, bundleName, bundle.marshal(currentPage.bookmark), sharedCheckbox.selected)
             context.submit(SaveBookmarkRequest(bookmarkLabel), (_:Unit) => clearUp, keepScreenLocked = true)
           }
           context.submit(DeleteBookmarkRequest(bookmarkName), saveBookmark)
@@ -83,6 +98,8 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
     }
     val nameLabel = new Label("Bookmark Name:")
     val nameField = new TextField(20)
+    nameLabel.peer.setDisplayedMnemonic('b')
+    nameLabel.peer.setLabelFor(nameField.peer)
 
     val okButton = new Button {
       text = "OK"
@@ -93,7 +110,7 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
           if (bookmarkName.nonEmpty) {
             val currentBookmarkNames = context.localCache.bookmarks.map(_.name.trim.toLowerCase)
             if (!currentBookmarkNames.contains(bookmarkName)) {
-              val bm = currentPage.bookmarkLabel(realBookmarkName)
+              val bm = currentPage.bookmarkLabel(realBookmarkName, sharedCheckbox.selected, context.localCache.currentUserName)
               context.submit(SaveBookmarkRequest(bm), (_:Unit) => clearUp, keepScreenLocked = true)
             } else {
               // Show a replace dialog.
@@ -113,7 +130,8 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
     add(infoIcon, "spany")
     add(label, "spanx, wrap unrel")
     add(nameLabel, "gapleft unrel")
-    add(nameField, "wrap unrel")
+    add(nameField, "wrap")
+    add(sharedCheckbox, "skip 2, wrap")
     add(okButton, "split, spanx, al right bottom, sg button")
     add(cancelButton, "al right bottom, sg button")
 
@@ -139,48 +157,58 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
     }
   }
 
-  private var knownBookmark0 = false
-  def knownBookmark_=(b:Boolean) {
-    knownBookmark0 = b
-    if (knownBookmark0) {
-      if (currentPage.bookmark.daySensitive) {
-        icon = bookmarkedIconCal
-      } else {
-        icon = bookmarkedIcon
+  var bookmarkState = Unknown
+  def knownBookmark(state:BookmarkState) {
+    bookmarkState = state
+    bookmarkState match {
+      case Known => {
+        if (currentPage.bookmark.daySensitive) {
+          icon = bookmarkedIconCal
+        } else {
+          icon = bookmarkedIcon
+        }
+        tooltip = "Clear this bookmark"
       }
-      tooltip = "Clear this bookmark"
-    } else {
-      if (currentPage.bookmark.daySensitive) {
-        icon = noBookmarkIconCal
-        tooltip = "Bookmark this day sensitive page"
-      } else {
-        icon = noBookmarkIcon
-        tooltip = "Bookmark this page"
+      case Unknown => {
+        if (currentPage.bookmark.daySensitive) {
+          icon = noBookmarkIconCal
+          tooltip = "Bookmark this day sensitive page"
+        } else {
+          icon = noBookmarkIcon
+          tooltip = "Bookmark this page"
+        }
+      }
+      case KnownShared => {
+        if (currentPage.bookmark.daySensitive) {
+          icon = sharedBookmarkedIconCal
+          tooltip = "Bookmark this day sensitive page for yourself"
+        } else {
+          icon = sharedBookmarkedIcon
+          tooltip = "Bookmark this page for yourself"
+        }
       }
     }
   }
-  def knownBookmark = knownBookmark0
   icon = noBookmarkIcon
   tooltip = "Bookmark this page"
 
+
   def refresh() {
-    knownBookmark = checkIfBookmarkIsKnown
+    knownBookmark(checkIfBookmarkIsKnown)
   }
 
   private def checkIfBookmarkIsKnown = {
-    val bookmarks = context.localCache.bookmarks.flatMap(_.bookmark)
-    bookmarks.contains(currentPage.bookmark)
+    val bookmarks = context.localCache.bookmarks
+    bookmarks.find(_.bookmark == Some(currentPage.bookmark)) match {
+      case Some(b) if b.owner == context.localCache.currentUserName => Known
+      case Some(b) if b.shared => KnownShared
+      case _ => Unknown
+    }
   }
 
   reactions += {
     case ButtonClicked(b) => {
-      if (knownBookmark0) {
-        val bookmarkName = context.localCache.bookmarks.find(_.bookmark == Some(currentPage.bookmark)).get.name
-
-        context.submitYesNo("Delete Bookmark?",
-          "Are you sure you want to delete the \"" + bookmarkName + "\" bookmark?",
-          DeleteBookmarkRequest(bookmarkName), onComplete = (u:Unit) => { clearUp _}, keepScreenLocked = false)
-      } else {
+      def showSave() {
         val oldDefaultButton = context.getDefaultButton
         savePanel.oldDefaultButton = oldDefaultButton
         setSavePanel(false)
@@ -188,8 +216,18 @@ class BookmarkButton(currentPage: CurrentPage, context:PageContext, pageBuilder:
         context.setDefaultButton(Some(savePanel.okButton))
         savePanel.nameField.requestFocusInWindow()
       }
+
+      bookmarkState match {
+        case Known => {
+          val bookmarkName = context.localCache.bookmarks.find(_.bookmark == Some(currentPage.bookmark)).get.name
+          context.submitYesNo("Delete Bookmark?",
+            "Are you sure you want to delete the \"" + bookmarkName + "\" bookmark?",
+            DeleteBookmarkRequest(bookmarkName), onComplete = (u:Unit) => { clearUp _}, keepScreenLocked = false)
+        }
+        case Unknown | KnownShared => showSave()
+      }
     }
-    case BookmarksUpdate(user, bookmarks) if user == context.localCache.currentUserName => {
+    case BookmarksUpdate(bookmarks) => {
       refresh()
       repaint()
     }

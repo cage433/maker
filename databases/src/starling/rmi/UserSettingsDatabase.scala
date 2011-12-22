@@ -153,10 +153,9 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     }.groupBy(_._1).mapValues(_.map(_._2))
   }
 
-  def bookmarks(user:User):List[BookmarkLabel] = {
-    val userName = user.username.take(colSize)
-    db.queryWithResult("SELECT * FROM Bookmarks where starlingUser = :user", Map("user" -> userName)) {
-      rs => BookmarkLabel(rs.getString("bookmarkName"), rs.getString("bundle"), rs.getString("bookmark"))
+  def bookmarks:List[BookmarkLabel] = {
+    db.queryWithResult("SELECT * FROM Bookmarks", Map()) {
+      rs => BookmarkLabel(rs.getString("starlingUser"), rs.getString("bookmarkName"), rs.getString("bundle"), rs.getString("bookmark"), rs.getBoolean("shared"))
     }
   }
 
@@ -167,10 +166,10 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
     db.inTransaction {
       writer => {
         writer.insert("Bookmarks", Map("starlingUser" -> username, "bookmarkName" -> bookmarkName,
-          "bundle" -> bundle, "bookmark" -> bookmarkLabel.bookmark))
+          "bundle" -> bundle, "bookmark" -> bookmarkLabel.bookmark, "shared" -> bookmarkLabel.shared))
       }
     }
-    broadcaster.broadcast(BookmarksUpdate(user.username, bookmarks(user)))
+    broadcaster.broadcast(BookmarksUpdate(bookmarks))
   }
 
   def deleteBookmark(user:User, bookmarkName:String) {
@@ -180,7 +179,7 @@ class UserSettingsDatabase(val db:DB, broadcaster:Broadcaster) {
         writer.delete("Bookmarks", ("starlingUser" eql LiteralString(userName)) and ("bookmarkName" eql LiteralString(bookmarkName)))
       }
     }
-    broadcaster.broadcast(BookmarksUpdate(user.username, bookmarks(user)))
+    broadcaster.broadcast(BookmarksUpdate(bookmarks))
   }
 
   def logPageView(info:PageLogInfo) {

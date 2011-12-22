@@ -28,7 +28,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
     val errorPanel = new MigPanel("") with RoundedBackground {
       border = RoundedBorder(Color.RED)
       background = Color.WHITE
-      minimumSize = new Dimension(10, 300)
+      minimumSize = new Dimension(10, 100)
       val okButton = new Button {
         text = "OK"
         reactions += {
@@ -64,7 +64,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
       onEvent(action)
       windowMethods.setDefaultButton(oldDefaultButton)
       componentToFocus.map(c => {
-        val res = c.requestFocusInWindow()
+        val res = c.requestFocusInWindow() // TODO - this doesn't seem to be working when deleting a bookmark
         if (!res) {
           swing.Swing.onEDT(swing.Swing.onEDT({
             c.requestFocusInWindow()

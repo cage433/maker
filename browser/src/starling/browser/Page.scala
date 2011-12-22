@@ -45,7 +45,7 @@ trait Bookmark {
 
 case class UserSettingUpdated(key:Key[_]) extends StarlingGUIEvent
 
-case class BookmarkData(name:String, bookmark:Option[Bookmark])
+case class BookmarkData(owner:String, name:String, bookmark:Option[Bookmark], shared:Boolean)
 
 case class PageBookmark(page:Page) extends Bookmark {
   def daySensitive = false

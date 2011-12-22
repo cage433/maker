@@ -136,10 +136,18 @@ class BrowserBromptonActivator extends BromptonActivator {
     def toBookmarks(bookmarks:List[BookmarkLabel]) = {
       bookmarks.map { label => {
         bundlesByName.get(label.bundleName) match {
-          case Some(bundle) => BookmarkData(label.name, Some(bundle.unmarshal(label.bookmark).asInstanceOf[Bookmark]))
-          case None => BookmarkData(label.name, None)
+          case Some(bundle) => BookmarkData(label.owner, label.name, Some(bundle.unmarshal(label.bookmark).asInstanceOf[Bookmark]), label.shared)
+          case None => BookmarkData(label.owner, label.name, None, label.shared)
         }
-      } }
+      } }.sortWith{case (l1,l2) => {
+        if ((l1.owner == userDetails.username && l2.owner == userDetails.username) || (l1.owner != userDetails.username && l2.owner != userDetails.username)) {
+          l1.name.toLowerCase < l2.name.toLowerCase
+        } else if (l1.owner == userDetails.username) {
+          true
+        } else {
+          false
+        }
+      }}
     }
 
     javax.swing.SwingUtilities.invokeLater(new Runnable {
@@ -156,7 +164,7 @@ class BrowserBromptonActivator extends BromptonActivator {
           import NotificationKeys._
           cacheMap(AllNotifications) = notification :: cacheMap(AllNotifications)
           cacheMap(UserNotifications) = notification :: cacheMap(UserNotifications)
-          fc.updateNotifications
+          fc.updateNotifications()
         }
 
       localCachePublisher.reactions += {
@@ -169,8 +177,8 @@ class BrowserBromptonActivator extends BromptonActivator {
         }
       }
       localCachePublisher.reactions += {
-        case e: BookmarksUpdate if e.user == userDetails.username => {
-          bookmarks = e.bookmarks
+        case e: BookmarksUpdate => {
+          bookmarks = e.bookmarks.filter(l => {l.owner == userDetails.username || l.shared})
           cacheMap(LocalCache.Bookmarks) = toBookmarks(bookmarks)
         }
       }

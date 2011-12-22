@@ -28,7 +28,7 @@ import collection.mutable.ArrayBuffer
 trait CurrentPage {
   def page:Page
   def bookmark:Bookmark
-  def bookmarkLabel(name:String):BookmarkLabel
+  def bookmarkLabel(name:String, shared:Boolean, owner:String):BookmarkLabel
 }
 
 object StarlingBrowser {
@@ -679,10 +679,10 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
   private val currentPage0 = new CurrentPage {
     def page = history(current).page
-    def bookmarkLabel(name: String) = {
+    def bookmarkLabel(name: String, shared:Boolean, owner:String) = {
       val currentPageInfo = history(current)
       val bundle = pageBuilder.bundleFor(currentPageInfo.bundle)
-      BookmarkLabel(name, currentPageInfo.bundle, bundle.marshal(currentPageInfo.bookmark))
+      BookmarkLabel(owner, name, currentPageInfo.bundle, bundle.marshal(currentPageInfo.bookmark), shared)
     }
     def bookmark = history(current).bookmark
   }

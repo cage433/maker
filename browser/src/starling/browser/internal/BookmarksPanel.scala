@@ -1,7 +1,6 @@
 package starling.browser.internal
 
 import swing.Swing._
-import java.awt.Dimension
 import swing.{ScrollPane, ListView, Label, Component}
 import swing.event.{Event, SelectionChanged, KeyPressed, MouseClicked}
 import starling.browser.common._
@@ -13,6 +12,7 @@ import javax.swing._
 import java.awt.event.ActionEvent
 import org.jdesktop.swingx.plaf.basic.BasicMonthViewUI
 import osgi.BundleAdded
+import java.awt.{Color, Dimension}
 
 class MinimalSXMonthView extends Component {
   var dayOfWeekHeight = 0
@@ -55,13 +55,21 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
       override def getListCellRendererComponent(list:JList, value:AnyRef, index:Int, isSelected:Boolean, cellHasFocus:Boolean) = {
         val l = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).asInstanceOf[JLabel]
         val bookmarkData = value.asInstanceOf[BookmarkData]
-        l.setText(bookmarkData.name)
         val iconToUse = if (bookmarkData.bookmark.map(_.daySensitive).getOrElse(false)) {
           BrowserIcons.icon("/icons/10x10_calendar.png")
         } else {
           BrowserIcons.Blank10
         }
         l.setIcon(iconToUse)
+        if (context.localCache.localCache.contains(LocalCache.CurrentUserName)) {
+          if (bookmarkData.owner == context.localCache.currentUserName) {
+            l.setForeground(Color.BLACK)
+            l.setText(bookmarkData.name)
+          } else {
+            l.setForeground(Color.BLUE)
+            l.setText(bookmarkData.name + " (" + bookmarkData.owner + ")")
+          }
+        }
         l.setBorder(emptyBorder)
         l
       }
@@ -99,9 +107,13 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
 
   def deleteBookmark() {
     val bookmarkSelected = bookmarksListView.selected
-    context.submitYesNo("Delete Bookmark?",
-      "Are you sure you want to delete the \"" + bookmarkSelected.name + "\" bookmark?",
-      DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {})
+    if (bookmarkSelected.owner == context.localCache.currentUserName) {
+      context.submitYesNo("Delete Bookmark?",
+        "Are you sure you want to delete the \"" + bookmarkSelected.name + "\" bookmark?",
+        DeleteBookmarkRequest(bookmarkSelected.name), (u:Unit) => {})
+    } else {
+      context.setErrorMessage("Can't Delete Bookmark", "You can't delete the bookmark as you are not the owner\n\n'" + bookmarkSelected.owner + "' owns this bookmark")
+    }
   }
 
   def goToBookmark(modifiers:Modifiers) {
@@ -182,7 +194,7 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
 
   reactions += {
     case BundleAdded(_) => rebuildBookmarks()
-    case BookmarksUpdate(username, _) if username == context.localCache.currentUserName => rebuildBookmarks()
+    case BookmarksUpdate(_) => rebuildBookmarks()
     case MouseClicked(`bookmarksListView`,_,m,2,_) => goToBookmark(Modifiers.modifiersEX(m))
     case KeyPressed(`bookmarksListView`, scala.swing.event.Key.Delete, _, _) => deleteBookmark()
     case SelectionChanged(`bookmarksListView`) => dayPicker.enabled = valuationDayShouldBeEnabled

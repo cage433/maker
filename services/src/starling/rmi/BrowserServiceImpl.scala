@@ -11,7 +11,7 @@ class BrowserServiceImpl(name:String, version:Version, userSettingsDatabase:User
     name,
     userDetails,
     userSettingsDatabase.loadSettings(User.currentlyLoggedOn),
-    userSettingsDatabase.bookmarks(User.currentlyLoggedOn),
+    userSettingsDatabase.bookmarks.filter(l => l.owner == User.currentlyLoggedOn.username || l.shared),
     version
   )
 

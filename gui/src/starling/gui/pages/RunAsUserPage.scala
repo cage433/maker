@@ -71,9 +71,10 @@ class RunAsUserPageComponent(context:PageContext) extends MigPanel("insets n n n
       userField.text = selectedUser
     }
     case KeyPressed(`userListView`, scala.swing.event.Key.Enter, _,_) => runAsUser()
+    case KeyPressed(`userField`, scala.swing.event.Key.Enter, _,_) => runAsUser()
     case MouseClicked(`userListView`, _,_,2,_) => runAsUser()
   }
-  listenTo(context.remotePublisher, userListView.selection, userListView.keys, userListView.mouse.clicks)
+  listenTo(context.remotePublisher, userListView.selection, userListView.keys, userListView.mouse.clicks, userField.keys)
 
   private val usersScroll = new ScrollPane(userListView)
   private val runButton = new Button {

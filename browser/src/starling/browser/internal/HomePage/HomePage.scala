@@ -159,7 +159,7 @@ class StarlingHomePageComponent(context:PageContext, browserSize:Dimension) exte
       Predef.ensuring(buttons.size == 1, "Too many buttons for key " + key.get + " " + buttons)
     }*/
     addButtonActions(allButtons)
-    bookmarksPanel.rebuildBookmarks
+    bookmarksPanel.rebuildBookmarks()
   }
 
   reactions += {
