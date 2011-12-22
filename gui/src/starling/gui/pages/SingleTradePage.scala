@@ -328,18 +328,12 @@ class SingleTradePageComponent(context:PageContext, pageData:PageData) extends M
           }
 
           val version = context.localCache.latestMarketDataVersion(marketDataSelection)
+          val mdi = MarketDataIdentifier(marketDataSelection, version)
 
-          val enRule = pricingGroup match {
-            case Some(pg) if pg == PricingGroup.Metals => EnvironmentRuleLabel.MostRecentCloses
-            case _ => EnvironmentRuleLabel.COB
+          data.deskAndTimestamp.map(_._1) match {
+            case Some(Desk.Titan) => CurveIdentifierLabel.defaultLabelFromSingleDayTitan(mdi, context.localCache.ukBusinessCalendar)
+            case _ => CurveIdentifierLabel.defaultLabelFromSingleDay(mdi, context.localCache.ukBusinessCalendar)
           }
-
-          val ci = CurveIdentifierLabel.defaultLabelFromSingleDay(
-            MarketDataIdentifier(marketDataSelection, version),
-            context.localCache.ukBusinessCalendar,
-            zeroInterestRates = (data.deskAndTimestamp.map(_._1) == Some(Desk.Titan))  // Metals don't want discounting during UAT
-          )
-          ci.copy(thetaToDayAndTime = ci.thetaToDayAndTime.copyTimeOfDay(TimeOfDay.EndOfDay), environmentRule = enRule)
         }
 
         val rp = ReportParameters(

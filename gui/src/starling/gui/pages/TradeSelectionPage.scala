@@ -314,17 +314,7 @@ case class TradeSelectionPage(
               }
 
               desk match {
-                case Some(Desk.Titan) => {
-                  val today = Day.today.endOfDay
-                  CurveIdentifierLabel(
-                    marketDataIdentifier,
-                    EnvironmentRuleLabel.MostRecentCloses,
-                    today,
-                    today,
-                    today.nextBusinessDay(context.localCache.ukBusinessCalendar),
-                    TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
-                  )
-                }
+                case Some(Desk.Titan) => CurveIdentifierLabel.defaultLabelFromSingleDayTitan(marketDataIdentifier, context.localCache.ukBusinessCalendar)
                 case _ => CurveIdentifierLabel.defaultLabelFromSingleDay(marketDataIdentifier, context.localCache.ukBusinessCalendar)
               }
             }

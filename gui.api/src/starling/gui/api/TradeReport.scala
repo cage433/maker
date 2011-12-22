@@ -280,6 +280,17 @@ case class CurveIdentifierLabel(
 }
 
 object CurveIdentifierLabel{
+  def defaultLabelFromSingleDayTitan(marketDataIdentifier:MarketDataIdentifier, calendar:BusinessCalendar) = {
+    val today = Day.today.endOfDay
+    CurveIdentifierLabel(
+      marketDataIdentifier,
+      EnvironmentRuleLabel.MostRecentCloses,
+      today,
+      today,
+      today.nextBusinessDay(calendar),
+      TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
+    )
+  }
   def defaultLabelFromSingleDay(marketDataIdentifier : MarketDataIdentifier, calendar : BusinessCalendar, zeroInterestRates : Boolean = false) = {
     val day = Day.today.previousWeekday // don't use a calendar as we don't know which one
     val timeOfDayToUse = if (day >= Day.today) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
