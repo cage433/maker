@@ -26,7 +26,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
   val reportFieldsByField = reportFieldTuples.map(_._2).groupBy(rf=>Field(rf.name))
   val reportFields:List[Field] = reportFieldTuples.map{_._1}.distinct
   val tradeFields = Set() ++ tradePivotTable.fieldDetails.map{f=>f.field}
-  private val tmpReportFields = reportFields.map(f=>reportFieldDetailsByField(f)).toSet.toList
+  private val tmpReportFields = reportFields.map(f=>reportFieldDetailsByField(f)).toList.distinct
   private val tmpTradeFields = tradePivotTable.fieldDetails.filter(f=>f.field!=instrumentField&&f.field!=utpVolumeField).toList
 //  val fields = tmpReportFields ::: tmpTradeFields
 
