@@ -63,7 +63,7 @@ object InstallationHelper {
 !define excel_xll "excel_plugin-""" + serverName + """.xll"
 !define uninstall_exe "uninstall_${product}.exe"
 !define uninstall_exe_no_splash "uninstall_${product}-no-splash.exe"
-!define company "Trafigura Ltd"
+!define company "Trafigura"
 !define add_remove_key "Software\Microsoft\Windows\CurrentVersion\Uninstall\${product}"
 !define java_version_str "SOFTWARE\JavaSoft\Java Runtime Environment"
 
