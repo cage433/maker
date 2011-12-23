@@ -254,7 +254,7 @@ class PivotTablePageComponent(
     val removeZerosButton = new ToggleToolBarButton {
       selected = pivotPageState.otherLayoutInfo.removeZeros
       tooltip = "Remove or show rows that contain zeros"
-      icon = StarlingIcons.icon("/icons/16x16_remove_zeros.png")
+      icon = StarlingIcons.RemoveZeros
       reactions += {
         case ButtonClicked(_) => {
           val newOtherLayoutInfo = pivotPageState.otherLayoutInfo.copy(removeZeros = !pivotPageState.otherLayoutInfo.removeZeros)
@@ -268,7 +268,7 @@ class PivotTablePageComponent(
       reactions += {case ButtonClicked(b) => pivotComp.copyReportToClip()}
     }
     val saveEditsButton = new ToolBarButton {
-      icon = StarlingIcons.icon("/icons/16x16_save.png")
+      icon = StarlingIcons.Save
       tooltip = "Save the edits made to the data"
       enabled = edits.nonEmpty
       var numEdits0 = edits.size(pivotComp.totalNumCols)
@@ -309,7 +309,7 @@ class PivotTablePageComponent(
       }
     }
     val resetEditsButton = new ToolBarButton {
-      icon = StarlingIcons.icon("/icons/16x16_undo.png")
+      icon = StarlingIcons.ResetEdits
       tooltip = "Reset all unsaved edits"
       enabled = edits.nonEmpty
       reactions += {case ButtonClicked(b) => {
@@ -319,7 +319,7 @@ class PivotTablePageComponent(
 
     val resetLayoutButton = pivotTablePageData.pivotData.defaultPivotState.map { defaultPivotState => {
       new ToolBarButton {
-        icon = StarlingIcons.icon("/icons/16x16_contract.png")
+        icon = StarlingIcons.DefaultLayout
         tooltip = "Use the default layout"
         enabled = currentFieldState != defaultPivotState.pfs || pivotPageState.otherLayoutInfo != defaultPivotState.oli
         reactions += {
@@ -329,7 +329,7 @@ class PivotTablePageComponent(
     } }
 
     val clearPivotButton = new ToolBarButton {
-      icon = StarlingIcons.icon("/icons/16x16_clear_pivot.png")
+      icon = StarlingIcons.ClearPivot
       tooltip = "Remove all fields from the pivot table"
       enabled = {
         currentFieldState.rowFields.nonEmpty || currentFieldState.columns.allFields.nonEmpty || currentFieldState.filters.nonEmpty

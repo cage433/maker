@@ -20,6 +20,11 @@ object StarlingIcons {
   lazy val ExpandColumnsToFit = StarlingIcons.icon("/icons/16x16_expand_columns.png")
   lazy val Calculate = StarlingIcons.icon("/icons/16x16_calculator.png")
   lazy val ValidationError = StarlingIcons.icon("/icons/validation.png")
+  lazy val RemoveZeros = StarlingIcons.icon("/icons/16x16_remove_zeros.png")
+  lazy val ClearPivot = StarlingIcons.icon("/icons/16x16_clear_pivot.png")
+  lazy val DefaultLayout = StarlingIcons.icon("/icons/16x16_contract.png")
+  lazy val Save = StarlingIcons.icon("/icons/16x16_save.png")
+  lazy val ResetEdits = StarlingIcons.icon("/icons/16x16_undo.png")
 
   val SaveReportConfiguration = "/icons/16x16_star_add.png"
 
