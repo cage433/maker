@@ -64,7 +64,7 @@ case class ReferenceDataIndexPageData(referenceTables:List[ReferenceDataLabel]) 
 case class ReferenceDataPage(table:ReferenceDataLabel, pivotPageState : PivotPageState) extends AbstractStarlingPivotPage(pivotPageState) {
   def text = table.name
   override def icon = if (table.name.toLowerCase.trim != "calendars") {
-    StarlingIcons.im("/icons/16x16_chart_line.png")
+    StarlingIcons.im("/icons/16x16_vols.png")
   } else {
     StarlingIcons.im("/icons/16x16_calendar_day.png")
   }

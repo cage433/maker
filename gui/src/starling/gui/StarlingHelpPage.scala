@@ -18,7 +18,6 @@ object StarlingHelpPage {
       "Copy" -> StarlingIcons.Copy,
       "Rotate" -> StarlingIcons.Rotate,
       "Lock" -> StarlingIcons.Lock,
-      "SaveLayout" -> StarlingIcons.SaveLayout,
       "Calculate" -> StarlingIcons.Calculate,
 
       "SaveReportConfiguration" -> StarlingIcons.icon(SaveReportConfiguration),

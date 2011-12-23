@@ -21,7 +21,7 @@ import common.{ButtonClickedEx, NewPageButton, MigPanel}
 case class ReportConfigurationPage(tradeAndReferenceDataInfo:TradeAndReferenceDataInfo) extends StarlingServerPage {
   def text = "Configure Report"
 
-  def icon = StarlingIcons.im("/icons/16x16_report_magnify.png")
+  def icon = StarlingIcons.im("/icons/16x16_report.png")
   // This page doesn't need anything from the server.
   def build(reader:StarlingServerContext) = {null}
 

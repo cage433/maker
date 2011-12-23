@@ -248,13 +248,13 @@ object GuiStart extends Log {
     m
   }
 
-  def showErrorThenExit(t: Throwable) {
+  /*def showErrorThenExit(t: Throwable) {
     log.fatal("Failed to start starling: ", t)
     onEDT {
       GuiUtils.setLookAndFeel()
       new Frame {
         title = "Could not start Starling"
-        iconImage = StarlingIcons.icon("/icons/32x32/status/weather-few-clouds.png").getImage
+        iconImage = StarlingIcons.icon("/icons/32x32_weather-few-clouds.png").getImage
         val okButton = new Button("Ok") {reactions += {case ButtonClicked(e) => exit()}}
         contents = new MigPanel("insets n 0 n n") {
           val image = StarlingIcons.im("/icons/128x128_storm_dead_bird.png")
@@ -285,7 +285,7 @@ object GuiStart extends Log {
         def exit() {System.exit(-1)}
       }
     }
-  }
+  }*/
 }
 
 object StarlingUtilButtons {

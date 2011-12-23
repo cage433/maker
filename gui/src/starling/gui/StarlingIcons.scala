@@ -19,7 +19,6 @@ object StarlingIcons {
   lazy val Lock = StarlingIcons.icon("/icons/16x16_split.png")
   lazy val ExpandColumnsToFit = StarlingIcons.icon("/icons/16x16_expand_columns.png")
   lazy val Calculate = StarlingIcons.icon("/icons/16x16_calculator.png")
-  lazy val SaveLayout = StarlingIcons.icon("/icons/16x16_layout_add.png")
   lazy val ValidationError = StarlingIcons.icon("/icons/validation.png")
 
   val SaveReportConfiguration = "/icons/16x16_star_add.png"
@@ -31,13 +30,11 @@ object StarlingIcons {
   def im(location:String) = imageCache.memoize(location, ImageIO.read(getResource(location, "Image")))
 
   private def getResource(location: String, kind: String) = try {
-    val url = getClass.getResource(location)
-    if (url == null) {
-      throw new Exception("No resource found for " + location)
+    getClass.getResource(location) match {
+      case null => throw new RuntimeException("No resource found for " + location)
+      case r => r
     }
-    url
-  }
-  catch {
+  } catch {
     case e => throw new Exception("Could not load %s: %s" % (kind, location), e)
   }
 }

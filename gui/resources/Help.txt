@@ -8,12 +8,12 @@ h1. Key features
 * Trades and market data are read from a number of different systems (EAI/Pluto, Trinity, Forward Curve Database, LIM, Softmar...)
 * Trades and market data are versioned.
 * The usual risk reports are included: Delta, P&L, VAR, Vega, Gamma... and slide reports/stress/scenario analysis.
-* Reports and displayed using a drag and drop pivot table.
+* Reports are displayed in a drag and drop pivot table.
 * Trades and market data can be uploaded via an excel addin.
 
 h1. 30 second help
 
-* You use the application is like a web browser (forward, back, stop)
+* You use the application like you would a web browser (forward, back, stop)
 * Trades, market data and reports are presented like excel pivot tables (drag fields around to change the view)
 * To run a report: click "Trades" -> choose the trades -> "Configure Report" -> select market data and valuation params then click -> "Run"
 * Drag fields around to change the layout and grouping. You can also set the layout before clicking "Run".
@@ -59,7 +59,6 @@ data displayed
 For example to see delta by market and period for trades in a specific portfolio you would put delta in the data area, market and period in the row and column area and portfolio in the filter area.
 
 Here are some of the additional features available on pivot tables:
-* !SaveLayout!. Save layout. You can save the current layout so you can use it at a later date
 * !SubTotals!. Sub totals: Shows sub totals for each row group in a new row
 * !RowGrandTotals!. Row totals: Shows totals at the bottom of the table
 * !ColumnTotals!. Column totals: Shows totals at the right of the table
