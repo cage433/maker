@@ -183,7 +183,7 @@ class ExceptionPageComponent(errorType:String, t:Throwable)  extends MigPanel(""
     wordWrap = true
   })
   add(new Label() {
-    icon = BrowserIcons.icon("/icons/22x22/emblems/emblem-important.png")
+    icon = BrowserIcons.icon("/icons/emblem-important.png")
   })
   add(new Label("The previous action failed. Please contact a developer."), "wrap")
   add(stackTraceComponent, "skip 1, push, grow")

@@ -6,7 +6,7 @@ import java.awt.image.BufferedImage
 import java.io.{FileOutputStream, FileInputStream, File}
 
 object BrowserIcons {
-  val Refresh = "/icons/22x22/actions/view-refresh.png"
+  val Refresh = "/icons/view-refresh.png"
   lazy val Blank10 = BrowserIcons.icon("/icons/10x10_blank.png")
 
   private val iconCache = new SimpleCache[ImageIcon]()
@@ -17,11 +17,11 @@ object BrowserIcons {
 
   private def getResource(location: String, kind: String) = try {
     getClass.getResource(location) match {
-      case null => throw new Exception("missing resource " + location)
+      case null => throw new RuntimeException("missing resource " + location)
       case r => r
     }
   } catch {
-    case e => throw new Exception("Could not load " + kind + " " + location, e)
+    case e => throw new RuntimeException("Could not load " + kind + " " + location, e)
   }
 }
 

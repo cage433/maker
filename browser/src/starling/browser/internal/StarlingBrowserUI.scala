@@ -18,7 +18,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
   }
 
   private val errorIcon = new Label {
-    icon = BrowserIcons.icon("/icons/22x22/emblems/emblem-important.png")
+    icon = BrowserIcons.icon("/icons/emblem-important.png")
   }
   private val questionIcon = new Label {
     icon = BrowserIcons.icon("/icons/128x128_question.png")

@@ -56,8 +56,8 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
     case scala.swing.event.UIElementResized(_) => {updateNotifications()}
   }
   listenTo(this)
-  private val mainIcon = BrowserIcons.icon("/icons/32x32/status/weather-clear.png").getImage
-  private val busyIcon = BrowserIcons.icon("/icons/32x32/status/weather-few-clouds.png").getImage
+  private val mainIcon = BrowserIcons.icon("/icons/32x32_weather-clear.png").getImage
+  private val busyIcon = BrowserIcons.icon("/icons/32x32_weather-few-clouds.png").getImage
   iconImage = mainIcon
 
   private val browserTabbedPane = new StarlingBrowserTabbedPane(homePage, startPage, pageBuilder, lCache, userSettings,

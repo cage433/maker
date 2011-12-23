@@ -328,7 +328,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   })
 
   val backButton: Button = new NavigationButton {
-    icon = BrowserIcons.icon("/icons/22x22/actions/go-previous.png")
+    icon = BrowserIcons.icon("/icons/go-previous.png")
     peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), "backPageAction")
     peer.getActionMap.put("backPageAction", backPageAction)
     peer.setMnemonic(java.awt.event.KeyEvent.VK_LEFT)
@@ -342,7 +342,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   val undoButton = new NavigationButton {
-    icon = BrowserIcons.icon("/icons/22x22/actions/22x22_edit_undo_n.png")
+    icon = BrowserIcons.icon("/icons/22x22_edit_undo_n.png")
     tooltip = "Undo the last action (Ctrl+z)"
 
     val mar = peer.getMargin
@@ -370,7 +370,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   val redoButton = new NavigationButton {
-    icon = BrowserIcons.icon("/icons/22x22/actions/edit-redo.png")
+    icon = BrowserIcons.icon("/icons/edit-redo.png")
     tooltip = "Redo the last action (Ctrl+Shift+z)"
 
     val mar = peer.getMargin
@@ -434,7 +434,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   val forwardButton:Button = new NavigationButton {
-    icon = BrowserIcons.icon("/icons/22x22/actions/go-next.png")
+    icon = BrowserIcons.icon("/icons/go-next.png")
     peer.setMnemonic(java.awt.event.KeyEvent.VK_RIGHT)
     tooltip = "Forward to next page (Alt+Right)"
 	  reactions += {
@@ -478,7 +478,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     peer.getActionMap.put("refreshAction", refreshAction.peer)
   }
   val stopButton = new NavigationButton {
-    icon = BrowserIcons.icon("/icons/22x22/actions/process-stop.png")
+    icon = BrowserIcons.icon("/icons/process-stop.png")
     tooltip = "Stop"
 		reactions += {
          case ButtonClicked(button) => {
@@ -495,7 +495,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     peer.setEnabled(false)
   }
   val homeButton = new NavigationButton {
-    icon = BrowserIcons.icon("/icons/22x22/actions/go-home.png")
+    icon = BrowserIcons.icon("/icons/go-home.png")
     tooltip = "Home"
     reactions += {
       case ButtonClicked(button) => {
@@ -634,7 +634,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   private val viewSettingsAction = Action("") {pageContext.goTo(SettingsPage(), Modifiers(true, true))}
-  viewSettingsAction.icon = BrowserIcons.icon("/icons/22x22/categories/preferences-system.png")
+  viewSettingsAction.icon = BrowserIcons.icon("/icons/preferences-system.png")
   viewSettingsAction.toolTip = "Go to the settings page"
   private val settingsButton = new NavigationButton {action = viewSettingsAction}
 
