@@ -71,7 +71,7 @@ trait TitanPricingSpec {
     inCurrency(env, p, valuationCCY)
 
   protected def inMarketCurrency(env : Environment, p : Quantity) =
-    inCurrency(env, p, futuresMarket.currency)
+    inCurrency(env, p, futuresMarket.currency.inBaseCurrency)
 
   private def inCurrency(env : Environment, p : Quantity, ccy : UOM) = {
     if (p == Quantity.NULL)
