@@ -92,6 +92,9 @@ case class TradeStores(
       def tradeSets(predicate: TradePredicate) = List(
         new TradeSet(TitanTradeSystem, standardStoreFor(TitanTradeSystem), predicate)
       )
+      override def initialState = {
+        Some(PivotFieldsState(dataFields = List(Field("Trade Count")), rowFields = List(Field("Instrument"))))
+      }
     }
   ) ++ Desk.eaiDesks.map(eaiDesk)
 
