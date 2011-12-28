@@ -12,7 +12,7 @@ import javax.swing._
 import java.awt.event.ActionEvent
 import org.jdesktop.swingx.plaf.basic.BasicMonthViewUI
 import osgi.BundleAdded
-import java.awt.{Color, Dimension}
+import java.awt.{Dimension, Color}
 
 class MinimalSXMonthView extends Component {
   var dayOfWeekHeight = 0
@@ -75,6 +75,10 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
       }
     }
     renderer = ListView.Renderer.wrap(bookmarkDataListCellRenderer)
+
+    if (bookmarks.isEmpty) {
+      preferredSize = new Dimension(20,20)
+    }
   }
 
   val dayPicker = new MinimalSXMonthView {
@@ -86,7 +90,6 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
       if (context.localCache.localCache.contains(LocalCache.Version) && "FC2" != context.localCache.version.serverType) {
         val now = new java.util.Date()
         c.setTime(now)
-        val dayOfWeek = c.get(Calendar.DAY_OF_WEEK)
         c.add(Calendar.DAY_OF_WEEK, -1)
         while (c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY || c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
           c.add(Calendar.DAY_OF_WEEK, -1)
@@ -213,6 +216,20 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   }
 
   componentsEnabled = bookmarks.nonEmpty
+
+  println("")
+  println("")
+  println("111 ")
+  println(preferredSize)
+  println("")
+  println(iconLabel.preferredSize)
+  println(textLabel.preferredSize)
+  println(bookmarkScrollPane.preferredSize)
+  println(bookmarksListView.preferredSize)
+  println(dayPicker.preferredSize)
+  println(goToBookmarkButton.preferredSize)
+  println("")
+  println("")
 }
 
 case object GoingToBookmark extends Event
