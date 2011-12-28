@@ -85,13 +85,9 @@ This enables the display of realtime reports which are updated when the trades a
 
 Note: The selection controls (snapshots chooser, excel data drop down lists) are updated without a refresh
 
-h1. Reports
+h1. Bookmarks
 
-The Star button !SaveReportConfiguration! on a report saves this report as a preset report which means it can be re-run from the home page using a different market day.
-It will ask you if the current layout should also be saved and associated with the report. Just saving the report on its own will save all the paramaters at the top
-of the page (all the days, the pricing group etc.). The layout is separate and covers how the report is displayed in the pivot table. So the common usage is to have
-one report and many different layouts for it.
-The Market Data button !MarketData! takes you to the viewer for the market data used by the report.
+The star button at the top right of the window bookmarks a page. This allows you to return to the same page at a later time, directly from the home page. If when saving the bookmark you check the Shared option, other users will be able to go to the same page as well.
 
 h1. Slide/Stress Reports
 

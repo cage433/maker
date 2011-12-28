@@ -26,8 +26,6 @@ object StarlingIcons {
   lazy val Save = StarlingIcons.icon("/icons/16x16_save.png")
   lazy val ResetEdits = StarlingIcons.icon("/icons/16x16_undo.png")
 
-  val SaveReportConfiguration = "/icons/16x16_star_add.png"
-
   private val iconCache = CacheFactory.getCache("iconCache")
   private val imageCache = CacheFactory.getCache("imageCache")
 

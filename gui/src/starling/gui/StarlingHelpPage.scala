@@ -27,7 +27,6 @@ object StarlingHelpPage {
       "Save" -> Save,
       "ResetEdits" -> ResetEdits,
 
-      "SaveReportConfiguration" -> StarlingIcons.icon(SaveReportConfiguration),
       "MarketData" -> StarlingIcons.icon(MarketData),
       "Refresh" -> StarlingIcons.icon(BrowserIcons.Refresh)
     )
