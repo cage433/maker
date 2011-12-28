@@ -216,20 +216,6 @@ class BookmarksPanel(context:PageContext) extends MigPanel("") {
   }
 
   componentsEnabled = bookmarks.nonEmpty
-
-  println("")
-  println("")
-  println("111 ")
-  println(preferredSize)
-  println("")
-  println(iconLabel.preferredSize)
-  println(textLabel.preferredSize)
-  println(bookmarkScrollPane.preferredSize)
-  println(bookmarksListView.preferredSize)
-  println(dayPicker.preferredSize)
-  println(goToBookmarkButton.preferredSize)
-  println("")
-  println("")
 }
 
 case object GoingToBookmark extends Event
