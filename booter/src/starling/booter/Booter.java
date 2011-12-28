@@ -1,12 +1,14 @@
 package starling.booter;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.*;
 import java.security.*;
 import java.util.*;
+import java.util.List;
 
 /**
  * Downloads
@@ -50,6 +52,9 @@ class Booter {
         return url.openConnection(proxy).getInputStream();
     }
 
+    private static JFrame progressSplashScreen = null;
+    private static JProgressBar progressBar = null;
+
     public static void run(File cacheDir, Proxy proxy, URL baseURL, String[] args) throws Exception {
 
         //HACK this should probably be specified in app.txt
@@ -66,7 +71,8 @@ class Booter {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    String errorMessage = "Cannot connect to the Starling server\nPlease ensure it is running and try again\n\n" + appURL.toString() + "\n" + t.getMessage();
+                    String errorMessage = "Cannot connect to the Starling server\nIt probably isn't running. " +
+                            "Please try again later\nIf the problem persists please contact Starling support\n\n" + appURL.toString() + "\n" + t.getMessage();
                     String title = "Cannot connect to the Starling server";
                     JOptionPane.showMessageDialog(null, errorMessage, title, JOptionPane.ERROR_MESSAGE);
                 }
@@ -103,6 +109,46 @@ class Booter {
             }
         }
 
+        final int numberOfJarsToDownload = missingOrOutOfDateJars.size();
+        if (numberOfJarsToDownload > 0) {
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    JFrame frame = new JFrame("Loading Starling...");
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    progressSplashScreen = frame;
+                    frame.setUndecorated(true);
+                    URL iconURL = getClass().getClassLoader().getResource("starling/booter/images/32x32_weather-few-clouds.png");
+                    frame.setIconImage(new ImageIcon(iconURL).getImage());
+                    URL imageURL = getClass().getClassLoader().getResource("starling/booter/images/splash_screen.png");
+                    final Image image = new ImageIcon(imageURL).getImage();
+                    JPanel panel = new JPanel(new BorderLayout()) {
+                        @Override
+                        protected void paintComponent(Graphics g) {
+                            g.drawImage(image, 0, 0, null);
+                        }
+                    };
+                    Dimension imageSize = new Dimension(image.getWidth(null), image.getHeight(null));
+                    panel.setPreferredSize(imageSize);
+                    panel.setMinimumSize(imageSize);
+                    panel.setMaximumSize(imageSize);
+                    JPanel holderPanel = new JPanel(new BorderLayout());
+                    holderPanel.setBorder(BorderFactory.createEmptyBorder(0, 2, 2, 2));
+                    holderPanel.setOpaque(false);
+                    progressBar = new JProgressBar(0, numberOfJarsToDownload);
+                    holderPanel.add(progressBar);
+                    panel.add(holderPanel, BorderLayout.SOUTH);
+                    frame.add(panel);
+                    frame.pack();
+                    frame.setLocationRelativeTo(null);
+                    Rectangle bounds = frame.getBounds();
+                    frame.setBounds(bounds.x, bounds.y + 15, bounds.width, bounds.height);
+                    frame.setVisible(true);
+                }
+            });
+        }
+
+        int counter = 0;
         for (Map.Entry<String, String> entry : missingOrOutOfDateJars.entrySet()) {
             String jar = entry.getKey();
             String md5 = entry.getValue();
@@ -115,6 +161,16 @@ class Booter {
             inputStream.close();
             outputStream.flush();
             outputStream.close();
+            counter++;
+            final int c = counter;
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    if (progressBar != null) {
+                        progressBar.setValue(c);
+                    }
+                }
+            });
         }
 
         System.out.println("Booter: Step-4 Downloads complete " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
@@ -131,7 +187,7 @@ class Booter {
 
         FileWriter app = new FileWriter(appFile);
         for (String line : lines) {
-            app.append(line + "\n");
+            app.append(line).append("\n");
         }
         app.close();
         System.out.println("Booter: Step-5 written app.txt " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
@@ -163,17 +219,29 @@ class Booter {
             SwingUtilities.invokeAndWait(new Runnable() {
                 public void run() {
                     UIManager.put("ClassLoader", classLoader); //for the look and feel
-                    //trident uses the context classloader on the swing thread so we set it here
-//          Thread.currentThread().setContextClassLoader(classLoader);
                 }
             });
             Class launcher = classLoader.loadClass(mainClass);
             Method main = launcher.getMethod("main", new Class[]{String[].class});
             System.out.println("Booter: Step-7 Done " + ManagementFactory.getRuntimeMXBean().getUptime() + "ms");
+            closeProgressSplashScreenFrame();
             main.invoke(null, new Object[]{applicationArgs});
         } catch (Exception e) {
+            closeProgressSplashScreenFrame();
             e.printStackTrace();
         }
+    }
+
+    private static void closeProgressSplashScreenFrame() {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                if (progressSplashScreen != null) {
+                    progressSplashScreen.setVisible(false);
+                    progressSplashScreen.dispose();
+                }
+            }
+        });
     }
 
     private static java.util.List<String> readLines(InputStream in) throws Exception {
