@@ -89,7 +89,7 @@ class ReportFacilityImpl(
     } else {
       "Trade '"
     }
-    throw new Exception(tradeType + tradeID.id + "' not found")
+    throw new UnrecognisedTradeIDException(tradeType + tradeID.id + "' not found")
   }
 
   def clearCache {

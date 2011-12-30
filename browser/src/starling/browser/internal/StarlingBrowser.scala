@@ -17,7 +17,7 @@ import javax.swing.{JComponent, AbstractAction, KeyStroke, JPanel, JPopupMenu, T
 import java.awt.{RenderingHints, Graphics, Color, KeyboardFocusManager, Graphics2D, Component => AWTComp}
 import java.lang.reflect.UndeclaredThrowableException
 import net.miginfocom.layout.LinkHandler
-import util.{BrowserLog, BrowserStackTraceToString, BrowserThreadSafeCachingProxy}
+import util.{BrowserLog, BrowserThreadSafeCachingProxy}
 import com.googlecode.transloader.clone.reflect.{ObjenesisInstantiationStrategy, MaximalCloningDecisionStrategy, ReflectionCloningStrategy}
 import com.googlecode.transloader.clone.SerializationCloningStrategy
 import java.awt.event._
@@ -771,7 +771,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     starlingBrowserUI.setContent(content, cancelAction)
   }
 
-  def setError(title:String="Error", error:String="") {
+  def setError(title:String="Error", error:String="", throwable:Option[Throwable]=None) {
     genericLockedUI.setClient(greyClient)
     genericLockedUI.setLocked(true)
     setButtonsEnabled(false)
@@ -782,7 +782,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       refreshAction.enabled = history(current).refreshPage.isDefined
     }
 
-    starlingBrowserUI.setError(title, error, reset())
+    starlingBrowserUI.setError(title, error, throwable, reset())
   }
 
   def clearContent() {
@@ -832,7 +832,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case FailureSubmitResponse(t) => {
             timer.stop()
             t.printStackTrace()
-            starlingBrowserUI.setError("There was an error when processing your request",BrowserStackTraceToString.string(t), {
+            starlingBrowserUI.setError("There was an error whilst generating your page", t.getMessage, Some(t), {
               setScreenLocked(false)
               refreshBrowserBar()
               refreshAction.enabled = history(current).refreshPage.isDefined
@@ -986,19 +986,25 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
         onEDT({ // I shouldn't really need to do another onEDT here but if I don't, clicking on the Home Button causes the slide effect to flicker.
-          def showError(title: String, message: String) {
-            starlingBrowserUI.setError(title, message, {
-              val currentPageInfo:PageInfo = history(current)
-              currentPageInfo.pageComponent match {
-                case Some(pc) => {
-                  pc.resetDynamicState()
-                  pc.restoreToCorrectViewForBack()
+          def showError(title: String, message: String, throwable:Option[Throwable]) {
+            starlingBrowserUI.setError(title, message, throwable, {
+              if (current != -1) {
+                val currentPageInfo:PageInfo = history(current)
+                currentPageInfo.pageComponent match {
+                  case Some(pc) => {
+                    pc.resetDynamicState()
+                    pc.restoreToCorrectViewForBack()
+                  }
+                  case None =>
                 }
-                case None =>
+                setScreenLocked(false)
+                refreshBrowserBar()
+                refreshAction.enabled = currentPageInfo.refreshPage.isDefined
+              } else {
+                // We have come to a new starling browser but we have had an error - Remove the starling browser.
+                windowMethods.closeTabIfPossible()
+                windowMethods.setBusy(false)
               }
-              setScreenLocked(false)
-              refreshBrowserBar()
-              refreshAction.enabled = currentPageInfo.refreshPage.isDefined
             })
           }
 
@@ -1007,11 +1013,11 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             case FailurePageResponse(t:Throwable) => t match {
               case e: UndeclaredThrowableException => {
                 e.printStackTrace()
-                showError("Error", BrowserStackTraceToString.messageAndThenString(e.getUndeclaredThrowable))
+                showError("There was an error whilst generating your page", e.getUndeclaredThrowable.getMessage, Some(e.getUndeclaredThrowable))
               }
               case e => {
                 e.printStackTrace()
-                showError("Error", BrowserStackTraceToString.messageAndThenString(e))
+                showError("There was an error whilst generating your page", e.getMessage, Some(e))
               }
             }
             case SuccessPageResponse(_,bookmark) => {
@@ -1120,10 +1126,16 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             waitingFor -= Some(threadID)
           }
           t.printStackTrace()
-          starlingBrowserUI.setError("There was an error when processing your request", BrowserStackTraceToString.string(t), {
-            setScreenLocked(false)
-            refreshBrowserBar()
-            refreshAction.enabled = history(current).refreshPage.isDefined
+          starlingBrowserUI.setError("There was an error whilst generating your page", t.getMessage, Some(t), {
+            if (current != -1) {
+              setScreenLocked(false)
+              refreshBrowserBar()
+              refreshAction.enabled = history(current).refreshPage.isDefined
+            } else {
+              // We have come to a new starling browser but we have had an error - Remove the starling browser.
+              windowMethods.closeTabIfPossible()
+              windowMethods.setBusy(false)
+            }
           })
         }
         def resetScreen() {

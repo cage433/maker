@@ -10,25 +10,30 @@ import scala.swing._
 import org.jdesktop.jxlayer.JXLayer
 import java.awt.{FlowLayout, BorderLayout, Color, Dimension}
 import starling.browser.common._
+import starling.browser.util.BrowserStackTraceToString
 
 class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
-  private val contentPanel = new JPanel(new MigLayout("")) {
+  val topPanelInsets = GuiUtils.RightPanelValue + 41
+  private val contentPanel = new JPanel(new MigLayout("", "[grow, al c]", topPanelInsets + ":" + (topPanelInsets + 120) + "[p]" + GuiUtils.RightPanelSpace + ":null:null:push")) {
     setOpaque(false)
     setVisible(false)
   }
 
   private val errorIcon = new Label {
-    icon = BrowserIcons.icon("/icons/emblem-important.png")
+    icon = BrowserIcons.icon("/icons/128x128_error.png")
   }
   private val questionIcon = new Label {
     icon = BrowserIcons.icon("/icons/128x128_question.png")
   }
+  private val detailsDownIcon = BrowserIcons.icon("/icons/small_down_arrows.png")
+  private val detailsUpIcon = BrowserIcons.icon("/icons/small_up_arrows.png")
 
-  def setError(title:String, error:String, errorOK: => Unit) {
-    val errorPanel = new MigPanel("") with RoundedBackground {
+  def setError(title:String, message:String, throwable:Option[Throwable], errorOK: => Unit) {
+    val errorPanel = new MigPanel with RoundedBackground {
       border = RoundedBorder(Color.RED)
       background = Color.WHITE
-      minimumSize = new Dimension(10, 100)
+      minimumSize = new Dimension(550, 100)
+      maximumSize = new Dimension(550, Integer.MAX_VALUE)
       val okButton = new Button {
         text = "OK"
         reactions += {
@@ -38,22 +43,69 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
           }
         }
       }
-      add(errorIcon)
-      add(new Label(title), "wrap")
-      add(new ScrollPane(new TextArea() {
-        text = error
+      val titleLabel = new Label(title) {
+        font = font.deriveFont(java.awt.Font.BOLD)
+      }
+      val messageScrollPane = new ScrollPane(new TextArea() {
+        text = message
         editable = false
-        background = new Color(247,231,228)
-      }), "skip 1, pushy, growy, wrap unrel")
-      add(okButton, "spanx, split, al r, tag ok")
+        background = Color.WHITE
+        lineWrap = true
+        peer.setCaretPosition(0)
+      })
+
+      add(errorIcon, "spany 3")
+      add(titleLabel, "gaptop rel, spanx, wrap unrel")
+      add(messageScrollPane, "gapleft 10, spanx, pushy, grow, wrap unrel")
+
+      throwable match {
+        case None => add(okButton, "spanx, split, al r, tag ok")
+        case Some(t) => {
+          val throwablePanel = new MigPanel {
+            background = Color.WHITE
+            visible = false
+            val throwableTextArea = new TextArea {
+              text = BrowserStackTraceToString.string(t)
+              editable = false
+              peer.setCaretPosition(0)
+            }
+            val throwableScrollPane = new ScrollPane(throwableTextArea)
+            add(throwableScrollPane, "push, grow")
+          }
+
+          val detailsButton = new Button("Details") {
+            var detailsShowing = false
+            icon = detailsDownIcon
+
+            reactions += {
+              case ButtonClicked(_) => {
+                throwablePanel.visible = !detailsShowing
+                detailsShowing = !detailsShowing
+                if (detailsShowing) {
+                  icon = detailsUpIcon
+                } else {
+                  icon = detailsDownIcon
+                }
+              }
+            }
+          }
+
+          add(detailsButton, "pushx, al r")
+          add(okButton, "tag ok")
+          add(throwablePanel, "newline, spanx, hidemode 3")
+        }
+      }
     }
 
     contentPanel.removeAll()
-    contentPanel.add(errorPanel.peer, "gaptop 41lp, push, al c c")
+    addToContentPanel(errorPanel)
+    errorPanel.okButton.requestFocusInWindow()
+  }
 
+  private def addToContentPanel(comp:Component) {
+    contentPanel.add(comp.peer)
     contentPanel.setVisible(true)
     contentPanel.revalidate()
-    errorPanel.okButton.requestFocusInWindow()
   }
 
   def setYesNoMessage(message:String, reason:String, onEvent:(Boolean) => Unit, windowMethods:WindowMethods, componentToFocus:Option[java.awt.Component]) {
@@ -104,9 +156,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
     val escapeAction = Action("Escape") {clearUp(false)}
     yesNoPanel.peer.getActionMap.put("Escape", escapeAction.peer)
 
-    contentPanel.add(yesNoPanel.peer, "push, al c c")
-    contentPanel.setVisible(true)
-    contentPanel.revalidate()
+    addToContentPanel(yesNoPanel)
     windowMethods.setDefaultButton(Some(yesNoPanel.yesButton))
     yesNoPanel.yesButton.requestFocusInWindow()
   }
@@ -120,9 +170,7 @@ class StarlingBrowserUI extends AbstractLayerUI[JComponent] {
       }
     }
     content.peer.getActionMap.put("Escape", escapeAction.peer)
-    contentPanel.add(content.peer, "push, al c c")
-    contentPanel.setVisible(true)
-    contentPanel.revalidate()
+    addToContentPanel(content)
   }
 
   def clearContentPanel() {

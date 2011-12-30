@@ -88,7 +88,9 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
     }
   }
 
-  def canClose = (browserTabbedPane.pages.size > 2)
+  def canCloseTab = (browserTabbedPane.pages.size > 2)
+
+  def closeTabIfPossible() {browserTabbedPane.closeTabButDontCloseWindow()}
 
   def setDefaultButton(button: Option[Button]) {
     defaultButton = button
@@ -121,7 +123,8 @@ class StarlingBrowserFrame(homePage: Page, startPage:Either[Page, (ServerContext
 
 trait WindowMethods {
   def setBusy(busy: Boolean)
-  def canClose:Boolean
+  def canCloseTab:Boolean
+  def closeTabIfPossible()
   def setDefaultButton(button:Option[Button])
   def getDefaultButton:Option[Button]
 }
@@ -195,13 +198,8 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   peer.getActionMap.put("nextTabAction", nextTabAction.peer)
 
   private val closeTabAction = Action("Close Tab") {
-    if (windowMethods.canClose) {
-      val selectionToRemove = selection.index
-      pages.remove(selectionToRemove)
-      val newSelection = if (selectionToRemove == pages.length - 1) selectionToRemove - 1 else selectionToRemove
-      doUnselection = false
-      selection.index = newSelection
-      doUnselection = true
+    if (windowMethods.canCloseTab) {
+      closeTab()
     } else {
       containerMethods.closeFrame(parentFrame)
     }
@@ -209,6 +207,21 @@ class StarlingBrowserTabbedPane(homePage: Page, startPage:Either[Page,(ServerCon
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.CTRL_DOWN_MASK), "closeTabAction")
   peer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK), "closeTabAction")
   peer.getActionMap.put("closeTabAction", closeTabAction.peer)
+
+  private def closeTab() {
+    val selectionToRemove = selection.index
+    pages.remove(selectionToRemove)
+    val newSelection = if (selectionToRemove == pages.length - 1) selectionToRemove - 1 else selectionToRemove
+    doUnselection = false
+    selection.index = newSelection
+    doUnselection = true
+  }
+
+  def closeTabButDontCloseWindow() {
+    if (windowMethods.canCloseTab) {
+      closeTab()
+    }
+  }
 
   private val newTabItem = new MenuItem(newTabAction)
   private val closeTabItem = new MenuItem(closeTabAction)

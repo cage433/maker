@@ -1,15 +1,12 @@
 package starling.browser.internal
 
 import java.awt.image.BufferedImage
-import scala.swing.Component._
 import scala.swing.{Label, TabbedPane}
-import scala.swing.UIElement._
 import java.awt.Dimension
 import starling.browser.Page
 import starling.browser.common.{TwoFixedImagePanel, FixedImagePanel, MigPanel}
 import javax.swing.JPanel
 import net.miginfocom.swing.MigLayout
-import javax.swing.JComponent._
 import org.jdesktop.swingx.JXBusyLabel
 
 class TabComponent(windowMethods:WindowMethods, tabbedPane:TabbedPane, initialText:String, initialIcon:BufferedImage) extends MigPanel("insets 0") {
@@ -22,8 +19,8 @@ class TabComponent(windowMethods:WindowMethods, tabbedPane:TabbedPane, initialTe
     maximumSize = new Dimension(300, preferredSize.height)
   }
 
-  private def closeTab {
-    if (windowMethods.canClose) {
+  private def closeTab() {
+    if (windowMethods.canCloseTab) {
       val selectionToRemove = getCurrentPageNumber
       tabbedPane.pages.remove(selectionToRemove)
       val newSelection = if (selectionToRemove == tabbedPane.pages.length - 1) selectionToRemove - 1 else selectionToRemove
@@ -44,13 +41,13 @@ class TabComponent(windowMethods:WindowMethods, tabbedPane:TabbedPane, initialTe
     tabIndexToClose
   }
 
-  def setTextFromPage(page:Page) = {
+  def setTextFromPage(page:Page) {
     label.text = page.shortText
     iconPanel.image = page.icon
   }
 
   def setBusy(busy:Boolean) {
-    iconHolderPanel.removeAll
+    iconHolderPanel.removeAll()
     if (busy) {
       iconHolderPanel.add(busyLabel)
       busyLabel.setBusy(true)
@@ -58,13 +55,13 @@ class TabComponent(windowMethods:WindowMethods, tabbedPane:TabbedPane, initialTe
       iconHolderPanel.add(iconPanel.peer)
       busyLabel.setBusy(false)
     }
-    iconHolderPanel.revalidate
+    iconHolderPanel.revalidate()
   }
 
   private val closeButton = new TwoFixedImagePanel(
     BrowserIcons.im("/icons/close.png"),
     BrowserIcons.im("/icons/stop.png"),
-    closeTab)
+    closeTab())
 
   private val iconHolderPanel = new JPanel(new MigLayout("insets 0")) {
     setOpaque(false)
