@@ -268,7 +268,6 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
 
     val jTable = new JXTable(generateTableModel(table)) with UpdateableNamedQuantityComponent {
       setVisible(false)
-      setBackground(VerticalFunctionNamedQuantityPanel.this.background)
       val depth = VerticalFunctionNamedQuantityPanel.this.depth
       setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS)
       setBorder(MatteBorder(1, 1, 0, 0, TableGridColour))
