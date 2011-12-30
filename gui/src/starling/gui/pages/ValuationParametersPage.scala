@@ -261,7 +261,7 @@ class ValuationParametersPageComponent(context:PageContext, pageData:PageData) e
           }
           val explanationScrollPane = new ScrollPane(explanationComponent) {
             verticalScrollBar.unitIncrement = 10
-            horizontalScrollBar.unitIncrement = 10
+            horizontalScrollBar.unitIncrement = 30
           }
           explanationComponentOption = Some(explanationComponent)
           explanationScrollOption = Some(explanationScrollPane)
