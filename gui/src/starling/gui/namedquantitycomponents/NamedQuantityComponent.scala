@@ -14,8 +14,8 @@ import javax.swing.JTable
 import org.jdesktop.swingx.JXTable
 import starling.pivot.view.swing.{PivotJTable, PivotCellRenderer}
 import org.jdesktop.swingx.decorator.{HighlightPredicate, ColorHighlighter}
-import starling.browser.common.{RoundedBorder, RoundedBackground, MigPanel}
 import swing.event.{MouseClicked, MousePressed}
+import starling.browser.common.{RoundedBorder, RoundedBackground, MigPanel}
 
 class NamedQuantityComponentLabel(text0:String, tooltip0:String=null) extends Label {
   font = PivotCellRenderer.MonoSpacedFont
@@ -76,9 +76,9 @@ object ExpandCollapseState {
 }
 case class ExpandCollapseState(expanded:Option[Boolean], children:List[ExpandCollapseState])
 
-class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
+class ExpandCollapsePanel(namedQuantity:NamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with RoundedBackground with UpdateableNamedQuantityComponent {
   background = backColour(depth)
-  border = LineBorder(background.darker())
+  border = RoundedBorder(background.darker())
   private var expanded = false
 
   val nextDepth = depth + 1
@@ -192,9 +192,9 @@ class QuantityPanel(quantity:Quantity, fi:ExtraFormatInfo, val depth:Int) extend
   def applyExpandCollapseState(expandCollapseState:ExpandCollapseState) {}
 }
 
-class FunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
+class FunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with RoundedBackground with UpdateableNamedQuantityComponent {
   background = backColour(depth)
-  border = LineBorder(background.darker())
+  border = RoundedBorder(background.darker())
   val funcLabel = label(func.functionName, quantityText(func.result, fi))
   val allPanels = new ListBuffer[UpdateableNamedQuantityComponent]()
 
@@ -299,9 +299,10 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
     jTable.setDefaultRenderer(classOf[Object], renderer)
     resizeTableColumnsToFit(jTable, PivotCellRenderer.MonoSpacedFont)
 
-    val detailsButtonPanel = new MigPanel("insets 1 2 1 2") {
+    val detailsButtonPanel = new MigPanel("insets 1 2 1 2") with RoundedBackground {
       cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
       background = Color.BLUE
+      border = RoundedBorder(Color.WHITE)
 
       val l = new Label("Details") {
         foreground = Color.WHITE
@@ -317,7 +318,7 @@ class VerticalFunctionNamedQuantityPanel(func:FunctionNamedQuantity, fi:ExtraFor
       listenTo(mouse.clicks)
     }
 
-    add(detailsButtonPanel, "gapleft 6, wrap")
+    add(detailsButtonPanel, "gapleft 6, gaptop 1, wrap")
     add(lShape, "split, spanx, ay top, gapright 0, hidemode 3")
     add(jTable, "hidemode 3")
   } else {
@@ -359,14 +360,15 @@ class Brace(left:Boolean) extends Label {
   }
 }
 
-class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
+class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with RoundedBackground with UpdateableNamedQuantityComponent {
   background = backColour(depth)
-  border = LineBorder(background.darker())
+  border = RoundedBorder(background.darker())
   val nextDepth = depth + 1
   val leftPanel = panel(binOp.lhs, fi, nextDepth)
   val binOpLabel = label(binOp.op, quantityText(binOp.result, fi))
-  val binOpPanel = new MigPanel("insets 0") {
+  val binOpPanel = new MigPanel("insets 0") with RoundedBackground {
     background = Color.RED
+    border = RoundedBorder(Color.WHITE)
     binOpLabel.foreground = Color.WHITE
     binOpLabel.font = binOpLabel.font.deriveFont(java.awt.Font.BOLD, binOpLabel.font.getSize2D + 10.0f)
     binOpLabel.verticalAlignment = swing.Alignment.Center
@@ -400,10 +402,10 @@ class BinOpNamedQuantityPanel(binOp:BinOpNamedQuantity, fi:ExtraFormatInfo, val 
   }
 }
 
-class NegateNamedQuantityPanel(negate:NegateNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel("" , "[p]0[p]") with UpdateableNamedQuantityComponent {
+class NegateNamedQuantityPanel(negate:NegateNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel("" , "[p]0[p]") with RoundedBackground with UpdateableNamedQuantityComponent {
   val nextDepth = depth + 1
   background = backColour(depth)
-  border = LineBorder(background.darker())
+  border = RoundedBorder(background.darker())
   val negativeLabel = label("-", quantityText(negate.quantity, fi))
   val negativePanel = panel(negate.qty, fi, nextDepth)
   add(negativeLabel, "ay top")
@@ -422,9 +424,9 @@ class NegateNamedQuantityPanel(negate:NegateNamedQuantity, fi:ExtraFormatInfo, v
   }
 }
 
-class InvertNamedQuantityPanel(invert:InvertNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
+class InvertNamedQuantityPanel(invert:InvertNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with RoundedBackground with UpdateableNamedQuantityComponent {
   background = backColour(depth)
-  border = LineBorder(background.darker())
+  border = RoundedBorder(background.darker())
   val nextDepth = depth + 1
   val invertLabel = label("1/", quantityText(invert.quantity, fi))
   val invertPanel = panel(invert.qty, fi, nextDepth)
@@ -444,9 +446,9 @@ class InvertNamedQuantityPanel(invert:InvertNamedQuantity, fi:ExtraFormatInfo, v
   }
 }
 
-class RoundedNamedQuantityPanel(round:RoundedNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with UpdateableNamedQuantityComponent {
+class RoundedNamedQuantityPanel(round:RoundedNamedQuantity, fi:ExtraFormatInfo, val depth:Int) extends MigPanel with RoundedBackground with UpdateableNamedQuantityComponent {
   background = backColour(depth)
-  border = LineBorder(background.darker())
+  border = RoundedBorder(background.darker())
   val nextDepth = depth + 1
   val roundLabel = label("Round", quantityText(round.quantity, fi))
   val roundPanel = panel(round.orig, fi, nextDepth)
@@ -475,7 +477,7 @@ class TopNamedQuantityComponent(quantity:NamedQuantity, formatInfo:ExtraFormatIn
     case nq:NamedQuantity => {
       val panel = new ExpandCollapsePanel(quantity, formatInfo, 0) {
         background = new Color(241,239,239)
-        border = LineBorder(background.darker())
+        border = RoundedBorder(background.darker())
       }
       panel
     }

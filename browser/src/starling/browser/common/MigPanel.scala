@@ -10,10 +10,10 @@ import org.jdesktop.swingx.decorator.Highlighter
 import swing.event.{MouseExited, MouseEntered, MouseClicked}
 import GuiUtils._
 import org.jdesktop.swingx.painter.{ImagePainter, PinstripePainter, Painter}
-import java.awt.geom.RoundRectangle2D
 import java.awt.geom.RoundRectangle2D.Float
 import swing.ListView.Renderer
 import javax.swing._
+import java.awt.geom.{Area, RoundRectangle2D}
 
 class MigPanel(layoutConstraints:String = "", columnConstraints:String = "", rowConstraints:String = "")
         extends Panel with SequentialContainer.Wrapper {
@@ -50,7 +50,9 @@ trait RoundedBackground extends Component {
     val newClip = new RoundRectangle2D.Float(1.0f, 0.0f, w.toFloat, h.toFloat, 4.0f, 4.0f)
     val overrideClip = !newClip.contains(oldClip.asInstanceOf[Rectangle])
     if (overrideClip) {
-      g.setClip(newClip)
+      val area = new Area(oldClip)
+      area.intersect(new Area(newClip))
+      g.setClip(area)
     }
     super.paintComponent(g)
     if (overrideClip) {
