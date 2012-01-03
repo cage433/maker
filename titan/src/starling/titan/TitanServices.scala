@@ -9,9 +9,6 @@ import com.trafigura.services.valuation.TradeManagementCacheNotReady
 import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.edm.common.units.TitanId
 import starling.props.Props
-import javax.management.MBeanServerConnection
-import java.net.URL
-
 
 
 // for some strange reason EDM trade service converts titan quota ID with prefix NEPTUNE:
@@ -35,7 +32,7 @@ object JMXEnabler extends Log {
   import dispatch._
   import java.net.URL
 
-  // temporary measure until we address this properly
+  // temporary measure, until we address this properly
   def enableLogisticsAPIs(props : Props) {
     val http = new Http
     val logisticsHostURL : URL = new URL(props.LogisticsServiceLocation.value())
@@ -55,7 +52,6 @@ object JMXEnabler extends Log {
  * logistics service interface
  */
 object LogisticsServices {
-  type EdmAssignmentServiceWithGetAllAssignments = EdmAssignmentService with Object { def getAllAssignments() : List[Assignment] }
   type EdmInventoryServiceWithGetAllInventory = EdmInventoryService with Object {
     def getAllInventoryLeaves() : List[InventoryItem]
     def getAllInventory() : LogisticsInventoryResponse
@@ -64,7 +60,6 @@ object LogisticsServices {
 
 import LogisticsServices._
 
-trait TitanLogisticsAssignmentServices extends ServiceProxy[EdmAssignmentServiceWithGetAllAssignments]
 trait TitanLogisticsInventoryServices extends ServiceProxy[EdmInventoryServiceWithGetAllInventory]
 
 trait ServiceProxy[T] {
@@ -72,7 +67,6 @@ trait ServiceProxy[T] {
 }
 
 trait TitanLogisticsServices {
-  val assignmentService : TitanLogisticsAssignmentServices
   val inventoryService : TitanLogisticsInventoryServices
 }
 
