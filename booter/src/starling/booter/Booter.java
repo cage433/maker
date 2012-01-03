@@ -1,7 +1,10 @@
 package starling.booter;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
@@ -54,6 +57,7 @@ class Booter {
 
     private static JFrame progressSplashScreen = null;
     private static JProgressBar progressBar = null;
+    private static Timer textTimer = null;
 
     public static void run(File cacheDir, Proxy proxy, URL baseURL, String[] args) throws Exception {
 
@@ -110,6 +114,7 @@ class Booter {
         }
 
         final int numberOfJarsToDownload = missingOrOutOfDateJars.size();
+        final int totalNumberOfJarsProvided = remoteJarsWithMd5.size();
         if (numberOfJarsToDownload > 0) {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
@@ -135,8 +140,17 @@ class Booter {
                     JPanel holderPanel = new JPanel(new BorderLayout());
                     holderPanel.setBorder(BorderFactory.createEmptyBorder(0, 2, 2, 2));
                     holderPanel.setOpaque(false);
+                    String installingString = " Installing ";
+                    String updatingString = " Updating ";
+                    String stringToUse = (numberOfJarsToDownload == totalNumberOfJarsProvided) ? installingString : updatingString;
+                    final String text0 = stringToUse + "Starling";
+                    final String text1 = stringToUse + "Starling .";
+                    final String text2 = stringToUse + "Starling ..";
+                    final String text3 = stringToUse + "Starling ...";
+                    final JLabel label = new JLabel(text3);
                     progressBar = new JProgressBar(0, numberOfJarsToDownload);
-                    holderPanel.add(progressBar);
+                    holderPanel.add(label, BorderLayout.NORTH);
+                    holderPanel.add(progressBar, BorderLayout.CENTER);
                     panel.add(holderPanel, BorderLayout.SOUTH);
                     frame.add(panel);
                     frame.pack();
@@ -144,6 +158,22 @@ class Booter {
                     Rectangle bounds = frame.getBounds();
                     frame.setBounds(bounds.x, bounds.y + 15, bounds.width, bounds.height);
                     frame.setVisible(true);
+                    textTimer = new Timer(500, new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String currentText = label.getText();
+                            if (text0.equals(currentText)) {
+                                label.setText(text1);
+                            } else if (text1.equals(currentText)) {
+                                label.setText(text2);
+                            } else if (text2.equals(currentText)) {
+                                label.setText(text3);
+                            } else if (text3.equals(currentText)) {
+                                label.setText(text0);
+                            }
+                        }
+                    });
+                    textTimer.start();
                 }
             });
         }
@@ -239,6 +269,11 @@ class Booter {
                 if (progressSplashScreen != null) {
                     progressSplashScreen.setVisible(false);
                     progressSplashScreen.dispose();
+                    progressSplashScreen = null;
+                }
+                if (textTimer != null) {
+                    textTimer.stop();
+                    textTimer = null;
                 }
             }
         });
