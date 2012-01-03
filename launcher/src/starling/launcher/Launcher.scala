@@ -11,7 +11,9 @@ import swing.Publisher
 import java.io.{File, ByteArrayOutputStream, OutputStream}
 import management.ManagementFactory
 import starling.browser.osgi.{RunAsUser, BrowserBromptonActivator}
-import starling.utils.{SingleClasspathBroadcasterActivator, StringIO}
+import starling.utils.{Utils, SingleClasspathBroadcasterActivator, StringIO}
+import starling.utils.Utils.Windows
+import com.sun.jna.win32.StdCallLibrary
 
 //Starts the gui without osgi
 object Launcher {
@@ -29,12 +31,21 @@ object Launcher {
     val serverType = ServerTypeLabel.fromName(args(3))
 
     if (args.length == 5) {
+      var bringToFront = false
       try {
         val socket = new Socket("localhost", 7777)
         socket.close()
+        bringToFront = true
       } catch {
         case e:ConnectException => {
           start(buffer, rmiHost, rmiPort, servicePrincipalName, serverType)
+        }
+      }
+      if (bringToFront && Utils.os.isInstanceOf[Windows]) {
+        val appName = BrowserBromptonActivator.generateAppName
+        val windowHandle = User32.INSTANCE.FindWindow(null, appName)
+        if (windowHandle != null) {
+          User32.INSTANCE.SetForegroundWindow(windowHandle)
         }
       }
       val st = args(4)
