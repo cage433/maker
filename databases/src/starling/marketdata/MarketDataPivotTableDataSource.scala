@@ -317,7 +317,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
       }
 
       val observationDays = selectedValues[Day](observationDayField.field)
-      val observationTimes: Option[Set[ObservationTimeOfDay]] = selectedValues[String](observationTimeField.field).map(_.map(t=>ObservationTimeOfDay.fromName(t.get)))
+      val observationTimes: Option[Set[ObservationTimeOfDay]] = selectedValues[String](observationTimeField.field).map(_.map(t=>ObservationTimeOfDay.fromShortOrLongName(t.get)))
 
       val allData = reader.read(marketDataType.name, observationDays, observationTimes, keyClause)
       allData.flatMap { case (timedKey, data) => {

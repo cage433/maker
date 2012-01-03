@@ -22,7 +22,10 @@ object Pattern extends Log {
   }
 
   object Extractor {
-    def from[A] = new From[A]
+    def from[A] = new {
+      def apply[B](f: A => Option[B]) = new Extractor(f)
+    }
+
     def when[A] = new {
       def apply(f: A => Boolean) = from[A]((a:A) => f(a).option(a))
       def apply[B](f: A => Boolean, g: A => B) = from[A]((a:A) => f(a).option(g(a)))
@@ -37,18 +40,6 @@ object Pattern extends Log {
     }
 
     def fromMap[K, V](map: Map[K, V]) = Extractor.from[K](map.get)
-
-    class From[A] {
-      def apply[B](f: A => Option[B]) = new Extractor(f)
-
-      def partial = new {
-        def apply[B](pf: PartialFunction[A, B]) = new Extractor(pf.lift)
-      }
-
-      def either = new {
-        def apply[L, R](f: A => Either[L, R]) = new Extractor((a:A) => f(a).right.toOption)
-      }
-    }
   }
 
   case class Tester[A](p: A => Boolean) {

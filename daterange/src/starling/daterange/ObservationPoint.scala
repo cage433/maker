@@ -2,6 +2,7 @@ package starling.daterange
 
 import starling.utils.ImplicitConversions._
 import starling.utils.StarlingEnum
+import scalaz.Scalaz._
 
 case class ObservationPoint(point:Option[(Day,ObservationTimeOfDay)]) {
   def this(day:Day) = this(Some((day, ObservationTimeOfDay.Default)))
@@ -49,6 +50,10 @@ case class ObservationTimeOfDay private (name: String, shortName: String) extend
 
 object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], (o:ObservationTimeOfDay) => o.shortName, true) {
   def apply(name: String): ObservationTimeOfDay = ObservationTimeOfDay(name, name)
+  def fromLongName(name: String): ObservationTimeOfDay = valuesByLongName(name)
+  def fromLongName(name: Option[String]): Option[ObservationTimeOfDay] = name.map(fromLongName)
+  def fromShortOrLongName(name: String): ObservationTimeOfDay = find(name) | fromLongName(name)
+  def fromShortOrLongName(name: Option[String]): Option[ObservationTimeOfDay] = name.map(fromShortOrLongName)
 
   val Default = ObservationTimeOfDay("Default")
   val LMEClose = ObservationTimeOfDay("LME Close")
@@ -65,4 +70,6 @@ object ObservationTimeOfDay extends StarlingEnum(classOf[ObservationTimeOfDay], 
   val LME_Unofficial = new ObservationTimeOfDay("LME Unofficial", "Unofficial")
   val LME_AMR1 = new ObservationTimeOfDay("LME AMR1", "AMR1")
   val LME_PMR1 = new ObservationTimeOfDay("LME PMR1", "PMR1")
+
+  private lazy val valuesByLongName = values.toMapWithKeys(_.name)
 }

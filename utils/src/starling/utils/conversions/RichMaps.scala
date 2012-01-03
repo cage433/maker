@@ -23,7 +23,7 @@ trait RichMaps {
 class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def get(key: Option[K]) = key.map(map.get(_)).flatOpt
   def getOrThrow(k: K): V = getOrThrow(k, "key not found: %s, available: %s" % (k, map.keySet.mkString(", ")))
-  def getOrThrow(key: K, msg: => String) = map.getOrElse(key, throw new NoSuchElementException(msg))
+  def getOrThrow(key: K, msg: => String): V = map.getOrElse(key, throw new NoSuchElementException(msg))
   def either(key: K): Either[K, V] = map.get(key).either(key, identity)
   def getOrUpdate(k: K, f: (V) => V) = map.get(k).fold(v => map.updated(k, f(v)), map)
   def &(keys:Set[K]) : Map[K,V] = if (keys.isEmpty) map else map.filterKeys(key => keys.contains(key)).toList.toMap
