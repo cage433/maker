@@ -15,7 +15,7 @@ class CurveTypeChooser(pageContext:PageContext, selected:CurveTypeLabel)
   extends TypedComboChooser[CurveTypeLabel](selected, pageContext.localCache.curveTypes, ListView.Renderer(_.name))
   with Revertable {
 
-  protected def publish() = publish(CurveTypeChangedEvent(value))
+  protected def publish() {publish(CurveTypeChangedEvent(value))}
 
-  def revert() = this.suppressingSelf(value = selected)
+  def revert() {this.suppressingSelf(value = selected)}
 }
