@@ -17,14 +17,15 @@ import starling.tradestore.TradeStore.StoreResults
 import starling.dbx.{QueryBuilder, Clause, Query}
 import starling.gui.api.{Desk, IntradayUpdated}
 import starling.tradeimport.ClosedDesks
-import starling.tradestore.{RichTradeStore, TradeStore}
+import starling.tradestore.{RichTradeStore}
+import scalaz.Scalaz._
 
 case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, dealID: Option[TreeID],
                                    trader: String, tradedFor: String, broker: String, comment: String, clearingHouse: String,
                                    subgroupName: String, entryDate: Day, username:String) extends TradeAttributes {
   import IntradayTradeAttributes._
 
-  lazy val desk = Desk.eaiDeskFromID(bookID.id).getOrElse(throw new Exception("Invalid book id: " + bookID.id))
+  private lazy val desk = Desk.eaiDeskFromID(bookID.id).fold(_.name, bookID.id.toString)
 
   def details = Map(
     "Book ID" -> bookID.id,
@@ -42,7 +43,7 @@ case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, d
 
   override def createFieldValues = {
     Map(
-      Field(desk_Str) -> desk.name,
+      Field(desk_Str) -> desk,
       //Strategy is intentionally excluded as it needs to hold the path, not just the id, so it is added in #joiningTradeAttributeFieldValues
       Field(trader_str) -> trader,
       Field(tradedFor_str) -> tradedFor,
@@ -54,7 +55,6 @@ case class IntradayTradeAttributes(strategyID: Option[TreeID], bookID: TreeID, d
       Field(username_str) -> username
     ) ++ dealID.map(id => Map(Field(dealID_str) -> id)).getOrElse(Map())
   }
-
 }
 
 object IntradayTradeAttributes {
