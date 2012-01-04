@@ -103,6 +103,7 @@ abstract class CommodityMarket(
   }
 
   def exchangeOption : Option[FuturesExchange] = None
+  def fixingLevel: Option[Level] = exchangeOption.map(_.fixingLevel)
 }
 
 case class LimSymbol(name: String, multiplier: Double = 1)

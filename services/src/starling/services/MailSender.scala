@@ -41,7 +41,7 @@ class SMTPMailSender(serverName: String, smtpServer: String, port: Int) extends 
       val mailSent = lines.exists(_.contains("Queued mail for delivery"))
 
       if (!mailSent) {
-        log.error("Failed to send email, commands: \n%s\nresponse:\n%s\n" % (commands.mkString("\n"), lines.mkString("\n")))
+        log.warn("Failed to send email, commands: \n%s\nresponse:\n%s\n" % (commands.mkString("\n"), lines.mkString("\n")))
       }
 
       mailSent
