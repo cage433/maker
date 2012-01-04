@@ -9,7 +9,7 @@ case class ObservationPoint(point:Option[(Day,ObservationTimeOfDay)]) {
   def day = point.map(_._1)
   def timeOfDay = point.map(_._2).getOrElse(ObservationTimeOfDay.RealTime)
   def timeShortName = timeOfDay.shortName
-  def unparse = point.map { case (day,t) => day+"/"+t}.getOrElse("")
+  def unparse = point.map { case (day,t) => day+"/"+t.shortName}.getOrElse("")
   def copyTime(time:Option[ObservationTimeOfDay]) = (time, point) match {
     case (Some(newTime), Some((day, _))) => ObservationPoint(Some(day, newTime))
     case _ => this
