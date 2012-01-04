@@ -112,7 +112,7 @@ trait TitanEdmTradeService extends Log {
       log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
       //if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
       log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-      val edmTrades = edmTradeResult.results
+      val edmTrades = edmTradeResult.results.filter(_.error == null).map(_.trade)
         .collect({ case t : EDMPhysicalTrade if (t != null) => t }).filter(pt => pt.state == CompletedTradeState)
 
       // temporary code, trademgmt are sending us null titan ids
