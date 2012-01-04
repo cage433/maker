@@ -25,7 +25,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
 
   def initialiseCaches{
     edmTrades.clear
-    edmTrades ++= edmTradeServices.getAllCompletedTrades()
+    edmTrades ++= edmTradeServices.getAllCompletedPhysicalTrades()
 
     val allInventory = logisticsServices.inventoryService.service.getAllInventory()
 
