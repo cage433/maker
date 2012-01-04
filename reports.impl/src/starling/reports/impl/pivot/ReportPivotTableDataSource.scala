@@ -4,9 +4,9 @@ import starling.pivot._
 import model.UndefinedValue
 import scala.collection.mutable.{Map => MutableMap}
 import collection.Seq
-import collection.immutable.TreeMap
 import starling.gui.api.{ReportSpecificChoices, UTPIdentifier}
 import starling.gui.api.Desk
+import collection.immutable.{Map, TreeMap}
 
 /**
  * Joins a list of PivotReportData to a PivotTableDataSource (which must have InstrumentID and UTPVolume fields)
@@ -22,9 +22,9 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
   val utpVolumeField = Field(Field.utpVolume_str)
 
   val reportFieldTuples = reports.flatMap(report=>createReportFields(report))
+  val allReportFields: List[Field] = reportFieldTuples.map{_._1}.distinct
   val reportFieldDetailsByField:Map[Field,FieldDetails] = Map() ++ (for ((field,reportField) <- reportFieldTuples) yield field->reportField.fieldDetails)
-  val reportFieldsByField = reportFieldTuples.map(_._2).groupBy(rf=>Field(rf.name))
-  val reportFields:List[Field] = reportFieldTuples.map{_._1}.distinct
+  val reportFields:List[Field] = PivotReport.filterReportFields(allReportFields, desk)
   val tradeFields = Set() ++ tradePivotTable.fieldDetails.map{f=>f.field}
   private val tmpReportFields = reportFields.map(f=>reportFieldDetailsByField(f)).toList.distinct
   private val tmpTradeFields = tradePivotTable.fieldDetails.filter(f=>f.field!=instrumentField&&f.field!=utpVolumeField).toList
@@ -32,9 +32,9 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
 
   val fieldDetailsGroups = FieldDetailsGroup("Report Fields", tmpReportFields) :: tradePivotTable.fieldDetailsGroups.filterNot(_.name == "HiddenUTPFields")
 
-  private val fieldToFieldDetails : Map[Field, FieldDetails]= Map() ++ tradePivotTable.fieldDetails.map(f=>f.field->f)
+  private val tradeFieldsToFieldDetails : Map[Field, FieldDetails]= Map() ++ tradePivotTable.fieldDetails.map(f=>f.field->f)
 
-  private val allFieldToFieldDetails : Map[Field, FieldDetails]= Map() ++ fieldDetails.map(f=>f.field->f)
+  private val allFieldsToFieldDetails : Map[Field, FieldDetails]= Map() ++ fieldDetails.map(f=>f.field->f)
 
   private val fieldsByName = Map() ++ fieldDetails.map(f=>f.field.name->f.field)
   def namesToFields(fieldNames:List[String]) = fieldNames.flatMap(fieldsByName.get(_) match { case Some(f) => List(f); case None=>List()})
@@ -65,11 +65,11 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
   {
     type VolumeMap = MutableMap[UTPIdentifier, Double]
     val reportSpecificChoices = ReportSpecificChoices.create(reportSpecificOptions)
-    private val nullTradeDataCombinedValues : FieldValues= tradeFieldsToCombine.map(fieldToFieldDetails(_).nullGroup)
+    private val nullTradeDataCombinedValues : FieldValues= tradeFieldsToCombine.map(tradeFieldsToFieldDetails(_).nullGroup)
     private val groupCombinedValuesMap =  MutableMap[FieldValues, MutableMap[UTPIdentifier, (Double, FieldValues)]]()
 
     private def rowMatchesSelection(row: FieldBindings): Boolean = {
-      tradeFilters.exists(_.forall {case (field, selection) => selection.matches(allFieldToFieldDetails(field), row.getOrElse(field, UndefinedValue))})
+      tradeFilters.exists(_.forall {case (field, selection) => selection.matches(allFieldsToFieldDetails(field), row.getOrElse(field, UndefinedValue))})
     }
 
     private def incrementUtpVolumeAndCombineTradeFieldValues(groupValues: FieldValues, row : FieldBindings){
@@ -84,7 +84,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
         case (field, currentCombinedValue) => {
           row.get(field) match {
             case None => currentCombinedValue
-            case Some(newValue) => fieldToFieldDetails(field).combine(currentCombinedValue, newValue)
+            case Some(newValue) => tradeFieldsToFieldDetails(field).combine(currentCombinedValue, newValue)
           }
         }
       }
@@ -96,7 +96,7 @@ class ReportPivotTableDataSource(tradePivotTable:PivotTableDataSource, reports:L
       if (rowMatchesSelection(row)) {
         val groupValues = tradeFieldsToGroupBy.map{
            field  =>
-             val fieldDetails = fieldToFieldDetails(field)
+             val fieldDetails = tradeFieldsToFieldDetails(field)
              fieldDetails.transformValueForGroupByField(row.getOrElse(field, UndefinedValue))
         }
         incrementUtpVolumeAndCombineTradeFieldValues(groupValues, row)
