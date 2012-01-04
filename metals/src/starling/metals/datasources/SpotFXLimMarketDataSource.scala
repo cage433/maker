@@ -21,10 +21,12 @@ import starling.services.EmailService
 import starling.market.FuturesExchangeFactory._
 import starling.curves.readers.VerifyMarketDataAvailable
 import scalaz.Scalaz._
+import starling.lim.{LIMConnection, LIMService}
+import starling.utils.ImplicitConversions
 
 
 object SpotFXLimMarketDataSource {
-  val sources = List(BloombergGenericFXRates, CFETSSpotFXFixings)
+  val sources = List(BloombergGenericFXRates)
 
   val titanCurrencies = UOMSymbol.currenciesToImportFromLIM.map(UOM.asUOM(_)).filter(_ != UOM.USD)
 }
@@ -38,7 +40,7 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
   def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
   override def eventSources(marketDataStore: MarketDataStore) = List(
-    SpotFXDataEventSource(PricingGroup.Metals, SpotFXMarketDataProvider(marketDataStore))
+    SpotFXDataEventSource(PricingGroup.Metals, SpotFXMarketDataProvider(marketDataStore, titanCurrencies))
   )
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
@@ -74,31 +76,31 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
     }
 }
 
-object BloombergGenericFXRates extends HierarchicalLimSource(List(Trafigura.Bloomberg.Currencies.Composite), List(Close)) {
+object BloombergGenericFXRates extends LimSource(List(Close)) {
+  def description = List(Trafigura.Bloomberg.Currencies.Composite.name + " TRAF.BGNL.* (Close)")
+
+  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    val pricesByRelationAndObservationDay: NestedMap[FXRelation, Day, Double] =
+      fxRelations.toMapWithValues(relation => connection.getPrices(relation.limRelation, Level.Close, start, end))
+
+    pricesByRelationAndObservationDay.mapNested {
+      case (relation, observationDay, rate) => relation.entryFor(observationDay.atTimeOfDay(LondonClose), rate)
+    }.toList
+  }
+
   type Relation = FXRelation
 
   case class FXRelation(from: UOM, to: UOM) {
-    def againstUSD(rate: Double): Option[(UOM,Quantity)] = (from, to) partialMatch {
-      case (UOM.USD, ccy) => (ccy, Quantity(rate, to / from))
-      case (ccy, UOM.USD) => (ccy, Quantity(rate, to / from))
-    }
+    require(from == UOM.USD || to == UOM.USD)
+
+    def limRelation = "TRAF.BGNL.%s%s" % (from, to)
+
+    def entryFor(observationPoint: ObservationPoint, rate: Double) = MarketDataEntry(observationPoint,
+      SpotFXDataKey((from == UOM.USD) ? to | from), SpotFXData(Quantity(rate, to / from)))
   }
 
-  def relationExtractor = Extractor.regex("""TRAF\.BGNL\.(...)(...)""") {
-    case List(UOM.Parse(from), UOM.Parse(to)) => Some(FXRelation(from, to))
-  }
-
-  def marketDataEntriesFrom(allRates: List[Prices[FXRelation]]) = allRates.flatMap { rates =>
-    rates.relation.againstUSD(rates.priceByLevel(Close)).filterNot(_._1 == UOM.CNY).toList.map{ case (ccy,fx) =>
-      MarketDataEntry(rates.observationDay.atTimeOfDay(LondonClose), SpotFXDataKey(ccy), SpotFXData(fx))}
-  }
-}
-
-object CFETSSpotFXFixings extends SpotFXFixings("SFS", SHFEClose, Close, UOM.USD, """TRAF\.CFETS\.(CNY)""",
-  Trafigura.Bloomberg.Currencies.Composite) {
-
-  override protected def key(currency: UOM) = SpotFXDataKey(currency)
-  override protected def value(price: Double, currency: UOM) = SpotFXData(Quantity(price, currency / UOM.USD))
+  private def fxRelations = currencies.map(FXRelation(UOM.USD, _)) ++ currencies.map(FXRelation(_, UOM.USD))
+  private def currencies = UOM.currencies.filterNot(_.isOneOf(UOM.CNY, UOM.USD))
 }
 
 case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: MarketDataProvider[Day, UOM, Quantity])
@@ -115,12 +117,12 @@ case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: MarketDat
   protected def marketDataProvider = Some(provider)
 }
 
-case class SpotFXMarketDataProvider(marketDataStore : MarketDataStore) extends
+case class SpotFXMarketDataProvider(marketDataStore: MarketDataStore, currencies: List[UOM]) extends
   AbstractMarketDataProvider[Day, UOM, Quantity](marketDataStore) {
 
 
   val marketDataType = SpotFXDataType.name
-  val marketDataKeys: Some[Set[MarketDataKey]] = Some(SpotFXLimMarketDataSource.titanCurrencies.map(SpotFXDataKey(_)).toSet)
+  val marketDataKeys: Some[Set[MarketDataKey]] = Some(currencies.map(SpotFXDataKey(_)).toSet)
 
   def marketDataFor(timedData: List[(TimedMarketDataKey, MarketData)]) = timedData.collect {
     case (TimedMarketDataKey(ObservationPoint(Some((observationDay, _))), SpotFXDataKey(currency)), SpotFXData(rate)) =>

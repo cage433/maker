@@ -6,6 +6,7 @@ import collection.immutable.Map
 import starling.utils.BidirectionalHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import org.testng.annotations.{BeforeMethod, Test}
+import org.scalatest.WordSpec
 
 
 class RichMapTests extends TestNGSuite with ShouldMatchers with RichMaps {
@@ -39,6 +40,12 @@ class RichMultiMapTests extends TestNGSuite with ShouldMatchers with RichMaps wi
   @Test def canFormUnionOfTwoMultiMaps {
     Map(1 ->> (1, 2, 3), 2 ->> (2, 3, 4)) union Map(1 ->> (4, 5, 6), 3 ->> (3, 4, 5)) should be ===
       Map(1 ->> (1, 2, 3, 4, 5, 6), 2 ->> (2, 3, 4), 3 ->> (3, 4, 5))
+  }
+}
+
+class RichNestedMapTests extends WordSpec with ShouldMatchers with RichMaps {
+  "can pair inner and outer keys" in  {
+    Map(1 → Map(2 → 20, 3 → 30)).pairKeys should be === Map((1, 2) → 20, (1, 3) → 30)
   }
 }
 

@@ -21,7 +21,7 @@ object LIBORFixingsSource extends HierarchicalLimSource(TopRelation.Trafigura.Bl
     case List(source, UOM.Parse(ccy), Tenor.Parse(tenor)) => Some(LIBORRelation(ForwardRateSource(source), ccy, tenor))
   }
 
-  def marketDataEntriesFrom(rates: List[Prices[LIBORRelation]]) = {
+  override def marketDataEntriesFrom(rates: List[Prices[LIBORRelation]]) = {
     rates.groupBy(group).map { case ((key, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(key.observationTime), key, ForwardRateData(toNestedMap(grouped)))
     }

@@ -80,6 +80,10 @@ trait LIMConnection {
   }
 
   def getPrices(childRelation: String, level: Level, from: Day, to: Day): Map[Day, Double]
+  def getPrices(childRelation: String, levels: List[Level], from: Day, to: Day): NestedMap[Level, Day, Double] = {
+    levels.toMapWithValues(getPrices(childRelation, _, from, to))
+  }
+
   def getData(query: String): Map[Day, Array[Double]]
 
   def fromLIM(mimDate: MimDateTime): Day = fromLIM(mimDate.getDate)

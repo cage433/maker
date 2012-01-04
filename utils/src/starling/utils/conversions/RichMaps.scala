@@ -63,6 +63,7 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
 
 class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map) {
   lazy val multiSize = map.values.map(_.size).sum
+  /** Blah */
   def multiMapValues[W](f: (V) => W): MultiMap[K, W] = map.mapValues(_.map(f))
   def contains(key : K, value : V) : Boolean = map.get(key).map(_.contains(value)).getOrElse(false)
   def contains(pair : (K, V)) : Boolean = contains(pair._1, pair._2)
@@ -93,12 +94,12 @@ class RichNestedMap[K1, K2, V](nested: Map[K1, Map[K2, V]]) extends RichMap[K1, 
   def mapNested[T](f: (K1, K2, V) => T): Iterable[T] =
     nested.flatMap { case (k1, values) => values.map { case (k2, value) => f(k1, k2, value) } }
   def mapNestedValues[W](f: (V) => W): NestedMap[K1, K2, W] = mapNested { case (k1, k2, v) => (k1, (k2, f(v))) }.toNestedMap
-
   def mapOuter[K](f: (K1, K2, V) => K): NestedMap[K, K2, V] = mapNested { case (k1, k2, v) => (f(k1, k2, v), (k2, v)) }.toNestedMap
   def mapInner[K](f: (K1, K2, V) => K): NestedMap[K1, K, V] = mapNested { case (k1, k2, v) => (k1, (f(k1, k2, v), v)) }.toNestedMap
   def extractKeys: MultiMap[K1, K2] = mapNested { case (k1, k2, _) => (k1, k2) }.toMultiMap
   def flipNesting: NestedMap[K2, K1, V] = mapNested { case (k1, k2, v) => (k2, (k1, v)) }.toNestedMap
   def allValues: Iterable[V] = nested.values.flatMap(_.values)
+  def pairKeys: Map[(K1, K2), V] = mapNested { case (k1, k2, v) => ((k1, k2), v) }.toMap
 }
 
 class MapView[K, V, C](map: Map[K, V], keyProjection: C => K) {

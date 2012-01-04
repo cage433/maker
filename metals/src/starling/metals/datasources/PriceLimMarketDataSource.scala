@@ -117,10 +117,10 @@ class PriceLimSource(relation: LIMRelation) extends LimSource(List(Level.Close))
   type Relation = LimPrice
   def description = nodes.map(_.name + " " + levelDescription)
 
-  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(List(relation.node), relation.relTypes)
+  override def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(List(relation.node), relation.relTypes)
     .flatMap(childRelation => relation.parse(childRelation).optPair(childRelation))
 
-  def marketDataEntriesFrom(allPrices: List[Prices[LimPrice]]) = allPrices.groupBy(group _)
+  override def marketDataEntriesFrom(allPrices: List[Prices[LimPrice]]) = allPrices.groupBy(group _)
     .map { case ((market, observationPeriod), prices) => MarketDataEntry(observationPeriod, PriceDataKey(market),
         PriceData.create(prices.map(price => {
           val limMultiplier = market.limSymbol match {

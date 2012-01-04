@@ -28,17 +28,7 @@ abstract class LimMarketDataSource(service: LIMService, val marketDataType: Mark
       //.require(containsDistinctTimedKeys, "concatenated sources: %s, produced duplicate MarketDataKeys: " % sources)
 
   protected def getValues(source: LimSource, start: Day, end: Day): List[MarketDataEntry] = service.query { connection =>
-    val relations = source.relationsFrom(connection)
-
-    val prices = relations.flatMap { case (fixingRelation, childRelation) => {
-      val prices = source.levels.toMapWithValues(level => connection.getPrices(childRelation, level, start, end))
-
-      prices.flipNesting.toList.flatMapO { case (observationDay, pricesForLevel) =>
-        if (pricesForLevel.isEmpty) None else Some(Prices(fixingRelation, pricesForLevel, observationDay))
-      }
-    } }
-
-    source.marketDataEntriesFrom(prices).toList
+    source.marketDataEntriesFrom(connection, start, end)
       .map(_.copy(tag = Some("%s (%s)" % (source.getClass.getSimpleName, source.description.mkString(", ")))))
       .require(containsDistinctTimedKeys, "source: %s produced duplicate MarketDataKeys: " % source)
       .debugV(entries => "%s (%s): %s values" % (source.getClass.getSimpleName, source.description.mkString(", "), countData(entries)))
@@ -61,8 +51,24 @@ case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double]
 
 abstract class LimSource(val levels: List[Level]) {
   type Relation
-  def relationsFrom(connection: LIMConnection): List[(Relation, String)]
-  def marketDataEntriesFrom(fixings: List[Prices[Relation]]): Iterable[MarketDataEntry]
+  protected def relationsFrom(connection: LIMConnection): List[(Relation, String)] = Nil
+  protected def marketDataEntriesFrom(fixings: List[Prices[Relation]]): Iterable[MarketDataEntry] = Nil
+
+  def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day): List[MarketDataEntry] = {
+    val relations = relationsFrom(connection)
+
+    val prices = relations.flatMap { case (relation, childRelation) => {
+      val prices = connection.getPrices(childRelation, levels, start, end).flipNesting
+
+      prices.toList.flatMapO {
+        case (observationDay, pricesForLevel) =>
+          if (pricesForLevel.isEmpty) None else Some(Prices(relation, pricesForLevel, observationDay))
+      }
+    } }
+
+    marketDataEntriesFrom(prices).toList
+  }
+
   def description: List[String]
   protected def levelDescription = "(" + levels.map(_.name).mkString(", ") + ")"
 }
@@ -71,7 +77,10 @@ abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: Lis
   relationTypes: Set[RelType] = Set(RelType.CATEGORY)) extends LimSource(levels) {
 
   def description = parentNodes.map(node => node.name + " " + levelDescription)
-  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(parentNodes, relationTypes).flatMap(safeRelationFrom)
+
+  override def relationsFrom(connection: LIMConnection) =
+    connection.getAllRelChildren(parentNodes, relationTypes).flatMap(safeRelationFrom)
+
   def relationExtractor: Extractor[String, Option[Relation]]
 
   private def safeRelationFrom(childRelation: String): Option[(Relation, String)] = try {

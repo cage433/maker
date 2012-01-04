@@ -31,7 +31,7 @@ object BalticFixings extends HierarchicalLimSource(List(TopRelation.Energy.Tanke
     case List(BalticMarket(market), Tenor.Parse(tenor)) => Some(BalticRelation(market, tenor))
   }
 
-  def marketDataEntriesFrom(fixings: List[Prices[BalticRelation]]) = {
+  override def marketDataEntriesFrom(fixings: List[Prices[BalticRelation]]) = {
     fixings.groupBy(group).map { case ((market, observationDay), grouped) =>
       MarketDataEntry(observationDay.atTimeOfDay(ObservationTimeOfDay.LondonClose),
         PriceFixingsHistoryDataKey(market),
