@@ -146,7 +146,15 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
 
   def updateTradeStore(eventID : String) : StoreResults = {
     log.info(">>updateTradeStore eventID %s".format(eventID))
+
     val updatedStarlingTrades = cache.edmTrades.flatMap(trade => cache.tradeForwardBuilder.apply(trade, eventID))
+
+    val duplicates = updatedStarlingTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
+    if (!duplicates.isEmpty) {
+      Log.error("Duplicate trades found %s".format(duplicates.mkString(", ")))
+      assert(duplicates.isEmpty, "duplicates found: \n" + duplicates.mkString("\n"))
+    }
+
     val result = titanTradeStore.storeTrades(
       {trade : Trade => true},
       updatedStarlingTrades,

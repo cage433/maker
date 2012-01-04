@@ -45,10 +45,10 @@ class TitanSystemOfRecord(manager : TitanTradeStoreManager)
     manager.updateTradeStore("allTrade import request")
     val allTrades = manager.allStarlingTrades
 
-    allTrades.map(f)
-
     val duplicates = allTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
     assert(duplicates.isEmpty, "duplicates found: \n" + duplicates.mkString("\n"))
+
+    allTrades.map(f)
 
     val tradeErrors = allTrades.map(_.tradeable).collect{case ErrorInstrument(err) => err}
     (tradeErrors.size, tradeErrors.toSet)
