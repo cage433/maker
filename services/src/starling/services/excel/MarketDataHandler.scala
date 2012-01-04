@@ -198,7 +198,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
         }.flatten.toMultiMap
         pricesByMarket.map { case (market, prices) => {
           val ppp = prices.map {
-            case(period,price) => (Level.Settle, StoredFixingPeriod.parse(period)) → MarketValue.quantity(price, market.priceUOM)
+            case(period,price) => (market.fixingLevel | Level.Settle, StoredFixingPeriod.parse(period)) → MarketValue.quantity(price, market.priceUOM)
           }.toMap.sorted
 
           (PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(ppp))
