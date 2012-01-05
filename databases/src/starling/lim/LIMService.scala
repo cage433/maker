@@ -5,6 +5,9 @@ import com.lim.mimapi._
 import starling.daterange.Day
 import market._
 import starling.utils.ImplicitConversions._
+import java.lang.String
+import collection.immutable.{Set, Map}
+import starling.utils.ImplicitConversions
 
 
 trait LIMService {
@@ -77,6 +80,10 @@ trait LIMConnection {
 
   def getPrices(childRelations: Iterable[String], level: Level, from: Day, to: Day): Map[(String, Day), Double] = {
     childRelations.flatMap(childRelation => getPrices(childRelation, level, from, to).mapKeys(day => childRelation → day)).toMap
+  }
+
+  def typedPrices[T](children: Iterable[T], level: Level, from: Day, to: Day): NestedMap[Day, T, Double] = {
+    children.toMapWithValues(child => getPrices(child.toString, level, from, to)).flipNesting
   }
 
   def getPrices(childRelation: String, level: Level, from: Day, to: Day): Map[Day, Double]

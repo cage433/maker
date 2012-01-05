@@ -66,6 +66,7 @@ object Tenor {
    */
   def apply(tenorType: TenorType, value: Int): Tenor = Tenor(tenorType.shortName, value)
   def many(tenorType: TenorType, values: Int*): List[Tenor] = values.map(apply(tenorType, _)).toList
+  def many(name: String, values: Int*): List[Tenor] = values.map(Tenor(name, _)).toList
 
   val ON          = Tenor(Day, 0)   // Overnight
   val SN          = Tenor(Day, 2)   // Spot Next
