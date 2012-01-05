@@ -200,7 +200,7 @@ class MarketDataStoreTest extends TestMarketTest with TestNGSuite with ShouldMat
     pivotData.map { _.map { _ match {
       case cell: TableCell => {
         cell.value match {
-          case pq:PivotQuantity =>"%s %s" % (pq.quantityValue.get, cell.state)
+          case pq:PivotQuantity =>"%s %s" % (pq.quantityValue.get, cell.state.state)
           case set:Set[_] => set.size + " values"
           case NoValue => "x"
         }

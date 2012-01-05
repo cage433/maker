@@ -37,25 +37,25 @@ object ChartViewState extends ViewState
 
 abstract class AxisValueType extends Serializable {
   def value:Any //The value in the table
-  def cellType:EditableCellState = Normal
+  def cellType:CellState = CellState.NormalCellState
   def pivotEdits:PivotEdits = PivotEdits.Null
   def originalValue:Option[Any] = None
   def valueForChildKey(newRowsAtBottom:Boolean) = value
   def originalOrValue = originalValue.getOrElse(value)
 }
 
-case class CellTypeSpecifiedAxisValueType(override val cellType:EditableCellState, value:Any, override val pivotEdits:PivotEdits) extends AxisValueType {
+case class CellTypeSpecifiedAxisValueType(override val cellType:CellState, value:Any, override val pivotEdits:PivotEdits) extends AxisValueType {
   override def originalValue = None
 }
 
 case object BlankAddedAxisValueType extends AxisValueType {
   def value = UndefinedValueNew
-  override def cellType:EditableCellState = AddedBlank
+  override def cellType:CellState = CellState.AddedBlankCellState
 }
 
 case class ValueAxisValueType(valueX:Any) extends AxisValueType {
   val pivotValue = PivotValue.create(valueX)
-  override def cellType = pivotValue.cellType
+  override def cellType = pivotValue.cellState
   override def pivotEdits = pivotValue.edits
   override def originalValue = pivotValue.originalValue
   override def value = pivotValue.axisValueValue
@@ -306,7 +306,7 @@ case class SingleDataFieldTotal(fieldDetails:FieldDetails, value:PivotValue, edi
       case Some(valueOrDeletedValue) => Some(fieldDetails.value(fieldDetails.combineFirstGroup(valueOrDeletedValue)))
       case None => None
     }
-    MeasureCell(vv, value.cellType, edits, value.originalValue, editable)
+    MeasureCell(vv, value.cellState, edits, value.originalValue, editable)
   }
   override val edits = value.edits
 }
@@ -317,7 +317,7 @@ case class CombinedDataFieldTotal(fieldDetails:FieldDetails, override val aggreg
   def measureCell = {
     val valueOrDeletedValue = if (aggregateValue.isDefined) aggregateValue else aggregateOriginal
     val vv = valueOrDeletedValue.map(v => fieldDetails.value(v))
-    val cellType = if (edits.nonEmpty) Tainted else Normal
+    val cellType = if (edits.nonEmpty) CellState.TaintedCellState else CellState.NormalCellState
     MeasureCell(vv, cellType, edits)
   }
 }

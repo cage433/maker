@@ -9,5 +9,5 @@ class MeasureCellTests extends WordSpec with ShouldMatchers {
     List(measureCell(0.0), measureCell(Quantity(0.0, UOM.SCALAR))).filterNot(_.isAlmoseZero) should be === Nil
   }
 
-  private def measureCell(value: Any) = MeasureCell(Some(value), EditableCellState.Normal)
+  private def measureCell(value: Any) = MeasureCell(Some(value), CellState.NormalCellState)
 }
