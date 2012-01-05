@@ -163,6 +163,8 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       context.registerService(classOf[LogisticsServiceApi], logisticsService, ServiceProperties(ExportTitanHTTPProperty))
     }
 
+    context.registerService(classOf[Object], new BenchmarkExcelHandler(marketDataStore, referenceDataLookup), ServiceProperties(ExportLoopyProperty))
+
     {
       import starling.daterange.ObservationTimeOfDay._
       import starling.gui.api.{PricingGroup, EnvironmentRuleLabel}
