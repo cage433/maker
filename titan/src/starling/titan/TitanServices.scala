@@ -108,19 +108,25 @@ trait TitanEdmTradeService extends Log {
   def getAllCompletedPhysicalTrades() : List[EDMPhysicalTrade] = {
     try {
       val sw = new Stopwatch()
+      log.info("Calling EDM Trade service")
       val edmTradeResult = titanGetEdmTradesService.getAll()
-      log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
-      //if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
-      log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
+
+      log.info("Are EDM Trades available, cache state " + edmTradeResult.cached + ", took " + sw)
+      if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
+
+      log.info("Got Edm Trade results, trade result count = " + edmTradeResult.results.size)
+
       val edmTrades = edmTradeResult.results.filter(_.error == null).map(_.trade)
         .collect({ case t : EDMPhysicalTrade if (t != null) => t }).filter(pt => pt.state == CompletedTradeState)
 
+      val dupTrades = edmTrades.groupBy(_.identifier)
+      assert(!dupTrades.exists(_._2.size > 1), "Duplicate trade Ids received from EDM trade service, ".format(dupTrades.keys.mkString(", ")))
+
       // temporary code, trademgmt are sending us null titan ids
       val nullIds = edmTrades.filter(_.identifier == null)
-      if (nullIds.size > 0) {
-        log.error("Null Titan trade IDs found!\n" + ("null ids \n%s\n".format(nullIds.map(_.identifier))))
-        //assert(false, "Null titan ids found - fatal error")
-      }
+      assert(nullIds.size > 0, "Null titan ids found - fatal error")
+
+      log.info("Got %d valid, completed physical trades".format(edmTrades.size))
       edmTrades
     }
     catch {

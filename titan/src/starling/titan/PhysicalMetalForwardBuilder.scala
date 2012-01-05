@@ -234,9 +234,9 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
     }
     catch {
       case e => {
-        log.error("error converting trade %s".format(trade.identifier), e)
+        //log.error("error converting trade %s".format(trade.identifier), e)
         List(Trade(TradeID(TRADE_PREFIX + trade.identifier.value, TitanTradeSystem),
-            TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade, eventID),
+            TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade.identifier.value, eventID),
             ErrorInstrument(e)))
       }
     }

@@ -10,7 +10,7 @@ import com.trafigura.edm.common.units.TitanId
 
 /**
  * Simple wrapper around the Titan EDM Trade service
- */
+
 trait TitanTradeService {
   def getTrade(id : TitanId) : EDMPhysicalTrade
   def getAllTrades() : List[EDMPhysicalTrade]
@@ -50,3 +50,4 @@ class DefaultTitanTradeService(titanServices : TitanServices) extends TitanTrade
   }
 }
 
+*/

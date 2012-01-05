@@ -1,16 +1,19 @@
 package starling.titan
 
 import starling.curves.Environment
-import starling.instrument.Trade
 import starling.daterange.Timestamp
 import EDMConversions._
 import collection.immutable.Map
 import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 import starling.tradestore.TradeStore.StoreResults
 import starling.utils.ImplicitConversions._
-import starling.utils.{Startable, Log}
 import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
 import com.trafigura.edm.common.units.TitanId
+import starling.utils.{Stopwatch, Startable, Log}
+import starling.instrument.TradeID._
+import starling.db.TitanTradeSystem
+import starling.instrument.ErrorInstrument._
+import starling.instrument.{ErrorInstrument, TradeID, Trade}
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,
@@ -27,7 +30,12 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     edmTrades.clear
     edmTrades ++= edmTradeServices.getAllCompletedPhysicalTrades()
 
-    val allInventory = logisticsServices.inventoryService.service.getAllInventory()
+    val allInventory = {
+      val sw = new Stopwatch()
+      val inventory = logisticsServices.inventoryService.service.getAllInventory()
+      log.info("Loaded %d inventory in %s".format(inventory.associatedInventory.size, sw.toString))
+      inventory
+    }
 
     edmInventoryItems.clear
     edmInventoryItems ++= allInventory.associatedInventory.filter(i => i.status != CancelledInventoryItemStatus).map{inv => inv.id -> inv}
@@ -147,20 +155,32 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
   def updateTradeStore(eventID : String) : StoreResults = {
     log.info(">>updateTradeStore eventID %s".format(eventID))
 
+    val sw = new Stopwatch()
     val updatedStarlingTrades = cache.edmTrades.flatMap(trade => cache.tradeForwardBuilder.apply(trade, eventID))
 
+    log.info("Got %d updated starling trades, took %s".format(updatedStarlingTrades.size, sw.toString))
+
     val duplicates = updatedStarlingTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
-    if (!duplicates.isEmpty) {
-      Log.error("Duplicate trades found %s".format(duplicates.mkString(", ")))
-      assert(duplicates.isEmpty, "duplicates found: \n" + duplicates.mkString("\n"))
-    }
+
+    if (!duplicates.isEmpty) Log.error("Duplicate trades found %s".format(duplicates.mkString(", ")))
+
+    val filteredStarlingTrades = updatedStarlingTrades.filterNot(t => duplicates.keySet.contains(t.tradeID)).toList
+
+    val duplicatedErrorStarlingTrades = duplicates.values.map(trades => {
+      val trade = trades.head
+      Trade(trade.tradeID,
+        TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade.titanTradeID.getOrElse("no Titan Trade Id available"), eventID),
+        ErrorInstrument(new Exception("Duplicate trade id found")))
+    }).toList
 
     val result = titanTradeStore.storeTrades(
       {trade : Trade => true},
-      updatedStarlingTrades,
+      filteredStarlingTrades ::: duplicatedErrorStarlingTrades,
       new Timestamp
     )
+
     log.info("<<updateTradeStore eventID %s".format(eventID))
+
     result
   }
 
