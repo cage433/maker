@@ -108,7 +108,7 @@ object PivotReport{
     desk match {
       case Some(Desk.Titan) => {
         val invalidHiddenReportFields = PivotReport.fieldsToHideForTitan -- allReportFields.toSet
-        assert(invalidHiddenReportFields.isEmpty, "The following 'fieldsToHideForTitan' no longer exist: " + invalidHiddenReportFields.mkString(", "))
+        //assert(invalidHiddenReportFields.isEmpty, "The following 'fieldsToHideForTitan' no longer exist: " + invalidHiddenReportFields.mkString(", "))
         allReportFields.filterNot(fieldsToHideForTitan contains _)
       }
       case _ => allReportFields

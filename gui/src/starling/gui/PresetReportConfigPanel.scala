@@ -145,9 +145,17 @@ class PresetReportConfigPanel(context:PageContext, reportParameters:ReportParame
 
         reactions += {
           case DayChangedEvent(`observationDayChooser`, d,_) => {
-            dayChangeDayChooser.day = d.previousBusinessDay(context.localCache.ukBusinessCalendar)
+            if (d == dayChangeDayChooser.day) {
+              dayChangeDayChooser.day = d.previousBusinessDay(context.localCache.ukBusinessCalendar)
+            }
+            updateRunButton()
           }
-          case DayChangedEvent(`dayChangeDayChooser`, d,_) => updateRunButton()
+          case DayChangedEvent(`dayChangeDayChooser`, d,_) => {
+            if (d == observationDayChooser.day) {
+              observationDayChooser.day = d.nextBusinessDay(context.localCache.ukBusinessCalendar)
+            }
+            updateRunButton()
+          }
           case ButtonClicked(`dayChangeCheckBox`) => {
             displayComponents(dayChangeCheckBox.selected)
             dayChangeDayChooser.enabled = dayChangeCheckBox.selected
