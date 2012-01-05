@@ -1,35 +1,42 @@
 package starling.metals.datasources
 
-import collection.immutable.List
 
-import starling.lim.LIMService
 import starling.daterange._
 import starling.db.MarketDataEntry
 import starling.market._
-import LIMService._
-import starling.utils.Pattern._
 import starling.marketdata._
 import starling.quantity.{Quantity, UOM}
+import starling.lim.{LIMConnection, LIMService}
+import collection.immutable.List
+
 import starling.utils.ImplicitConversions._
+import LIMService._
+import scalaz.Scalaz._
 
-object LIBORFixingsSource extends HierarchicalLimSource(TopRelation.Trafigura.Bloomberg.InterestRates.children, List(Level.Close)) {
-  type Relation = LIBORRelation
 
-  case class LIBORRelation(source: ForwardRateSource, currency: UOM, tenor: Tenor)
+object LIBORFixingsSource extends LimSource(List(Level.Close)) {
+  type Relation = Nothing
 
-  def relationExtractor = Extractor.regex[Option[LIBORRelation]]("""TRAF\.(\w+)\.(\w+)\.(\w+)""") {
-    case List(source, UOM.Parse(ccy), Tenor.Parse(tenor)) => Some(LIBORRelation(ForwardRateSource(source), ccy, tenor))
+  def description = TopRelation.Trafigura.Bloomberg.InterestRates.children.map(_.name + "TRAF.*.*.* (Close)")
+
+  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    val groupedRates = ForwardRateSource.values.flatMap(getPrices(connection, start, end, _)).toMultiMap
+
+    groupedRates.map { case ((key, observationDay), ratesForGroup) =>
+      MarketDataEntry(observationDay.atTimeOfDay(key.observationTime), key, ForwardRateData(ratesForGroup.toNestedMap))
+    }.toList
   }
 
-  override def marketDataEntriesFrom(rates: List[Prices[LIBORRelation]]) = {
-    rates.groupBy(group).map { case ((key, observationDay), grouped) =>
-      MarketDataEntry(observationDay.atTimeOfDay(key.observationTime), key, ForwardRateData(toNestedMap(grouped)))
+  private def getPrices(connection: LIMConnection, start: Day, end: Day, source: ForwardRateSource) = {
+    def getPrices(currency: UOM, tenor: Tenor): Iterable[((ForwardRateDataKey, Day), (ForwardRateSource, (Tenor, Quantity)))] = {
+      val relations = List(tenor.format("%d%s"), tenor.format("%02d%s"))
+        .map(formattedTenor => "TRAF.%s.%s.%s" % (source, currency, formattedTenor))
+
+      connection.getPrices(relations, Level.Close, start, end).map { case ((_, observationDay), rate) =>
+        (ForwardRateDataKey(currency), observationDay) → (source, (tenor, Quantity(rate, UOM.PERCENT)))
+      }
     }
+
+    (source.currencies.toList ⊛ source.tenors apply(getPrices)).flatten
   }
-
-  def toNestedMap(rates: List[Prices[LIBORRelation]]): NestedMap[ForwardRateSource, Tenor, Quantity] = rates.map { rate =>
-    (rate.relation.source, (rate.relation.tenor, Quantity(rate.priceByLevel(Level.Close), UOM.PERCENT)))
-  }.toNestedMap
-
-  def group(fixings: Prices[LIBORRelation]) = (ForwardRateDataKey(fixings.relation.currency), fixings.observationDay)
 }

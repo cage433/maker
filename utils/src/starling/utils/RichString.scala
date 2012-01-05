@@ -83,6 +83,9 @@ trait RichString {
 
       md5.digest().map(0xFF & _).map { "%02x".format(_) }.foldLeft(""){_ + _}
     }
+    def replaceAll(replacements: Map[String, String]): String = {
+      (s /: replacements)((acc, replacement) => acc.replaceAll(replacement._1, replacement._2))
+    }
 
     def ci = new CaseInsensitive(s)
 

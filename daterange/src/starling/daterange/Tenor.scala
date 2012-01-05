@@ -13,12 +13,14 @@ case class Tenor(tenorName: String, value: Int) extends Ordered[Tenor] {
     case other => other
   }
 
-  override def toString = this match {
+  def format(pattern: String) = this match {
     case Tenor.ON   => "ON"
     case Tenor.SN   => "SN"
     case Tenor.CASH => "CASH"
-    case _          => value + tenorName
+    case _          => pattern.format(value, tenorName)
   }
+
+  override def toString = format("%d%s")
 
   def +(day: Day): Day = this match {
     case Tenor.ON => day + 1

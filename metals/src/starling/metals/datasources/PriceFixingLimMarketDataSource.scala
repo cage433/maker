@@ -82,9 +82,7 @@ object LMEFixings extends LimSource(List(Ask, Bid)) {
 
   private val tenors = Tenor.CASH :: Tenor.many(Month, 3, 15, 27)
   private val rings = List(LME_AMR1, LME_Official, LME_PMR1, LME_Unofficial)
-
-  private val relations = for (market <- LME.markets; ring <- rings; tenor <- tenors)
-    yield LMEFixingRelation(ring, market, tenor)
+  private val relations: List[LMEFixingRelation] = rings ⊛ LME.markets ⊛ tenors apply(LMEFixingRelation.apply)
 }
 
 object BloombergTokyoCompositeFXRates extends LimSource(List(Close)) {
