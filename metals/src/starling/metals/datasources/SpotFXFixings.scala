@@ -6,14 +6,14 @@ import starling.daterange._
 import starling.db.MarketDataEntry
 import starling.market._
 import starling.marketdata._
-import starling.quantity.{Quantity, UOM}
+import starling.quantity.{Quantity, UOM}, UOM._
 import starling.utils.Pattern
 
+import starling.lim.{LIMConnection, LIMService, LimNode}
 import Level._
-import starling.lim.{LIMService, LimNode}
+import Pattern._
 import LIMService.TopRelation._
 import ObservationTimeOfDay._
-import Pattern._
 
 
 object SpotFXFixings {
@@ -40,9 +40,14 @@ class SpotFXFixings(exchange: String, timeOfDay: ObservationTimeOfDay, level: Le
     level, StoredFixingPeriod.tenor(Tenor.OneDay), (Quantity(price, currency / against)))
 }
 
-object CFETSSpotFXFixings extends SpotFXFixings("SFS", SHFEClose, Close, UOM.USD, """TRAF\.CFETS\.(CNY)""",
-  Trafigura.Bloomberg.Currencies.Composite) {
+object CFETSSpotFXFixings extends LimSource(List(Close)) {
+  type Relation = Nothing
 
-  override protected def key(currency: UOM) = SpotFXDataKey(currency)
-  override protected def value(price: Double, currency: UOM) = SpotFXData(Quantity(price, currency / UOM.USD))
+  def description = List(Trafigura.Bloomberg.Currencies.Composite.name + " TRAF.CFETS.CNY (Close)")
+
+  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    connection.getPrices("TRAF.CFETS.CNY", Close, start, end).map { case (observationDay, fixing) =>
+      MarketDataEntry(observationDay.atTimeOfDay(SHFEClose), SpotFXDataKey(CNY), SpotFXData(Quantity(fixing, CNY / USD)))
+    }.toList
+  }
 }
