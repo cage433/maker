@@ -81,12 +81,16 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     val marketDayLabel = new ResizingLabel("Market Day:") {
       tooltip = "Valuations need the 'current' day, in particular for discounts, forward FX, vols. Also trades with a trade day after this day are ignored. This day can not be before the curve data day."
     }
-    val marketDayAndTimeChooser = new DayAndTimeChooser(timeOfDay0 = TimeOfDay.StartOfDay)
+    val marketDayAndTimeChooser = new DayAndTimeChooser(timeOfDay0 = TimeOfDay.StartOfDay) {
+      leftDisabledTooltip = "The market day can not be before the curve data day"
+    }
 
     val thetaToLabel = new ResizingLabel("Theta to:") {
       tooltip = "Theta is calculated as the change between the market day and this day (usually the business day after the curve data day)"
     }
-    val thetaToDayChooser = new DayChooser()
+    val thetaToDayChooser = new DayChooser() {
+      leftDisabledTooltip = "The theta day must be at least one day after the market day"
+    }
 
     val curveDataLabel = new ResizingLabel("Curve Data:") {
       tooltip = "Market data from this day will be used in valuations"
@@ -126,6 +130,16 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       thetaToDayChooser.flagged = flaggedDays
     }
 
+    def updateMarketDayLeftEnabled() {
+      marketDayAndTimeChooser.leftEnabled = marketDayAndTimeChooser.day > curveDataDayAndTimeChooser.day
+      marketDayAndTimeChooser.timeOfDayEnabled =
+        (marketDayAndTimeChooser.day > curveDataDayAndTimeChooser.day) ||
+          curveDataDayAndTimeChooser.timeOfDay == TimeOfDay.StartOfDay
+    }
+    def updateThetaLeftEnabled() {
+      thetaToDayChooser.leftEnabled = thetaToDayChooser.day > marketDayAndTimeChooser.day.nextDay
+    }
+
     reactions += {
       case DayAndTimeChangedEvent(`curveDataDayAndTimeChooser`, dayAndTime, previousDayAndTime) => {
         if (marketDayAndTimeChooser.day == previousDayAndTime.day) {
@@ -133,6 +147,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
           val timeOfDayToUse = if ((d >= Day.today) && (environmentRule.rule == EnvironmentRuleLabel.RealTime)) TimeOfDay.StartOfDay else TimeOfDay.EndOfDay
           marketDayAndTimeChooser.dayAndTime = d.atTimeOfDay(timeOfDayToUse)
         }
+        updateMarketDayLeftEnabled()
       }
       case DayAndTimeChangedEvent(`marketDayAndTimeChooser`, dayAndTime, previousDayAndTime) => {
         val d = dayAndTime.day
@@ -142,6 +157,11 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         if (liveOnDayChooser.day == previousDayAndTime.day && liveOnDayChooser.day != d.startOfFinancialYear) {
           liveOnDayChooser.day = d
         }
+        updateMarketDayLeftEnabled()
+        updateThetaLeftEnabled()
+      }
+      case DayChangedEvent(`thetaToDayChooser`, _, _) => {
+        updateThetaLeftEnabled()
       }
       case EnvironmentRuleLabelChangedEvent(_, _) => updateRunButton()
       case ExcelObservationDay(_, _) | PricingGroupObservationDay(_, _) => updatePopulatedDays()
@@ -196,8 +216,11 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
     add(tradesBookCloseChooser, "spanx")
 
     reactions += {
-      case DayChangedEvent(`curveDataDayAndTimeChooser`, d,_) => {
-        pnlFromDayAndTimeChooser.day = d.previousBusinessDay(context.localCache.ukBusinessCalendar)
+      case DayAndTimeChangedEvent(`curveDataDayAndTimeChooser`, d,_) => {
+        if (d.day == pnlFromDayAndTimeChooser.day) {
+          pnlFromDayAndTimeChooser.day = d.day.previousBusinessDay(context.localCache.ukBusinessCalendar)
+        }
+        updateRunButton()
       }
       case ButtonClicked(`pnlFromCheckbox`) => {
         pnlFromDayAndTimeChooser.enabled = pnlFromCheckbox.selected
@@ -208,7 +231,12 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         updateRunButton()
       }
       case ButtonClicked(`useExcelButton`) => updateRunButton()
-      case DayAndTimeChangedEvent(_,_,_) => updateRunButton()
+      case DayAndTimeChangedEvent(`pnlFromDayAndTimeChooser`,dayAndTime,_) => {
+        if (dayAndTime.day == curveDataDayAndTimeChooser.day) {
+          curveDataDayAndTimeChooser.day = dayAndTime.day.nextBusinessDay(context.localCache.ukBusinessCalendar)
+        }
+        updateRunButton()
+      }
       case SelectionChanged(`tradesBookCloseChooser`) => updateRunButton()
       case MarketDataSelectionChanged(mdi) => {
         val selection = mdi.selection

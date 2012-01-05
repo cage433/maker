@@ -32,7 +32,7 @@ abstract class ClosesEnvironmentRule extends EnvironmentRule{
           case priceDataKey@PriceDataKey(market) => {
             priceDataMap.getOrElse(priceDataKey, throw new MissingMarketDataException(
               "No " + market + " prices",
-              "No " + market + " prices on " + marketDataDay + " at " + market.asInstanceOf[FuturesMarket].closeTime
+              "No " + market + " prices on " + marketDataDay + "/" + market.asInstanceOf[FuturesMarket].closeTime.shortName
             ))
           }
           case key: ForwardRateDataKey => readForThisMarketDataDay(ObservationTimeOfDay.LiborClose, key)

@@ -198,7 +198,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
         }.flatten.toMultiMap
         pricesByMarket.map { case (market, prices) => {
           val ppp = prices.map {
-            case(period,price) => (Level.Settle, StoredFixingPeriod.parse(period)) → MarketValue.quantity(price, market.priceUOM)
+            case(period,price) => (market.fixingLevel | Level.Settle, StoredFixingPeriod.parse(period)) → MarketValue.quantity(price, market.priceUOM)
           }.toMap.sorted
 
           (PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(ppp))
@@ -342,7 +342,7 @@ class MarketDataHandler(broadcaster : Broadcaster,
       "The currency for the interest rates",
       "The settlement days for the interest rates",
       "The interest rates (matching the settlement days)"))
-  def uploadInterestRates(label: String, observationDate: Object, currency: String, periods: Array[Double], rates: Array[Double]) = {
+  def uploadInterestRates(label: String, observationDate: Object, currency: String, periods: Array[Double], rates: Array[Double]): String = {
     throw new Exception("Not implemented")
 //    assert(label.nonEmpty, "Can't have an empty label for the market data")
 //

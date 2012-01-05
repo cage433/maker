@@ -107,8 +107,8 @@ class MarketDataService(marketDataStore: MarketDataStore, notifier: Notifier = N
   private def spotFXRatesFor(snapshotID: TitanSnapshotIdentifier, observationDays: Iterable[Day], keys: MarketDataKey*) = {
     val rates = query[SpotFXData](snapshotID, observationDays, SpotFXDataType, keys : _*)
 
-    val allDays = rates.collect { case (Some(observationDay), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate)) =>
-      (observationDay, if (rate.denominatorUOM == UOM.USD) rate.invert else rate)
+    val allDays = rates.collect { case (Some(observationDay), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate))
+      if (!rate.isZero) => (observationDay, if (rate.denominatorUOM == UOM.USD) rate.invert else rate)
     }
 
     allDays.toMultiMap.mapValues { toUSD =>

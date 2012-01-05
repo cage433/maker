@@ -40,6 +40,13 @@ class IncrementingCountDownLatch(initialCount:Int) {
   }
 }
 
+object BrowserBromptonActivator {
+  def generateAppName = {
+    val appName = System.getProperty("appname")
+    "Starling " + appName
+  }
+}
+
 class BrowserBromptonActivator extends BromptonActivator {
 
   def start(context: BromptonContext) {
@@ -75,9 +82,9 @@ class BrowserBromptonActivator extends BromptonActivator {
         StarlingHomePage
       }
 
-      val appName = System.getProperty("appname")
+      val appName = BrowserBromptonActivator.generateAppName
 
-      fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, "Starling " + appName, overriddenUser.name)
+      fc = new StarlingBrowserFrameContainer(serverContext, cache, pageBuilder, StarlingHomePage, settings, appName, overriddenUser.name)
       fc.createNewFrame(None, Right(returnHomePageWhenReady _, { case e:UnsupportedOperationException => {}}))
 
     } })

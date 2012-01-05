@@ -29,9 +29,14 @@ class DayAndTimeChooser(day0:Day = Day.today, timeOfDay0:TimeOfDay = TimeOfDay.S
 
   listenTo(dayChooser, timeOfDayChooser)
 
+  def leftEnabled_=(b:Boolean) { dayChooser.leftEnabled = b }
+  def leftEnabled = dayChooser.leftEnabled
+  def timeOfDayEnabled_=(b:Boolean) { timeOfDayChooser.enabled = b }
+  def timeOfDayEnabled = { timeOfDayChooser.enabled }
   def day = dayChooser.day
   def day_=(day:Day) = dayChooser.day = day
-
+  def leftDisabledTooltip_=(t:String) { dayChooser.leftDisabledTooltip = t }
+  def leftDisabledTooltip = dayChooser.leftDisabledTooltip
   def timeOfDay = timeOfDayChooser.timeOfDay
   def timeOfDay_=(timeOfDay:TimeOfDay) = timeOfDayChooser.timeOfDay = timeOfDay
 

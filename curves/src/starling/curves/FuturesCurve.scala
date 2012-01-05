@@ -130,17 +130,19 @@ case class ForwardCurve(
 	extends CurveObject with ForwardCurveTrait
 {
   type CurveValuesType = Quantity
+  val nonZeroPrices = prices.filterNot(_._2.isAlmostZero) //LIM returns 0 prices sometimes so we filter them out here
   require(prices.keySet.forall(_.lastDay >= marketDayAndTime.day), "Forward curve for " + market + ", " + marketDayAndTime + " has prices in the past")
   require(prices.values.forall(_.uom == market.priceUOM), "Not the same UOM, market: " + market.priceUOM + ", prices: " + prices)
 
   private lazy val memoizedPrices = CacheFactory.getCache("ForwardCurve", unique = true)
 
   def price(dateRange: DateRange) = {
-    assert(!prices.isEmpty, "No available prices for market " + market + " on " + marketDayAndTime)
+    assert(!prices.isEmpty, "No available prices for market " + market + " in env " + marketDayAndTime)
+    if (nonZeroPrices.isEmpty) throw new MissingMarketDataException("No non-zero " + market + " prices", market + " has " + prices.size + " prices but they are all zero")
     val p: Quantity = try {
-      market.priceFromForwardPrices(prices, dateRange)
+      market.priceFromForwardPrices(nonZeroPrices, dateRange)
     } catch {
-      case e => throw new MissingPriceException(market.toString, dateRange, marketDayAndTime + ": Failed to get price for " + dateRange + " on market " + market + ". Prices " + prices, e)
+      case e => throw new MissingPriceException(market.toString, dateRange, marketDayAndTime + ": Failed to get price for " + dateRange + " on market " + market + ". Because " + e, e)
     }
     memoizedPrices.memoize(dateRange, p)
   }
@@ -148,7 +150,7 @@ case class ForwardCurve(
   def applyShifts(shifts : Array[Double]) : ForwardCurve = {
     assert(shifts.size == prices.size, "Shifts and prices are not the same size")
     val orderedDelivery = prices.keySet.toList.sortWith(_ < _)
-    val newPrices = Map.empty[DateRange, Quantity] ++ orderedDelivery.toList.zip(shifts.toList).map{
+    val newPrices = Map.empty[DateRange, Quantity] ++ orderedDelivery.toList.zip(shifts.toList).map {
       case (dateRange, dP) => {
         val price: Quantity = prices(dateRange)
         (dateRange -> (price + Quantity(dP, price.uom)))

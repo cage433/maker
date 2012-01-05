@@ -103,6 +103,17 @@ object PivotReport{
     case None => Nil
     case _ => throw new Exception("Unexpected desk " + desk)
   }
+  private val fieldsToHideForTitan = Set("Volatility", "Gamma", "Vega", "Vomma", "DeltaBleed", "GammaBleed", "Theta").map(n => Field(n))
+  def filterReportFields(allReportFields:List[Field], desk: Option[Desk]) = {
+    desk match {
+      case Some(Desk.Titan) => {
+        val invalidHiddenReportFields = PivotReport.fieldsToHideForTitan -- allReportFields.toSet
+        //assert(invalidHiddenReportFields.isEmpty, "The following 'fieldsToHideForTitan' no longer exist: " + invalidHiddenReportFields.mkString(", "))
+        allReportFields.filterNot(fieldsToHideForTitan contains _)
+      }
+      case _ => allReportFields
+    }
+  }
 
   def spreadMonthsByStrategyAndMarket(utps : Map[UTPIdentifier, UTP]) = {
     var spreadMonths = Map[(Option[String], FuturesMarket), Set[Month]]()

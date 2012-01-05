@@ -105,19 +105,20 @@ trait TitanEdmTradeService extends Log {
     }
   }
 
-  def getAllCompletedTrades() : List[EDMPhysicalTrade] = {
+  def getAllCompletedPhysicalTrades() : List[EDMPhysicalTrade] = {
     try {
       val sw = new Stopwatch()
       val edmTradeResult = titanGetEdmTradesService.getAll()
       log.info("Are EDM Trades available " + edmTradeResult.cached + ", took " + sw)
       //if (!edmTradeResult.cached) throw new TradeManagementCacheNotReady
       log.info("Got Edm Trade results " + edmTradeResult.cached + ", trade result count = " + edmTradeResult.results.size)
-      val edmTrades = edmTradeResult.results.map(_.trade.asInstanceOf[EDMPhysicalTrade]).flatMap(Option(_)).filter(pt => pt.state == CompletedTradeState)
+      val edmTrades = edmTradeResult.results.filter(_.error == null).map(_.trade)
+        .collect({ case t : EDMPhysicalTrade if (t != null) => t }).filter(pt => pt.state == CompletedTradeState)
 
       // temporary code, trademgmt are sending us null titan ids
-      val (nullIds, validIds) = edmTrades.span(_.identifier == null)
+      val nullIds = edmTrades.filter(_.identifier == null)
       if (nullIds.size > 0) {
-        log.error("Null Titan trade IDs found!\n" + ("null ids \n%s\n%s".format(nullIds, validIds)))
+        log.error("Null Titan trade IDs found!\n" + ("null ids \n%s\n".format(nullIds.map(_.identifier))))
         //assert(false, "Null titan ids found - fatal error")
       }
       edmTrades
@@ -126,7 +127,7 @@ trait TitanEdmTradeService extends Log {
       case e : Throwable => {
         e.getCause match {
           case _ : TradeManagementCacheNotReady => {
-            Log.info("Trade management cache not ready")
+            Log.error("Trade management cache not ready")
             Nil
           }
           case _ => throw new ExternalTitanServiceFailed(e)

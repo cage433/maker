@@ -35,6 +35,8 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
     publish(DayChangedEvent(this, d, oldDay))
   }
 
+  var leftDisabledTooltip:String = null
+
   override def background_=(c:Color) {
     super.background = c
     dayField.background = c
@@ -134,7 +136,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
     }
     reactions += {
       case MouseClicked(_,_,_,_,false) => {
-        if (enabled) action
+        if (enabled && arrow.enabled) action
         focusOwner.requestFocusInWindow()
       }
     }
@@ -159,7 +161,9 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
     day = d
   }
 
-  val leftPanel = new ArrowPanel("insets 0 2lp 0 3lp", leftIcon, previousDay, dayField)
+  val leftPanel = new ArrowPanel("insets 0 2lp 0 3lp", leftIcon, previousDay, dayField) {
+    tooltip = "Market day can not be before curve data day"
+  }
   val rightPanel = new ArrowPanel("insets 0 3lp 0 2lp", rightIcon, nextDay, dayField)
 
   val endPanel = new MigPanel("insets 0 0 0 2lp") {
@@ -177,6 +181,12 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
       g.drawLine(width, 0, width, height)
     }
   }
+
+  def leftEnabled_=(b:Boolean) {
+    leftPanel.arrow.enabled = b
+    leftPanel.tooltip = if (b) null else leftDisabledTooltip
+  }
+  def leftEnabled = leftPanel.enabled
 
   override def enabled_=(b:Boolean) {
     super.enabled = b
