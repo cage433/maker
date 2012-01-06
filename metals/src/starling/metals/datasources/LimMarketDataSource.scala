@@ -73,13 +73,11 @@ abstract class LimSource(val levels: List[Level]) {
   protected def levelDescription = "(" + levels.map(_.name).mkString(", ") + ")"
 }
 
-abstract class HierarchicalLimSource(val parentNodes: List[LimNode], levels: List[Level],
-  relationTypes: Set[RelType] = Set(RelType.CATEGORY)) extends LimSource(levels) {
-
-  def description = parentNodes.map(node => node.name + " " + levelDescription)
+abstract class HierarchicalLimSource(val parentNode: LimNode, level: Level) extends LimSource(List(level)) {
+  def description = List(parentNode.name + " " + levelDescription)
 
   override def relationsFrom(connection: LIMConnection) =
-    connection.getAllRelChildren(parentNodes, relationTypes).flatMap(safeRelationFrom)
+    connection.getAllRelChildren(List(parentNode)).flatMap(safeRelationFrom)
 
   def relationExtractor: Extractor[String, Option[Relation]]
 

@@ -8,6 +8,7 @@ import starling.market._
 import starling.lim.{LIMService, LimNode, LIMConnection}
 import collection.immutable.List
 import scalaz.Scalaz._
+import starling.pivot.MarketValue
 
 
 abstract class PriceLimSource(val exchange: FuturesExchange, val node: LimNode) extends LimSource(List(Level.Close))
@@ -67,6 +68,35 @@ class MonthlyPriceLimSource(node: LimNode, exchange: FuturesExchange) extends Pr
     pricesByMarket.mapNested { case (market, observationDay, prices) =>
       MarketDataEntry(observationDay.atTimeOfDay(exchange.closeTime), PriceDataKey(market),
         PriceData.create(prices.map { case (relation, price) => relation.priceFor(price) }, market.priceUOM))
+    }.toList
+  }
+
+  private def relationsFor(market: FuturesMarket, start: Day) = market.limSymbol.map { limSymbol =>
+    deliveryMonthsFrom(start.containingYear).map(deliveryMonth => MonthlyRelation(market, limSymbol, deliveryMonth))
+  }
+
+  private def deliveryMonthsFrom(startYear: Year): List[Month] = (startYear upto 7).flatMap(_.toListOfMonths)
+}
+
+class MonthlyFuturesFixings(node: LimNode, exchange: FuturesExchange) extends LimSource(List(exchange.fixingLevel)) {
+  type Relation = Nothing
+  def description = Nil
+
+  case class MonthlyRelation(market: FuturesMarket, limSymbol: LimSymbol, deliveryMonth: Month) {
+    def fixingFor(price: Double): ((Level, StoredFixingPeriod), MarketValue) =
+      (exchange.fixingLevel, StoredFixingPeriod.dateRange(deliveryMonth)) → MarketValue.quantity(price * limSymbol.multiplier, market.priceUOM)
+
+    override def toString = "TRAF.%S.%S_%s" % (exchange.name, limSymbol.name, deliveryMonth.toInverseReutersString)
+  }
+
+  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    val fixingsByMarket = exchange.markets.toMapWithSomeValues(relationsFor(_, start)).mapValues { relations =>
+      connection.typedPrices(relations, exchange.fixingLevel, start, end)
+    }
+
+    fixingsByMarket.mapNested { case (market, observationDay, fixings) =>
+      MarketDataEntry(observationDay.atTimeOfDay(exchange.closeTime), PriceFixingsHistoryDataKey(market),
+        PriceFixingsHistoryData.create(fixings.map { case (relation, fixing) => relation.fixingFor(fixing) }))
     }.toList
   }
 

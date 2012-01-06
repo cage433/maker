@@ -26,8 +26,8 @@ import collection.immutable.{Map, List}
 
 object PriceFixingLimMarketDataSource {
   val sources = List(LMEFixings, BloombergTokyoCompositeFXRates, BalticFixings,
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE.fixingLevel),
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX.fixingLevel)) ::: SpotFXFixings.all
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE),
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX)) ::: SpotFXFixings.all
 }
 
 case class PriceFixingLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
@@ -104,41 +104,6 @@ object BloombergTokyoCompositeFXRates extends LimSource(List(Close)) {
   }
 
   private def periods = (Tenor.many(Month, 1, 2, 3, 6, 9, 12) ++ Tenor.many(Year, 2, 3, 4)).map(StoredFixingPeriod.tenor)
-}
-
-class MonthlyFuturesFixings(override val parentNodes: List[LimNode], override val levels: List[Level],
-  relationTypes: Set[RelType], prefix: String) extends HierarchicalLimSource(parentNodes, levels, relationTypes) with Log {
-
-  def this(node: LimNode, level: Level, relationTypes: Set[RelType] = Set(RelType.CATEGORY), prefix: String = """TRAF\.""") =
-    this(List(node), List(level), relationTypes, prefix)
-
-  type Relation = MonthlyFuturesRelation
-
-  case class MonthlyFuturesRelation(market: FuturesMarket, month: Month)
-
-  def relationExtractor = Extractor.regex(prefix + """(\w+)\.(\w+)_(\w+)""") { case List(exchange, limSymbol, deliveryMonth) => {
-    val optMarket = Market.fromExchangeAndLimSymbol(exchange, limSymbol)
-    val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
-
-    (optMarket, optMonth) partialMatch { case (Some(market), Some(month)) => MonthlyFuturesRelation(market, month) }
-  } }
-
-  override def marketDataEntriesFrom(fixings: List[Prices[MonthlyFuturesRelation]]) = {
-    fixings.groupBy(group).map { case ((market, observationPoint), prices) => {
-      val data = prices.flatMap { price => price.priceByLevel.map { case (level, priceAtLevel) => {
-        val limMultiplier = market.limSymbol match {
-          case Some(ls) => ls.multiplier
-          case None => 1.0
-        }
-        (level, StoredFixingPeriod.dateRange(price.relation.month)) → MarketValue.quantity(priceAtLevel * limMultiplier, market.priceUOM)
-      } } }
-
-      MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(data))
-    } }
-  }
-
-  private def group(prices: Prices[MonthlyFuturesRelation]) =
-    (prices.relation.market, prices.observationDay.atTimeOfDay(prices.relation.market.closeTime))
 }
 
 case class PriceFixingDataEventSource(pricingGroup: PricingGroup,
