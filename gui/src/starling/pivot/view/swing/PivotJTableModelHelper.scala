@@ -14,6 +14,7 @@ import scala.swing.Swing._
 import swing.{ScrollPane, ListView, Panel}
 import starling.pivot.EditableCellState._
 import scala.collection.mutable.{HashMap => MMap}
+import scala.collection.mutable.{HashSet => MSet}
 import collection.immutable.Map
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
@@ -69,7 +70,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
                      val pagePivotEdits:PivotEdits,
                      val updateEdits:(PivotEdits, PivotTableType) => Unit,
                      updateNumberOfEditsAndState:(Int,Boolean) => Unit,
-                     revalidateTheWholeThing: =>Unit) {
+                     updateSwingGUI: =>Unit) {
 
   val editableInfo:Option[EditableInfo] = pivotTable.editableInfo
   val fieldInfo:FieldInfo = pivotTable.fieldInfo
@@ -95,8 +96,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   def deleteEditedRowsIfRequired(edits:PivotEdits):PivotEdits = {
     var updatedEdits = edits
-    val rowHeaderDeletes = rowHeaderTableModel.overrideEdits.filter{case (_,ac) => ac.state == Deleted}
-    val mainDeletes = mainTableModel.overrideEdits.filter{case (_,tc) => tc.state == Deleted}
+    val rowHeaderDeletes = rowHeaderTableModel.overrideEdits.filter{case (_,ac) => ac.state.state == Deleted}
+    val mainDeletes = mainTableModel.overrideEdits.filter{case (_,tc) => tc.state.state == Deleted}
     val rowHeaderCellsToUpdate = rowHeaderDeletes.flatMap{case ((r,c0),ac) => {
       ac.value.value.originalValue match {
         case Some(v) => Some((r,c0))
@@ -129,7 +130,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     (0 until totalRows).find(r => {
       bottomTableModel.getValueAt(r, 0) match {
         case ac:AxisCell => {
-          ac.state == Added || ac.value.childKey.value.isInstanceOf[NewRowValue]
+          ac.state.state == Added || ac.value.childKey.value.isInstanceOf[NewRowValue]
         }
       }
     }) match {
@@ -158,7 +159,56 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
   def numColumnHeaderRows = colHeaderTableModel.getRowCount
 
-  def tableUpdated() {
+  private val duplicateRows = new MSet[Int]()
+
+  def checkForDuplicateRows(rowsUpdated:List[Int]) {
+    val rowsToCheck = (rowsUpdated ::: duplicateRows.toList).distinct.sorted
+    val numRowHeaderCols = rowHeaderTableModel.getColumnCount
+    val colsToCheck = (0 until numRowHeaderCols).filter(col => keyFields.contains(rowHeaderTableModel.field(col)))
+    val rowHeaderValues = rowsToCheck.map(row => colsToCheck.map(col => rowHeaderTableModel.getValueAt(row, col).label))
+    var dupRows = Set[(Int,Int)]()
+    var rowCounter = 0
+    val numRows = rowHeaderTableModel.getRowCount
+    while ((dupRows.size != rowsToCheck.size) && rowCounter < numRows) {
+      var rowCounterForValues = 0
+      for (row <- rowsToCheck) {
+        if (rowCounter != row) {
+          var colCounter = 0
+          var same = true
+          while (same && (colCounter < colsToCheck.size)) {
+            if (rowHeaderTableModel.getValueAt(rowCounter, colsToCheck(colCounter)).label != rowHeaderValues(rowCounterForValues)(colCounter)) {
+              same = false
+            }
+            colCounter += 1
+          }
+          if (same) {
+            val (rowToUse, rowCounterToUse) = if (row < rowHeaderTableModel.numOriginalRows && rowHeaderTableModel.getValueAt(row, 0).state.state != Added) {
+              (rowCounter, row)
+            } else {
+              (row, rowCounter)
+            }
+            dupRows += ((rowToUse, rowCounterToUse))
+          }
+        }
+        rowCounterForValues += 1
+      }
+      rowCounter += 1
+    }
+
+    val justDupRows = dupRows.map(_._1)
+    val nonDupRows = rowsToCheck.toSet -- justDupRows
+    if (dupRows.nonEmpty) {
+      duplicateRows ++= justDupRows
+      rowHeaderTableModel.duplicateRows(dupRows)
+    }
+    if (nonDupRows.nonEmpty) {
+      duplicateRows --= nonDupRows
+      rowHeaderTableModel.resetDuplicateRows(nonDupRows)
+    }
+  }
+
+  def tableUpdated(rowsUpdated:List[Int]) {
+    checkForDuplicateRows(rowsUpdated)
     val finalRowNumber = rowHeaderTableModel.getRowCount - 1
     val numRowHeaderColumns = rowHeaderTableModel.getColumnCount
     val numMainColumns = mainTableModel.getColumnCount
@@ -184,8 +234,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val maxNumberOfRows = math.max(rowMaxRow, mainMaxRow)
 
       val rowsToAdd = ((finalRowNumber to maxNumberOfRows).flatMap(r => {
-        val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(r, c).state != AddedBlank) ||
-          (0 until numMainColumns).exists(c => mainTableModel.getValueAt(r, c).state != AddedBlank)
+        val addRow = (0 until numRowHeaderColumns).exists(c => rowHeaderTableModel.getValueAt(r, c).state.state != AddedBlank) ||
+          (0 until numMainColumns).exists(c => mainTableModel.getValueAt(r, c).state.state != AddedBlank)
         if (addRow) {
           Some(true)
         } else {
@@ -210,7 +260,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
     resizeMainTableColumns
     resizeRowHeaderTableColumns
-    revalidateTheWholeThing
+    updateSwingGUI
   }
 
   def allEdits(e:PivotEdits):PivotEdits = bottomTableModel.edits(e)
@@ -422,7 +472,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       rows.foreach(r => {
         cRange.foreach(c => {
           val tc = getValueAt(r,c)
-          overrideMap((r,c)) = tc.copy(state = Deleted)
+          overrideMap((r,c)) = tc.copy(state = CellState.DeletedCellState)
         })
         fireTableRowsUpdated(r,r)
       })
@@ -452,16 +502,16 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val r = getRowCount - 1
       for (c <- (0 until getColumnCount)) {
         val tc = getValueAt(r, c)
-        val newState = if (tc.state == Error) {
-          Error
+        val newState = if (tc.state.invalid) {
+          tc.state
         } else {
-          Added
+          CellState.AddedCellState
         }
         overrideMap((r,c)) = tc.copy(state = newState)
       }
     }
 
-    def validState = !overrideMap.exists{case (_,tc) => tc.state == Error}
+    def validState = !overrideMap.exists{case (_,tc) => tc.state.invalid}
 
     def field(col:Int) = {
       colHeaderData0.find(_(col).value.isMeasure) match {
@@ -508,7 +558,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
     }
     override def isCellEditable(rowIndex:Int, columnIndex:Int) = {
       val v = getValueAt(rowIndex, columnIndex)
-      v.editable && (v.state != EditableCellState.Deleted)
+      v.editable && (v.state.state != EditableCellState.Deleted)
     }
     override def resetCells(cells:List[(Int,Int)], currentEdits:PivotEdits, fireChange:Boolean) = {
       var resetEdits = currentEdits
@@ -516,12 +566,12 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       cells.foreach{case (r,c) => {
         val k = (r,c)
         if (overrideMap.contains(k)) {
-          if (overrideMap(k).state == Deleted) {
+          if (overrideMap(k).state.state == Deleted) {
             deletedRowsToReset += r
           }
         }
         if (r >= numOriginalRows) {
-          overrideMap(k) = overrideMap(k).copy(text = "", longText = Some(""), state = Added)
+          overrideMap(k) = overrideMap(k).copy(text = "", longText = Some(""), state = CellState.AddedCellState)
         } else {
           overrideMap -= k
         }
@@ -535,7 +585,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       tellRowHeaderTableAboutDeletedRowsThatHaveBeenReset(deletedRowsToReset.toList)
 
-      maybeUpdate(fireChange, currentEdits, resetEdits)
+      maybeUpdate(fireChange, currentEdits, resetEdits, cells.map(_._1))
       resetEdits
     }
 
@@ -543,7 +593,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       var deleteEdits = currentEdits
 
       def isAdded(r:Int, tc:TableCell):Boolean = {
-        (tc.state == Added) || (r >= numOriginalRows) || rowHeaderTableModel.getValueAt(r,0).value.childKey.value.isInstanceOf[NewRowValue]
+        (tc.state.state == Added) || (r >= numOriginalRows) || rowHeaderTableModel.getValueAt(r,0).value.childKey.value.isInstanceOf[NewRowValue]
       }
 
       val (newRowCells, normalCells) = cells.partition{case (r,c) => isAdded(r, getValueAt(r,c))}
@@ -554,11 +604,11 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         rowCell.value.childKey.value match {
           case NewRowValue(rowIndex) => {
             deleteEdits = deleteEdits.withNewAmended(rowIndex, field(c), None)
-            overrideMap((r,c)) = value.copy(text = "", longText = Some(""), state = Deleted)
+            overrideMap((r,c)) = value.copy(text = "", longText = Some(""), state = CellState.DeletedCellState)
           }
           case _ => {
             val k = ((r,c))
-            overrideMap(k) = overrideMap(k).copy(text = "", longText = Some(""), state = Added)
+            overrideMap(k) = overrideMap(k).copy(text = "", longText = Some(""), state = CellState.AddedCellState)
           }
         }
       }}
@@ -569,7 +619,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         cRange.foreach(c => {
           overrideMap -= ((r,c))
           val tc = getValueAt(r,c)
-          overrideMap((r,c)) = tc.copy(state = Deleted)
+          overrideMap((r,c)) = tc.copy(state = CellState.DeletedCellState)
         })
       })
 
@@ -580,7 +630,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         deleteEdits = removeAddedRowsIfBlank(deleteEdits)
       }
 
-      maybeUpdate(fireChange, currentEdits, deleteEdits)
+      maybeUpdate(fireChange, currentEdits, deleteEdits, cells.map(_._1))
       deleteEdits
     }
 
@@ -610,7 +660,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         if (sValue != currentText && currentValue.editable) {
 
           val uom = uoms0(c)
-          val (newValue,newLabel,stateToUse) =  try {
+          val (newValue,newLabel,error) =  try {
 
             val stringValueToUse = if (sValue.nonEmpty && sValue.last.isDigit) {
               if (uom != UOM.NULL) {
@@ -626,15 +676,15 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
               sValue
             }
 
-            val state = if (r < numOriginalRows && currentValue.state != Added) Edited else Added
-
             val pars = parser(r, c)
             val (v,t) = pars.parse(stringValueToUse, extraFormatInfo)
 
-            (Some(v), t, state)
+            (Some(v), t, false)
           } catch {
-            case e:Exception => (None, sValue, Error)
+            case e:Exception => (None, sValue, true)
           }
+
+          val stateToUse = if (r < numOriginalRows && currentValue.state.state != Added) Edited else Added
 
           if (Some(currentValue.value) != newValue) {
             val k = (r,c)
@@ -657,31 +707,31 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
             if (originalLabel == newLabel) {
               anyResetEdits = resetCells(List(k), anyResetEdits, false)
             } else {
-              if (stateToUse == Error) {
-                overrideMap(k) = originalCell.copy(text = sValue, longText = Some(sValue), state = Error)
+              if (error) {
+                overrideMap(k) = originalCell.copy(text = sValue, longText = Some(sValue), state = CellState(stateToUse, true))
               } else {
                 val actualLabelToUse = if (newLabel.endsWith(uom.asString)) {
                   newLabel.replaceAll(uom.asString, "")
                 } else {
                   newLabel
                 }
-                overrideMap(k) = originalCell.copy(text = actualLabelToUse, longText = Some(newLabel), state = stateToUse, value = newValue.get, textPosition = RightTextPosition)
+                overrideMap(k) = originalCell.copy(text = actualLabelToUse, longText = Some(newLabel), state = CellState(stateToUse), value = newValue.get, textPosition = RightTextPosition)
               }
             }
           }
         }
       })
-      maybeUpdate(fireChange, currentEdits, anyResetEdits)
+      maybeUpdate(fireChange, currentEdits, anyResetEdits, values.map(_.row))
       anyResetEdits
     }
 
-    private def maybeUpdate(fireChange:Boolean, currentEdits:PivotEdits, otherEdits:PivotEdits) {
+    private def maybeUpdate(fireChange:Boolean, currentEdits:PivotEdits, otherEdits:PivotEdits, rowsUpdated:List[Int]) {
       if (fireChange) {
         if (otherEdits != currentEdits) {
           val newEdits = allEdits(otherEdits)
           updateEdits(newEdits, Main)
         } else {
-          tableUpdated()
+          tableUpdated(rowsUpdated)
         }
       }
     }
@@ -690,7 +740,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val s = value.asInstanceOf[String].trim
       if (s.isEmpty) {
         val currentCell = getValueAt(rowIndex, columnIndex)
-        if (currentCell.state != AddedBlank) {
+        if (currentCell.state.state != AddedBlank) {
           deleteCells(List((rowIndex, columnIndex)), pagePivotEdits, true)
         }
       } else {
@@ -907,7 +957,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           val newEdits = allEdits(editsToUse)
           updateEdits(newEdits, TopTable)
         } else {
-          tableUpdated()
+          tableUpdated(cells.map(_._1))
         }
       }
       editsToUse
@@ -967,7 +1017,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           val newEdits = edits(anyResetEdits)
           updateEdits(newEdits, BottomTable)
         } else {
-          tableUpdated()
+          tableUpdated(values.map(_.row))
         }
       }
 
@@ -998,7 +1048,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           val newEdits = allEdits(editsToUse)
           updateEdits(newEdits, BottomTable)
         } else {
-          tableUpdated()
+          tableUpdated(cells.map(_._1))
         }
       }
       editsToUse
@@ -1017,7 +1067,7 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
           val newEdits = allEdits(editsToUse)
           updateEdits(newEdits, BottomTable)
         } else {
-          tableUpdated()
+          tableUpdated(cells.map(_._1))
         }
       }
       editsToUse
@@ -1029,8 +1079,18 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       def rowAlreadyAdded(r:Int) = {rowHeaderTableModel.getValueAt (r, 0).value.childKey.value.isInstanceOf[NewRowValue]}
 
-      val (rowErrors, rowEditsMap0) = rowHeaderTableModel.overrideEdits.partition{case (_,ac) => ac.state == Error}
-      val (mainErrors, mainEditsMap0) = mainTableModel.overrideEdits.partition{case (_,tc) => tc.state == Error}
+      val (rowErrors0, rowEditsMap0) = rowHeaderTableModel.overrideEdits.partition{case (_,ac) => ac.state.invalid}
+      val (mainErrors, mainEditsMap0) = mainTableModel.overrideEdits.partition{case (_,tc) => tc.state.invalid}
+
+      val (rowErrors, duplicateCellsToRemove) = rowErrors0.partition{case (_,ac) => ac.state.error}
+      val duplicateRowsToRemove = duplicateCellsToRemove.flatMap{case ((r,_),ac) => {
+        if (r < rowHeaderTableModel.numOriginalRows) {
+          Some(ac.value.childKey.value.asInstanceOf[NewRowValue].rowIndex)
+        } else {
+          None
+        }
+      }}
+      updatedEdits = updatedEdits.removeNewRows(duplicateRowsToRemove.toList)
 
       val rowEditsByRow = rowEditsMap0.groupBy{case ((r,_),_) => r}
       val mainEditsByRow = mainEditsMap0.groupBy{case ((r,_),_) => r}
@@ -1045,8 +1105,8 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
       val rowEditsMap = rowEditsMap0.filterNot{case ((r,_),_) => rowsToRemove.contains(r)}
       val mainEditsMap = mainEditsMap0.filterNot{case ((r,_),_) => rowsToRemove.contains(r)}
 
-      val (rowDeleteEdits, rowOtherEdits) = rowEditsMap.partition{case (_,ac) => ac.state == Deleted}
-      val (rowAdded, rowAmended) = rowOtherEdits.partition{case (_,ac) => ac.state == Added}
+      val (rowDeleteEdits, rowOtherEdits) = rowEditsMap.partition{case (_,ac) => ac.state.state == Deleted}
+      val (rowAdded, rowAmended) = rowOtherEdits.partition{case (_,ac) => ac.state.state == Added}
 
       rowAmended.foreach{case ((r,c), ac) => {
         updatedEdits = updatedEdits.withAmend(KeyFilter(rowHeaderTableModel.key(r,c)), rowHeaderTableModel.field(c), Some(ac.actualValue))
@@ -1072,10 +1132,10 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       // --------------------------------------------------------------------
 
-      val (mainDeleteEdits, mainOtherEdits) = mainEditsMap.partition{case (_,tc) => tc.state == Deleted}
-      val (mainAdded, mainAmended) = mainOtherEdits.partition{case (_,tc) => tc.state == Added}
+      val (mainDeleteEdits, mainOtherEdits) = mainEditsMap.partition{case (_,tc) => tc.state.state == Deleted}
+      val (mainAdded, mainAmended) = mainOtherEdits.partition{case (_,tc) => tc.state.state == Added}
       mainAmended.foreach{case ((r,c), tc) => {
-        tc.state match {
+        tc.state.state match {
           case Edited => {
             val f = mainTableModel.field(c)
             updatedEdits = updatedEdits.withAmend(KeyFilter(mainTableModel.key(r, c, f)), f, Some(tc.value))
@@ -1102,10 +1162,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
         }
       }}
 
-      val rowHeaderColumnCount = rowHeaderTableModel.getColumnCount - 1
       val deletesByRow = (rowDeleteEdits.map{case ((r,_),_) => r} ++ mainDeleteEdits.map{case ((r,_),_) => r}).filterNot(r => {
         val ac = rowHeaderTableModel.getValueAt(r, 0)
-        (ac.state == Added) || ac.value.childKey.value.isInstanceOf[NewRowValue]
+        (ac.state.state == Added) || ac.value.childKey.value.isInstanceOf[NewRowValue]
       }).toList.distinct.sorted
 
       deletesByRow.foreach{r => {

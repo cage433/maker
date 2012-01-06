@@ -45,10 +45,10 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
         putClientProperty("JTable.autoStartsEdit", false)
         val deletableCells = selectedCells.filter{case (r,c) => {
           getValueAt(r,c) match {
-            case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted &&
-              (if (ac.state == EditableCellState.Added) ac.label.nonEmpty else if (ac.state == EditableCellState.AddedBlank) false else true)
-            case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted &&
-              (if (tc.state == EditableCellState.Added) tc.text.nonEmpty else if (tc.state == EditableCellState.AddedBlank) false else true)
+            case ac:AxisCell => ac.editable && ac.state.state != EditableCellState.Deleted &&
+              (if (ac.state.state == EditableCellState.Added) ac.label.nonEmpty else if (ac.state.state == EditableCellState.AddedBlank) false else true)
+            case tc:TableCell => tc.editable && tc.state.state != EditableCellState.Deleted &&
+              (if (tc.state.state == EditableCellState.Added) tc.text.nonEmpty else if (tc.state.state == EditableCellState.AddedBlank) false else true)
           }
         }}
         if (deletableCells.nonEmpty) {
@@ -317,17 +317,17 @@ class PivotJTable(tableModel:PivotJTableModel, pivotTableView:PivotTableView, mo
 
           val deletableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
-              case ac:AxisCell => ac.editable && ac.state != EditableCellState.Deleted &&
-                (if (ac.state == EditableCellState.Added) ac.label.nonEmpty else if (ac.state == EditableCellState.AddedBlank) false else true)
-              case tc:TableCell => tc.editable && tc.state != EditableCellState.Deleted &&
-                (if (tc.state == EditableCellState.Added) tc.text.nonEmpty else if (tc.state == EditableCellState.AddedBlank) false else true)
+              case ac:AxisCell => ac.editable && ac.state.state != EditableCellState.Deleted &&
+                (if (ac.state.state == EditableCellState.Added) ac.label.nonEmpty else if (ac.state.state == EditableCellState.AddedBlank) false else true)
+              case tc:TableCell => tc.editable && tc.state.state != EditableCellState.Deleted &&
+                (if (tc.state.state == EditableCellState.Added) tc.text.nonEmpty else if (tc.state.state == EditableCellState.AddedBlank) false else true)
             }
           }}
 
           val resetableCells = selectedCells.filter{case (row0,col0) => {
             getValueAt(row0,col0) match {
-              case ac:AxisCell => (ac.state != EditableCellState.Normal && ac.state != EditableCellState.Added && ac.state != EditableCellState.AddedBlank)
-              case tc:TableCell => (tc.state != EditableCellState.Normal && tc.state != EditableCellState.Added && tc.state != EditableCellState.AddedBlank)
+              case ac:AxisCell => (ac.state.state != EditableCellState.Normal && ac.state.state != EditableCellState.Added && ac.state.state != EditableCellState.AddedBlank)
+              case tc:TableCell => (tc.state.state != EditableCellState.Normal && tc.state.state != EditableCellState.Added && tc.state.state != EditableCellState.AddedBlank)
             }
           }}
 

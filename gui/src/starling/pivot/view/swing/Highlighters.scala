@@ -57,7 +57,7 @@ object Highlighters {
         adapter.getValue match {
           case v:TableCell => (v.doubleValueIgnoringErrors match {
             case None => false
-            case Some(value) => if (v.state != EditableCellState.Error) (value < 0.0) else false
+            case Some(value) => if (!v.state.error) (value < 0.0) else false
           })
           case ac:AxisCell => ac.value.value.value match {
             case q:Quantity => {
@@ -78,8 +78,8 @@ object Highlighters {
     val editedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
-          case t:TableCell if t.state == EditableCellState.Edited => true
-          case a:AxisCell if a.state == EditableCellState.Edited => true
+          case t:TableCell if t.state.state == EditableCellState.Edited => true
+          case a:AxisCell if a.state.state == EditableCellState.Edited => true
           case _ => false
         }
       }
@@ -90,8 +90,8 @@ object Highlighters {
     val editedErrorCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
-          case t:TableCell if t.state == EditableCellState.Error => true
-          case a:AxisCell if a.state == EditableCellState.Error => true
+          case t:TableCell if t.state.invalid => true
+          case a:AxisCell if a.state.invalid => true
           case _ => false
         }
       }
@@ -102,8 +102,8 @@ object Highlighters {
     val editedTaintedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
-          case t:TableCell if t.state == EditableCellState.Tainted => true
-          case a:AxisCell if a.state == EditableCellState.Tainted => true
+          case t:TableCell if t.state.state == EditableCellState.Tainted => true
+          case a:AxisCell if a.state.state == EditableCellState.Tainted => true
           case _ => false
         }
       }
@@ -126,8 +126,8 @@ object Highlighters {
     val deletedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
-          case t:TableCell if t.state == EditableCellState.Deleted => true
-          case a:AxisCell if a.state == EditableCellState.Deleted => true
+          case t:TableCell if t.state.state == EditableCellState.Deleted => true
+          case a:AxisCell if a.state.state == EditableCellState.Deleted => true
           case _ => false
         }
       }
@@ -140,8 +140,8 @@ object Highlighters {
     val editedAddedCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
-          case t:TableCell if t.state == EditableCellState.Added => true
-          case a:AxisCell if a.state == EditableCellState.Added => true
+          case t:TableCell if t.state.state == EditableCellState.Added => true
+          case a:AxisCell if a.state.state == EditableCellState.Added => true
           case _ => false
         }
       }
@@ -152,8 +152,8 @@ object Highlighters {
     val editedAddedBlankCellsHighlighter = new ColorHighlighter(new HighlightPredicate {
       def isHighlighted(renderer:java.awt.Component, adapter:org.jdesktop.swingx.decorator.ComponentAdapter) = {
         adapter.getValue match {
-          case t:TableCell if t.state == EditableCellState.AddedBlank => true
-          case a:AxisCell if a.state == EditableCellState.AddedBlank => true
+          case t:TableCell if t.state.state == EditableCellState.AddedBlank => true
+          case a:AxisCell if a.state.state == EditableCellState.AddedBlank => true
           case _ => false
         }
       }

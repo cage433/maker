@@ -10,15 +10,27 @@ import starling.utils.StarlingObject
 
 object EditableCellState extends Enumeration {
   type EditableCellState = Value
-  val Normal, Tainted, Edited, Deleted, Added, AddedBlank, Error, Unvalidated= Value
+  val Normal, Tainted, Edited, Deleted, Added, AddedBlank = Value
 }
 import EditableCellState._
 
+case class CellState(state:EditableCellState, error:Boolean=false, duplicate:Boolean=false) {
+  def invalid = (error || duplicate)
+}
+object CellState {
+  val NormalCellState = CellState(Normal)
+  val DeletedCellState = CellState(Deleted)
+  val TaintedCellState = CellState(Tainted)
+  val EditedCellState = CellState(Edited)
+  val AddedCellState = CellState(Added)
+  val AddedBlankCellState = CellState(AddedBlank)
+}
+import CellState._
 /**
  * Represents a cell in the Pivot table. Contains a value and rendering information
  */
 case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterTextPosition, isError:Boolean = false,
-                     totalState:TotalState = NotTotal, editable:Boolean = false, state:EditableCellState = Normal,
+                     totalState:TotalState = NotTotal, editable:Boolean = false, state:CellState = NormalCellState,
                      longText:Option[String] = None, warning:Option[String]= None, edits:PivotEdits=PivotEdits.Null,
                      originalValue:Option[Any]=None) {
   def this(value:Any) = this(value, value.toString)
@@ -66,7 +78,7 @@ object TableCell {
   val EditableNull = new TableCell(NoValue, "", editable = true)
   val Undefined = new TableCell(UndefinedValue, "n/a")
   val UndefinedNew = new TableCell(UndefinedValueNew, UndefinedValueNew.toString)
-  val BlankAddedCell = new TableCell(UndefinedValueNew, "", RightTextPosition, editable = true, state = AddedBlank)
+  val BlankAddedCell = new TableCell(UndefinedValueNew, "", RightTextPosition, editable = true, state = CellState.AddedBlankCellState)
 
   def longText(pq: PivotQuantity) =
     (pq.explanation, pq.warning) match {
