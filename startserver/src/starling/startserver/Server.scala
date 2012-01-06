@@ -24,10 +24,10 @@ import starling.utils.{SingleClasspathBroadcasterActivator, Log}
 object Server {
 
   def main(args:Array[String]) {
-    run()
+    run
   }
 
-  def run() {
+  def run = {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     PropsHelper.writeDefaults
     val props = PropsHelper.defaultProps
@@ -61,6 +61,7 @@ object Server {
           System.exit(-1)
       }
     }
+    single
   }
 
   def writePIDFile() {

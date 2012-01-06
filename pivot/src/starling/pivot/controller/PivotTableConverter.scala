@@ -17,12 +17,11 @@ object AxisNode {
   def textAndAlignment(value:AxisValue, formatInfo:FieldInfo, extraFormatInfo:ExtraFormatInfo) = {
 
     def tableCell(valueType:AxisValueType) = {
-      val formatter = formatInfo.fieldToFormatter(value.field)
       valueType.value match {
         case UndefinedValueNew => TableCell.UndefinedNew
-        case UndefinedValue if valueType.cellType == EditableCellState.Added => TableCell.UndefinedNew
+        case UndefinedValue if valueType.cellType.state == EditableCellState.Added => TableCell.UndefinedNew
         case UndefinedValue => TableCell.Undefined
-        case other => formatter.format(other, extraFormatInfo)
+        case other => formatInfo.fieldToFormatter(value.field).format(other, extraFormatInfo)
       }
     }
 
@@ -100,8 +99,8 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
           case v:ValueAxisValueType if map.size > 1 && v.cellType == EditableCellState.Edited => {
             v.pivotEdits.edits.keySet.toList match {
               case editFilter :: Nil => {
-                val originalValue = CellTypeSpecifiedAxisValueType(EditableCellState.Tainted, v.originalValue.get, v.pivotEdits)
-                val newValue = CellTypeSpecifiedAxisValueType(EditableCellState.Tainted, v.value, v.pivotEdits)
+                val originalValue = CellTypeSpecifiedAxisValueType(CellState.TaintedCellState, v.originalValue.get, v.pivotEdits)
+                val newValue = CellTypeSpecifiedAxisValueType(CellState.TaintedCellState, v.value, v.pivotEdits)
                 List(
                   node.copy(axisValue=node.axisValue.copy(value = originalValue)),
                   node.copy(axisValue=node.axisValue.copy(value = newValue))
@@ -122,7 +121,7 @@ case class ServerAxisNode(axisValue:AxisValue, children:Map[ChildKey,Map[AxisVal
           val cellTypes = axisValues.map(_.value.cellType).toSet
           val cellType = cellTypes.toList match {
             case one :: Nil => one
-            case _ => EditableCellState.Tainted
+            case _ => CellState.TaintedCellState
           }
 
           val editsToUse = axisValues.foldLeft(PivotEdits.Null)((edits,pv) => edits.addEdits(pv.pivotEdits))
@@ -520,10 +519,10 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
                 }
                 case Some(measureAxisCell) => {
                   val tc = measureCell.value match {
-                    case None if measureCell.cellType == EditableCellState.Added => TableCell.UndefinedNew
+                    case None if measureCell.cellType.state == EditableCellState.Added => TableCell.UndefinedNew
                     case None => TableCell.Undefined
                     case Some(UndefinedValueNew) => TableCell.UndefinedNew
-                    case Some(UndefinedValue) if measureCell.cellType == EditableCellState.Added => TableCell.UndefinedNew
+                    case Some(UndefinedValue) if measureCell.cellType.state == EditableCellState.Added => TableCell.UndefinedNew
                     case Some(UndefinedValue) => TableCell.Undefined
                     case Some(other) => table.fieldInfo.fieldToFormatter(measureAxisCell.value.field).format(other, extraFormatInfo)
                   }

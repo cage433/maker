@@ -282,7 +282,7 @@ object PivotTreePath {
 }
 
 trait PivotValue {
-  def cellType:EditableCellState
+  def cellState:CellState
   def value:Option[Any] //Current value, None if deleted or undefined in a new row
   def originalValue:Option[Any]
   def edits:PivotEdits
@@ -310,7 +310,7 @@ object PivotValue {
 }
 
 case class StandardPivotValue(value0:Any) extends PivotValue {
-  val cellType = Normal
+  val cellState = CellState.NormalCellState
   val value = Some(value0)
   val originalValue = None
   val edits = PivotEdits.Null
@@ -319,27 +319,27 @@ case class StandardPivotValue(value0:Any) extends PivotValue {
 }
 
 case class DeletedValue(original:Any, edits:PivotEdits) extends PivotValue {
-  val cellType = Deleted
+  val cellState = CellState.DeletedCellState
   val value = None
   val originalValue = Some(original)
   val axisValueValue = original
   def valueForGrouping(newRowsAtBottom:Boolean) = original
 }
 case class EditedValue(value0:Any, original:Any, edits:PivotEdits) extends PivotValue {
-  val cellType = Edited
+  val cellState = CellState.EditedCellState
   val value = Some(value0)
   val originalValue = Some(original)
   val axisValueValue = value0
   def valueForGrouping(newRowsAtBottom:Boolean) = value0
 }
 case class NewValue(value:Option[Any], rowIndex:Int, edits:PivotEdits) extends PivotValue {
-  val cellType = Added
+  val cellState = CellState.AddedCellState
   val originalValue = None
   val axisValueValue = value.getOrElse(UndefinedValueNew)
   def valueForGrouping(newRowsAtBottom:Boolean) = if (newRowsAtBottom) NewRowValue(rowIndex) else value.getOrElse(UndefinedValueNew)
 }
 
-case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None, editable:Boolean=false) {
+case class MeasureCell(value:Option[Any], cellType:CellState, edits:PivotEdits=PivotEdits.Null, originalValue:Option[Any]=None, editable:Boolean=false) {
   def isAlmoseZero = value.fold(isAlmostZero, false)
 
   private def isAlmostZero(any: Any): Boolean = any match {
@@ -353,8 +353,8 @@ case class MeasureCell(value:Option[Any], cellType:EditableCellState, edits:Pivo
 }
 
 object MeasureCell {
-  val Null = MeasureCell(None, Normal)
-  val EditableNull = MeasureCell(None, Normal, editable = true)
+  val Null = MeasureCell(None, CellState.NormalCellState)
+  val EditableNull = MeasureCell(None, CellState.NormalCellState, editable = true)
 }
 
 case class PivotResult(data:Seq[Map[Field,Any]], possibleValues:Map[Field,List[Any]]){

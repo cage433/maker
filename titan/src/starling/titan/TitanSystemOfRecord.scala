@@ -114,13 +114,11 @@ case class TitanTradeAttributes(
 
 object TitanTradeAttributes{
   val dummyDate = Day(1980, 1, 1)
-  def errorAttributes(edmTrade : EDMPhysicalTrade, evntID : String) = {
-    val titanTradeID = edmTrade.identifier.value
-
+  def errorAttributes(edmTradeId : String, evntID : String) = {
     TitanTradeAttributes(
       quotaID = "",
       quotaQuantity = Quantity.NULL,
-      titanTradeID = titanTradeID,
+      titanTradeID = edmTradeId,
       groupCompany = "",
       comment = "",
       submitted = dummyDate,

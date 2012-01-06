@@ -9,8 +9,10 @@ trait ReferenceDataLookup {
   final def areaFor(code: AreaCode): Area = areas(code)
   final def areaFor(code: NeptuneCountryCode): Option[Area] = countries(code).area
   final def gradeFor(code: GradeCode): Grade = grades(code)
+  final def gradeCodeFor(grade:String):GradeCode = reverseLowerCaseGrades(grade.trim.toLowerCase)
   final def contractLocationFor(code: ContractualLocationCode): ContractualLocation = contractLocations(code)
   final def countryFor(code: NeptuneCountryCode): NeptuneCountry = countries(code)
+  final def countryCodeFor(country:String):NeptuneCountryCode = reverseLowerCaseCountries(country.trim.toLowerCase)
   final def incotermFor(code: IncotermCode): Incoterm = incoterms(code)
   def marketFor(commodity : NeptuneCommodity, countryCode : NeptuneCountryCode) : FuturesMarket = {
     val area = areaFor(countryCode).getOrElse{
@@ -31,7 +33,9 @@ trait ReferenceDataLookup {
   val areas: Map[AreaCode, Area]
   val contractLocations: Map[ContractualLocationCode, ContractualLocation]
   val countries: Map[NeptuneCountryCode, NeptuneCountry]
+  private lazy val reverseLowerCaseCountries = countries.map { case (code, country) => country.name.toLowerCase -> code }
   val grades: Map[GradeCode, Grade]
+  private lazy val reverseLowerCaseGrades = grades.map { case (code, grade) => grade.name.toLowerCase -> code }
   val incoterms: Map[IncotermCode, Incoterm]
 }
 

@@ -6,7 +6,7 @@ import starling.utils.Pattern.Extractor
 
 case class AxisCell(value:AxisValue, span:Option[Int], label:String, longLabel:String, collapsible:Option[Boolean],  hidden:Boolean,
                     totalState:TotalState, offset:Int, textPosition:TextPosition, editable:Boolean = false,
-                    overrideState:Option[EditableCellState]=None, overrideValue:Option[Any]=None, changed:Boolean=false) {
+                    overrideState:Option[CellState]=None, overrideValue:Option[Any]=None, changed:Boolean=false, duplicateText:Option[String]=None) {
   def text = if (!hidden) label else ""
   def textForCopy = label
   def state = overrideState.getOrElse(value.state)

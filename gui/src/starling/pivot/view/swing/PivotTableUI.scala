@@ -41,20 +41,23 @@ object PivotTableUI {
               case NotTotal => if (cellBelow.shown) {
                 GridColour
               } else {
-                cellBelow.state match {
-                  case Deleted => DeletedColour
-                  case Edited => EditedCellColour
-                  case Tainted => TaintedCellColour
-                  case Added => AddedCellColour
-                  case AddedBlank => AddedBlankCellColour
-                  case Normal => {
-                    if (cellBelow.editable) {
-                      RowHeaderEditableCellColour
-                    } else {
-                      PanelBackgroundColour
+                if (cellBelow.state.invalid) {
+                  ErrorCellColour
+                } else {
+                  cellBelow.state.state match {
+                    case Deleted => DeletedColour
+                    case Edited => EditedCellColour
+                    case Tainted => TaintedCellColour
+                    case Added => AddedCellColour
+                    case AddedBlank => AddedBlankCellColour
+                    case Normal => {
+                      if (cellBelow.editable) {
+                        RowHeaderEditableCellColour
+                      } else {
+                        PanelBackgroundColour
+                      }
                     }
                   }
-                  case Error => ErrorCellColour
                 }
               }
               case other => GridColour

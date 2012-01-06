@@ -16,6 +16,7 @@ import java.io._
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoderOutputStream, ObjectDecoderInputStream, ObjectDecoder, ObjectEncoder}
 import starling.utils.NamedDaemonThreadFactory
 import starling.manager.TimeTree
+import starling.auth.{Client, AuthHandler}
 
 //Message classes
 case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Array[Byte]]) {
@@ -112,5 +113,38 @@ class ServerPipelineFactory[User](classLoader:ClassLoader, authHandler: ServerAu
     if (secured == true) pipeline.addLast("authHandler", authHandler)
     pipeline.addLast("handler", handler)
     pipeline
+  }
+}
+
+
+//Code for running a dummy bouncy rmi client and server,
+// Used for manually testing the reconnect behaviour after protocol level code changes
+trait DummyService {
+  def bob():String
+}
+
+object SimpleBouncyRmiServer {
+  def main(args : Array[String]) {
+    val s = new BouncyRMIServer(5000, AuthHandler.Dev, "v", Set())
+    s.addInstance(classOf[DummyService], new DummyService() { def bob = "xxx"; })
+    s.start
+    Thread.sleep(10*10*1000)
+  }
+}
+
+object SimpleBouncyRmiClient {
+  def main(args : Array[String]) {
+    System.setProperty(BouncyRMI.CodeVersionKey, "v")
+    val c = new BouncyRMIClient("localhost", 5000, Client.Null)
+    c.startBlocking()
+    val dummy = c.proxy(classOf[DummyService])
+    while (true) {
+      try {
+        println("Bob: " + dummy.bob)
+      } catch {
+        case e:Exception => println("Failed: " + e)
+      }
+      Thread.sleep(5000)
+    }
   }
 }

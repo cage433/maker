@@ -200,7 +200,7 @@ class MarketDataStoreTest extends TestMarketTest with TestNGSuite with ShouldMat
     pivotData.map { _.map { _ match {
       case cell: TableCell => {
         cell.value match {
-          case pq:PivotQuantity =>"%s %s" % (pq.quantityValue.get, cell.state)
+          case pq:PivotQuantity =>"%s %s" % (pq.quantityValue.get, cell.state.state)
           case set:Set[_] => set.size + " values"
           case NoValue => "x"
         }
@@ -272,36 +272,21 @@ class MarketDataStoreTest extends TestMarketTest with TestNGSuite with ShouldMat
   // [TODO: 20 Dec 2011] Prevent adding duplicate market data
   @Test(enabled = false)
   def addWhichOverridesExistingValueFails {
-    assertEditChangesGridAndSaveFails(add(
+    assertSaveFails(add(
       MarketDataPivotTableDataSource.observationDayField -> Day(2011, 1, 1),
       PriceDataType.marketField -> "LME Lead", PriceDataType.periodField → feb,
       MarketDataPivotTableDataSource.observationTimeField -> "SHFE Close", PriceDataType.priceField → PivotQuantity(Quantity(99, UOM.USD/UOM.MT))
-    ),"""Market, Observation Time, Period, Price (USD/MT)
-         LME Lead, LME Close, JAN 2010, 50.00 USD/MT Normal
-         LME Lead, LME Close, FEB 2010, 60.00 USD/MT Normal
-         LME Lead, SHFE Close, JAN 2010, 11.00 USD/MT Normal
-         LME Lead, SHFE Close, FEB 2010, 12.00 USD/MT Normal
-         LME Lead, SHFE Close, FEB 2010, 99.00 USD/MT Added""")
+    ))
   }
 
   @Test
   def editWhichClashesWithExistingValueOnTheSameTimedKeyFails {
-    assertEditChangesGridAndSaveFails(amend(Field("Period"), jan, feb),
-    """Market, Observation Time, Period, Price (USD/MT)
-         LME Lead, LME Close, JAN 2010, x
-         LME Lead, LME Close, FEB 2010, 2 values
-         LME Lead, SHFE Close, JAN 2010, x
-         LME Lead, SHFE Close, FEB 2010, 2 values""")
+    assertSaveFails(amend(Field("Period"), jan, feb))
   }
 
   @Test
   def editWhichClashesWithExistingValueOnADifferentTimedKeyFails {
-    assertEditChangesGridAndSaveFails(amend(Field("Observation Time"), "LME Close", "SHFE Close"),
-    """Market, Observation Time, Period, Price (USD/MT)
-         LME Lead, LME Close, JAN 2010, x
-         LME Lead, LME Close, FEB 2010, x
-         LME Lead, SHFE Close, JAN 2010, 2 values
-         LME Lead, SHFE Close, FEB 2010, 2 values""")
+    assertSaveFails(amend(Field("Observation Time"), "LME Close", "SHFE Close"))
   }
 
   @Test
@@ -349,15 +334,8 @@ class MarketDataStoreTest extends TestMarketTest with TestNGSuite with ShouldMat
     postSaveFuction() should be === expectedSaveResult.trimHereDoc
   }
 
-  private def assertEditChangesGridAndSaveFails(edits: PivotEdits, expectedEditPreview:String) = {
+  private def assertSaveFails(edits: PivotEdits) = {
     val (previewFunction, postSaveFuction) = assertEditChangesGrid(edits)
-    val preview = previewFunction()
-    if (preview != expectedEditPreview.trimHereDoc) {
-      val change = (preview zip expectedEditPreview.trimHereDoc).zipWithIndex.find { case ((a,b),index) => a!=b}
-      println(change + " " + preview.substring(change.get._2))
-    }
-    preview should be === expectedEditPreview.trimHereDoc
-
     try {
       val postSaveGrid = postSaveFuction()
       println(postSaveGrid)

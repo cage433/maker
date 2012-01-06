@@ -6,5 +6,6 @@ trait RichArray {
 
   class RichArray[A](array : Array[A]) {
     def pair[B](f : A => B) : Array[(A,B)] = array.map(elem => (elem, f(elem)))
+    def mapWithIndex(f : (A,Int)=>A) = array.zipWithIndex.map(t=>f(t._1, t._2))
   }
 }

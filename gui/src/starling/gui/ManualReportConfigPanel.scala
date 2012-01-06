@@ -135,6 +135,10 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       marketDayAndTimeChooser.timeOfDayEnabled =
         (marketDayAndTimeChooser.day > curveDataDayAndTimeChooser.day) ||
           curveDataDayAndTimeChooser.timeOfDay == TimeOfDay.StartOfDay
+      if (marketDayAndTimeChooser.day == curveDataDayAndTimeChooser.day &&
+          curveDataDayAndTimeChooser.timeOfDay == TimeOfDay.EndOfDay) {
+        marketDayAndTimeChooser.timeOfDay = TimeOfDay.EndOfDay
+      }
     }
     def updateThetaLeftEnabled() {
       thetaToDayChooser.leftEnabled = thetaToDayChooser.day > marketDayAndTimeChooser.day.nextDay

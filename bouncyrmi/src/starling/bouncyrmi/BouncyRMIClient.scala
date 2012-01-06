@@ -126,7 +126,7 @@ class BouncyRMIClient(
     }
 
     def connectBlocking() {
-      connect(true).get match {
+      connect(true).get(10, TimeUnit.SECONDS) match {
         case Some(t) => throw t
         case None =>
       }
@@ -182,7 +182,7 @@ class BouncyRMIClient(
                   result = state0 match {
                     case ClientConnecting => Some(new OfflineException("Not connected. Connecting"))
                     case Reconnecting(t) => Some(new OfflineException("Unexpected disconnect, in the process of reconnecting", t))
-                    case ClientDisconnected => Some(new ClientOfflineException("Client disconnected, can't reuse"))
+                    case ClientDisconnected => Some(new ClientOfflineException("Client disconnected, server is running but can't reconnect"))
                     case ServerDisconnected(msg) => Some(new OfflineException(msg))
                     case ServerUpgrade(v) => Some(new ServerUpgradeException(v))
                     case AuthFailed => Some(new AuthFailedException("Authorisation failed against server"))
@@ -284,7 +284,7 @@ class BouncyRMIClient(
           }
           case ClientConnecting => onException(new OfflineException("Not connected. Connecting"))
           case Reconnecting(t) => onException(new OfflineException("Unexpected disconnect, in the process of reconnecting", t))
-          case ClientDisconnected => onException(new OfflineException("Client disconnected, can't reuse"))
+          case ClientDisconnected => onException(new OfflineException("Client disconnected, server is running but can't reconnect"))
           case ServerDisconnected(msg) => onException(new OfflineException(msg))
           case ServerUpgrade(v) => onException(new ServerUpgradeException(v))
           case other:NotConnected => onException(new OfflineException("Not connected."))
