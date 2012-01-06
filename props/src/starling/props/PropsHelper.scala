@@ -16,7 +16,7 @@ import starling.api.utils.{PropertyValue, PropertiesMapBuilder}
 /**
  * Holds the code to manage properties. The properties are listed in Props
  */
-class PropsHelper(starlingProps : Map[String,PropertyValue], trafiguraProps : Map[String, PropertyValue]) {
+class PropsHelper(val starlingProps : Map[String,PropertyValue], val trafiguraProps : Map[String, PropertyValue]) {
 
   val props = trafiguraProps ++ starlingProps
 

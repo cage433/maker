@@ -1084,10 +1084,9 @@ class PivotJTableModelHelper(var data0:Array[Array[TableCell]],
 
       val (rowErrors, duplicateCellsToRemove) = rowErrors0.partition{case (_,ac) => ac.state.error}
       val duplicateRowsToRemove = duplicateCellsToRemove.flatMap{case ((r,_),ac) => {
-        if (r < rowHeaderTableModel.numOriginalRows) {
-          Some(ac.value.childKey.value.asInstanceOf[NewRowValue].rowIndex)
-        } else {
-          None
+        ac.value.childKey.value match {
+          case n:NewRowValue => Some(n.rowIndex)
+          case _ => None
         }
       }}
       updatedEdits = updatedEdits.removeNewRows(duplicateRowsToRemove.toList)
