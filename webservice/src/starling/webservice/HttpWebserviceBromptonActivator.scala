@@ -24,6 +24,8 @@ class HttpWebserviceBromptonActivator extends BromptonActivator with Log {
 
     log.info("Starting HTTP: " + httpPort)
     server.start()
+
+    context.onStopped(server.stop())
   }
 
   private def addRootServlet(rootContext: Context, rootServlet: RootServlet, context: BromptonContext) {

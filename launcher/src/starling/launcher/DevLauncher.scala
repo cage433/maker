@@ -13,7 +13,7 @@ object DevLauncher {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props = propsWithUnusedPort()
     System.setProperty("appname", props.ServerName())
-    Server.run()
+    Server.run
     System.setProperty(BouncyRMI.CodeVersionKey, GUICode.allMD5s)
     Launcher.start(buffer, props.ExternalHostname(), props.RmiPort(), props.ServerPrincipalName(), props.ServerType())
   }
@@ -29,7 +29,7 @@ object DevLauncher {
     }
   }
 
-  private def propsWithUnusedPort() = {
+  def propsWithUnusedPort() = {
     val fileProps = PropertiesMapBuilder.allProps
     val starlingProps = PropertiesMapBuilder.starlingProps
     val trafiguraProps = PropertiesMapBuilder.trafiguraProps
