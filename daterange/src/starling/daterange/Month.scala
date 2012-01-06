@@ -77,6 +77,8 @@ case class Month(y : Int, m : Int) extends DateRange {
 
   def first(dayOfWeek: DayOfWeek) = firstDay + ((7 + (dayOfWeek - firstDay.dayOfWeek)) % 7)
   def last(dayOfWeek: DayOfWeek) = lastDay - ((7 + (lastDay.dayOfWeek - dayOfWeek)) % 7)
+  def daysMatching(dayOfWeek: DayOfWeek): List[Day] =
+    Stream.iterate(first(dayOfWeek))(_ + 7).takeWhile(_.containingMonth == this).toList
 
   def forDay(d:Int) = Day(y, m, d)
 

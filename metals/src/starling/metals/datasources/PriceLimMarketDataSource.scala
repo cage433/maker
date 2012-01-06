@@ -1,6 +1,5 @@
 package starling.metals.datasources
 
-import collection.immutable.List
 
 import starling.daterange._
 import starling.marketdata._
@@ -17,23 +16,16 @@ import starling.lim.{LIMService, LimNode, LIMConnection}
 import starling.services.EmailService
 import starling.curves.readers.VerifyMarketDataAvailable
 import com.lim.mimapi.RelType
-
+import java.lang.String
+import scalaz.Scalaz._
+import collection.immutable.{Map, List}
 
 object PriceLimMarketDataSource extends scalaz.Options {
   import LIMService.TopRelation.Trafigura._
 
-  val sources = List(
-    new PriceLimSource(new LMELIMRelation(Bloomberg.Metals.Lme, FuturesExchangeFactory.LME)),
-    new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX)),
-    new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE)))
-
-  class LMELIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
-    private lazy val lmeMarkets = FuturesExchangeFactory.LME.markets.toMapWithKeys(_.commodity.limName.toLowerCase)
-
-    protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.LME\.(\w+)\.(\d+)\.(\d+)\.(\d+)""") {
-      case List(commodity, y, m, d) => some(LimPrice(lmeMarkets(commodity.toLowerCase), Day(y, m, d), exchange.closeTime))
-    }
-  }
+  val sources = List(new LMEPriceLimSource,
+    new OldPriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX)),
+    new OldPriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE)))
 
   class MonthlyLIMRelation(val node: LimNode, override val exchange: FuturesExchange, prefix: String,
     override val relTypes: Set[RelType]) extends LIMRelation {
@@ -112,7 +104,12 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
     }
 }
 
-class PriceLimSource(relation: LIMRelation) extends LimSource(List(Level.Close)) {
+abstract class PriceLimSource extends LimSource(List(Level.Close)) {
+  val exchange: FuturesExchange
+  val node: LimNode
+}
+
+class OldPriceLimSource(relation: LIMRelation) extends PriceLimSource {
   val (node, nodes, exchange) = (relation.node, List(relation.node), relation.exchange)
   type Relation = LimPrice
   def description = nodes.map(_.name + " " + levelDescription)
@@ -133,6 +130,43 @@ class PriceLimSource(relation: LIMRelation) extends LimSource(List(Level.Close))
 
   private def group(prices: Prices[LimPrice]) =
     prices.relation.market → prices.atTimeOfDay(prices.relation.observationTimeOfDay)
+}
+
+class LMEPriceLimSource extends PriceLimSource {
+  val exchange = FuturesExchangeFactory.LME
+  val node = LIMService.TopRelation.Trafigura.Bloomberg.Metals.Lme
+  type Relation = Nothing
+  def description = List(node.name + " TRAF.LME.* (Close)")
+
+  case class LMEPrice(market: FuturesMarket, day: Day) {
+    def priceFor(price: Double): (DateRange, Double) = day → (price * market.limSymbol.fold(_.multiplier, 1.0))
+
+    override def toString = "TRAF.LME.%S.%s" % (market.commodity.limName, day.toString("yyyy.MM.dd"))
+  }
+
+  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    val futureDays: List[Day] = {
+      val startMonth = start.containingMonth
+      val (days, wednesdays, thirdWednesdays) = (
+        (start upto (start.add(3, Month) + 2)).days.filter(_.isWeekday),
+        (startMonth upto (startMonth + 6)).flatMap(_.daysMatching(DayOfWeek.wednesday)),
+        (startMonth upto (startMonth + (10 * 12 + 3))).map(_.thirdWednesday)
+      )
+
+      days ++ wednesdays ++ thirdWednesdays
+    }.toSet.toList.sortWith(_ < _)
+
+    def relationsFor(market: FuturesMarket): List[LMEPrice] = futureDays.map(LMEPrice(market, _)).toList
+
+    val pricesByMarket = FuturesExchangeFactory.LME.markets.toMapWithValues { market =>
+      connection.typedPrices(relationsFor(market), Level.Close, start, end)
+    }
+
+    pricesByMarket.mapNested { case (market, observationDay, prices) =>
+      MarketDataEntry(observationDay.atTimeOfDay(FuturesExchangeFactory.LME.closeTime), PriceDataKey(market),
+        PriceData.create(prices.map { case (relation, price) => relation.priceFor(price) }, market.priceUOM))
+    }.toList
+  }
 }
 
 case class PriceDataEventSource(pricingGroup: PricingGroup, provider: MarketDataProvider[CommodityMarket, DateRange, PivotQuantity])

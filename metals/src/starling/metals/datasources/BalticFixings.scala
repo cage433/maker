@@ -16,7 +16,7 @@ import scalaz.Scalaz._
 
 
 object BalticFixings extends LimSource(List(Level.Val)) {
-  type Relation = BalticRelation
+  type Relation = Nothing
 
   def description = List(TopRelation.Energy.Tankers.BalticFreight.Index_Forward.name + "(Val)")
 

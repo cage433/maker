@@ -46,7 +46,7 @@ abstract class LimMarketDataSource(service: LIMService, val marketDataType: Mark
 
 case class Prices[Relation](relation: Relation, priceByLevel: Map[Level, Double], observationDay: Day) {
   def atTimeOfDay(observationTimeOfDay: ObservationTimeOfDay) = observationDay.atTimeOfDay(observationTimeOfDay)
-  def priceFor(level: Level) = priceByLevel(level)
+  def priceFor(level: Level): Double = priceByLevel(level)
 }
 
 abstract class LimSource(val levels: List[Level]) {

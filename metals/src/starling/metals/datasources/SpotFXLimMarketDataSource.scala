@@ -77,6 +77,7 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
 }
 
 object BloombergGenericFXRates extends LimSource(List(Close)) {
+  type Relation = Nothing
   def description = List(Trafigura.Bloomberg.Currencies.Composite.name + " TRAF.BGNL.* (Close)")
 
   override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
@@ -87,8 +88,6 @@ object BloombergGenericFXRates extends LimSource(List(Close)) {
       case (relation, observationDay, rate) => relation.entryFor(observationDay.atTimeOfDay(LondonClose), rate)
     }.toList
   }
-
-  type Relation = FXRelation
 
   case class FXRelation(from: UOM, to: UOM) {
     require(from == UOM.USD || to == UOM.USD)
