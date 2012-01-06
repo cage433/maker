@@ -19,6 +19,7 @@ case class Month(y : Int, m : Int) extends DateRange {
   def toShortStringCapitalised = Month.months(m - 1).toLowerCase.capitalize.take(3) + " " + y
 
   def toReutersString = ReutersDeliveryMonthCodes.InverseCodes(m) + (y - 2000)
+  def toInverseReutersString = "%d%s" % (y, ReutersDeliveryMonthCodes.InverseCodes(m))
   def toTinyString = Month.months(m - 1).take(3) + (y - 2000)
   def toTinyStringCapitalised = Month.months(m - 1).toLowerCase.capitalize.take(3) + (y - 2000)
   def toTinyStringDash = Month.months(m - 1).take(3) + "-" + (y - 2000)
@@ -39,6 +40,8 @@ case class Month(y : Int, m : Int) extends DateRange {
     else
       this :: (next upto lastMonth)
   }
+
+  def upto(count: Int): List[Month] = upto(this + count)
 
   @transient override lazy val firstDay : Day = Day(y, m, 1)
   @transient override lazy val lastDay : Day = next.firstDay - 1

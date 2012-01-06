@@ -48,6 +48,9 @@ case class Year(yearNumber : Int) extends DateRange {
   override def toString = "Y" + yearNumber
 
   def toListOfMonths = (1 to 12).toList.map(Month(yearNumber, _))
+
+  def upto(year: Year): List[Year] = Stream.iterate(this)(_ + 1).takeWhile(_ < year).toList
+  def upto(count: Int): List[Year] = upto(this + count)
 }
 
 object Year extends TenorType {

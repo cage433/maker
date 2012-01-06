@@ -64,4 +64,8 @@ class MonthTests extends WordSpec with ShouldMatchers {
       case (dayOfWeek, expectedDays) => Month(2012, 1).daysMatching(dayOfWeek) should be === expectedDays.toList
     }
   }
+
+  "test inverse reuters string" in {
+    Month(2012, 1).toInverseReutersString should be === "2012F"
+  }
 }
