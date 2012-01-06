@@ -19,11 +19,11 @@ private[lim] object LIMServer {
     val daysInThePast = 365
 
     // HACK TEST
-    val data = days.toMapWithValues { day => server.getSpotData(LimSymbol("POAAC00"), Level.Mid, day - daysInThePast, day) }         // Should produce multiple values
+    //val data = days.toMapWithValues { day => server.getSpotData(LimSymbol("POAAC00"), Level.Mid, day - daysInThePast, day) }         // Should produce multiple values
     //val data = days.toMapWithValues { day => server.getSpotData(LimSymbol("CL"), Level.Mid, day - daysInThePast, day) }            // Does produce multiple values
 //    val data = days.toMapWithValues { day => server.getSpotData(LimSymbol("PA0005643.6.0"), Level.Mid, day - daysInThePast, day) } // Does produce multiple values
 
-    data.foreach(println)
+    server.query ( _.getPrices("TRAF.LME.COPPER.2013.02.20", Level.Close, Day(2011, 12, 20), Day(2012, 1, 5)).toList.sortBy(_._1).foreach(println))
 
 //    Log.infoWithTime("") {
 //      (1 until 10).foreach { i => {
@@ -89,6 +89,7 @@ private[lim] class LIMServer(hostname: String, port: Int) extends LIMService {
       val parameters = new GetRecordsParameters(Array(childRelation), Array(level.name)).update { params =>
         params.setFromDate(toLIM(from))
         params.setToDate(toLIM(to))
+        params.setSkip(SkipAllNaN.SKIP_ALL_NAN)
       }
 
       try {
@@ -100,7 +101,7 @@ private[lim] class LIMServer(hostname: String, port: Int) extends LIMService {
         // giving back numbers like 123.24999999991232, which is clearly supposed to be 123.2500
         val values = (result.getValues ?? Array()).toList.map(MathUtil.roundToNdp(_, 4))
 
-        dates.zip(values).filterNot(_._2.isNaN).toMap
+        dates.zip(values).toMap
       } catch {
         case e: MimException => {
           log.debug("Dodgy LIM", e)
