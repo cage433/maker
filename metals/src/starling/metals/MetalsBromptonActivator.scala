@@ -61,6 +61,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     if (props.RabbitEnabled()) {
       titanRabbitEventServices.start
+      context.onStopped(titanRabbitEventServices.stop)
     }
 
     val osgiBroadcaster = context.awaitService(classOf[Broadcaster])
@@ -193,6 +194,8 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     })
 
     if (props.ServerType() == FC2 && props.ImportMarketDataAutomatically()) registerFC2Tasks(context, broadcaster, dataTypes)
+
+    context.onStopped(scheduler.stop)
   }
 
   private def registerFC2Tasks(context: BromptonContext, broadcaster: Broadcaster, dataTypes: MarketDataTypes) {
