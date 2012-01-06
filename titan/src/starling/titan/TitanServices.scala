@@ -124,7 +124,7 @@ trait TitanEdmTradeService extends Log {
 
       // temporary code, trademgmt are sending us null titan ids
       val nullIds = edmTrades.filter(_.identifier == null)
-      assert(nullIds.size > 0, "Null titan ids found - fatal error")
+      assert(nullIds.size == 0, "%d null titan ids found - fatal error".format(nullIds.size))
 
       log.info("Got %d valid, completed physical trades".format(edmTrades.size))
       edmTrades

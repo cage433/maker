@@ -169,7 +169,7 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     val duplicatedErrorStarlingTrades = duplicates.values.map(trades => {
       val trade = trades.head
       Trade(trade.tradeID,
-        TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade.titanTradeID.getOrElse("no Titan Trade Id available"), eventID),
+        TitanTradeAttributes.dummyDate, "Unknown", TitanTradeAttributes.errorAttributes(trade.titanTradeID.getOrElse("No Titan Trade Id available"), eventID),
         ErrorInstrument(new Exception("Duplicate trade id found")))
     }).toList
 
