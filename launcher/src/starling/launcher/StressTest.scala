@@ -1,13 +1,24 @@
 package starling.launcher
 
 import starling.startserver.Server
-import starling.bouncyrmi.BouncyRMIClient
 import starling.trade.facility.TradeFacility
 import starling.auth.Client
 import starling.fc2.api.FC2Facility
 import starling.reports.facility.ReportFacility
 import starling.props.Props
 import starling.api.utils.PropertyValue
+import starling.bouncyrmi.{BouncyRMI, BouncyRMIClient}
+import starling.http.GUICode
+import collection.mutable.ListBuffer
+import starling.gui.api._
+import starling.pivot._
+import starling.daterange.Day
+import starling.utils.{Stopwatch, Log, ThreadUtils}
+import java.util.Random
+import collection.immutable.TreeSet
+import starling.gui.api.MarketDataIdentifier._
+import starling.tradestore.TradePredicate._
+import starling.tradestore.TradePredicate
 
 object StressTest {
   def main(args:Array[String]) {
@@ -24,23 +35,351 @@ object StressTest {
 
     val props = new Props(propsMap, props0.trafiguraProps)
 
+    System.setProperty(BouncyRMI.CodeVersionKey, GUICode.allMD5s)
+    System.setProperty("appname", props.ServerName())
+    val run = Server.run(props)
+
+    val day = Day(2012, 1, 6)
+    val stopwatch = Stopwatch()
+
+    // *** Market data reading
+
+    val (tradeFacility1, fc2Facility1, reportFacility1) = createTradeFC2AndReportFacility(props)
+    val pricingGroup = PricingGroup.Metals
+    val latestMarketDataVersion = fc2Facility1.init().pricingGroupLatestMarketDataVersions(pricingGroup)
+    val marketDataSelection = MarketDataSelection(Some(pricingGroup), None)
+    val marketDataIdentifier = MarketDataIdentifier(marketDataSelection, latestMarketDataVersion)
+    val marketDataPageIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier)
+
+    val pricePivotFieldsState01 = new PivotFieldsState(
+      filters = List((Field("Observation Day"), SomeSelection(Set(day)))),
+      rowFields = List(Field("Market"), Field("Observation Time"), Field("Period")),
+      columns = ColumnTrees.dataField(Field("Price")))
+    val pricePivotFieldParams01 = PivotFieldParams(true, Some(pricePivotFieldsState01))
+    val priceMarketDataLabel = MarketDataTypeLabel("Price")
+
+    val numOfReads = 3
+    stopwatch.reset()
+    readMarketDataOnce(fc2Facility1, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01)
+    val firstClientFirstReadOfPriceMarketData = stopwatch.asStringAndReset
+    readMarketDataOnce(fc2Facility1, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01)
+    val firstClientSecondReadOfPriceMarketData = stopwatch.asStringAndReset
+    readMarketDataXTimes(numOfReads, fc2Facility1, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01).thread.join()
+    val firstClientReadingPriceMarketDataXTimes = stopwatch.asStringAndReset
+
+    val fc2Facility2 = createTradeFC2AndReportFacility(props)._2
+    readMarketDataOnce(fc2Facility2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01)
+    val secondClientFirstReadOfPriceMarketData = stopwatch.asStringAndReset
+    readMarketDataOnce(fc2Facility2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01)
+    val secondClientSecondReadOfPriceMarketData = stopwatch.asStringAndReset
+    readMarketDataXTimes(numOfReads, fc2Facility2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01).thread.join()
+    val secondClientReadingPriceMarketDataXTimes = stopwatch.asStringAndReset
+
+    val t1 = readMarketDataXTimes(numOfReads, fc2Facility1, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01)
+    val t2 = readMarketDataXTimes(numOfReads, fc2Facility2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01)
+    t1.thread.join()
+    t2.thread.join()
+    val firstAndSecondClientReadingPriceMarketDataXTimes = stopwatch.asStringAndReset
+
+    val tenFC2s = (0 until 10).map(_ => createTradeFC2AndReportFacility(props)._2)
+    stopwatch.reset()
+    val tenFC2sResults = tenFC2s.map(fc2 => readMarketDataXTimes(numOfReads, fc2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01))
+    tenFC2sResults.foreach(_.thread.join())
+    val tenClientsReadingPriceMarketDataXTimes = stopwatch.asStringAndReset
+    val maximumReadTimeForTenClients = Stopwatch.milliToHumanString(tenFC2sResults.map(_.maxMillis()).max)
+
+    val twoHundredTradeFC2sAndReportFacilities = (0 until 200).map(_ => createTradeFC2AndReportFacility(props))
+    val twoHundredFC2s = twoHundredTradeFC2sAndReportFacilities.map(_._2)
+    stopwatch.reset()
+    val twoHundredFC2Results = twoHundredFC2s.map(fc2 => readMarketDataXTimes(numOfReads, fc2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01))
+    twoHundredFC2Results.foreach(_.thread.join())
+    val twoHundredClientsReadingPriceMarketDataXTimes = stopwatch.asStringAndReset
+    val maximumReadTimeForTwoHundredClients = Stopwatch.milliToHumanString(twoHundredFC2Results.map(_.maxMillis()).max)
+
+    val random = new Random(12345L)
+    stopwatch.reset()
+    val twoHundredReadingAfterDelayResults = twoHundredFC2s.map(fc2 => readMarketDataAfterDelay(fc2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01, random.nextInt(10000).toLong))
+    twoHundredReadingAfterDelayResults.foreach(_.thread.join())
+    val twoHundredClientsReadingAfterDelay = stopwatch.asStringAndReset
+    val maximumReadTimeForTwoHundredClientsWithDelay = Stopwatch.milliToHumanString(twoHundredReadingAfterDelayResults.map(_.maxMillis()).max)
+
+
+    val fixingsPivotFieldsState = new PivotFieldsState(
+      filters = List((Field("Observation Day"), SomeSelection(Set(day))), (Field("Market"), SomeSelection(Set("Copper")))),
+      rowFields = List(Field("Exchange"), Field("Level"), Field("Period")),
+      columns = ColumnTrees.dataField(Field("Price")))
+    val fixingsPivotFieldParams = PivotFieldParams(true, Some(fixingsPivotFieldsState))
+    val fixingsMarketDataLabel = MarketDataTypeLabel("PriceFixingsHistory")
+
+    stopwatch.reset()
+    val twoHundredClientsReadingFixingsForThe1stTimeAfterDelayResults = twoHundredFC2s.map(fc2 => readMarketDataAfterDelay(fc2, marketDataPageIdentifier, fixingsMarketDataLabel, fixingsPivotFieldParams, random.nextInt(10000).toLong))
+    twoHundredClientsReadingFixingsForThe1stTimeAfterDelayResults.foreach(_.thread.join())
+    val twoHundredClientsReadingFixingsForThe1stTimeAfterDelay = stopwatch.asStringAndReset
+    val maxFixingsTimeWithDelay = Stopwatch.milliToHumanString(twoHundredClientsReadingFixingsForThe1stTimeAfterDelayResults.map(_.maxMillis()).max)
+
+
+    val countryBenchmarkPivotFieldsState = new PivotFieldsState(
+      filters = List((Field("Observation Day"), SomeSelection(Set("n/a"))), (Field("Observation Time"), SomeSelection(Set("Real Time")))),
+      rowFields = List(Field("Commodity"), Field("Country"), Field("Grade"), Field("Effective Month")),
+      columns = ColumnTrees.dataField(Field("Benchmark Price")))
+    val benchmarkPivotFieldParams = PivotFieldParams(true, Some(countryBenchmarkPivotFieldsState))
+    val benchmarkMarketDataLabel = MarketDataTypeLabel("CountryBenchmark")
+
+    stopwatch.reset()
+    val countryBenchmark1stTime1stClientResult = readMarketDataXTimes(1, fc2Facility1, marketDataPageIdentifier, benchmarkMarketDataLabel, benchmarkPivotFieldParams)
+    val countryBenchmark1stTime2ndClientResult = readMarketDataXTimes(1, fc2Facility2, marketDataPageIdentifier, benchmarkMarketDataLabel, benchmarkPivotFieldParams)
+    countryBenchmark1stTime1stClientResult.thread.join()
+    countryBenchmark1stTime2ndClientResult.thread.join()
+    val twoClientsReadingCountryBenchmarksFor1stTime = stopwatch.asStringAndReset
+    val twoClientsReadingCountryBenchmarksFor1stTime1stClientTime = Stopwatch.milliToHumanString(countryBenchmark1stTime1stClientResult.maxMillis())
+    val twoClientsReadingCountryBenchmarksFor1stTime2ndClientTime = Stopwatch.milliToHumanString(countryBenchmark1stTime2ndClientResult.maxMillis())
+
+    stopwatch.reset()
+    val twoHundredClientsReadingBenchmarksAfterDelayResults = twoHundredFC2s.map(fc2 => readMarketDataAfterDelay(fc2, marketDataPageIdentifier, benchmarkMarketDataLabel, benchmarkPivotFieldParams, random.nextInt(10000).toLong))
+    twoHundredClientsReadingBenchmarksAfterDelayResults.foreach(_.thread.join())
+    val twoHundredClientsReadingBenchmarksAfterDelay = stopwatch.asStringAndReset
+    val maxBenchmarkReadTimeWithDelay = Stopwatch.milliToHumanString(twoHundredClientsReadingBenchmarksAfterDelayResults.map(_.maxMillis()).max)
+
+
+    val pricePivotFieldsState02 = new PivotFieldsState(
+      filters = List((Field("Observation Day"), SomeSelection(Set(day)))),
+      rowFields = List(Field("Observation Time"), Field("Market"), Field("Period")),
+      columns = ColumnTrees.dataField(Field("Price")))
+    val pricePivotFieldParams02 = PivotFieldParams(true, Some(pricePivotFieldsState02))
+
+    val pricePivotFieldsState03 = new PivotFieldsState(
+      filters = List((Field("Observation Day"), SomeSelection(Set(day)))),
+      rowFields = List(Field("Observation Time"), Field("Period"), Field("Market")),
+      columns = ColumnTrees.dataField(Field("Price")))
+    val pricePivotFieldParams03 = PivotFieldParams(true, Some(pricePivotFieldsState03))
+
+    val pricePivotFieldsState04 = new PivotFieldsState(
+      filters = List((Field("Observation Day"), SomeSelection(Set(day)))),
+      rowFields = List(Field("Period"), Field("Observation Time"), Field("Market")),
+      columns = ColumnTrees.dataField(Field("Price")))
+    val pricePivotFieldParams04 = PivotFieldParams(true, Some(pricePivotFieldsState04))
+
+    val pricePivotFieldsState05 = new PivotFieldsState(
+      filters = List((Field("Observation Day"), SomeSelection(Set(day)))),
+      rowFields = List(Field("Period"), Field("Market"), Field("Observation Time")),
+      columns = ColumnTrees.dataField(Field("Price")))
+    val pricePivotFieldParams05 = PivotFieldParams(true, Some(pricePivotFieldsState05))
+    val priceFieldParams = List(
+      pricePivotFieldParams01,
+      pricePivotFieldParams02,
+      pricePivotFieldParams03,
+      pricePivotFieldParams04,
+      pricePivotFieldParams05
+    )
+
+    stopwatch.reset()
+    val twoHundredClientsReadingPricesWithDifferentFieldStatesWithDelayResults = twoHundredFC2s.map(fc2 => {
+      readMarketDataAfterDelay(fc2, marketDataPageIdentifier, priceMarketDataLabel, priceFieldParams(random.nextInt(5)), random.nextInt(10000).toLong)
+    })
+    twoHundredClientsReadingPricesWithDifferentFieldStatesWithDelayResults.foreach(_.thread.join())
+    val twoHundredClientsReadingPricesWithDifferentFieldStatesWithDelay = stopwatch.asStringAndReset
+    val maxPriceReadWithDelayDifferentFieldStates = Stopwatch.milliToHumanString(twoHundredClientsReadingPricesWithDifferentFieldStatesWithDelayResults.map(_.maxMillis()).max)
+
+
+    val marketDataLabels = List(
+      (priceMarketDataLabel, pricePivotFieldParams01),
+      (benchmarkMarketDataLabel, benchmarkPivotFieldParams),
+      (fixingsMarketDataLabel, fixingsPivotFieldParams))
+    stopwatch.reset()
+    val twoHundredClientsReadingDifferentTypesOfMarketDataWithDelayResults = twoHundredFC2s.map(fc2 => {
+      val (marketDataLabel, params) = marketDataLabels(random.nextInt(3))
+      readMarketDataAfterDelay(fc2, marketDataPageIdentifier, marketDataLabel, params, random.nextInt(10000).toLong)
+    })
+    twoHundredClientsReadingDifferentTypesOfMarketDataWithDelayResults.foreach(_.thread.join())
+    val twoHundredClientsReadingDifferentTypesOfMarketDataWithDelay = stopwatch.asStringAndReset
+    val maxReadTypesWithDelay = Stopwatch.milliToHumanString(twoHundredClientsReadingDifferentTypesOfMarketDataWithDelayResults.map(_.maxMillis()).max)
+
+
+    // *** Single trade valuations
+
+    val tradeID = TradeIDLabel("A-1", TradeSystemLabel("Titan", "ti"))
+    val mods = TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
+    val observationDay = day.endOfDay
+    val curveIdentifierLabel = CurveIdentifierLabel(
+      marketDataIdentifier,
+      EnvironmentRuleLabel.MostRecentCloses,
+      observationDay,
+      observationDay,
+      observationDay.day.nextWeekday.endOfDay,
+      mods
+    )
+    val desk = Desk.Titan
+    val deskCloses = tradeFacility1.init().deskCloses(desk)(TradeTimestamp.magicLatestTimestampDay)
+    val tradeTimestamp = deskCloses.sortWith(_.timestamp > _.timestamp).head
+    val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
+    val tradeSelectionSingleTrade = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
+
+    stopwatch.reset()
+    reportFacility1.tradeValuation(tradeID, curveIdentifierLabel, tradeSelectionSingleTrade.deskAndTimestamp.get._2.timestamp, ReportSpecificChoices())
+    val singleTradeValuation1stTime = stopwatch.asStringAndReset
+
+    reportFacility1.tradeValuation(tradeID, curveIdentifierLabel, tradeSelectionSingleTrade.deskAndTimestamp.get._2.timestamp, ReportSpecificChoices())
+    val singleTradeValuation2ndTime = stopwatch.asStringAndReset
+
+    // TODO - run more single trade valuations on various trades.
+
+    // *** Full reports
+
+    val reportPivotFieldState1 = new PivotFieldsState(
+      rowFields = List(Field("Risk Market"), Field("Risk Period")),
+      columns = ColumnTrees.dataField(Field("Position"))
+    )
+    val reportPivotFieldParams1 = PivotFieldParams(true, Some(reportPivotFieldState1))
+    val reportTradeSelection1 = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), TradePredicate.Null, None)
+    val prl = reportFacility1.reportOptionsAvailable.options.filter(_.slidable)
+    val reportOptions1 = ReportOptions(prl,None,None)
+    val reportParameters1 = ReportParameters(reportTradeSelection1, curveIdentifierLabel, reportOptions1, day.startOfFinancialYear, None, true)
+
+    stopwatch.reset()
+    runReportOnce(reportFacility1, reportParameters1, reportPivotFieldParams1)
+    val firstClientFirstReport = stopwatch.asStringAndReset
+
+    runReportOnce(reportFacility1, reportParameters1, reportPivotFieldParams1)
+    val secondClientFirstReport = stopwatch.asStringAndReset
+
+    val twoHundredReportFacilities = twoHundredTradeFC2sAndReportFacilities.map(_._3)
+    stopwatch.reset()
+    val twoHundredReportsResultsWithDelay = twoHundredReportFacilities.map(reportFacility => {
+      runReportAfterDelay(reportFacility, reportParameters1, reportPivotFieldParams1, random.nextInt(10000).toLong)})
+    twoHundredReportsResultsWithDelay.map(_.thread.join())
+    val twoHundredClientsRunningSameReportWithDelay = stopwatch.asStringAndReset
+    val maxRunReportTimeWithDelay = Stopwatch.milliToHumanString(twoHundredReportsResultsWithDelay.map(_.maxMillis()).max)
+
+    // *** Tidy up and output
+
+    println("Stoppings clients")
+    clients.foreach(_.stop())
+    println("Stopping server")
+    run.stop()
     println("")
-    println("ImportMarketDataAutomatically " + props.ImportMarketDataAutomatically())
+    ThreadUtils.printNonDaemonThreads
+    println("")
+    println("")
+    println("")
     println("")
 
-    /*System.setProperty("appname", props.ServerName())
-    val run = Server.run
+    val output = List(
+      ("1st client first read of price market data:", firstClientFirstReadOfPriceMarketData),
+      ("1st client second read of price market data:", firstClientSecondReadOfPriceMarketData),
+      ("1st client reading price market data " + numOfReads + " times:", firstClientReadingPriceMarketDataXTimes),
+      ("2nd client first read of price market data:", secondClientFirstReadOfPriceMarketData),
+      ("2nd client second read of price market data:", secondClientSecondReadOfPriceMarketData),
+      ("2nd client reading price market data " + numOfReads + " times:", secondClientReadingPriceMarketDataXTimes),
+      ("1st & 2nd client reading price market data " + numOfReads + " times:", firstAndSecondClientReadingPriceMarketDataXTimes),
+      ("10 clients reading price market data " + numOfReads + " times:", tenClientsReadingPriceMarketDataXTimes),
+      ("10 clients reading price market data " + numOfReads + " times max single read:", maximumReadTimeForTenClients),
+      ("200 clients reading price market data " + numOfReads + " times:", twoHundredClientsReadingPriceMarketDataXTimes),
+      ("200 clients reading price market data " + numOfReads + " times max single read:", maximumReadTimeForTwoHundredClients),
+      ("200 clients reading price market data with random delay up to 10 seconds:", twoHundredClientsReadingAfterDelay),
+      ("200 clients reading price market data with random delay up to 10 seconds max single read:", maximumReadTimeForTwoHundredClientsWithDelay),
+      ("2 clients reading benchmarks for the first time:", twoClientsReadingCountryBenchmarksFor1stTime),
+      ("2 clients reading benchmarks for the first time - 1st client time:", twoClientsReadingCountryBenchmarksFor1stTime1stClientTime),
+      ("2 clients reading benchmarks for the first time - 2nd client time:", twoClientsReadingCountryBenchmarksFor1stTime2ndClientTime),
+      ("200 clients reading fixings for 1st time with random delay up to 10 seconds:", twoHundredClientsReadingFixingsForThe1stTimeAfterDelay),
+      ("200 clients reading fixings for 1st time with random delay up to 10 seconds max single read:", maxFixingsTimeWithDelay),
+      ("200 clients reading benchmarks with random delay up to 10 seconds:", twoHundredClientsReadingBenchmarksAfterDelay),
+      ("200 clients reading benchmarks with random delay up to 10 seconds max single read:", maxBenchmarkReadTimeWithDelay),
+      ("200 clients reading prices with random delay up to 10 seconds and different field states:", twoHundredClientsReadingPricesWithDifferentFieldStatesWithDelay),
+      ("200 clients reading prices with random delay up to 10 seconds and different field states max single read:", maxPriceReadWithDelayDifferentFieldStates),
+      ("200 clients reading different types of market data with random delay up to 10 seconds:", twoHundredClientsReadingDifferentTypesOfMarketDataWithDelay),
+      ("200 clients reading different types of market data with random delay up to 10 seconds max single read:", maxReadTypesWithDelay),
+      ("", ""),
+      ("Single trade valuation 1st time:", singleTradeValuation1stTime),
+      ("Single trade valuation 2nd time:", singleTradeValuation2ndTime),
+      ("", ""),
+      ("1st client running report 1st time:", firstClientFirstReport),
+      ("1st client running report 2nd time:", secondClientFirstReport),
+      ("200 clients running the same report with random delay up to 10 seconds:", twoHundredClientsRunningSameReportWithDelay),
+      ("200 clients running the same report with random delay up to 10 seconds max single read:", maxRunReportTimeWithDelay)
+    )
+    val maxLength = output.map(_._1.length()).max + 1
+    val maxResultLength = output.map(_._2.length()).max
+    val formattedOutput = output.map{case (description, result) => {(description.padTo(maxLength, " ").mkString, result)}}
 
+    println("Results".padTo(maxLength + maxResultLength, "-").mkString)
+    formattedOutput.foreach{case (description, result) => println(description + result)}
+    println("-".padTo(maxLength + maxResultLength, "-").mkString)
+  }
+
+  def readMarketDataOnce(fc2Facility:FC2Facility, marketDataPageIdentifier:MarketDataPageIdentifier,
+                         marketDataType:MarketDataTypeLabel, pivotFieldParameters:PivotFieldParams) = {
+    fc2Facility.readAllMarketData(marketDataPageIdentifier, Some(marketDataType), PivotEdits.Null, pivotFieldParameters)
+  }
+
+  def readMarketDataXTimes(x:Int, fc2Facility:FC2Facility, marketDataPageIdentifier:MarketDataPageIdentifier,
+                              marketDataType:MarketDataTypeLabel, pivotFieldParameters:PivotFieldParams) = {
+    @volatile var maxReadTime = 0L
+
+    val thread = new Thread {
+      override def run() {
+        val stopwatch = Stopwatch()
+        val timings = new ListBuffer[Long]()
+        for (c <- 0 until x) {
+          stopwatch.reset()
+          readMarketDataOnce(fc2Facility, marketDataPageIdentifier, marketDataType, pivotFieldParameters)
+          timings += stopwatch.ms()
+        }
+        maxReadTime = timings.max
+      }
+    }
+    thread.start()
+    ReadResult(thread, () => maxReadTime)
+  }
+
+  def readMarketDataAfterDelay(fc2Facility:FC2Facility, marketDataPageIdentifier:MarketDataPageIdentifier,
+                                marketDataType:MarketDataTypeLabel, pivotFieldParameters:PivotFieldParams, delay:Long) = {
+    @volatile var maxReadTime = 0L
+
+    val thread = new Thread {
+      override def run() {
+        Thread.sleep(delay)
+        val stopwatch = Stopwatch()
+        readMarketDataOnce(fc2Facility, marketDataPageIdentifier, marketDataType, pivotFieldParameters)
+        maxReadTime = stopwatch.ms()
+      }
+    }
+    thread.start()
+    ReadResult(thread, () => maxReadTime)
+  }
+
+  def runReportAfterDelay(reportFacility:ReportFacility, reportParameters:ReportParameters,
+                          pivotFieldParameters:PivotFieldParams, delay:Long) = {
+    @volatile var maxReadTime = 0L
+
+    val thread = new Thread {
+      override def run() {
+        Thread.sleep(delay)
+        val stopwatch = Stopwatch()
+        runReportOnce(reportFacility, reportParameters, pivotFieldParameters)
+        maxReadTime = stopwatch.ms()
+      }
+    }
+    thread.start()
+    ReadResult(thread, () => maxReadTime)
+  }
+
+  def runReportOnce(reportFacility:ReportFacility, reportParameters:ReportParameters, pivotFieldParameters:PivotFieldParams) = {
+    reportFacility.reportPivot(reportParameters, pivotFieldParameters)
+  }
+
+  val clients = new ListBuffer[BouncyRMIClient]()
+
+  def createClient(props:Props) = {
     val client = new BouncyRMIClient("localhost", props.RmiPort(), Client.Null)
-    val tradeFacility = client.proxy(classOf[TradeFacility])
-    val fc2Facility = client.proxy(classOf[FC2Facility])
-    val reportFacility = client.proxy(classOf[ReportFacility])
+    client.startBlocking()
+    clients += client
+    client
+  }
 
-
-    tradeFacility.init().deskCloses
-
-
-
-    run.stop()*/
+  def createTradeFC2AndReportFacility(props:Props) = {
+    val client = createClient(props)
+    (client.proxy(classOf[TradeFacility]), client.proxy(classOf[FC2Facility]), client.proxy(classOf[ReportFacility]))
   }
 }
+
+case class ReadResult(thread:Thread, maxMillis: ()=>Long)
