@@ -37,8 +37,10 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
   }
 
   def apply(trade: EDMPhysicalTrade, eventID : String) : List[Trade] = {
+
     val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company")
-    val counterparty = counterpartiesByGUID(trade.counterparty.counterparty).name
+    val counterparty = Option(trade.counterparty).flatMap(c => Option(c.counterparty)).flatMap(c => counterpartiesByGUID.get(c)).flatMap(c => Option(c.name)).getOrElse("No Counterparty available")
+
     val comments = trade.comments
     val contractFinalised = trade.contractFinalised.toString
 
@@ -181,9 +183,9 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
             else {
               val quotaId = NeptuneId(detail.identifier).titanId
               val isFullyAllocated = isQuotaFullyAllocated.getOrElse(quotaId, false)
-              //val logisticsQuota: Option[LogisticsQuota] = logisticsQuotaByQuotaID.get(NeptuneId(detail.identifier).titanId)
-              log.info("detail.identifier %s, fullyAllocated %s".format(quotaId, isFullyAllocated))
-              //val isFullyAllocated = logisticsQuota.map(_.fullyAllocated).getOrElse(false)
+
+              //log.debug("detail.identifier %s, fullyAllocated %s".format(quotaId, isFullyAllocated))
+
               val assignmentTrades = inventoryItems.map {
                 inv =>
                   val assignment = makeAssignment(inv.item.salesAssignment, inv, false)
@@ -201,7 +203,7 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
               else {
                 val unallocatedQuantity = deliveryQuantity(detail) - assignmentTrades.map(_.tradeable.asInstanceOf[PhysicalMetalAssignment].quantity).sum
 
-                log.info("\n****** Unallocated quota %s unallocated qty %s from delivery qty %s - assignmentTrades qty sum %s \n".format(detail.identifier.value, unallocatedQuantity.toString,
+                log.debug("\n****** Unallocated quota %s unallocated qty %s from delivery qty %s - assignmentTrades qty sum %s \n".format(detail.identifier.value, unallocatedQuantity.toString,
                     deliveryQuantity(detail).toString, assignmentTrades.map(_.tradeable.asInstanceOf[PhysicalMetalAssignment].quantity).sum.toString))
 
                 val unallocatedQuota = UnallocatedSalesQuota(
