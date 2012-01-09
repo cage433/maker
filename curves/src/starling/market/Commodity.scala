@@ -124,12 +124,13 @@ object Commodity extends Log {
   lazy val all = metalsCommodities ::: oilCommodities ::: gasCommodities ::: otherCommodities
 
   lazy val neptuneCommodities = metalsCommodities.collect{case c : NeptuneCommodity => c}
+  lazy val neptuneCommodityFromNeptuneNameMap : Map[String, NeptuneCommodity] = neptuneCommodities.toMapWithKeys(_.neptuneName)
   lazy val neptuneCommodityFromNeptuneCode : Map[String, NeptuneCommodity] = neptuneCommodities.toMapWithKeys(_.neptuneCode).withDefault{
     code: String => throw new Exception("Unrecognized neptune commodity code " + code + ", known codes are " + neptuneCommodities.map(_.neptuneCode).mkString(", "))
   }
 
   def neptuneCommodityFromNeptuneName(name : String) = {
-    neptuneCommodities.find(_.neptuneName == name) match {
+    neptuneCommodityFromNeptuneNameMap.get(name) match {
       case nco @ Some(nc) => nco
       case None => {
         log.error("Missing neptune commodity, name %s from \n%s".format(name, neptuneCommodities.mkString("\n")))
