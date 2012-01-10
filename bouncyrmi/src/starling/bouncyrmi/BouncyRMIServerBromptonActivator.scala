@@ -73,6 +73,10 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
     rmiServerForGUI.start
     rmiServerForTitan.start
 
+    context.onStopped({
+      rmiServerForGUI.stop()
+      rmiServerForTitan.stop()
+    })
   }
 }
 

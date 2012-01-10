@@ -14,7 +14,19 @@ case class Stopwatch(name : String = ""){
   def ms() : Long = (nanos) / 1000000
   def s() : Long = ms / 1000
   def toStringSeconds = s() + "(s)"
-  override def toString : String = name + "  " +Stopwatch.milliToHumanString(ms())
+  def asString = {
+    if (name.nonEmpty) {
+      name + "  " +Stopwatch.milliToHumanString(ms())
+    } else {
+      Stopwatch.milliToHumanString(ms())
+    }
+  }
+  def asStringAndReset = {
+    val s = asString
+    reset()
+    s
+  }
+  override def toString : String = asString
 }
 
 object Stopwatch {

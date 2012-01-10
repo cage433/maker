@@ -7,6 +7,7 @@ import java.lang.String
 import starling.utils.cache.CacheFactory.{StatsListener, Stats, Cache, CacheImpl}
 import java.util.concurrent._
 import collection.JavaConversions._
+import starling.manager.Profiler
 
 class SimpleCacheImpl(val soft: Boolean) extends CacheImpl {
   private val caches:ConcurrentMap[String, FutureTask[SimpleCache]] = new MapMaker().concurrencyLevel(16).makeMap[String, FutureTask[SimpleCache]]
@@ -37,14 +38,16 @@ class SimpleCache(statsListener: StatsListener, soft: Boolean) extends Cache(sta
   def keys[K]() = Set[K]() ++ (scala.collection.mutable.Set[K]() ++ cache.asInstanceOf[ConcurrentMap[K, FutureTask[_]]].keySet)
   
   def memoize[K, V](key: K, f: => V): V = {
-    putIfAbsent(key, f) match {
-      case (v, true) => {
-        statsListener.hit
-        v
-      }
-      case (v, false) => {
-        statsListener.miss
-        v
+    Profiler.time("memoize") {
+      putIfAbsent(key, f) match {
+        case (v, true) => {
+          statsListener.hit
+          v
+        }
+        case (v, false) => {
+          statsListener.miss
+          v
+        }
       }
     }
   }

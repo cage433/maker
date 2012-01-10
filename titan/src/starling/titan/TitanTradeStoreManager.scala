@@ -10,10 +10,7 @@ import starling.utils.ImplicitConversions._
 import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
 import com.trafigura.edm.common.units.TitanId
 import starling.utils.{Stopwatch, Startable, Log}
-import starling.instrument.TradeID._
-import starling.db.TitanTradeSystem
-import starling.instrument.ErrorInstrument._
-import starling.instrument.{ErrorInstrument, TradeID, Trade}
+import starling.instrument.{ErrorInstrument, Trade}
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,

@@ -110,7 +110,7 @@ class MapView[K, V, C](map: Map[K, V], keyProjection: C => K) {
 case class RichMapWithErrors[K : Manifest, V : Manifest](map : Map[K, V]) {
   val defaultMissingKeyExceptionMessage = "Missing key '%s' of type '%s', for values of type '%s'"
   def withException(s : String = defaultMissingKeyExceptionMessage) : Map[K, V] =
-    map.withDefault(k => throw new java.util.NoSuchElementException(s.format(k.toString, manifest[K].erasure.getName, manifest[V].erasure.getName)))
+    map.withDefault(k => throw new java.util.NoSuchElementException(s.format(if (k == null) "Null key" else k.toString, manifest[K].erasure.getName, manifest[V].erasure.getName)))
 }
 object RichMapWithErrors {
   implicit def toRichMap[K : Manifest, V : Manifest](map : Map[K, V]) = RichMapWithErrors(map)

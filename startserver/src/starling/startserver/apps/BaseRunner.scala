@@ -5,7 +5,6 @@ import starling.services.osgi.ServicesBromptonActivator
 import starling.reports.impl.ReportsBromptonActivator
 import starling.singleclasspathmanager.SingleClasspathManager
 import starling.manager.BromptonActivator
-import starling.props.internal.PropsBromptonActivator
 import starling.trade.impl.osgi.TradeBromptonActivator
 import starling.utils.{SingleClasspathBroadcasterActivator, ThreadUtils}
 
@@ -29,7 +28,6 @@ object BaseRunner {
   def runWithoutListening[T]()(lookup:Lookup=>Unit) {
     runWith(List(
       classOf[SingleClasspathBroadcasterActivator],
-      classOf[PropsBromptonActivator],
       classOf[AuthBromptonActivator],
       classOf[ServicesBromptonActivator],
       classOf[TradeBromptonActivator],
