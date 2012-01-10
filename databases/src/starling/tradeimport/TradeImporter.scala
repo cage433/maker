@@ -7,7 +7,8 @@ import atomic.AtomicBoolean
 import locks.ReentrantLock
 import starling.gui.api.TradeImportResult
 import starling.daterange.{Timestamp, DayAndTime, Day}
-import starling.utils.{NamedThreadFactory, Log, Stopwatch}
+import starling.manager.NamedThreadFactory
+import starling.utils.{Log, Stopwatch}
 import starling.db._
 import starling.tradestore.{TradeStore}
 import starling.instrument.Trade

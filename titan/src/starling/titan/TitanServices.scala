@@ -43,7 +43,7 @@ object JMXEnabler extends Log {
       http(logisticsReq << (postURlEncodedAttributes, "application/x-www-form-urlencoded")  as_str)
 
     val result = sendRequest(postURlEncodedAttributes)
-
+    http.shutdown()
     log.debug("HTTP Logistics JMX result: \n" + result)
   }
 }
