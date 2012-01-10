@@ -4,13 +4,14 @@ import collection.SortedMap
 import starling.utils.Pattern.Extractor
 import collection.mutable.{Map => MMap}
 import scalaz.Scalaz._
-import starling.utils.ImplicitConversions
 import scala.collection.MapProxy
 import scala.collection.immutable.{Map, TreeMap}
+
 
 trait RichMaps {
   type MultiMap[K, V] = Map[K, List[V]]
   type NestedMap[K1, K2, V] = Map[K1, Map[K2, V]]
+  type NestedMap3[K1, K2, K3, V] = Map[K1, Map[K2, Map[K3, V]]]
 
   implicit def enrichMap[K, V](map: Map[K,V]) = new RichMap(map)
   implicit def enrichMultiMap[K, V](multi : MultiMap[K, V]) = new RichMultiMap[K, V](multi)

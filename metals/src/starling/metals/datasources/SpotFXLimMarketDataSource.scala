@@ -76,20 +76,22 @@ case class SpotFXLimMarketDataSource(service: LIMService, emailService: EmailSer
     }
 }
 
-object BloombergGenericFXRates extends LimSource(List(Close)) {
-  type Relation = Nothing
+object BloombergGenericFXRates extends LimSource {
   def description = List(Trafigura.Bloomberg.Currencies.Composite.name + " TRAF.BGNL.* (Close)")
 
-  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
-    val pricesByRelationAndObservationDay: NestedMap[FXRelation, Day, Double] =
-      fxRelations.toMapWithValues(relation => connection.getPrices(relation.limRelation, Level.Close, start, end))
+  def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    val prices: ImplicitConversions.NestedMap[Day, Relation, Double] =
+      connection.getPrices(fxRelations, Level.Close, start, end)
 
-    pricesByRelationAndObservationDay.mapNested {
-      case (relation, observationDay, rate) => relation.entryFor(observationDay.atTimeOfDay(LondonClose), rate)
-    }.toList
+    prices.mapNested {
+      case (observationDay, relation, rate) => relation.entryFor(observationDay.atTimeOfDay(LondonClose), rate)
+    }
   }
 
-  case class FXRelation(from: UOM, to: UOM) {
+  private def fxRelations = currencies.map(Relation(UOM.USD, _)) ++ currencies.map(Relation(_, UOM.USD))
+  private def currencies = UOM.currencies.filterNot(_.isOneOf(UOM.CNY, UOM.USD))
+
+  private case class Relation(from: UOM, to: UOM) {
     require(from == UOM.USD || to == UOM.USD)
 
     def limRelation = "TRAF.BGNL.%s%s" % (from, to)
@@ -97,9 +99,6 @@ object BloombergGenericFXRates extends LimSource(List(Close)) {
     def entryFor(observationPoint: ObservationPoint, rate: Double) = MarketDataEntry(observationPoint,
       SpotFXDataKey((from == UOM.USD) ? to | from), SpotFXData(Quantity(rate, to / from)))
   }
-
-  private def fxRelations = currencies.map(FXRelation(UOM.USD, _)) ++ currencies.map(FXRelation(_, UOM.USD))
-  private def currencies = UOM.currencies.filterNot(_.isOneOf(UOM.CNY, UOM.USD))
 }
 
 case class SpotFXDataEventSource(pricingGroup: PricingGroup, provider: MarketDataProvider[Day, UOM, Quantity])

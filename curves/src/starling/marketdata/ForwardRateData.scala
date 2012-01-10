@@ -57,6 +57,7 @@ case class ForwardRateDataKey(ccy: UOM) extends MarketDataKey {
   def humanName = ccy.toString
   def fields = Set(ForwardRateDataType.currencyField.field)
   def observationTime = (ccy == UOM.CNY) ? ObservationTimeOfDay.CFETSPublicationTime | ObservationTimeOfDay.LiborClose
+  def onDay(observationDay: Day) = TimedMarketDataKey(observationDay.atTimeOfDay(observationTime), this)
 }
 
 case class ForwardRateSource(value: String, currencies: UOM*) extends NewType[String] {

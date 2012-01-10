@@ -217,6 +217,8 @@ object VersionedMarketData {
 }
 
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData, tag: Option[String] = None) {
+  def this(key: TimedMarketDataKey, data: MarketData, tag: Option[String] = None) = this(key.observationPoint, key.key, data, tag)
+
   val dataType = key.typeName
 
   def isEmpty = data.size == 0 // key.castRows(data, ReferenceDataLookup.Null).isEmpty

@@ -78,12 +78,12 @@ trait LIMConnection {
   def getPrice(childRelation: String, level: Level, day: Day): Option[Double] =
     getPrices(childRelation, level, from = day, to = day).get(day)
 
-  def getPrices(childRelations: Iterable[String], level: Level, from: Day, to: Day): Map[(String, Day), Double] = {
-    childRelations.flatMap(childRelation => getPrices(childRelation, level, from, to).mapKeys(day => childRelation → day)).toMap
+  def getPrices[T](children: Iterable[T], level: Level, from: Day, to: Day): NestedMap[Day, T, Double] = {
+    children.toMapWithValues(child => getPrices(child.toString, level, from, to)).flipNesting
   }
 
-  def typedPrices[T](children: Iterable[T], level: Level, from: Day, to: Day): NestedMap[Day, T, Double] = {
-    children.toMapWithValues(child => getPrices(child.toString, level, from, to)).flipNesting
+  def getPrices[T](children: Iterable[T], levels: List[Level], from: Day, to: Day): NestedMap3[Day, T, Level, Double] = {
+    children.toMapWithValues(child => getPrices(child.toString, levels, from, to)).mapValues(_.flipNesting).flipNesting
   }
 
   def getPrices(childRelation: String, level: Level, from: Day, to: Day): Map[Day, Double]

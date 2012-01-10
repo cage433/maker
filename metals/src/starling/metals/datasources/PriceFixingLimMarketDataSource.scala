@@ -55,55 +55,55 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
   ).filterNot(_.task == notImplemented)
 }
 
-object LMEFixings extends LimSource(List(Ask, Bid)) {
-  type Relation = Nothing
-  def description = List("%s/TRAF.LME.<commodity>.<ring>.<tenor> %s" % (Trafigura.Bloomberg.Metals.Lme, levelDescription))
+object LMEFixings extends LimSource {
+  def description = List(Trafigura.Bloomberg.Metals.Lme.name + "/TRAF.LME.<commodity>.<ring>.<tenor> (Ask, Bid)")
 
-  case class LMEFixingRelation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor: Tenor) {
-    def limName = "TRAF.LME.%S.%S.%s" % (market.commodity.limName, ring.shortName, tenor)
-  }
+  def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    val fixings: NestedMap3[Day, Relation, Level, Double] = connection.getPrices(relations, List(Ask, Bid), start, end)
 
-  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
-    val fixings: Map[LMEFixingRelation, NestedMap[Level, Day, Double]] =
-      relations.toMapWithValues(relation => connection.getPrices(relation.limName, List(Ask, Bid), start, end))
-
-    val groupedFixings = fixings.mapValues(_.flipNesting).mapNested { case (relation, observationDay, fixingsByLevel) =>
+    val groupedFixings = fixings.mapNested { case (observationDay, relation, fixingsByLevel) =>
       ((observationDay.atTimeOfDay(relation.ring), relation.market), (relation.tenor, fixingsByLevel))
     }.toNestedMap
 
     groupedFixings.map { case ((observationPoint, market), fixingsInGroup) =>
-      val data = fixingsInGroup.flatMap { case (tenor, priceByLevel) => priceByLevel.map { case (level, price) =>
+      val data = fixingsInGroup.mapNested { case (tenor, level, price) =>
         (level, StoredFixingPeriod.tenor(tenor)) → MarketValue.quantity(price, market.priceUOM)
-      } }
+      }
 
       MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(data))
-    }.toList
+    }
   }
 
   private val tenors = Tenor.CASH :: Tenor.many(Month, 3, 15, 27)
   private val rings = List(LME_AMR1, LME_Official, LME_PMR1, LME_Unofficial)
-  private val relations: List[LMEFixingRelation] = rings ⊛ LME.markets ⊛ tenors apply(LMEFixingRelation.apply)
+  private val relations: List[Relation] = rings ⊛ LME.markets ⊛ tenors apply(Relation.apply)
+
+  private case class Relation(ring: ObservationTimeOfDay, market: CommodityMarket, tenor: Tenor) {
+    override def toString = "TRAF.LME.%S.%S.%s" % (market.commodity.limName, ring.shortName, tenor)
+  }
 }
 
-object BloombergTokyoCompositeFXRates extends LimSource(List(Close)) {
-  type Relation = Nothing
-
+object BloombergTokyoCompositeFXRates extends LimSource {
   def description = List(Trafigura.Bloomberg.Currencies.Composite.name + "TRAF.CMPT.CNY.* (Close)")
 
-  override def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
-    val rates: NestedMap[Day, StoredFixingPeriod, Double] = periods.toMapWithValues(period =>
-      connection.getPrices("TRAF.CMPT.CNY." + period, Close, start, end)).flipNesting
+  def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
+    val rates: NestedMap[Day, Relation, Double] = connection.getPrices(relations, Close, start, end)
 
-    rates.map { case (observationDay, ratesByPeriod) =>
+    rates.map { case (observationDay, ratesByRelation) =>
       MarketDataEntry(observationDay.atTimeOfDay(SHFEClose), PriceFixingsHistoryDataKey("CNY", Some("CMPT")),
-        PriceFixingsHistoryData.create(ratesByPeriod.map {
-          case (period, rate) => ((Close, period), MarketValue.quantity(rate, UOM.CNY / UOM.USD))
+        PriceFixingsHistoryData.create(ratesByRelation.map {
+          case (relation, rate) => ((Close, relation.period), MarketValue.quantity(rate, UOM.CNY / UOM.USD))
         })
       )
-    }.toList
+    }
   }
 
-  private def periods = (Tenor.many(Month, 1, 2, 3, 6, 9, 12) ++ Tenor.many(Year, 2, 3, 4)).map(StoredFixingPeriod.tenor)
+  private def relations = (Tenor.many(Month, 1, 2, 3, 6, 9, 12) ++ Tenor.many(Year, 2, 3, 4)).map(Relation)
+
+  private case class Relation(tenor: Tenor) {
+    override def toString = "TRAF.CMPT.CNY." + period
+    val period = StoredFixingPeriod.tenor(tenor)
+  }
 }
 
 case class PriceFixingDataEventSource(pricingGroup: PricingGroup,
