@@ -1,22 +1,19 @@
 package starling.bouncyrmi
 
 import scala.swing.event.Event
-import java.util.zip.{Inflater, Deflater}
-import org.apache.commons.io.input.ClassLoaderObjectInputStream
+import java.util.zip.Deflater
 import org.jboss.netty.handler.ssl.SslHandler
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
 import org.jboss.netty.channel._
-import org.jboss.netty.handler.codec.compression.{ZlibDecoder, ZlibEncoder}
 import org.jboss.netty.handler.timeout._
-import org.jboss.netty.util.{HashedWheelTimer, Timer}
-import org.jboss.netty.handler.execution.{OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler}
-import java.util.concurrent.{TimeUnit, Executors, ThreadFactory}
+import org.jboss.netty.util.HashedWheelTimer
+import org.jboss.netty.handler.execution.ExecutionHandler
+import java.util.concurrent.Executors
 import java.lang.Boolean
 import java.io._
 import org.jboss.netty.handler.codec.serialization.{ObjectEncoderOutputStream, ObjectDecoderInputStream, ObjectDecoder, ObjectEncoder}
 import starling.utils.NamedDaemonThreadFactory
-import starling.manager.TimeTree
 import starling.auth.{Client, AuthHandler}
+import starling.manager.{Profiler, TimeTree}
 
 //Message classes
 case class MethodInvocationRequest(version: String, id: Int, declaringClass: String, method: String, parameters: Array[String], arguments: Array[Array[Byte]]) {
@@ -57,7 +54,7 @@ case object ClientDisconnectedEvent
 case class UnexpectedDisconnectEvent(t: Throwable)
 
 class ClientPipelineFactory(handler: SimpleChannelHandler, timer:HashedWheelTimer, logger:(String)=>Unit) extends ChannelPipelineFactory {
-  def getPipeline() = {
+  def getPipeline = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.clientContext.createSSLEngine
     engine.setUseClientMode(true)
@@ -78,7 +75,7 @@ object BouncyRMI {
 
   val CertIssuerName = "CN=starling"
 
-  def addCommon(pipeline: ChannelPipeline, timer:HashedWheelTimer, logger:(String)=>Unit) = {
+  def addCommon(pipeline: ChannelPipeline, timer:HashedWheelTimer, logger:(String)=>Unit) {
     pipeline.addLast("compress", new MyCompressEncoder(Deflater.BEST_SPEED))
     pipeline.addLast("encoder", new ObjectEncoder())
     pipeline.addLast("decompress", new MyDecompressDecoder(200 * 1024 * 1024, logger))
@@ -87,22 +84,26 @@ object BouncyRMI {
   }
 
   def encode(obj:Object) = {
-    val bout = new ByteArrayOutputStream()
-    val out = new ObjectEncoderOutputStream(bout)
-    out.writeObject(obj)
-    out.flush
-    out.close
-    bout.toByteArray
+    Profiler.time("serialization encode") {
+      val bout = new ByteArrayOutputStream()
+      val out = new ObjectEncoderOutputStream(bout)
+      out.writeObject(obj)
+      out.flush()
+      out.close()
+      bout.toByteArray
+    }
   }
 
   def decode(classLoader:ClassLoader, data:Array[Byte]) = {
-    val in = new ObjectDecoderInputStream(new ByteArrayInputStream(data), classLoader, 200 * 1024 * 1024)
-    in.readObject()
+    Profiler.time("serialization decode") {
+      val in = new ObjectDecoderInputStream(new ByteArrayInputStream(data), classLoader, 200 * 1024 * 1024)
+      in.readObject()
+    }
   }
 }
 
 class ServerPipelineFactory[User](classLoader:ClassLoader, authHandler: ServerAuthHandler, handler: SimpleChannelUpstreamHandler, timer:HashedWheelTimer, secured : Boolean = true) extends ChannelPipelineFactory {
-  def getPipeline() = {
+  def getPipeline = {
     val pipeline = Channels.pipeline
     val engine = SslContextFactory.serverContext.createSSLEngine
     engine.setUseClientMode(false)

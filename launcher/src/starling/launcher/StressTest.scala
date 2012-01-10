@@ -13,15 +13,14 @@ import collection.mutable.ListBuffer
 import starling.gui.api._
 import starling.pivot._
 import starling.daterange.Day
-import starling.utils.{Stopwatch, Log, ThreadUtils}
+import starling.utils.{Stopwatch, ThreadUtils}
 import java.util.Random
 import collection.immutable.TreeSet
-import starling.gui.api.MarketDataIdentifier._
-import starling.tradestore.TradePredicate._
 import starling.tradestore.TradePredicate
+import starling.manager.{TimeTree, Profiler}
 
 object StressTest {
-  def main(args:Array[String]) {
+  def initialSetupAndReturnProps = {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props0 = DevLauncher.propsWithUnusedPort()
 
@@ -37,6 +36,12 @@ object StressTest {
 
     System.setProperty(BouncyRMI.CodeVersionKey, GUICode.allMD5s)
     System.setProperty("appname", props.ServerName())
+
+    props
+  }
+
+  def main(args:Array[String]) {
+    val props = initialSetupAndReturnProps
     val run = Server.run(props)
 
     val day = Day(2012, 1, 6)
@@ -308,7 +313,9 @@ object StressTest {
 
   def readMarketDataOnce(fc2Facility:FC2Facility, marketDataPageIdentifier:MarketDataPageIdentifier,
                          marketDataType:MarketDataTypeLabel, pivotFieldParameters:PivotFieldParams) = {
-    fc2Facility.readAllMarketData(marketDataPageIdentifier, Some(marketDataType), PivotEdits.Null, pivotFieldParameters)
+    Profiler.captureTime("Read market data once") {
+      fc2Facility.readAllMarketData(marketDataPageIdentifier, Some(marketDataType), PivotEdits.Null, pivotFieldParameters)
+    }
   }
 
   def readMarketDataXTimes(x:Int, fc2Facility:FC2Facility, marketDataPageIdentifier:MarketDataPageIdentifier,
@@ -328,23 +335,25 @@ object StressTest {
       }
     }
     thread.start()
-    ReadResult(thread, () => maxReadTime)
+    ReadResult(thread, () => maxReadTime, () => null)
   }
 
   def readMarketDataAfterDelay(fc2Facility:FC2Facility, marketDataPageIdentifier:MarketDataPageIdentifier,
                                 marketDataType:MarketDataTypeLabel, pivotFieldParameters:PivotFieldParams, delay:Long) = {
     @volatile var maxReadTime = 0L
+    @volatile var timeTree:TimeTree = null
 
     val thread = new Thread {
       override def run() {
         Thread.sleep(delay)
         val stopwatch = Stopwatch()
-        readMarketDataOnce(fc2Facility, marketDataPageIdentifier, marketDataType, pivotFieldParameters)
+        val (_, tTree) = readMarketDataOnce(fc2Facility, marketDataPageIdentifier, marketDataType, pivotFieldParameters)
         maxReadTime = stopwatch.ms()
+        timeTree = tTree
       }
     }
     thread.start()
-    ReadResult(thread, () => maxReadTime)
+    ReadResult(thread, () => maxReadTime, () => timeTree)
   }
 
   def runReportAfterDelay(reportFacility:ReportFacility, reportParameters:ReportParameters,
@@ -360,7 +369,7 @@ object StressTest {
       }
     }
     thread.start()
-    ReadResult(thread, () => maxReadTime)
+    ReadResult(thread, () => maxReadTime, null)
   }
 
   def runReportOnce(reportFacility:ReportFacility, reportParameters:ReportParameters, pivotFieldParameters:PivotFieldParams) = {
@@ -382,4 +391,4 @@ object StressTest {
   }
 }
 
-case class ReadResult(thread:Thread, maxMillis: ()=>Long)
+case class ReadResult(thread:Thread, maxMillis: ()=>Long, timeTree: ()=>TimeTree)

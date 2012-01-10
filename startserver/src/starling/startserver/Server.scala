@@ -46,7 +46,7 @@ object Server {
       classOf[LoopyxlBromptonActivator]
     )
     val activators = baseActivators ::: (if (props.ServerType() == ServerTypeLabel.FC2) metalsActivators else Nil)
-    val single = new SingleClasspathManager(false, activators, List( (classOf[Props], props)) )
+    val single = new SingleClasspathManager(true, activators, List( (classOf[Props], props)) )
     writePIDFile()
     Log.infoWithTime("Launching starling server") {
       try {
