@@ -181,10 +181,6 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
     hedge
   }
 
-
-  def instrumentVolume : Quantity = {
-    throw new UnsupportedOperationException
-  }
   /**
    * This sucks a little. JF would like to see the skew adjusted vol for a UTP in pivot reports. Not
    * unreasonable. We initially displayed the ATM vol. We pass in the ATM vol key, from this the UTP
