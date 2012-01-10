@@ -18,15 +18,7 @@ import java.util.Random
 object BreakingStressTest {
   def main(args:Array[String]) {
 
-    val largeDataSet = true /*if (args.nonEmpty) {
-      if (args(0) == "large") {
-        true
-      } else {
-        false
-      }
-    } else {
-      false
-    }*/
+    val largeDataSet = true
 
     val props = initialSetupAndReturnProps
     val run = Server.run(props)
