@@ -54,10 +54,12 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
       }
       def shapeAndGrade(spec : DeliverySpec) = {
         spec.materialSpec match {
-          case rms: com.trafigura.edm.trademgmt.materialspecification.RefinedMetalSpec => (
-            shapesByGUID(rms.shape),
-            gradeByGUID(rms.grade)
-            )
+          case rms: com.trafigura.edm.trademgmt.materialspecification.RefinedMetalSpec => {
+            assert(rms.shape != null, "RMS Shape was null!")
+            assert(rms.grade != null, "RMS Grade was null!")
+            (shapesByGUID(rms.shape),
+              gradeByGUID(rms.grade))
+          }
           case _ => throw new Exception("Expected RefinedMetalSpec, recieved " + spec.materialSpec)
         }
       }
@@ -77,9 +79,11 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
         assert(deliveryLocations.size == 1, "Expect a single delivery location")
         deliveryLocations.head
       }
-      def locations(detail : QuotaDetails): (Location, DestinationLocation) = {
+      def locations(detail : QuotaDetails) : (Location, DestinationLocation) = {
         val spec = deliverySpec_(detail)
-        (locationsByGUID(deliveryLocation(detail).location), destLocationsByGUID(spec.destinationLocation))
+        assert(spec.destinationLocation != null, "Destination location was Null!")
+        (locationsByGUID(deliveryLocation(detail).location),
+         destLocationsByGUID(spec.destinationLocation))
       }
 
       def deliverySpec_(detail : QuotaDetails) = {

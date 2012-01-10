@@ -123,6 +123,7 @@ case class EDMPricingSpecConverter(metal : Metal, exchanges : String => Market) 
           )
         }
         case spec : UNKPricingSpecification => {
+          assert(spec.qpMonth != null, "Spec QP Month was null")
           val qpMonth = Day.fromJodaDate(spec.qpMonth).containingMonth
           val index: IndexWithDailyPrices = getIndex(spec.market, spec.index)
           val declarationBy: Day = if (spec.declarationBy == null) qpMonth.lastDay.thisOrPreviousBusinessDay(index.businessCalendar) else Day.fromJodaDate(spec.declarationBy)
