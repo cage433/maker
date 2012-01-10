@@ -300,6 +300,25 @@ object StressTest {
     val twoHundredClientsRunningSameReportAndLayoutAsAbove = stopwatch.asStringAndReset
     val maxRun200ClientsSameReportAndLayoutAsAbove = maxSingleReadText(twoHundredClientsRunningSameReportAndLayoutAsAboveResults)
 
+    val potentialRowFields = List(Field("Risk Market"), Field("Risk Period"), Field("Instrument"), Field("Trade ID"), Field("Risk Type"), Field("Risk Commodity"))
+    val potentialMeasureFields = List(Field("Position"), Field("Market Price"), Field("Current Price"), Field("P&L"))
+    def randomPivotFieldParams = {
+      val numRowFields = random.nextInt(potentialRowFields.size)
+      val rowFields = (0 until numRowFields).map(_ => potentialRowFields(random.nextInt(potentialRowFields.size))).distinct.toList
+      val numMeasureFields = random.nextInt(potentialMeasureFields.size)
+      val measureFields = (0 until numMeasureFields).map(_ => potentialMeasureFields(random.nextInt(potentialMeasureFields.size))).distinct.toList
+      val columnTrees =  ColumnTrees(measureFields.map(mf => new ColumnTree(FieldOrColumnStructure(mf, true), ColumnTrees.Null)))
+      val pfs = new PivotFieldsState(rowFields = rowFields, columns = columnTrees)
+      PivotFieldParams(true, Some(pfs))
+    }
+    stopwatch.reset()
+    val twoHundredClientsRunningSameReportWithDifferentLayoutsResults = twoHundredReportFacilities.map(reportFacility => {
+      runReportAfterDelay(reportFacility, reportParameters1, randomPivotFieldParams, random.nextInt(10000).toLong)
+    })
+    twoHundredClientsRunningSameReportWithDifferentLayoutsResults.map(_.thread.join())
+    val twoHundredClientsRunningSameReportWithDifferentLayouts = stopwatch.asStringAndReset
+    val maxSingleReadFor200ClientsRunningTheSameReportWithDifferentLayouts = maxSingleReadText(twoHundredClientsRunningSameReportWithDifferentLayoutsResults)
+
 
     // *** Tidy up and output
 
@@ -355,6 +374,8 @@ object StressTest {
       ("1st client running the same report with different pivot field state:", firstClientSameReportDiffPivotFieldState),
       ("200 clients running the same report and layout as above with random delay up to 10 seconds:", twoHundredClientsRunningSameReportAndLayoutAsAbove),
       ("200 clients running the same report and layout as above with random delay up to 10 seconds max single read:", maxRun200ClientsSameReportAndLayoutAsAbove),
+      ("200 clients running the same report with different layouts with random delay up to 10 seconds:", twoHundredClientsRunningSameReportWithDifferentLayouts),
+      ("200 clients running the same report with different layouts with random delay up to 10 seconds max single read:", maxSingleReadFor200ClientsRunningTheSameReportWithDifferentLayouts),
       ("", "")
     )
     val maxLength = output.map(_._1.length()).max + 1
@@ -414,21 +435,25 @@ object StressTest {
   def runReportAfterDelay(reportFacility:ReportFacility, reportParameters:ReportParameters,
                           pivotFieldParameters:PivotFieldParams, delay:Long) = {
     @volatile var maxReadTime = 0L
+    @volatile var timeTree:TimeTree = null
 
     val thread = new Thread {
       override def run() {
         Thread.sleep(delay)
         val stopwatch = Stopwatch()
-        runReportOnce(reportFacility, reportParameters, pivotFieldParameters)
+        val (_, tTree) = runReportOnce(reportFacility, reportParameters, pivotFieldParameters)
         maxReadTime = stopwatch.ms()
+        timeTree = tTree
       }
     }
     thread.start()
-    ReadResult(thread, () => maxReadTime, null)
+    ReadResult(thread, () => maxReadTime, () => timeTree)
   }
 
   def runReportOnce(reportFacility:ReportFacility, reportParameters:ReportParameters, pivotFieldParameters:PivotFieldParams) = {
-    reportFacility.reportPivot(reportParameters, pivotFieldParameters)
+    Profiler.captureTime("run report once") {
+      reportFacility.reportPivot(reportParameters, pivotFieldParameters)
+    }
   }
 
   def runTradeValuationAfterDelay(reportFacility:ReportFacility, tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel,
