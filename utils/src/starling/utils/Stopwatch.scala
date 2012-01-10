@@ -54,7 +54,8 @@ object Stopwatch {
   def milliToTimeString(milli:Long) = {
     Format.format(new Date(milli))
   }
-  def timeWithInfo[T](f: =>T) = {
+
+  def timeWithInfo[T](f: =>T): (TimingInfo, T) = {
     val stopWatch = new Stopwatch
     val result = f
     (TimingInfo(stopWatch.startTime, stopWatch.currentTime), result)
@@ -62,6 +63,17 @@ object Stopwatch {
 }
 
 case class TimingInfo(startTime:Long, endTime:Long) {
+  def loggingLevel(thresholds: (Levels.Value, Int)*): Levels.Value = (Levels.Debug /: thresholds) {
+    case (current, (level, threshold)) => if (timeTaken >= threshold && level < current) level else current
+  }
+
+  def loggingLevel(thresholds: Map[Levels.Value, Int]): Levels.Value = loggingLevel(thresholds.toSeq : _*)
+
+  def loggingLevel(infoThreshold: Int, scale: Int = 10): Levels.Value =
+    loggingLevel(Log.orderOfMagnitudeLoggingThresholds(infoThreshold, scale))
+
   val timeTaken = (endTime - startTime) / 1000000
-  val timeTakenInMilliSeconds : Double = (endTime - startTime) / 1000000.0 
+  val timeTakenInMilliSeconds : Double = (endTime - startTime) / 1000000.0
+
+  def slowest(other: TimingInfo): TimingInfo = if (timeTaken > other.timeTaken) this else other
 }

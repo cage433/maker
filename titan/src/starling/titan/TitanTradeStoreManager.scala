@@ -9,8 +9,8 @@ import starling.tradestore.TradeStore.StoreResults
 import starling.utils.ImplicitConversions._
 import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
 import com.trafigura.edm.common.units.TitanId
-import starling.utils.{Stopwatch, Startable, Log}
 import starling.instrument.{ErrorInstrument, Trade}
+import starling.utils.{TimingInfo, Stopwatch, Startable, Log}
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,
@@ -56,12 +56,12 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     edmTrades.retain(_.identifier.value != titanTradeID)
   }
   def edmInventoryLeaves : List[InventoryItem] = {
-    val sw = new Stopwatch()
-    val allInventoryIds = edmInventoryItems.keySet
-    val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
-    val r = allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
-    log.info("Took %s to get inv leaves".format(sw.toString))
-    r
+    log.logWithTime("Took %d to get inv leaves", 10) {
+      val allInventoryIds = edmInventoryItems.keySet
+      val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
+      val r = allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+      r
+    }
   }
 
   def removeInventory(inventoryID : String) {

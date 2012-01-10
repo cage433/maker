@@ -56,8 +56,7 @@ class RichMap[K,V](map : Map[K,V]) { thisMap =>
   def partitionKeys(p: K => Boolean): (Map[K, V], Map[K, V]) = map.partition(kv => p(kv._1))
   def ifDefined[B](f: (Map[K, V] => B)): Option[B] = map.isEmpty ? none[B] | some(f(map))
   def withDefault(f : K => V) = new MapProxy[K, V]{val self = thisMap.map; override def default(k : K) = f(k)}
-  def innerJoin[W](other: Map[V, W]): Map[K, W] = >>>(other)
-  def >>>[W](other: Map[V, W]): Map[K, W] = map.collectValuesO(other.get)
+  def innerJoin[W](other: Map[V, W]): Map[K, W] = map.collectValuesO(other.get)
   def combine(other: Map[K, V], combiner: (List[V]) => V): Map[K, V] = (map.toSeq ++ other.toSeq).toMultiMap.mapValues(combiner)
 }
 
@@ -76,6 +75,7 @@ class RichMultiMap[K, V](map : Map[K, List[V]]) extends RichMap[K, List[V]](map)
 class RichMutableMap[K, V](map: MMap[K, V]) {
   def collectValues[W](pf: PartialFunction[V, W]): MMap[K, W] = map.collect(identity[K] _ *** pf)
   def findOrUpdate(p: ((K, V)) => Boolean, newEntry: => (K, V)): (K, V) = map.find(p).getOrElse(newEntry.update(map.update(_)))
+  def insertOrUpdate(k: K, initial: V, f: V => V): Option[V] = map.get(k).update { prior => map.put(k, prior.fold(f, initial)) }
   def update(kv: (K, V)) = map.update(kv._1, kv._2)
   def updateValue(k: K, vf: (V) => V) = map.update(k, vf(map(k)))
   def filterValues(f: V => Boolean): MMap[K, V] = map.filter(p => f(p._2))

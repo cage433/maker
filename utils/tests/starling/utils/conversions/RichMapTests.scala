@@ -6,39 +6,58 @@ import collection.immutable.Map
 import starling.utils.BidirectionalHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import org.testng.annotations.{BeforeMethod, Test}
+import org.scalatest.WordSpec
+import collection.mutable.{Map => MMap}
+import java.lang.String
 
 
-class RichMapTests extends TestNGSuite with ShouldMatchers with RichMaps {
+class RichMapTests extends WordSpec with ShouldMatchers with RichMaps {
   val nothing: Map[Int, String] = Map[Int, String]()
   val map = Map(1 → "2")
   val mapWithDifferentValue = Map(1 → "3")
 
-  @Test def aMapMinusItselfEqualsNothing {
+  "a map minus itself equals nothing" in {
     map difference map should be === nothing
     nothing difference nothing should be === nothing
   }
 
-  @Test def aMapMinusNothingEqualsItself {
+  "a map minus nothing equals itself" in {
     map difference nothing should be === map
   }
 
-  @Test def nothingMinusAMapEqualsNothing {
+  "nothing minus a map equals nothing" in {
     nothing difference map should be === nothing
   }
 
-  @Test def aMapMinusAMapWithADifferentValueShouldEqualItself {
+  "a map minus a map with a different value should equal itself" in {
     map difference mapWithDifferentValue should be === map
   }
 
-  @Test def canJoinTwoMaps {
-    Map(1 → "foo", 2 → "bar") >>> Map("foo" → 3, "baz" → 4) should be === Map(1 → 3)
+  "can join two maps" in {
+    Map(1 → "foo", 2 → "bar") innerJoin Map("foo" → 3, "baz" → 4) should be === Map(1 → 3)
   }
 }
 
-class RichMultiMapTests extends TestNGSuite with ShouldMatchers with RichMaps with RichAnys {
-  @Test def canFormUnionOfTwoMultiMaps {
+class RichMultiMapTests extends WordSpec with ShouldMatchers with RichMaps with RichAnys {
+  "can form union of two multimaps" in {
     Map(1 ->> (1, 2, 3), 2 ->> (2, 3, 4)) union Map(1 ->> (4, 5, 6), 3 ->> (3, 4, 5)) should be ===
       Map(1 ->> (1, 2, 3, 4, 5, 6), 2 ->> (2, 3, 4), 3 ->> (3, 4, 5))
+  }
+}
+
+class RichMutableMapTests extends WordSpec with ShouldMatchers with RichMaps {
+  "insertOrUpdate should insert when the map is empty" in {
+    val map = MMap.empty[Int, String]
+
+    map.insertOrUpdate(1, "inserted", _ + " updated") should be === None
+    map should be === Map(1 → "inserted").mutable
+  }
+
+  "insertOrUpdate should update when the map isn't empty" in {
+    val map = Map(1 → "initial").mutable
+
+    map.insertOrUpdate(1, "inserted", _ + " updated") should be === Some("initial")
+    map should be === Map(1 → "initial updated").mutable
   }
 }
 

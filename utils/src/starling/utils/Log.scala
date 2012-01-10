@@ -41,6 +41,10 @@ class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
 object Log extends ExtendedLog(Log4JLogger.logger) {
   def forName(name: String)     = new ExtendedLog(Log4JLogger.forName(name))
   def forClass[T: Manifest]     = new ExtendedLog(Log4JLogger.forClass(implicitly[Manifest[T]].erasure))
+
+  /** Returns logging thresholds for Info, Warn, and Error */
+  def orderOfMagnitudeLoggingThresholds(infoThreshold: Int, scale: Int = 10) = Map(
+    Levels.Info → infoThreshold, Levels.Warn → (infoThreshold * scale), Levels.Error → (infoThreshold * scale * scale))
 }
 
 trait Log {
@@ -76,6 +80,26 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
     println("")
     println("")
     r
+  }
+
+  /**
+   * Logs a message at a dynamically determined logging level
+   *
+   * {@link starling.utils.Log#orderOfMagnitudeLoggingThresholds}
+   */
+  def logWithTime[T](message: String, infoThreshold: Int, scale: Int = 10)(f: => T): T = {
+    logWithTime(message, Log.orderOfMagnitudeLoggingThresholds(infoThreshold, scale))(f)
+  }
+
+  /**
+   * Logs a message at a dynamically determined logging level
+   */
+  def logWithTime[T](message: String, loggingThresholds: Map[Levels.Value, Int])(f: => T): T = {
+    val (timing, result) = Stopwatch.timeWithInfo(f)
+
+    log(timing.loggingLevel(loggingThresholds), message.format(timing.timeTaken))
+
+    result
   }
 
   def debugF[T](msg: => AnyRef)(f: => T): T                  = {debug(msg); f}
@@ -141,6 +165,16 @@ trait VarLogger {
   def warn(msg: => AnyRef): Unit = ()
 
   def warn(msg: => AnyRef, t: => Throwable): Unit = ()
+
+  def log(level: Levels.Value, msg: => AnyRef): Unit = level match {
+    case Levels.Trace => trace(msg)
+    case Levels.Debug => debug(msg)
+    case Levels.Info => info(msg)
+    case Levels.Warn => warn(msg)
+    case Levels.Error => error(msg)
+    case Levels.Fatal => fatal(msg)
+    case _ =>
+  }
 }
 
 object Levels extends Enumeration {
