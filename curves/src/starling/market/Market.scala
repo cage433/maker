@@ -268,7 +268,7 @@ object Market {
   lazy val EXBG_FERROMOLYBDENIUM = exbgFuturesMarket("FeMo", Ferromolybdenum, KG)
 
   lazy val EXBXG_MARKETS = List(EXBG_STEEL_CR, EXBG_NICKEL, EXBG_STEEL_HR, EXBG_STEEL_4FHR, EXBG_LEAD, EXBG_TIN, EXBG_INDIUM, EXBG_COBALT, EXBG_FERROMOLYBDENIUM)
-  def exbgFuturesMarket(code: String,commodity: Commodity, uom: UOM) = {
+  private def exbgFuturesMarket(code: String,commodity: Commodity, uom: UOM) = {
     new FuturesMarket(
       "EXBXG " + code, Some(1.0), uom, CNY, cals.CHINESE_STATE_HOLIDAYS,
       None, Month,
@@ -348,25 +348,6 @@ object Market {
 
   def marketsWithExchange(exchange: FuturesExchange): List[FuturesMarket] = all.filter(market =>
     market.exchangeOption == Some(exchange) && !market.name.contains("London close")).filterCast[FuturesMarket]
-
-  /**
-   * For testing
-   */
-
-  def testMarket(name : String, currency : UOM, uom : UOM) : FuturesMarket = {
-    testMarket(name, currency, uom, -1, Day)
-  }
-  def testMarket(name : String, currency : UOM, uom : UOM, tenor: TenorType) : FuturesMarket = {
-    testMarket(name, currency, uom, -1, tenor)
-  }
-  def testMarket(name : String, currency : UOM, uom : UOM, id : Int, tenor: TenorType) : FuturesMarket = {
-    new FuturesMarket(name, Some(1.0), uom, currency, NilCalendar, Some(id), tenor, new FuturesExpiryRule {
-      val name = "Test"
-
-      def lastTradingDay(d: DateRange) = d.firstDay - 1
-      override def expiryDay(d: DateRange) = d.firstDay - 1
-    }, FuturesExchangeFactory.COMEX, Brent, (Conversions.default + ((BBL/MT, 7.57))))
-  }
 }
 
 object FuturesMarket {

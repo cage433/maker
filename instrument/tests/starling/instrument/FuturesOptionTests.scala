@@ -35,7 +35,7 @@ class FuturesOptionTests extends StarlingTest {
     expectedCallPrice : Double,
     expectedPutPrice : Double
   ){
-    val mkt = Market.testMarket("A Test Market", USD, MT)
+    val mkt = Market.ICE_GAS_OIL
     val env = Environment(
       new TestingAtomicEnvironment(){
         val marketDay = Day(2009, 1, 10).endOfDay
@@ -54,7 +54,7 @@ class FuturesOptionTests extends StarlingTest {
 //    val env = envBuilder.build
 
     val exerciseDate = env.marketDay.day + nDaysToExpiry
-    val futuresMaturityDate = exerciseDate
+    val futuresMaturityDate = exerciseDate.containingMonth.previous
     val strike = Quantity(X, USD / MT)
     val callAndPutOptions = List(Call, Put).map(
       new FuturesOption(
@@ -87,7 +87,7 @@ class FuturesOptionTests extends StarlingTest {
 
     val exerciseDay = env.marketDay.day + 100
     val option = new FuturesOption(
-      	Market.testMarket("A Test Market", USD, MT, Month),
+      	Market.ICE_GAS_OIL,
       	exerciseDay,
       	Month(2012, 10),
       	Quantity(100, USD / MT),
@@ -144,7 +144,7 @@ class FuturesOptionTests extends StarlingTest {
   @Test
   def testExplanation{
     val option = new FuturesOption(
-      	Market.testMarket("A Test Market", USD, MT, Month),
+      	Market.ICE_GAS_OIL,
       	Day(2012, 9, 20),
       	Month(2012, 10),
       	Quantity(100, USD / MT),
@@ -161,7 +161,7 @@ class FuturesOptionTests extends StarlingTest {
     })
     val explanation = option.explanation(env)
     assertEquals(explanation.name, "((FuturesOption-European-Call(F, K, Vol, T) × Volume) × Discount)")
-    assertEquals(explanation.format(1), "((FuturesOption-European-Call(A Test Market.OCT 2012, 100.00 USD/MT, 39.98%, 1.72) × 100.00 MT) × USD.20Sep2012)")
+    assertEquals(explanation.format(1), "((FuturesOption-European-Call(IPE Gas Oil.OCT 2012, 100.00 USD/MT, 39.98%, 1.72) × 100.00 MT) × USD.20Sep2012)")
     val lastExplanation = "((FuturesOption-European-Call(99.00 USD/MT, 100.00 USD/MT, 0.40, 1.72) × 100.00 MT) × 0.95)"
     assertEquals(explanation.format(2), lastExplanation)
     assertEquals(explanation.format(3), lastExplanation)
