@@ -78,6 +78,17 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
     r
   }
 
+  /**
+   * Logs 'message' using the execution time of 'f' and 'infoThreshold' to determine the logging level (Debug, Info, or Warn)
+   */
+  def qos[T](infoThreshold: Int, message: String)(f: => T) = {
+    val (timing, result) = Stopwatch.timeWithInfo(f)
+
+    log(timing.loggingLevel(infoThreshold), message)
+
+    result
+  }
+
   def debugF[T](msg: => AnyRef)(f: => T): T                  = {debug(msg); f}
   def infoF[T](msg: => AnyRef)(f: => T): T                   = {info(msg); f}
   def infoF[T](msg: => AnyRef, t: => Throwable)(f: => T): T  = {info(msg, t); f}
@@ -141,6 +152,16 @@ trait VarLogger {
   def warn(msg: => AnyRef): Unit = ()
 
   def warn(msg: => AnyRef, t: => Throwable): Unit = ()
+
+  def log(level: Levels.Value, msg: => AnyRef): Unit = level match {
+    case Levels.Trace => trace(msg)
+    case Levels.Debug => debug(msg)
+    case Levels.Info => info(msg)
+    case Levels.Warn => warn(msg)
+    case Levels.Error => error(msg)
+    case Levels.Fatal => fatal(msg)
+    case _ =>
+  }
 }
 
 object Levels extends Enumeration {

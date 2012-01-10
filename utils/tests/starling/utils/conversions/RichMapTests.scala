@@ -7,6 +7,8 @@ import starling.utils.BidirectionalHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import org.testng.annotations.{BeforeMethod, Test}
 import org.scalatest.WordSpec
+import collection.mutable.{Map => MMap}
+import java.lang.String
 
 
 class RichMapTests extends WordSpec with ShouldMatchers with RichMaps {
@@ -32,12 +34,12 @@ class RichMapTests extends WordSpec with ShouldMatchers with RichMaps {
   }
 
   "can join two maps" in {
-    Map(1 → "foo", 2 → "bar") >>> Map("foo" → 3, "baz" → 4) should be === Map(1 → 3)
+    Map(1 → "foo", 2 → "bar") innerJoin Map("foo" → 3, "baz" → 4) should be === Map(1 → 3)
   }
 }
 
 class RichMultiMapTests extends WordSpec with ShouldMatchers with RichMaps with RichAnys {
-  "can form union" in {
+  "can form union of two multimaps" in {
     Map(1 ->> (1, 2, 3), 2 ->> (2, 3, 4)) union Map(1 ->> (4, 5, 6), 3 ->> (3, 4, 5)) should be ===
       Map(1 ->> (1, 2, 3, 4, 5, 6), 2 ->> (2, 3, 4), 3 ->> (3, 4, 5))
   }
@@ -61,6 +63,22 @@ class RichNestedMapTests extends WordSpec with ShouldMatchers with RichMaps {
   "can map inner values" in {
     Map(1 → Map(2 → 20, 3 → 30)).mapInnerValues(_ * 2) should be ===
       Map(1 → Map(2 → 40, 3 → 60))
+  }
+}
+
+class RichMutableMapTests extends WordSpec with ShouldMatchers with RichMaps {
+  "insertOrUpdate should insert when the map is empty" in {
+    val map = MMap.empty[Int, String]
+
+    map.insertOrUpdate(1, "inserted", _ + " updated") should be === None
+    map should be === Map(1 → "inserted").mutable
+  }
+
+  "insertOrUpdate should update when the map isn't empty" in {
+    val map = Map(1 → "initial").mutable
+
+    map.insertOrUpdate(1, "inserted", _ + " updated") should be === Some("initial")
+    map should be === Map(1 → "initial updated").mutable
   }
 }
 
