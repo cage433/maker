@@ -21,7 +21,7 @@ class TitanTradeStoreManagerTests extends TestMarketSpec{
       override def getTradesForTitanTradeID(titanTradeID: String) = tradesByTitanId.getOrElse(titanTradeID, Nil)
     }
 
-    val titanServiceCache = new TitanServiceCache(null, null, null){
+    val titanServiceCache = new TitanServiceCache(null, null, null, () => {}){
       override def updateTrade(titanTradeID: String) = null
     }
 

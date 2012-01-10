@@ -14,7 +14,8 @@ import starling.instrument.{ErrorInstrument, Trade}
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,
-                             private val logisticsServices : TitanLogisticsServices) extends Log with Startable {
+                             private val logisticsServices : TitanLogisticsServices,
+                             private val ready : () => Unit) extends Log with Startable {
   import scala.collection.mutable
   type InventoryID = String
   val edmTrades = mutable.Set[EDMPhysicalTrade]()
@@ -38,6 +39,8 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     edmInventoryItems ++= allInventory.associatedInventory.filter(i => i.status != CancelledInventoryItemStatus).map{inv => inv.id -> inv}
     edmLogisticsQuotas.clear
     edmLogisticsQuotas ++= allInventory.associatedQuota
+
+    ready()
   }
 
   def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
@@ -271,7 +274,7 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
 
 object TitanTradeStoreManager{
   def apply(refData : TitanTacticalRefData, titanTradeStore : TitanTradeStore,
-            edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices), titanTradeStore)
+            edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices, rabbitReadyFn : () => Unit) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices, rabbitReadyFn), titanTradeStore)
 }
 
 case class TitanTradeUpdateResult(

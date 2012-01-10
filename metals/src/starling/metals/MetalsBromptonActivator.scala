@@ -59,10 +59,11 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       new MockTitanRabbitEventServices()
     }
 
-    if (props.RabbitEnabled()) {
-      titanRabbitEventServices.start
+    val rabbitReadyFn = if (props.RabbitEnabled()) {
       context.onStopped(titanRabbitEventServices.stop)
+      () => titanRabbitEventServices.start
     }
+    else () => {}
 
     val osgiBroadcaster = context.awaitService(classOf[Broadcaster])
 
@@ -72,7 +73,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     )
 
     context.registerService(classOf[Receiver], new Receiver() {
-      override val name = "CompositeBroadcaster"
+      val name = "CompositeBroadcaster"
       def event(event: Event) { broadcaster.broadcast(event) }
     })
 
@@ -90,7 +91,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     )
 
     val titanTradeStoreManager: TitanTradeStoreManager = {
-      val manager = TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices)
+      val manager = TitanTradeStoreManager(titanServices, titanTradeStore, titanServices, logisticsServices, rabbitReadyFn)
       context.onStarted { manager.start }
       manager
     }

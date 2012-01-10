@@ -168,10 +168,12 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
   }
 
   override def start {
+    log.info("Starting Titan Rabbit services")
     super.start
     rabbitListener.connect()
     rabbitEventPublisher.connect()
     clients.foreach(client => eventDemux.addClient(client))
+    log.info("Started Titan Rabbit services")
   }
 
   override def stop {
@@ -179,6 +181,7 @@ case class DefaultTitanRabbitEventServices(props : Props) extends TitanRabbitEve
     eventDemux.shutdown
     rabbitListener.disconnect()
     rabbitEventPublisher.disconnect()
+    log.info("Stapped Titan Rabbit services")
   }
 }
 
