@@ -53,9 +53,12 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     edmTrades.retain(_.identifier.value != titanTradeID)
   }
   def edmInventoryLeaves : List[InventoryItem] = {
+    val sw = new Stopwatch()
     val allInventoryIds = edmInventoryItems.keySet
     val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
-    allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+    val r = allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+    log.info("Took %s to get inv leaves".format(sw.toString))
+    r
   }
 
   def removeInventory(inventoryID : String) {
