@@ -310,7 +310,8 @@ object PivotValue {
 }
 
 case class StandardPivotValue(value0:Any) extends PivotValue {
-  val cellState = CellState.NormalCellState
+  def cellState = CellState.NormalCellState
+  val cellType:Object = null
   val value = Some(value0)
   val originalValue = None
   val edits = PivotEdits.Null
