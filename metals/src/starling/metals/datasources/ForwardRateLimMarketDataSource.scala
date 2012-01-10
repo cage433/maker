@@ -43,7 +43,7 @@ case class ForwardRateLimMarketDataSource(service: LIMService, emailService: Ema
     TaskDescription("Verify KLIBOR Available", limDaily(NYMEX.calendar, 23 H 00), notImplemented),
 
     TaskDescription("Verify HIBOR Available", limDaily(SHFE.calendar, 11 H 00), notImplemented)
-  )
+  ).filterNot(_.task == notImplemented)
 }
 
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailService: EmailService, template: Email)
