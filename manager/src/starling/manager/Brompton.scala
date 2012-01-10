@@ -2,6 +2,7 @@ package starling.manager
 
 import java.util.{Hashtable, Dictionary}
 import swing.event.Event
+import java.util.concurrent.{ExecutorService, Executors}
 
 class Brompton
 
@@ -10,7 +11,19 @@ trait Broadcaster {
 }
 
 trait Receiver {
+  val name = getClass.getSimpleName
   def event(event: Event)
+}
+
+class QueuedReceiver(receiver: Receiver) extends Receiver {
+  private val pool: ExecutorService = Executors.newFixedThreadPool(1,
+    NamedThreadFactory("QueuedReceiver for " + receiver.name))
+
+  def event(event: Event) {
+    pool.submit(new Runnable {
+      def run() { receiver.event(event) }
+    })
+  }
 }
 
 object Broadcaster {

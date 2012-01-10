@@ -30,7 +30,9 @@ class BouncyRMIServerBromptonActivator extends BromptonActivator {
 
     val eventTypes = new java.util.concurrent.ConcurrentHashMap[Class[_],Boolean]()
     val receiver = new Receiver {
-      def event(event: Event) = {
+      override val name = "BouncyRMIServerBromptonActivator"
+
+      def event(event: Event) {
         val eventClass = event.getClass
         if (!eventTypes.contains(eventClass)) {
            eventTypes.put(eventClass, isGui(eventClass))

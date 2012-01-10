@@ -1,25 +1,23 @@
 package starling.utils
 
-import java.util.concurrent.Executors
 import swing.event.Event
-import scala.collection.JavaConversions
+import scala.collection.JavaConversions._
 import ImplicitConversions._
-import starling.manager.{Receiver, Broadcaster}
+import starling.manager.{QueuedReceiver, Receiver, Broadcaster}
 
-class ReceiversBroadcaster extends Broadcaster {
-  val executor = Executors.newCachedThreadPool(new NamedDaemonThreadFactory("StarlingBroadcaster"))
+class ReceiversBroadcaster extends Broadcaster with Log {
   val receivers = new java.util.concurrent.ConcurrentHashMap[AnyRef,Receiver]()
+
   def addReceiver(ref:AnyRef, receiver:Receiver) {
-    receivers.put(ref, receiver)
+    receivers.put(ref, new QueuedReceiver(receiver))
   }
+
   def removeReceiver(ref:AnyRef) {
     receivers.remove(ref)
   }
-  def broadcast(event: Event) = {
-    import JavaConversions._
-    receivers.values().iterator().foreach { receiver => {
-      executor.execute(new Runnable() { def run() { receiver.event(event) } })
-    }}
+
+  def broadcast(event: Event) {
+    receivers.values().foreach(_.event(event))
   }
 }
 
