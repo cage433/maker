@@ -15,6 +15,10 @@ import starling.gui.api._
 import StressTest._
 import java.util.Random
 
+/**
+ * Each client requests the same market data at a random point inside a 10 second window. The number of clients increases until the time it takes
+ * a single client to receive the market data is greater than 10 seconds.
+ */
 object BreakingStressTest {
   def main(args:Array[String]) {
 

@@ -12,13 +12,17 @@ import starling.http.GUICode
 import collection.mutable.ListBuffer
 import starling.gui.api._
 import starling.pivot._
-import starling.daterange.Day
 import starling.utils.{Stopwatch, ThreadUtils}
 import java.util.Random
 import collection.immutable.TreeSet
 import starling.tradestore.TradePredicate
 import starling.manager.{TimeTree, Profiler}
+import starling.daterange.{Timestamp, Day}
 
+/**
+ * Does various tests but the main idea for most of them is this: 200 clients make a server request at a random time within a 10 second window.
+ * The time it takes for all clients to finish is recorded as well as the longest time for a single client to get it's result back.
+ */
 object StressTest {
   def initialSetupAndReturnProps = {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
@@ -55,6 +59,9 @@ object StressTest {
     val marketDataSelection = MarketDataSelection(Some(pricingGroup), None)
     val marketDataIdentifier = MarketDataIdentifier(marketDataSelection, latestMarketDataVersion)
     val marketDataPageIdentifier = StandardMarketDataPageIdentifier(marketDataIdentifier)
+
+    val twoHundredTradeFC2sAndReportFacilities = (0 until 200).map(_ => createTradeFC2AndReportFacility(props))
+    val random = new Random(12345L)
 
     val pricePivotFieldsState01 = new PivotFieldsState(
       filters = List((Field("Observation Day"), SomeSelection(Set(day)))),
@@ -93,7 +100,6 @@ object StressTest {
     val tenClientsReadingPriceMarketDataXTimes = stopwatch.asStringAndReset
     val maximumReadTimeForTenClients = Stopwatch.milliToHumanString(tenFC2sResults.map(_.maxMillis()).max)
 
-    val twoHundredTradeFC2sAndReportFacilities = (0 until 200).map(_ => createTradeFC2AndReportFacility(props))
     val twoHundredFC2s = twoHundredTradeFC2sAndReportFacilities.map(_._2)
     stopwatch.reset()
     val twoHundredFC2Results = twoHundredFC2s.map(fc2 => readMarketDataXTimes(numOfReads, fc2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01))
@@ -101,7 +107,6 @@ object StressTest {
     val twoHundredClientsReadingPriceMarketDataXTimes = stopwatch.asStringAndReset
     val maximumReadTimeForTwoHundredClients = Stopwatch.milliToHumanString(twoHundredFC2Results.map(_.maxMillis()).max)
 
-    val random = new Random(12345L)
     stopwatch.reset()
     val twoHundredReadingAfterDelayResults = twoHundredFC2s.map(fc2 => readMarketDataAfterDelay(fc2, marketDataPageIdentifier, priceMarketDataLabel, pricePivotFieldParams01, random.nextInt(10000).toLong))
     twoHundredReadingAfterDelayResults.foreach(_.thread.join())
@@ -202,7 +207,6 @@ object StressTest {
 
     // *** Single trade valuations
 
-    val tradeID = TradeIDLabel("A-1", TradeSystemLabel("Titan", "ti"))
     val mods = TreeSet[EnvironmentModifierLabel](EnvironmentModifierLabel.zeroInterestRates)
     val observationDay = day.endOfDay
     val curveIdentifierLabel = CurveIdentifierLabel(
@@ -213,20 +217,47 @@ object StressTest {
       observationDay.day.nextWeekday.endOfDay,
       mods
     )
+    val tradeIDPivotFieldState = new PivotFieldsState(rowFields = List(Field("Trade ID")))
+    val tradeIDParams = PivotFieldParams(true, Some(tradeIDPivotFieldState))
     val desk = Desk.Titan
     val deskCloses = tradeFacility1.init().deskCloses(desk)(TradeTimestamp.magicLatestTimestampDay)
     val tradeTimestamp = deskCloses.sortWith(_.timestamp > _.timestamp).head
+    val allTradeSelection = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), TradePredicate.Null, None)
+    val tradeIDsPivotData = tradeFacility1.tradePivot(allTradeSelection, day.startOfFinancialYear, tradeIDParams)
+    val tradeIDs = tradeIDsPivotData.pivotTable.rowAxis.map(_.axisValue.value.value).filter(_.isInstanceOf[TradeIDLabel]).map(_.asInstanceOf[TradeIDLabel]).filter(id => {
+      id.id.startsWith("A") || id.id.startsWith("Q")
+    })
+    val numTradeIDs = tradeIDs.size
+    val tradeID = tradeIDs(0)
     val tradePredicate = TradePredicate(List(), List(List((Field("Trade ID"), SomeSelection(Set(tradeID))))))
     val tradeSelectionSingleTrade = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), tradePredicate, None)
+    val timestamp = tradeSelectionSingleTrade.deskAndTimestamp.get._2.timestamp
+    val twoHundredReportFacilities = twoHundredTradeFC2sAndReportFacilities.map(_._3)
 
     stopwatch.reset()
-    reportFacility1.tradeValuation(tradeID, curveIdentifierLabel, tradeSelectionSingleTrade.deskAndTimestamp.get._2.timestamp, ReportSpecificChoices())
+    runTradeValuationOnce(reportFacility1, tradeID, curveIdentifierLabel, timestamp)
     val singleTradeValuation1stTime = stopwatch.asStringAndReset
 
-    reportFacility1.tradeValuation(tradeID, curveIdentifierLabel, tradeSelectionSingleTrade.deskAndTimestamp.get._2.timestamp, ReportSpecificChoices())
+    runTradeValuationOnce(reportFacility1, tradeID, curveIdentifierLabel, timestamp)
     val singleTradeValuation2ndTime = stopwatch.asStringAndReset
 
-    // TODO - run more single trade valuations on various trades.
+    stopwatch.reset()
+    val twoHundredClientsValuingSameTradeIDResults = twoHundredReportFacilities.map(reportFacility => runTradeValuationAfterDelay(reportFacility, tradeID, curveIdentifierLabel, timestamp, random.nextInt(10000).toLong))
+    twoHundredClientsValuingSameTradeIDResults.map(_.thread.join())
+    val twoHundredClientsValuingSameTradeID = stopwatch.asStringAndReset
+    val maxReadValuingSameTradeID = Stopwatch.milliToHumanString(twoHundredClientsValuingSameTradeIDResults.map(_.maxMillis()).max)
+
+    val tradeID2 = tradeIDs(1)
+    stopwatch.reset()
+    runTradeValuationOnce(reportFacility1, tradeID2, curveIdentifierLabel, timestamp)
+    val singleDifferentTradeValuation = stopwatch.asStringAndReset
+
+    val twoHundredClientsValuingRandomTradesResults = twoHundredReportFacilities.map(reportFacility => {
+      runTradeValuationAfterDelay(reportFacility, tradeIDs(random.nextInt(numTradeIDs)), curveIdentifierLabel, timestamp, random.nextInt(10000).toLong)
+    })
+    twoHundredClientsValuingRandomTradesResults.map(_.thread.join())
+    val twoHundredClientsValuingRandomTrades = stopwatch.asStringAndReset
+    val maxReadForRandomTrades = maxSingleReadText(twoHundredClientsValuingRandomTradesResults)
 
     // *** Full reports
 
@@ -235,10 +266,9 @@ object StressTest {
       columns = ColumnTrees.dataField(Field("Position"))
     )
     val reportPivotFieldParams1 = PivotFieldParams(true, Some(reportPivotFieldState1))
-    val reportTradeSelection1 = TradeSelectionWithTimestamp(Some((desk, tradeTimestamp)), TradePredicate.Null, None)
     val prl = reportFacility1.reportOptionsAvailable.options.filter(_.slidable)
     val reportOptions1 = ReportOptions(prl,None,None)
-    val reportParameters1 = ReportParameters(reportTradeSelection1, curveIdentifierLabel, reportOptions1, day.startOfFinancialYear, None, true)
+    val reportParameters1 = ReportParameters(allTradeSelection, curveIdentifierLabel, reportOptions1, day.startOfFinancialYear, None, true)
 
     stopwatch.reset()
     runReportOnce(reportFacility1, reportParameters1, reportPivotFieldParams1)
@@ -247,13 +277,29 @@ object StressTest {
     runReportOnce(reportFacility1, reportParameters1, reportPivotFieldParams1)
     val secondClientFirstReport = stopwatch.asStringAndReset
 
-    val twoHundredReportFacilities = twoHundredTradeFC2sAndReportFacilities.map(_._3)
     stopwatch.reset()
     val twoHundredReportsResultsWithDelay = twoHundredReportFacilities.map(reportFacility => {
       runReportAfterDelay(reportFacility, reportParameters1, reportPivotFieldParams1, random.nextInt(10000).toLong)})
     twoHundredReportsResultsWithDelay.map(_.thread.join())
     val twoHundredClientsRunningSameReportWithDelay = stopwatch.asStringAndReset
-    val maxRunReportTimeWithDelay = Stopwatch.milliToHumanString(twoHundredReportsResultsWithDelay.map(_.maxMillis()).max)
+    val maxRunReportTimeWithDelay = maxSingleReadText(twoHundredReportsResultsWithDelay)
+
+    val reportPivotFieldState2 = new PivotFieldsState(
+      rowFields = List(Field("Risk Period"), Field("Risk Market")),
+      columns = ColumnTrees.dataField(Field("Position"))
+    )
+    val reportPivotFieldParams2 = PivotFieldParams(true, Some(reportPivotFieldState2))
+
+    stopwatch.reset()
+    runReportOnce(reportFacility1, reportParameters1, reportPivotFieldParams2)
+    val firstClientSameReportDiffPivotFieldState = stopwatch.asStringAndReset
+
+    val twoHundredClientsRunningSameReportAndLayoutAsAboveResults = twoHundredReportFacilities.map(reportFacility => {
+      runReportAfterDelay(reportFacility, reportParameters1, reportPivotFieldParams2, random.nextInt(10000).toLong)})
+    twoHundredClientsRunningSameReportAndLayoutAsAboveResults.map(_.thread.join())
+    val twoHundredClientsRunningSameReportAndLayoutAsAbove = stopwatch.asStringAndReset
+    val maxRun200ClientsSameReportAndLayoutAsAbove = maxSingleReadText(twoHundredClientsRunningSameReportAndLayoutAsAboveResults)
+
 
     // *** Tidy up and output
 
@@ -296,11 +342,20 @@ object StressTest {
       ("", ""),
       ("Single trade valuation 1st time:", singleTradeValuation1stTime),
       ("Single trade valuation 2nd time:", singleTradeValuation2ndTime),
+      ("200 clients valuing same trade with random delay up to 10 seconds:", twoHundredClientsValuingSameTradeID),
+      ("200 clients valuing same trade random delay up to 10 seconds max single read:", maxReadValuingSameTradeID),
+      ("Single client valuing different trade:", singleDifferentTradeValuation),
+      ("200 clients valuing random trades random delay up to 10 seconds:", twoHundredClientsValuingRandomTrades),
+      ("200 clients valuing random trades random delay up to 10 seconds max single read:", maxReadForRandomTrades),
       ("", ""),
       ("1st client running report 1st time:", firstClientFirstReport),
       ("1st client running report 2nd time:", secondClientFirstReport),
       ("200 clients running the same report with random delay up to 10 seconds:", twoHundredClientsRunningSameReportWithDelay),
-      ("200 clients running the same report with random delay up to 10 seconds max single read:", maxRunReportTimeWithDelay)
+      ("200 clients running the same report with random delay up to 10 seconds max single read:", maxRunReportTimeWithDelay),
+      ("1st client running the same report with different pivot field state:", firstClientSameReportDiffPivotFieldState),
+      ("200 clients running the same report and layout as above with random delay up to 10 seconds:", twoHundredClientsRunningSameReportAndLayoutAsAbove),
+      ("200 clients running the same report and layout as above with random delay up to 10 seconds max single read:", maxRun200ClientsSameReportAndLayoutAsAbove),
+      ("", "")
     )
     val maxLength = output.map(_._1.length()).max + 1
     val maxResultLength = output.map(_._2.length()).max
@@ -376,6 +431,30 @@ object StressTest {
     reportFacility.reportPivot(reportParameters, pivotFieldParameters)
   }
 
+  def runTradeValuationAfterDelay(reportFacility:ReportFacility, tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel,
+                                  timestamp:Timestamp, delay:Long) = {
+    @volatile var maxReadTime = 0L
+    @volatile var timeTree:TimeTree = null
+
+    val thread = new Thread {
+      override def run() {
+        Thread.sleep(delay)
+        val stopwatch = Stopwatch()
+        val (_, tTree) = runTradeValuationOnce(reportFacility, tradeID, curveIdentifier, timestamp)
+        maxReadTime = stopwatch.ms()
+        timeTree = tTree
+      }
+    }
+    thread.start()
+    ReadResult(thread, () => maxReadTime, () => timeTree)
+  }
+
+  def runTradeValuationOnce(reportFacility:ReportFacility, tradeID:TradeIDLabel, curveIdentifier:CurveIdentifierLabel, timestamp:Timestamp) = {
+    Profiler.captureTime("run trade valuation once") {
+      reportFacility.tradeValuation(tradeID, curveIdentifier, timestamp, ReportSpecificChoices())
+    }
+  }
+
   val clients = new ListBuffer[BouncyRMIClient]()
 
   def createClient(props:Props) = {
@@ -388,6 +467,11 @@ object StressTest {
   def createTradeFC2AndReportFacility(props:Props) = {
     val client = createClient(props)
     (client.proxy(classOf[TradeFacility]), client.proxy(classOf[FC2Facility]), client.proxy(classOf[ReportFacility]))
+  }
+
+  def maxSingleReadText(readResults:IndexedSeq[ReadResult]) = {
+    Stopwatch.milliToHumanString(readResults.map(_.maxMillis()).max) +
+      " - average: " + Stopwatch.milliToHumanString(readResults.map(_.maxMillis()).sum / readResults.size)
   }
 }
 

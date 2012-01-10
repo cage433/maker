@@ -38,16 +38,14 @@ class SimpleCache(statsListener: StatsListener, soft: Boolean) extends Cache(sta
   def keys[K]() = Set[K]() ++ (scala.collection.mutable.Set[K]() ++ cache.asInstanceOf[ConcurrentMap[K, FutureTask[_]]].keySet)
   
   def memoize[K, V](key: K, f: => V): V = {
-    Profiler.time("memoize") {
-      putIfAbsent(key, f) match {
-        case (v, true) => {
-          statsListener.hit
-          v
-        }
-        case (v, false) => {
-          statsListener.miss
-          v
-        }
+    putIfAbsent(key, f) match {
+      case (v, true) => {
+        statsListener.hit
+        v
+      }
+      case (v, false) => {
+        statsListener.miss
+        v
       }
     }
   }
