@@ -72,7 +72,8 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
     )
 
     context.registerService(classOf[Receiver], new Receiver() {
-      def event(event: Event) = broadcaster.broadcast(event)
+      override val name = "CompositeBroadcaster"
+      def event(event: Event) { broadcaster.broadcast(event) }
     })
 
     val environmentProvider = new DefaultEnvironmentProvider(marketDataStore, referenceDataLookup)

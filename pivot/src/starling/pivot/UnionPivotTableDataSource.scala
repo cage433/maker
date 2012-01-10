@@ -3,7 +3,7 @@ package starling.pivot
 import collection.Seq
 import collection.mutable.LinkedHashSet
 import model.UndefinedValue
-import starling.utils.NamedThreadFactory
+import starling.manager.NamedThreadFactory
 import java.util.concurrent.{Callable, Executors, Executor}
 
 /**

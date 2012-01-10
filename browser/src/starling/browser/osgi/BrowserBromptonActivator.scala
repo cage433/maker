@@ -95,8 +95,10 @@ class BrowserBromptonActivator extends BromptonActivator {
 
     Swing.onEDTWait( { settings.setSettings(initialData.settings) })
 
-    context.registerService(classOf[Receiver], new Receiver() {
-      def event(event: Event) = {
+    context.registerService(classOf[Receiver], new Receiver {
+      override val name = "BrowserBromptonActivator"
+
+      def event(event: Event) {
         onEDT {
           localCachePublisher.publish(event)
           pageContextPublisher.publish(event)
