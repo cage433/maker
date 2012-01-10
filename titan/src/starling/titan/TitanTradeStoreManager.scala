@@ -159,8 +159,8 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     log.info(">>updateTradeStore eventID %s".format(eventID))
 
     val sw = new Stopwatch()
-    val updatedStarlingTrades = cache.edmTrades.flatMap(trade => cache.tradeForwardBuilder.apply(trade, eventID))
-
+    val pmfBuilder = cache.tradeForwardBuilder
+    val updatedStarlingTrades = cache.edmTrades.flatMap(trade => pmfBuilder.apply(trade, eventID))
     log.info("Got %d updated starling trades, took %s".format(updatedStarlingTrades.size, sw.toString))
 
     val duplicates = updatedStarlingTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
