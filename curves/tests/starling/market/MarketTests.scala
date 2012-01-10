@@ -6,11 +6,11 @@ import starling.daterange.Day._
 import org.testng.annotations.Test
 import org.mockito.Mockito._
 import starling.calendar.{BusinessCalendars, HolidayTablesFactory, HolidayTables}
-import org.testng.Assert._
 import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.quantity.utils.QuantityTestUtils._
 import org.scalatest.testng.TestNGSuite
+import org.testng.Assert._
 
 class MarketTests extends TestMarketTest with TestNGSuite {
   @Test
@@ -20,6 +20,12 @@ class MarketTests extends TestMarketTest with TestNGSuite {
     val zinc = Market.LME_ZINC
     val expiry = march.firstWednesday
     assertEquals(zinc.optionExpiry(delivery), expiry)
+  }
+
+  @Test
+  def testWuxiLastTradingDay {
+    assertEquals(Day(2012, 1, 20), Market.EXBXG_MARKETS.head.lastTradingDay(Month(2012, 1)))
+    assertEquals(Day(2012, 5, 21), Market.EXBXG_MARKETS.head.lastTradingDay(Month(2012, 5))) //20th is sunday
   }
 
   @Test

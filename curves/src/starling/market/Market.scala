@@ -273,10 +273,10 @@ object Market {
       "EXBXG " + code, Some(1.0), uom, CNY, cals.CHINESE_STATE_HOLIDAYS,
       None, Month,
       new FuturesExpiryRule(){
-        // TODO - find the correct rule - for now we're going with last working day of previous month
         val name = "EXBXG"
-
-        def lastTradingDay(d: DateRange) = d.firstDay.previousBusinessDay(cals.CHINESE_STATE_HOLIDAYS)
+        def lastTradingDay(d: DateRange) = {
+          d.firstDay.containingMonth.forDay(20).thisOrNextBusinessDay(cals.CHINESE_STATE_HOLIDAYS)
+        }
       },
       FuturesExchangeFactory.EXBXG, commodity
     )
