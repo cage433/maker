@@ -51,8 +51,6 @@ object TitanAreWeLinearTest {
       observationDay.day.nextWeekday.endOfDay,
       mods
     )
-    val tradeIDPivotFieldState = new PivotFieldsState(rowFields = List(Field("Trade ID")))
-    val tradeIDParams = PivotFieldParams(true, Some(tradeIDPivotFieldState))
     val desk = Desk.Titan
     val deskCloses = tradeFacility.init().deskCloses(desk)(TradeTimestamp.magicLatestTimestampDay)
     val tradeTimestamp = deskCloses.sortWith(_.timestamp > _.timestamp).head
