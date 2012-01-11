@@ -120,11 +120,18 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
       rowsBuffer.toList
     }
   }
+
+  def toError(message:String) = {
+    copy(rowNode = AxisNode.Null, columnNode = AxisNode.Null, aggregatedMainBucket = PivotTable.bucketWithMessage(message))
+  }
 }
 
 object PivotTable {
+  def bucketWithMessage(message:String) = {
+    Map( (List(AxisValue.Null.childKey), List(AxisValue.Null.childKey)) -> MeasureCell(Some(message), CellState.NormalCellState))
+  }
+
   def singleCellPivotTable(text:String) = {
-    val bucket = Map( (List(AxisValue.Null.childKey), List(AxisValue.Null.childKey)) -> MeasureCell(Some(text), CellState.NormalCellState))
-    PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FieldInfo.Blank, bucket)
+    PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FieldInfo.Blank, bucketWithMessage(text))
   }
 }
