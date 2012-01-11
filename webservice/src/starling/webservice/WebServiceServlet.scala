@@ -5,6 +5,7 @@ import starling.manager._
 import org.jboss.resteasy.spi.Registry
 import javax.servlet.{ServletConfig, ServletContext}
 import org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher
+import scalaz.Scalaz._
 
 
 class WebServiceServlet(context: BromptonContext, rootServlet: RootServlet) extends HttpServletDispatcher {
@@ -24,7 +25,7 @@ class WebServiceServlet(context: BromptonContext, rootServlet: RootServlet) exte
     context.createServiceTracker(None, ServiceProperties(ExportTitanHTTPProperty), new BromptonServiceCallback[AnyRef] {
       def serviceAdded(ref: BromptonServiceReference, properties: ServiceProperties, service: AnyRef) = service match {
         case serviceClass:Class[_] => addPerRequestResource(serviceClass)
-        case _ => addSingletonResource(service)
+        case _ => addSingletonResource(service, properties.get[ProxiedService].fold(_.implementationClass, service.getClass))
       }
     })
 
@@ -37,10 +38,10 @@ class WebServiceServlet(context: BromptonContext, rootServlet: RootServlet) exte
       addRootPath(serviceClass)
     }
 
-    def addSingletonResource(service: AnyRef) = {
+    def addSingletonResource(service: AnyRef, serviceClass: Class[_]) = {
       registry.addSingletonResource(service);
-      documentationService.registerInstances(service)
-      addRootPath(service.getClass)
+      documentationService.registerClasses(serviceClass)
+      addRootPath(serviceClass)
     }
   }
 }
