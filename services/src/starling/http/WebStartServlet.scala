@@ -399,7 +399,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         }
       }
       val exeFile = GUICode.memoize(exeName, getOrGenerateFile _)
-      response.setHeader("Content-Disposition:", "attachment; filename="+exeName0 + "\"")
+      response.setHeader("Content-Disposition:", "attachment; filename=\""+exeName0 + "\"")
       writeFileToStream(exeFile, response)
     }
   }
