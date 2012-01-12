@@ -245,16 +245,11 @@ object Market {
   private def provider = MarketProvider.provider
   lazy val cals: BusinessCalendars = new BusinessCalendars(HolidayTablesFactory.holidayTables)
 
-  lazy val futuresMarkets = provider.allFuturesMarkets
-  lazy val all: List[CommodityMarket] = futuresMarkets ::: Index.publishedIndexes
-
   lazy val COMEX_GOLD : FuturesMarket = futuresMarketFromName("COMEX Gold")
   lazy val COMEX_SILVER : FuturesMarket = futuresMarketFromName("COMEX Silver")
   lazy val COMEX_PLATINUM : FuturesMarket = futuresMarketFromName("COMEX Platinum")
   lazy val COMEX_PALLADIUM : FuturesMarket = futuresMarketFromName("COMEX Palladium")
   lazy val COMEX_HIGH_GRADE_COPPER : FuturesMarket = futuresMarketFromName("COMEX High Grade Copper")
-
-
 
   //http://www.exbxg.com/en/services.html - called WUXI at Traf - no idea why as google knows nothing of this
   lazy val EXBG_STEEL_CR = exbgFuturesMarket("CR", Steel, MT) //304 Stainless Steel Cold Rolling Coil
@@ -268,7 +263,7 @@ object Market {
   lazy val EXBG_FERROMOLYBDENIUM = exbgFuturesMarket("FeMo", Ferromolybdenum, KG)
 
   lazy val EXBXG_MARKETS = List(EXBG_STEEL_CR, EXBG_NICKEL, EXBG_STEEL_HR, EXBG_STEEL_4FHR, EXBG_LEAD, EXBG_TIN, EXBG_INDIUM, EXBG_COBALT, EXBG_FERROMOLYBDENIUM)
-  def exbgFuturesMarket(code: String,commodity: Commodity, uom: UOM) = {
+  private def exbgFuturesMarket(code: String,commodity: Commodity, uom: UOM) = {
     new FuturesMarket(
       "EXBXG " + code, Some(1.0), uom, CNY, cals.CHINESE_STATE_HOLIDAYS,
       None, Month,
@@ -331,42 +326,17 @@ object Market {
   def futuresMarketFromQuoteID(id: Int): FuturesMarket = futuresMarketFromQuoteIDOption(id).getOrElse(throw new Exception("No market: " + id))
   def futuresMarketFromQuoteIDOption(id: Int): Option[FuturesMarket] = provider.futuresMarket(id)
 
-  private def fromNameEither(marketName : String) : Either[Failure, CommodityMarket] = {
-    val nameWithoutIdentifier = new Regex(" - [0-9]*$").replaceFirstIn(marketName, "")
-
-    provider.allFuturesMarkets.find(_.name.equalsIgnoreCase(marketName)) match {
-      case Some(market) => Right(market)
-      case None => all.find(_.name.equalsIgnoreCase(nameWithoutIdentifier)) match {
-        case Some(market) => Right(market)
-        case None => Left(Failure("No known market with name '" + marketName + "' or '" + nameWithoutIdentifier + "'"))
-      }
-    }
-  }
-
   def fromExchangeAndLimSymbol(exchange: String, limSymbol: String) =
-    Market.futuresMarkets.find(market => market.exchange.name == exchange && market.limSymbol.map(_.name) == Some(limSymbol))
+    Market.futuresMarketsView.find(market => market.exchange.name == exchange && market.limSymbol.map(_.name) == Some(limSymbol))
 
-  def marketsWithExchange(exchange: FuturesExchange): List[FuturesMarket] = all.filter(market =>
+  def marketsWithExchange(exchange: FuturesExchange): List[FuturesMarket] = allMarketsView.filter(market =>
     market.exchangeOption == Some(exchange) && !market.name.contains("London close")).filterCast[FuturesMarket]
 
   /**
-   * For testing
+   * Views of current markets
    */
-
-  def testMarket(name : String, currency : UOM, uom : UOM) : FuturesMarket = {
-    testMarket(name, currency, uom, -1, Day)
-  }
-  def testMarket(name : String, currency : UOM, uom : UOM, tenor: TenorType) : FuturesMarket = {
-    testMarket(name, currency, uom, -1, tenor)
-  }
-  def testMarket(name : String, currency : UOM, uom : UOM, id : Int, tenor: TenorType) : FuturesMarket = {
-    new FuturesMarket(name, Some(1.0), uom, currency, NilCalendar, Some(id), tenor, new FuturesExpiryRule {
-      val name = "Test"
-
-      def lastTradingDay(d: DateRange) = d.firstDay - 1
-      override def expiryDay(d: DateRange) = d.firstDay - 1
-    }, FuturesExchangeFactory.COMEX, Brent, (Conversions.default + ((BBL/MT, 7.57))))
-  }
+  def futuresMarketsView = provider.allFuturesMarkets
+  def allMarketsView: List[CommodityMarket] = futuresMarketsView ::: Index.publishedIndexesView
 }
 
 object FuturesMarket {

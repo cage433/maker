@@ -11,7 +11,7 @@ import starling.services.StarlingInit
 
 class Patch18_Freight_Futures_Delivery extends Patch {
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) = {
-    val freightMarkets = Market.futuresMarkets.filter(_.commodity == Freight).map(_.name)
+    val freightMarkets = Market.futuresMarketsView.filter(_.commodity == Freight).map(_.name)
 
     val tables = List("TrinityTrade", "Instrument")
     for (table <- tables) {

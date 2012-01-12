@@ -12,7 +12,7 @@ import starling.daterange._
 import scalaz.Scalaz._
 
 object ValidMarketParserObject {
-  lazy val Parser = new SpecifiedValuesParser(Market.all.map(_.name).toSet)
+  lazy val Parser = new SpecifiedValuesParser(Market.allMarketsView.map(_.name).toSet)
 }
 
 object PeriodComparator extends Ordering[Any] {
@@ -51,7 +51,7 @@ object PriceDataType extends MarketDataType {
   type dataType = PriceData
   type keyType = PriceDataKey
   val humanName = "prices"
-  lazy val keys = Market.all.map(PriceDataKey)
+  lazy val keys = Market.allMarketsView.map(PriceDataKey)
   lazy val exchangeField = FieldDetails("Exchange")
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   lazy val marketCommodityField = FieldDetails("Market Commodity")

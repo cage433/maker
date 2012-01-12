@@ -15,7 +15,7 @@ object FreightFlatRateDataType extends MarketDataType {
   type dataType = FreightFlatRateData
   type keyType = FreightFlatRateDataKey
   val humanName = "Freight flat rates"
-  lazy val keys: List[FreightFlatRateDataKey] = Market.all.filter(_.commodity == Freight).filter(_.currency == UOM.WSC).map(FreightFlatRateDataKey)
+  lazy val keys: List[FreightFlatRateDataKey] = Market.allMarketsView.filter(_.commodity == Freight).filter(_.currency == UOM.WSC).map(FreightFlatRateDataKey)
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   lazy val marketTenorField = FieldDetails("Market Tenor")
   lazy val periodField = FieldDetails("Period", PeriodPivotParser, PeriodPivotFormatter)
