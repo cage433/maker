@@ -84,7 +84,7 @@ case class Environment(
 
 
   def benchmarkPremium(commodity: Commodity, countryCode: NeptuneCountryCode, gradeCode : GradeCode, tenor:Tenor): Quantity =
-    instrumentLevelEnv.quantity(CountryBenchmarkAtomicKey(commodity, countryCode, gradeCode, tenor, referenceDataLookup))
+    instrumentLevelEnv.quantity(CountryBenchmarkAtomicKey(commodity, countryCode, gradeCode, tenor))
 
   def freightParity(contractualIncoterm: IncotermCode, contractualLocation: ContractualLocationCode,
                     destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) = {

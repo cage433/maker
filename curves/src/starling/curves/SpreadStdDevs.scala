@@ -227,7 +227,7 @@ case class SpreadAtmStdDevCurveKey(market : FuturesMarket)
 
   def marketDataKey = SpreadStdDevSurfaceDataKey(market)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData) = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData, refData : ReferenceDataLookup) = {
     new SpreadAtmStdDev(marketDayAndTime, market, marketData)
   }
 
@@ -239,7 +239,7 @@ case class SpreadSkewStdDevCurveKey(market : FuturesMarket)
 
   def marketDataKey = SpreadStdDevSurfaceDataKey(market)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData) = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData, refData : ReferenceDataLookup) = {
     new SpreadSkewStdDevs(marketDayAndTime, market, marketData)
   }
 

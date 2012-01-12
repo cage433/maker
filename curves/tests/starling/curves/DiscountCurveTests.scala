@@ -9,10 +9,10 @@ import starling.maths.RandomVariables
 import starling.quantity.{Quantity, UOM, Percentage}
 import starling.quantity.utils.QuantityTestUtils._
 import starling.utils.{Log, StarlingTest}
-import starling.marketdata.{ForwardRateSource, ForwardRateData, MarketData}
 import starling.daterange._
 import starling.metals.datasources.LIBORFixing._
 import starling.metals.datasources.LIBORFixing
+import starling.marketdata.{ReferenceDataLookup, ForwardRateSource, ForwardRateData, MarketData}
 
 class DiscountCurveTests extends StarlingTest with Log {
 	@Test
@@ -155,7 +155,7 @@ class DiscountCurveTests extends StarlingTest with Log {
           Tenor.ThreeMonths -> 1.7 (PERCENT),
           Tenor.SixMonths -> 2.0 (PERCENT)
         )))
-    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates)
+    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates, ReferenceDataLookup.Null)
     val env = Environment(
       new MappingCurveObjectEnvironment(Map[CurveKey, CurveObject](DiscountCurveKey(ccy) ->discountCurve), marketDay)
     )
@@ -182,7 +182,7 @@ class DiscountCurveTests extends StarlingTest with Log {
           Tenor.ThreeMonths -> 1.7 (PERCENT),
           Tenor.OneYear -> 2.0 (PERCENT)
         )))
-    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates)
+    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates, ReferenceDataLookup.Null)
     val env = Environment(
       new MappingCurveObjectEnvironment(Map[CurveKey, CurveObject](DiscountCurveKey(ccy) ->discountCurve), marketDay)
     )

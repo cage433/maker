@@ -1,7 +1,6 @@
 package starling.curves
 
 import interestrate.DayCountActual365
-import starling.marketdata.{ForwardRateDataKey, ForwardRateData}
 import math._
 import starling.daterange.{DateRange, Day, DayAndTime}
 import starling.quantity.{UOM, Quantity}
@@ -10,6 +9,7 @@ import collection.immutable.Map
 import starling.marketdata.ForwardRateSource._
 import starling.metals.datasources.LIBORFixing
 import scalaz.Scalaz._
+import starling.marketdata.{ReferenceDataLookup, ForwardRateDataKey, ForwardRateData}
 
 /** The parent of all DiscountCurve implementations.
  */
@@ -184,7 +184,7 @@ class ForwardForwardDiscountCurve(
 case class DiscountCurveKey(ccy : UOM) extends NonHistoricalCurveKey[ForwardRateData]{
   def marketDataKey = ForwardRateDataKey(ccy)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData): DiscountCurve = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, forwardRateData: ForwardRateData, refData : ReferenceDataLookup): DiscountCurve = {
     val fixings = forwardRateData.ratesFor(LIBOR, SHIBOR).map
       { case (tenor, rate) => LIBORFixing(ccy, marketDayAndTime.day, tenor, rate) }.toList.sortWith(_ < _)
 

@@ -1,9 +1,8 @@
 package starling.curves
-import starling.marketdata.ShanghaiVATData
-import starling.marketdata.ShanghaiVATDataKey
 import starling.quantity.Quantity
 import starling.quantity.UOM._
 import starling.daterange.DayAndTime
+import starling.marketdata.{ReferenceDataLookup, ShanghaiVATData, ShanghaiVATDataKey}
 
 case class ShanghaiVATCurveObject(marketDayAndTime : DayAndTime, rate : Quantity) extends CurveObject{
   type CurveValuesType = Quantity
@@ -12,7 +11,7 @@ case class ShanghaiVATCurveObject(marketDayAndTime : DayAndTime, rate : Quantity
 
 case class ShanghaiVATCurveKey() extends NonHistoricalCurveKey[ShanghaiVATData]{
   def marketDataKey = ShanghaiVATDataKey()
-  def buildFromMarketData (marketDayAndTime : DayAndTime, data : ShanghaiVATData) = {
+  def buildFromMarketData (marketDayAndTime : DayAndTime, data : ShanghaiVATData, refData : ReferenceDataLookup) = {
     ShanghaiVATCurveObject(marketDayAndTime, data.rate)
   }
   def underlying = "Shanghai VAT"

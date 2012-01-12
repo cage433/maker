@@ -1,6 +1,5 @@
 package starling.curves
 
-import starling.marketdata.{OilVolSurfaceDataKey, OilVolSurfaceData}
 import starling.daterange._
 import starling.maths.SplineInterpolator
 import starling.quantity.{UOM, Percentage}
@@ -9,12 +8,13 @@ import cern.colt.matrix.DoubleMatrix2D
 import cern.colt.matrix.impl.DenseDoubleMatrix2D
 import starling.quantity.Quantity
 import starling.quantity.UOM
+import starling.marketdata.{ReferenceDataLookup, OilVolSurfaceDataKey, OilVolSurfaceData}
 
 case class OilAtmVolCurveKey(market : CommodityMarket)
   extends NonHistoricalCurveKey[OilVolSurfaceData] with VolCurveKey {
   def marketDataKey = OilVolSurfaceDataKey(market.marketDataMarket)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: OilVolSurfaceData) =
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: OilVolSurfaceData, refData : ReferenceDataLookup) =
     new OilAtmVol(marketDayAndTime, market, marketData)
 
   def volMarket = market
@@ -93,7 +93,7 @@ case class OilAtmVol(marketDayAndTime : DayAndTime, market : CommodityMarket, da
 case class OilVolSkewCurveKey(market : CommodityMarket) extends NonHistoricalCurveKey[OilVolSurfaceData]{
   def marketDataKey = OilVolSurfaceDataKey(market.marketDataMarket)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: OilVolSurfaceData) = new OilVolSkew(marketDayAndTime, market, marketData)
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: OilVolSurfaceData, refData : ReferenceDataLookup) = new OilVolSkew(marketDayAndTime, market, marketData)
 
   def underlying = market.name
 }

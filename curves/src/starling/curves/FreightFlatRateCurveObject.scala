@@ -9,13 +9,13 @@ import starling.utils.cache.CacheFactory
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
 import starling.pivot.PivotQuantity
-import starling.marketdata.{FreightFlatRateData, FreightFlatRateDataKey, PriceData, PriceDataKey}
+import starling.marketdata._
 
 case class FreightFlatRateCurveKey(market: CommodityMarket) extends NonHistoricalCurveKey[FreightFlatRateData] {
 
   def marketDataKey = FreightFlatRateDataKey(market.marketDataMarket)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, data: FreightFlatRateData) = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, data: FreightFlatRateData, refData : ReferenceDataLookup) = {
     if (data.isEmpty) {
       throw new MissingMarketDataException("No market data for " + market + " on " + marketDayAndTime)
     } else {

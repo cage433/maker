@@ -280,7 +280,7 @@ case class MarketDataCurveObjectEnvironment(
   def curve(curveKey : CurveKey) : CurveObject = read(curveKey)
 
   def read(key: CurveKey): CurveObject = {
-    key.buildFromMarketData(marketDayAndTime, marketDataSlice)
+    key.buildFromMarketData(marketDayAndTime, marketDataSlice, referenceDataLookup)
   }
 
   def setShiftsCanBeIgnored(canBeIgnored : Boolean) = copy(shiftsCanBeIgnored = canBeIgnored)
