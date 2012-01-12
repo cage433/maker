@@ -7,17 +7,15 @@ import org.testng.annotations.Test
 import java.lang.String
 import collection.mutable.ListBuffer
 import starling.utils.ImplicitConversions._
-import starling.utils.VarLogger
 import ProtocolBuffers._
+
 
 class MethodOwnerTest extends TestNGSuite with ShouldMatchers {
   val invalidTypes = new ListBuffer[AnyRef]
   val owner = {
-    class ListBufferLogger(val buffer : ListBuffer[AnyRef]) extends VarLogger {
-      override def error(msg: => AnyRef) = buffer.append(msg)
+    new MethodOwner(new OwnerWithMethodsUsingAllValidInputTypes) {
+      protected override def logInvalid(method: DynamicMethod) = invalidTypes ++= method.unmarshallable
     }
-
-    new MethodOwner(new OwnerWithMethodsUsingAllValidInputTypes, new ListBufferLogger(invalidTypes))
   }
 
   @Test
