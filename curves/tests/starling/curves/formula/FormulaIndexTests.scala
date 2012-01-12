@@ -113,5 +113,4 @@ class FormulaIndexTests extends TestMarketTest with TestNGSuite with ShouldMatch
     val index = FormulaIndex("0.5 WTI vs 0.4 HO + 1.2 ?", Formula("0.5*MKT(7) - 0.4 *MKT(29) - 1.2 *MKT(1432)"), USD, BBL, None, None, None)
     index.verify
   }
-
 }

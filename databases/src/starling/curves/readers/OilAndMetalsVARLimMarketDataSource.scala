@@ -21,8 +21,8 @@ class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marke
 
   def read(day:Day) = {
     val (futuresFrontPeriodIndexes, publishedIndexes) = {
-      val futuresFrontPeriodIndexes = (Index.futuresMarketIndexes).filter(index => index.market.limSymbol.isDefined)
-      val publishedIndexes = Index.publishedIndexes.filter(_.market.limSymbol.isDefined)
+      val futuresFrontPeriodIndexes = (Index.futuresMarketIndexesView).filter(index => index.market.limSymbol.isDefined)
+      val publishedIndexes = Index.publishedIndexesView.filter(_.market.limSymbol.isDefined)
 
       val ambiguous = (futuresFrontPeriodIndexes.map(_.market.asInstanceOf[CommodityMarket]) & publishedIndexes.map(_.market)).toList
       //ambiguous.require(_.isEmpty, "Ambiguous markets (both published & futures front period):")

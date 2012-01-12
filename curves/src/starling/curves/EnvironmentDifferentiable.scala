@@ -95,7 +95,7 @@ case class PriceDifferentiable(market : CommodityMarket, period : DateRange) ext
   def quantityValue(env: Environment) = calculate(env).asInstanceOf[Quantity]
 
   def calculate(env : Environment) = {
-    Index.marketToPublishedIndexMap.get(market) match {
+    Index.getPublishedIndexForMarket(market) match {
       case Some(index) => env.averagePrice(index, period)
       case None => {
         market.tenor match {

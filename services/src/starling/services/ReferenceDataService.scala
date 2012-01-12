@@ -71,7 +71,7 @@ object ReferenceDataService {
       override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
-        val data = Market.futuresMarkets.map { market =>
+        val data = Market.futuresMarketsView.map { market =>
           fields(
             name       → market.name,
             lotSize    → market.lotSize.getOrElse("").toString,
@@ -110,7 +110,7 @@ object ReferenceDataService {
       override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
-        val data = Index.formulaIndexes.flatMap { index => index partialMatch {
+        val data = Index.formulaIndexesView.flatMap { index => index partialMatch {
           case fi:FormulaIndex => fields(
             name → fi.name,
             volumeUnit → fi.uom,
@@ -146,7 +146,7 @@ object ReferenceDataService {
       override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
-        val data = Index.all.flatMap { index => index partialMatch {
+        val data = Index.allView.flatMap { index => index partialMatch {
           case pi:PublishedIndex => fields(
             name       → pi.name,
             market     → pi.market.name,
@@ -186,7 +186,7 @@ object ReferenceDataService {
       override val initialState = DefaultPivotState(PivotFieldsState(rowFields = fields(name), dataFields = fields(otherFields)))
 
       def unfilteredData(pfs : PivotFieldsState) = {
-        val data = Index.all.flatMap { index => index partialMatch {
+        val data = Index.allView.flatMap { index => index partialMatch {
           case fi:FuturesFrontPeriodIndex => fields(
             name       → fi.name,
             market     → fi.market.name,
