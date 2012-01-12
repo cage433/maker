@@ -53,17 +53,9 @@ object TimestampPivotFormatter extends PivotFormatter {
   def format(value:Any, formatInfo:ExtraFormatInfo) = {
     value match {
       case t:Timestamp => {
-        val monthText = PeriodPivotFormatter.format(t.month, formatInfo).text
-        val dayString = {
-          val zz = t.day.dayNumber.toString
-          if (Character.isDigit(monthText(0))) {
-            zz + "/"
-          } else {
-            zz
-          }
-        }
-        val textToUse = dayString + monthText + " " + t.timeStringWithMilliSeconds
-        new TableCell(value, textToUse)
+        val shortText = t.toStringMinutes
+        val longText =  shortText + t.toDateTime.toString(":ss.SSS z")
+        new TableCell(value, shortText, longText = Some(longText))
       }
       case _ => new TableCell(value)
     }

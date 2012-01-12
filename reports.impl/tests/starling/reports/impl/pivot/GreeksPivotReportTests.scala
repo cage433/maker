@@ -223,7 +223,7 @@ class GreeksPivotReportTests extends StarlingTest {
 
     val swaps = markets.map{
       mkt => 
-        val index : SingleIndex = Index.futuresMarketToIndexMap.get(mkt) match {
+        val index : SingleIndex = Index.futuresMarketToIndex(mkt) match {
           case Some(idx) => idx
           case _ => PublishedIndex(mkt.name, mkt.eaiQuoteID, mkt.lotSize, mkt.uom, mkt.currency, mkt.businessCalendar, mkt.commodity)
         }

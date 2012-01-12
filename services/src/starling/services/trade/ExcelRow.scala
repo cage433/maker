@@ -185,7 +185,7 @@ case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
     case None => {
       marketOption(marketStr) match {
         case Some(market) => {
-          val matches = Index.singleIndexes.filter(_.market == market).mkString(" or ")
+          val matches = Index.singleIndexesView.filter(_.market == market).mkString(" or ")
           throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr + ", did you mean '" + matches + "'?")
         }
         case _ => throw ExcelInstrumentReaderException("Couldn't find index with name: " + marketStr)

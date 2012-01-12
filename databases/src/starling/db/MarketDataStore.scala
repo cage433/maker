@@ -158,14 +158,14 @@ trait MarketDataStore {
 
   def queryLatest(selection: MarketDataSelection, marketDataType: MarketDataTypeName,
     observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
-    marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketData)] = {
+    marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketDataRows)] = {
 
     query(latestMarketDataIdentifier(selection), marketDataType, observationDays, observationTimes, marketDataKeys)
   }
 
   def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
-            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketData)]
+            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketDataRows)]
 
   def queryForObservationDayAndMarketDataKeys(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName): List[TimedMarketDataKey]
 
@@ -217,6 +217,8 @@ object VersionedMarketData {
 }
 
 case class MarketDataEntry(observationPoint: ObservationPoint, key: MarketDataKey, data: MarketData, tag: Option[String] = None) {
+  def this(key: TimedMarketDataKey, data: MarketData, tag: Option[String] = None) = this(key.observationPoint, key.key, data, tag)
+
   val dataType = key.typeName
 
   def isEmpty = data.size == 0 // key.castRows(data, ReferenceDataLookup.Null).isEmpty

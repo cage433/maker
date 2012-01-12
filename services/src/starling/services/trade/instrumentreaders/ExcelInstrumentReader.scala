@@ -49,7 +49,7 @@ object ExcelInstrumentReader {
       }
 
       def conflicts(market: Market, alias: String) = {
-        Market.all.find(_.name == alias).map(f => f != market).getOrElse(false)
+        Market.allMarketsView.find(_.name == alias).map(f => f != market).getOrElse(false)
       }
 
       aliases.toList.filter {
@@ -60,7 +60,7 @@ object ExcelInstrumentReader {
 
       val combined = aliases.map {
         case (market, alias) => (alias.toLowerCase, market)
-      }.toMap ++ Market.all.toMapWithKeys(_.name.toLowerCase)
+      }.toMap ++ Market.allMarketsView.toMapWithKeys(_.name.toLowerCase)
 
       val renamedIPE = combined.filter(_._1.contains("ipe")).map{
         case (name, market) => (name.replaceAll("ipe", "ice") -> market)
@@ -98,7 +98,7 @@ object ExcelInstrumentReader {
     "rb brent cracks" -> Index.NYMEX_RBOB_1ST_MONTH_VS_IPE_BRENT_1ST_MONTH,
     "ho vs brent" -> Index.NYMEX_HEAT_1ST_MONTH_VS_ICE_BRENT_1ST_MONTH,
     "nymex rbob 1st month vs ipe brent 1st month" -> Index.NYMEX_WTI_VS_IPE_BRENT
-  ) ++ Index.all.map(i => i.name.toLowerCase -> i).toMap
+  ) ++ Index.allView.map(i => i.name.toLowerCase -> i).toMap
 
   lazy val allNames = (marketAliases.keys ++ indexAliases.keys).toSet
 

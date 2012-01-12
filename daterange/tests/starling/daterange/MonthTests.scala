@@ -1,25 +1,24 @@
 package starling.daterange
 
-import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import org.testng.Assert._
 import Day._
+import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.WordSpec
 
-class MonthTests extends TestNGSuite {
-  @Test
-  def testArithmetic {
-    assertEquals(Month(2010,  2) + 1, Month(2010,  3))
-    assertEquals(Month(2010, 12) + 1, Month(2011,  1))
-    assertEquals(Month(2010,  2) - 1, Month(2010,  1))
-    assertEquals(Month(2010,  1) - 1, Month(2009, 12))
-    assertEquals(Month(2010,  1) - 13, Month(2008, 12))
-    assertEquals(Month(2010,  1) + 12, Month(2011, 1))
-    assertEquals(Month(2010,  1) - 11, Month(2009, 2))
-    assertEquals(Month(2010,  1) - 12, Month(2009, 1))
+class MonthTests extends WordSpec with ShouldMatchers {
+  "test arithmetic" in {
+    Month(2010,  2) + 1 should be === Month(2010,  3)
+    Month(2010, 12) + 1 should be === Month(2011,  1)
+    Month(2010,  2) - 1 should be === Month(2010,  1)
+    Month(2010,  1) - 1 should be === Month(2009, 12)
+    Month(2010,  1) - 13 should be === Month(2008, 12)
+    Month(2010,  1) + 12 should be === Month(2011, 1)
+    Month(2010,  1) - 11 should be === Month(2009, 2)
+    Month(2010,  1) - 12 should be === Month(2009, 1)
   }
 
-  @Test
-  def testArithmetic2{
+  "test arithmetic 2" in {
     // Inefficient but intuitive 
     def plusMonths(m : Month, n : Int) : Month = {
       if (n == 0)
@@ -31,35 +30,42 @@ class MonthTests extends TestNGSuite {
     for (i <- 0 to 50;
         j <- 0 to 50)
     {
-      assertEquals(months(i) + (j - i), months(j))
+      months(i) + (j - i) should be === months(j)
     }
   }
 
-  @Test
-  def testParse {
+  "test parse" in {
     val jan10 = Month(2010, 1)
-    assertEquals(Month.parse("Jan-2010"), jan10)
-    assertEquals(Month.parse("Jan 2010"), jan10)
-    assertEquals(Month.parse("Jan 10"), jan10)
-    assertEquals(Month.parse("January 10"), jan10)
-    assertEquals(Month.parse("January 2010"), jan10)
-    assertEquals(Month.parse("F0"), jan10)
-    assertEquals(Month.parse("F10"), jan10)
-    assertEquals(Month.parse("F2010"), jan10)
-    assertEquals(Month.parse("01/10"), jan10)
-    assertEquals(Month.parse("01/2010"), jan10)
+    Month.parse("Jan-2010") should be === jan10
+    Month.parse("Jan 2010") should be === jan10
+    Month.parse("Jan 10") should be === jan10
+    Month.parse("January 10") should be === jan10
+    Month.parse("January 2010") should be === jan10
+    Month.parse("F0") should be === jan10
+    Month.parse("F10") should be === jan10
+    Month.parse("F2010") should be === jan10
+    Month.parse("01/10") should be === jan10
+    Month.parse("01/2010") should be === jan10
   }
 
-  @Test
-  def testThirdWednesday {
-    assertEquals(Month(2010, 6).thirdWednesday, 16 Jun 2010)
-    assertEquals(Month(2012, 1).thirdWednesday, 18 Jan 2012)
+  "test third wednesday" in {
+    Month(2010, 6).thirdWednesday should be === (16 Jun 2010)
+    Month(2012, 1).thirdWednesday should be === (18 Jan 2012)
   }
 
-  @Test
-  def testFirstTuesday {
-    assertEquals(Month(2010, 6).firstTuesday, 1 Jun 2010)
-    assertEquals(Month(2011, 1).firstTuesday, 4 Jan 2011)
-    assertEquals(Month(2012, 1).firstTuesday, 3 Jan 2012)
+  "test first tuesday" in {
+    Month(2010, 6).firstTuesday should be === (1 Jun 2010)
+    Month(2011, 1).firstTuesday should be === (4 Jan 2011)
+    Month(2012, 1).firstTuesday should be === (3 Jan 2012)
+  }
+
+  "test days" in {
+    Month(2012, 1).days.groupBy(_.dayOfWeek).foreach {
+      case (dayOfWeek, expectedDays) => Month(2012, 1).daysMatching(dayOfWeek) should be === expectedDays.toList
+    }
+  }
+
+  "test inverse reuters string" in {
+    Month(2012, 1).toInverseReutersString should be === "2012F"
   }
 }

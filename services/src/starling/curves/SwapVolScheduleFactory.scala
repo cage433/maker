@@ -40,7 +40,7 @@ class SwapVolSchedulePivotDataSource(context: EnvironmentWithDomain) extends Unf
     case _ => None
   })
   private val marketsData = context.marketVols.map(m => m.market -> m).toMap
-  private val indexes = Index.all.flatMap {
+  private val indexes = Index.allView.flatMap {
     case (si: SingleIndex) if markets.contains(si.market) => Some(si)
     case _ => None
   }

@@ -5,6 +5,7 @@ import starling.daterange.{ObservationTimeOfDay, Day, ObservationPoint}
 import starling.marketdata._
 
 import starling.utils.ImplicitConversions._
+import starling.pivot.Row
 
 
 trait MarketDataReader {
@@ -15,7 +16,7 @@ trait MarketDataReader {
 
   def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]] = None,
            observationTimes: Option[Set[ObservationTimeOfDay]] = None,
-           keys: Option[Set[MarketDataKey]]=None): List[(TimedMarketDataKey, MarketData)]
+           keys: Option[Set[MarketDataKey]]=None): List[(TimedMarketDataKey, MarketDataRows)]
 
   def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataTypeName): List[TimedMarketDataKey]
 
@@ -29,8 +30,11 @@ trait MarketDataReader {
   def read(timedKey: TimedMarketDataKey): MarketData = {
     val key = timedKey.key
     val observationPoint = timedKey.observationPoint
+    val marketDataType = marketDataTypes.fromName(key.typeName)
     read(key.typeName, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)), Some(Set(key))).headOption match {
-      case Some((_,marketData)) => marketData
+      case Some((_,rows)) => {
+        marketDataType.createValue(rows.rows.map(Row(_))).asInstanceOf[MarketData]
+      }
       case None => {
         val marketDataType = marketDataTypes.fromName(key.typeName)
         val short = "No " + timedKey.key.humanName + " " + marketDataType.humanName

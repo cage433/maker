@@ -5,9 +5,11 @@ import starling.utils.ImplicitConversions._
 import starling.pivot._
 import scalaz.NewType
 import utils.TenorPivotParser
-import starling.daterange.{ObservationTimeOfDay, Day, Tenor}
 import scalaz.Scalaz._
 import starling.quantity.{UOMType, Quantity, UOM}
+import starling.metals.datasources.LIBORCalculator
+import starling.daterange._
+import java.lang.String
 
 
 object ForwardRateDataType extends MarketDataType {
@@ -55,13 +57,33 @@ case class ForwardRateDataKey(ccy: UOM) extends MarketDataKey {
   def humanName = ccy.toString
   def fields = Set(ForwardRateDataType.currencyField.field)
   def observationTime = (ccy == UOM.CNY) ? ObservationTimeOfDay.CFETSPublicationTime | ObservationTimeOfDay.LiborClose
+  def onDay(observationDay: Day) = TimedMarketDataKey(observationDay.atTimeOfDay(observationTime), this)
 }
 
-case class ForwardRateSource(value: String) extends NewType[String]
+case class ForwardRateSource(value: String, currencies: UOM*) extends NewType[String] {
+  import Tenor._
+  def tenors: List[Tenor] = (this == ForwardRateSource.IRS) ? Tenor.many(Year, 1, 2, 3, 4, 5, 10, 20) |
+    ON :: SN :: OneYear :: Tenor.many(Week, 1, 2) ::: Tenor.many(Month, Range(1, 13) : _*)
+}
 
 object ForwardRateSource {
-  val LIBOR = ForwardRateSource("LIBOR")
-  val SHIBOR = ForwardRateSource("SHIBOR")
+  import UOM._
+
+  val LIBOR = ForwardRateSource("LIBOR", AUD, CAD, CHF, EUR, GBP, JPY, NZD, USD)
+  val IRS = ForwardRateSource("IRS", AUD, CAD, CHF, EUR, GBP, JPY, USD)
+  val BUBOR = ForwardRateSource("BUBOR", BGN)
+  val HIBOR = ForwardRateSource("HIBOR", HKD)
+  val JIBAR = ForwardRateSource("JIBAR", ZAR)
+  val KLIBOR = ForwardRateSource("KLIBOR", MYR)
+  val ROBOR = ForwardRateSource("ROBOR", RON)
+  val SHIBOR = ForwardRateSource("SHIBOR", SGD)
+  val SIBOR = ForwardRateSource("SIBOR", SGD)
+  val TRLIBOR = ForwardRateSource("TRLIBOR", TRY)
+
+  val values = List(LIBOR, IRS, BUBOR, HIBOR, JIBAR, KLIBOR, ROBOR, SHIBOR, SIBOR, TRLIBOR)
+  private val valuesByName = values.toMapWithKeys(_.value)
+
+  def fromName(name: String): ForwardRateSource = valuesByName(name)
 }
 
 case class ForwardRateData(rates: NestedMap[ForwardRateSource, Tenor, Quantity]) extends MarketData {

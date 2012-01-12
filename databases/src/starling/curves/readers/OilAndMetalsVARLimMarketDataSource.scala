@@ -7,22 +7,21 @@ import collection.immutable.Map
 import starling.daterange._
 import java.lang.String
 import starling.pivot.MarketValue
-import starling.utils.{MathUtil, Log}
 import starling.lim.LIMService
 import starling.db.{MarketDataSet, MarketDataEntry, MarketDataSource}
 import starling.quantity.UOM._
 import starling.db.{NoMarketDataForDayException, MarketDataEntry, MarketDataSource}
 import starling.curves.MissingMarketDataException
-import starling.utils.{MathUtil, Log}
 import starling.quantity.Percentage
+import starling.utils._
 
 class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marketDataSet: MarketDataSet) extends MarketDataSource {
   val daysInThePast = 365
 
   def read(day:Day) = {
     val (futuresFrontPeriodIndexes, publishedIndexes) = {
-      val futuresFrontPeriodIndexes = (Index.futuresMarketIndexes).filter(index => index.market.limSymbol.isDefined)
-      val publishedIndexes = Index.publishedIndexes.filter(_.market.limSymbol.isDefined)
+      val futuresFrontPeriodIndexes = (Index.futuresMarketIndexesView).filter(index => index.market.limSymbol.isDefined)
+      val publishedIndexes = Index.publishedIndexesView.filter(_.market.limSymbol.isDefined)
 
       val ambiguous = (futuresFrontPeriodIndexes.map(_.market.asInstanceOf[CommodityMarket]) & publishedIndexes.map(_.market)).toList
       //ambiguous.require(_.isEmpty, "Ambiguous markets (both published & futures front period):")
@@ -78,31 +77,33 @@ class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marke
   private def readFuturesFixingsFromLim(lastObservationDay: Day, market: FuturesMarket, level: Level): List[MarketDataEntry] = {
     val limSymbol = market.limSymbol.getOrElse(throw new Exception("No Lim symbol for market: " + market))
 
-    def parseRelation(relation: String) = {
+    def parseRelation(relation: String): Option[Relation] = {
       val monthPart = relation.substring(limSymbol.name.size + 1)
 
-      ReutersDeliveryMonthCodes.parse(monthPart).map(month => relation → month.asInstanceOf[DateRange])
-    }
-    val pricesByObservationPoint = service.query {
-      connection =>
-        val relationToDeliveryMonth = connection.getAllRelationChildren(limSymbol.name).flatMapO(parseRelation).toMap
-
-        val prices = connection.getPrices(relationToDeliveryMonth.keys, level, lastObservationDay - daysInThePast, lastObservationDay)
-          .groupInto {
-          case ((relation, observationDay), price) => {
-            val roundedPrice = MathUtil.roundToNdp(price * limSymbol.multiplier, 6)
-            (ObservationPoint(observationDay), relationToDeliveryMonth(relation) → MarketValue.quantity(roundedPrice, market.priceUOM))
-          }
-        }
-        prices
+      ReutersDeliveryMonthCodes.parse(monthPart).map(Relation(relation, _))
     }
 
-    val allFixings = pricesByObservationPoint.map {
-      case (observationPoint, deliveryMonthToPrice) =>
-        val fixings = deliveryMonthToPrice.toMap.mapKeys(deliveryMonth => (level, StoredFixingPeriod.dateRange(deliveryMonth)))
+    val pricesByObservationPoint = service.query { connection => {
+      val relations = connection.getAllRelationChildren(limSymbol.name).flatMapO(parseRelation).toList
+      val prices = connection.getPrices(relations, level, lastObservationDay - daysInThePast, lastObservationDay)
 
-        MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(fixings))
+      val roundedPrices = prices.mapNested { case (observationDay, relation, price) => {
+        val roundedPrice = MathUtil.roundToNdp(price * limSymbol.multiplier, 6)
+
+        (ObservationPoint(observationDay), (level, relation.period) → MarketValue.quantity(roundedPrice, market.priceUOM))
+      } }.toNestedMap
+
+      roundedPrices
+    } }
+
+    val allFixings = pricesByObservationPoint.map { case (observationPoint, fixings) =>
+      MarketDataEntry(observationPoint, PriceFixingsHistoryDataKey(market), PriceFixingsHistoryData.create(fixings))
     }.toList.sortBy(_.observationPoint.day)
+
     allFixings
+  }
+
+  private case class Relation(relation: String, deliveryMonth: DateRange) {
+    val period = StoredFixingPeriod.dateRange(deliveryMonth)
   }
 }

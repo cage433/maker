@@ -14,9 +14,12 @@ import scalaz.Scalaz._
 import starling.auth.User
 import starling.richdb.RichResultSetRow
 import starling.pivot.Row
+import starling.pivot.{Field => PField}
 import collection.immutable._
 import collection.mutable.{ListBuffer, Map => MMap}
 
+
+case class CommitEntry(timestamp:Timestamp, user:Option[String])
 
 class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) extends MdDB with Log {
   val (extendedKeys, valueKeys) = (new ExtendedKeyCache(db, dataTypes), new ValueKeyCache(db))
@@ -61,6 +64,18 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
         where ("observationDay" isNotNull)) { rs => (rs.getString("marketDataSet"), rs.getDay("observationDay")) }
     .toMultiMap.withDefaultValue(List.empty[Day])
   )
+
+  private val commits = new java.util.concurrent.ConcurrentHashMap[Int,CommitEntry]()
+
+  private def readCommitIDs(commitIDs:Set[Int]) = {
+    val missingCommits = commitIDs.filterNot(commits.contains(_))
+    val extras = db.queryWithResult(
+        select("id, timestamp, username")
+         from ("MarketDataCommit")
+        where ("id" in missingCommits)) { rs => (rs.getInt("id"), CommitEntry(rs.getTimestamp("timestamp"), rs.getStringOrNone("username").map(_.intern()))) }
+    extras.foreach ( e => commits.put(e._1, e._2))
+    extras.toMap
+  }
 
   def observationDaysByMarketDataSet = observationDaysByMarketDataSetCache.get
 
@@ -207,33 +222,41 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
 
   def query(version: Int, mds: List[MarketDataSet], marketDataTypeName: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
-            marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
+            marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketDataRows)] = {
 
 //    log.infoWithTime("query(%d, (%s), %s, %s, %s, %s)" %
 //      (version, mds.map(_.name), marketDataType.name, observationDays, observationTimes, marketDataKeys)) {
 
-    val marketDataType = typeFor(marketDataTypeName)
-
-    val mostRecentValues = log.debugWithTime("query.mostRecentValues") {
+    val mostRecentValues = log.debugWithTime("query.valuesUpTo") {
       val commitClause = "commitId" lte version
       val observationDayClause = observationDays.fold(Clause.optIn("observationDay", _), TrueClause)
 
       val values = new MarketDataValueMap()
 
       queryUsingExtendedKeys(extendedKeys.idsFor(marketDataTypeName, mds, observationTimes, marketDataKeys),
-         select("*")
-           from("MarketDataValue")
+         (select("*")
+           from("MarketDataValue v")
           where(commitClause, observationDayClause)
-        orderBy("commitId" asc)
+//          leftJoin ("MarketDataCommit c", ("c.id" eql "v.commitid"))
+        orderBy("commitId" asc))
       ) { marketDataValue(_).update(values) }
 
       values.values
     }
 
-    val timedData: MultiMap[TimedMarketDataKey, Row] =
-      mostRecentValues.toList.collect { case ((tmdk, mdvk), (_, Some(row), _)) => tmdk → (mdvk.row + row) }.toMultiMap
+    val lookupCommit = if (mostRecentValues.size < 1000) {
+      val allCommitIDs = mostRecentValues.map(_._2._3).toSet
+      if (allCommitIDs.size < 1000) readCommitIDs(allCommitIDs) else Map[Int,CommitEntry]()
+    } else Map[Int,CommitEntry]()
 
-    timedData.collectValues { case rows if (rows.nonEmpty) => marketDataType.createValue(rows) }.toList
+    val timedData: MultiMap[TimedMarketDataKey, Row] =
+      mostRecentValues.toList.collect { case ((tmdk, mdvk), (marketDataSet, Some(row), commitId)) => {
+        val commitEntry = lookupCommit.get(commitId)
+        tmdk → (mdvk.row + row +
+          (PField("Source") -> marketDataSet.name) +? (PField("Timestamp") -> commitEntry.map(_.timestamp)) +? (PField("User") -> commitEntry.flatMap(_.user)))
+      } }.toMultiMap
+
+    timedData.collectValues { case rows if (rows.nonEmpty) => MarketDataRows(rows.map(_.value)) }.toList
   }
 
   def queryForObservationDayAndMarketDataKeys(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName) = {
@@ -376,13 +399,13 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
       require(comment.isDefined == (valueFields.size == 2), "Inconsistent number of fields (%s) vs values (%s)" %
         (valueFields, List(Some(value), comment).flatten))
       Some(Row(valueFields.head, uom match {
-        case "" => Quantity(value, UOM.SCALAR)
+        case "" => Quantity(value, UOM.SCALAR).pq
         case UOM.Parse(unit) => convertToPercentage(Quantity(value, unit))
         case _ => throw new Exception("Unrecognized uom: " + uom + " in row " + timedKey + " " + valueFields + " " + value)
       }) +? comment.map(valueFields.tail.head → _))
     }
 
-    private def convertToPercentage(quantity: Quantity) = if (quantity.isPercent && usePercentage) quantity.toPercentage else quantity
+    private def convertToPercentage(quantity: Quantity) = if (quantity.isPercent && usePercentage) quantity.toPercentage else quantity.pq
     private def usePercentage = dataTypes.typesUsingPercentage.contains(extendedKey.marketDataType)
   }
 }

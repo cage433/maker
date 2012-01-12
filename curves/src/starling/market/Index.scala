@@ -118,7 +118,7 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
       case _ => price
     }
   }
-}
+  }
 
 /**
  * An index on a single underlying
@@ -145,7 +145,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
     }
   }
 
-  def provideFixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
+  protected def provideFixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
 
   def observationTimeOfDay = ObservationTimeOfDay.Default
 
@@ -208,7 +208,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   def observedOptionPeriod(observationDay: Day) : DateRange
 
   def indexes = Set(this)
-}
+  }
 
 case class PublishedIndex(
   override val name: String,
@@ -383,43 +383,33 @@ object Index {
   lazy val TC6_CROSS_MEDITERRANEAN_30KT_BALTIC = publishedIndexFromName("TC6 Cross Mediterranean 30KT (Baltic)")
   lazy val NAPHTHA_CFR_JAPAN = publishedIndexFromName("Naphtha CFR Japan")
 
-  lazy val allFuturesFrontPeriodIndexes = provider.allIndexes.flatMap{case f:FuturesFrontPeriodIndex => Some(f); case _ => None}
-  lazy val allPublishedIndexes = provider.allIndexes.flatMap{case p:PublishedIndex => Some(p); case _ => None}
-  lazy val marketToPublishedIndexMap: Map[CommodityMarket, PublishedIndex] = allPublishedIndexes.toMapWithKeys(_.market)
+  def futuresMarketToIndex(market: FuturesMarket): Option[FuturesFrontPeriodIndex] = provider.futuresMarketToIndex(market)
 
-  lazy val futuresMarketToIndexMap = Map(
-    Market.ICE_BRENT -> BRT11,
-    Market.ICE_GAS_OIL -> GO11, // TODO [29 Jun 2010] should this be NYMGO11
-    Market.NYMEX_GASOLINE -> RBOB10,
-    Market.NYMEX_HEATING -> HO10,
-    Market.NYMEX_WTI -> WTI10,
-    Market.ICE_WTI -> ICEWTI10
-  )
-
-  lazy val lmeIndices = for (
-      market <- Market.futuresMarkets;
+  /**
+   * Views of current set of indexes
+   */
+  def lmeIndicesView = {
+    for (
+      market <- Market.futuresMarketsView;
       if (market.exchange == FuturesExchangeFactory.LME);
       level <- List(Level.Bid, Level.Ask)
     )
-      yield(LmeCashSettlementIndex(market, level))
-
-  lazy val indicesToImportFixingsForFromEAI: List[SingleIndex] = allFuturesFrontPeriodIndexes ::: allPublishedIndexes
-
-  lazy val all : List[Index] = provider.allIndexes ::: lmeIndices ::: BrentCFDSpreadIndex.all
-  lazy val futuresMarketIndexes : List[FuturesFrontPeriodIndex] = all.flatMap{case i:FuturesFrontPeriodIndex => Some(i); case _ => None}
-  lazy val publishedIndexes : List[PublishedIndex] = all.flatMap{case i:PublishedIndex => Some(i); case _ => None}
-  lazy val formulaIndexes : List[FormulaIndex] = all.flatMap{case i:FormulaIndex => Some(i); case _ => None}
-
-  lazy val singleIndexes = all.flatMap{
+    yield (LmeCashSettlementIndex(market, level))
+  }
+  def allView : List[Index] = provider.allIndexes ::: lmeIndicesView ::: BrentCFDSpreadIndex.all
+  def futuresMarketIndexesView : List[FuturesFrontPeriodIndex] = allView.flatMap{case i:FuturesFrontPeriodIndex => Some(i); case _ => None}
+  def publishedIndexesView : List[PublishedIndex] = allView.flatMap{case i:PublishedIndex => Some(i); case _ => None}
+  def formulaIndexesView : List[FormulaIndex] = allView.flatMap{case i:FormulaIndex => Some(i); case _ => None}
+  def singleIndexesView = allView.flatMap{
     case si: SingleIndex => Some(si)
     case _ => None
   }
 
-  def fromNameOption(name : String) = all.find(_.name == name)
+  def fromNameOption(name : String) = allView.find(_.name == name)
 
   def fromName(name : String) = fromNameOption(name) match {
     case Some(index) => index
-    case None => throw new UnknownIndexException("No index with name " + name + " in " + all)
+    case None => throw new UnknownIndexException("No index with name " + name + " in " + allView)
   }
 
   def singleIndexFromName(name: String) = fromName(name) match {
@@ -427,17 +417,7 @@ object Index {
     case other => throw new Exception(other + " is not of type TrinityIndex")
   }
 
-  lazy val eaiQuoteMap: Map[Int, Index] = {
-    // all the index quote ids plus the futures markets quote ids pointing the the front period indexes
-    // this is because swaps and formula indexes are sometimes (incorrectly) against the futures market id
-    all.flatMap(i => i.eaiQuoteID.map((_, i))) :::
-    all.flatMap{
-      case fi: FuturesFrontPeriodIndex if fi.promptness == 1 => fi.market.eaiQuoteID.map((_, fi))
-      case _ => None
-    } toMap
-  }
-
-  def indexFromEAIQuoteID(id: Int): Index = eaiQuoteMap.get(id) match {
+  def indexFromEAIQuoteID(id: Int): Index = provider.index(id) match {
     case Some(i:FormulaIndex) => i.verify
     case Some(i) => i
     case None => {
@@ -445,11 +425,11 @@ object Index {
     }
   }
 
-  def indexOptionFromEAIQuoteID(id: Int) = eaiQuoteMap.get(id)
+  def indexOptionFromEAIQuoteID(id: Int) = provider.index(id)
 
   def unapply(eaiQuoteID: Int) = indexOptionFromEAIQuoteID(eaiQuoteID)
 
-  def singleIndexFromEAIQuoteID(id: Int): SingleIndex = eaiQuoteMap.get(id) match {
+  def singleIndexFromEAIQuoteID(id: Int): SingleIndex = provider.index(id) match {
     case Some(i:SingleIndex) => i
     case Some(i) => throw new UnknownIndexException(id + " is not a SingleIndex: " + i, Some(id))
     case None => throw new UnknownIndexException(id + " is not a known Index eaiQuoteID", Some(id))
@@ -458,6 +438,8 @@ object Index {
   def markets(index: Index): Set[CommodityMarket] = index.indexes.flatMap {
     case si => Set(si.market.asInstanceOf[CommodityMarket])
   }
+
+  def getPublishedIndexForMarket(market: CommodityMarket): Option[PublishedIndex] = provider.getPublishedIndexForMarket(market)
 }
 
 object LmeSingleIndices{
@@ -524,8 +506,8 @@ case class LmeLowestOfFourIndex(market : FuturesMarket) extends IndexWithDailyPr
 
   //override def level(observationDay : Day) = Level.Bid
 
-  def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
-    cashIndex.provideFixingOrForwardPrice(env, observationDay) min threeMonthIndex.provideFixingOrForwardPrice(env, observationDay)
+  protected def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    cashIndex.fixingOrForwardPrice(env, observationDay) min threeMonthIndex.fixingOrForwardPrice(env, observationDay)
   }
   def indexes = Set(cashIndex, threeMonthIndex)
   val name = "LME " + market.commodity + " low 4"
@@ -539,7 +521,7 @@ case class LmeAverageOfFourIndex(market : FuturesMarket) extends IndexWithDailyP
 
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     Quantity.average(
-      indexes.toList.map(_.provideFixingOrForwardPrice(env, observationDay))
+      indexes.toList.map(_.fixingOrForwardPrice(env, observationDay))
     )
   }
   def indexes = Set(cashBidIndex, cashAskIndex, threeMonthBidIndex, threeMonthAskIndex)
@@ -552,7 +534,7 @@ case class LmeAve4MaxSettIndex(market : FuturesMarket) extends IndexWithDailyPri
   def indexes = ave4Index.indexes ++ cashAskIndex.indexes
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     // Despite the misleading name for this index, it is actually a minimum
-    ave4Index.provideFixingOrForwardPrice(env, observationDay) min cashAskIndex.provideFixingOrForwardPrice(env, observationDay)
+    ave4Index.fixingOrForwardPrice(env, observationDay) min cashAskIndex.fixingOrForwardPrice(env, observationDay)
   }
 
   val name = "LME " + market.commodity + " ave 4 max sett"

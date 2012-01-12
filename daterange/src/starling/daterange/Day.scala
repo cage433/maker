@@ -141,6 +141,8 @@ class Day private (@transient val year : Int, @transient val month : Int, @trans
     nextBusinessDay(BusinessCalendar.NONE)
   }
 
+  def next(dayOfWeek: DayOfWeek): Day = this + (7 - (this.dayOfWeek - dayOfWeek))
+
   @tailrec
   final def addBusinessDays(bc : BusinessCalendar, n: Int): Day = {
     if (n > 0) {
