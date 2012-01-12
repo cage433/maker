@@ -9,7 +9,6 @@ import java.io._
 import java.util.UUID
 import starling.utils.cache.CacheFactory
 import starling.props.PropsHelper
-import starling.utils.ImplicitConversions._
 import starling.utils.IOUtils
 import starling.daterange.{Day, Timestamp}
 
@@ -165,7 +164,7 @@ object GUICode {
         jarOutputStream.putNextEntry(new JarEntry(outputFile.substring(outputPath.getPath.length+1)))
         val inputStream = new BufferedInputStream(new FileInputStream(outputFile))
         IO.copy(inputStream, jarOutputStream)
-        inputStream.close
+        inputStream.close()
       }
     }
     main match {
@@ -179,8 +178,8 @@ Main-Class: """ + klass + "\n"
       }
       case None =>
     }
-    jarOutputStream.flush
-    jarOutputStream.close
+    jarOutputStream.flush()
+    jarOutputStream.close()
   }
 }
 
@@ -193,9 +192,13 @@ Main-Class: """ + klass + "\n"
 class WebStartServlet(prefix:String, serverName:String, externalURL:String, mainClass:String, mainArguments:List[String],
                       xlloopUrl:String) extends HttpServlet {
 
-  override def doGet(request: HttpServletRequest, response:HttpServletResponse) = {
+  private val standardWebstartMemory = "500m"
+
+  override def doGet(request: HttpServletRequest, response:HttpServletResponse) {
     println("do GET " + request.getRequestURI)
 
+    val launcherName = "launcher.jnlp"
+    val launcherExtraMemoryName = "launcherExtraMem.jnlp"
     val excelPluginIniName = "excel_plugin-" + serverName + ".ini"
     val excelPluginXllName = "excel_plugin-" + serverName + ".xll"
     val booterName = "booter.jar"
@@ -212,7 +215,8 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
       val rootPage = new WebPage(request) {
         def title = "Webstart: " + serverName
         def body = {
-          <a href={link("launcher.jnlp")}>Webstart Launch</a><br/><br/>
+          <a href={link(launcherName)}>Webstart Launch</a><br/>
+          <a href={link(launcherExtraMemoryName)}>Webstart Launch Extra Memory</a><br/><br/>
                   <a href={link(booterName + "?" + UUID.randomUUID.toString)}>{booterName}</a><br/>
                   <a href={link(starlingExeName + "?" + UUID.randomUUID.toString)}>{starlingExeName}</a><br/>
                   <a href={link(starlingExeNoSplashName + "?" + UUID.randomUUID.toString)}>{starlingExeNoSplashName}</a><br/>
@@ -226,35 +230,12 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
       response.setContentType("text/html")
       response.getWriter.println("""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">""")
       XML.write(response.getWriter, rootPage.page, "UTF-8", true, null)
-    } else if (path.equals("/launcher.jnlp")) {
-        val jnlp = (
-              <jnlp spec='1.0+' codebase={externalURL+"/webstart/"} href='launcher.jnlp'>
-                <information>
-                  <vendor>Trafigura</vendor>
-                  <title>Starling: {serverName}</title>
-                  <homepage href='http://starling'/>
-                  <description>Starling: {serverName}</description>
-                  <icon href='icon.png'/>
-                  <offline-allowed/>
-                  <shortcut><menu submenu="Trafigura"/></shortcut>
-                </information>
-                <security>
-                    <all-permissions/>
-                </security>
-                <resources>
-                  <!-- For people with USB monitors add:  java-vm-args="-Dsun.java2d.d3d=false"-->
-                  <!-- with the options initial-heap-size='128m' max-heap-size='1024m'
-                    Starling would not start on Scotts machine. There's just an error dialog:
-                    'Could not create the java virtual machine' -->
-                  <j2se version='1.6+' max-heap-size='812m' java-vm-args='-Dsun.java2d.d3d=false'/>
-                  <jar href='booter.jar'/>
-                </resources>
-                <application-desc main-class="starling.booter.Booter">
-                  <argument>{externalURL}</argument>
-                  <argument>{serverName.replaceAll(" ", "_")}</argument>
-                </application-desc>
-                  <update check='always' policy='always'/>
-              </jnlp>)
+    } else if (path.equals("/" + launcherName)) {
+      val jnlp = generateJNPLFile(launcherName, standardWebstartMemory)
+      response.setContentType("application/x-java-jnlp-file")
+      XML.write(response.getWriter, jnlp, "UTF-8", true, null)
+    } else if (path.equals("/" + launcherExtraMemoryName)) {
+      val jnlp = generateJNPLFile(launcherName, "1024m")
       response.setContentType("application/x-java-jnlp-file")
       XML.write(response.getWriter, jnlp, "UTF-8", true, null)
     } else if (path.equals("/app.txt")) {
@@ -299,7 +280,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         val bufferedWriter = new BufferedWriter(new FileWriter(iniFile))
         bufferedWriter.write("server=" + xlloopUrl + "\r\n") // I'm using windows carriage return + line feed on purpose here!
         bufferedWriter.write("send.user.info=true\r\n")
-        bufferedWriter.close
+        bufferedWriter.close()
         iniFile
       }
       val iniFile = GUICode.memoize(excelPluginIniName, generateFile _)
@@ -349,7 +330,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
       def writeFile() {
         val inputStream = new BufferedInputStream(new FileInputStream(file))
         IO.copy(inputStream, response.getOutputStream)
-        inputStream.close
+        inputStream.close()
         response.getOutputStream.flush()
         response.getOutputStream.close()
       }
@@ -392,7 +373,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
           val configXML = InstallationHelper.generateL4JXML(externalURL, serverName, booterJarFile.getAbsolutePath, iconFile.getAbsolutePath, splashPath, timestamp).toString
           val bufferedWriter = new BufferedWriter(new FileWriter(configFile))
           bufferedWriter.write(configXML)
-          bufferedWriter.close
+          bufferedWriter.close()
           println("Config: " + configFile.getAbsolutePath)
           execute("lib/launch4j/launch4j", configFile.getAbsolutePath)
           exeFile
@@ -404,7 +385,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
     }
   }
 
-  private def signJar(jarFile:File) = {
+  private def signJar(jarFile:File) {
     if (!jarFile.exists) {
       throw new Exception("Can't sign jar as it does not exist: " + jarFile)
     }
@@ -433,7 +414,33 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
         cont = false
       }
     }
-    bufferedReader.close
-    errorBufferedReader.close
+    bufferedReader.close()
+    errorBufferedReader.close()
+  }
+
+  private def generateJNPLFile(name:String, memory:String) = {
+    <jnlp spec='1.0+' codebase={externalURL+"/webstart/"} href={name}>
+      <information>
+        <vendor>Trafigura</vendor>
+        <title>Starling: {serverName}</title>
+          <homepage href='http://starling'/>
+        <description>Starling: {serverName + (if (memory != standardWebstartMemory) memory else "")}</description>
+          <icon href='icon.png'/>
+          <offline-allowed/>
+        <shortcut><menu submenu="Trafigura"/></shortcut>
+      </information>
+      <security>
+          <all-permissions/>
+      </security>
+      <resources>
+          <j2se version='1.6+' max-heap-size={memory} java-vm-args='-Dsun.java2d.d3d=false'/>
+          <jar href='booter.jar'/>
+      </resources>
+      <application-desc main-class="starling.booter.Booter">
+        <argument>{externalURL}</argument>
+        <argument>{serverName.replaceAll(" ", "_")}</argument>
+      </application-desc>
+        <update check='always' policy='always'/>
+    </jnlp>
   }
 }

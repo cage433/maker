@@ -5,11 +5,22 @@ import org.apache.log4j._
 import starling.utils.ImplicitConversions._
 import util.DynamicVariable
 import scalaz.Scalaz._
-import java.io.Serializable
 import starling.manager.Profiler
 
 
-class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
+/**
+ * A thin wrapper around log4j.
+ */
+object Log extends VarLogger {
+  private val rootLogger = Log4JLogger.logger
+
+  def forName(name: String): VarLogger = Log4JLogger.forName(name)
+  def forClass[T: Manifest]: VarLogger = Log4JLogger.forClass(implicitly[Manifest[T]].erasure)
+
+  /** Returns logging thresholds for Info, Warn, and Error */
+  def orderOfMagnitudeLoggingThresholds(infoThreshold: Int, scale: Int = 10) = Map(
+    Levels.Info → infoThreshold, Levels.Warn → (infoThreshold * scale), Levels.Error → (infoThreshold * scale * scale))
+
   override def trace(msg: => AnyRef) = rootLogger.trace(msg)
   override def trace(msg: => AnyRef, t: => Throwable) = rootLogger.trace(msg, t)
   override def assertLog(assertion: Boolean, msg: => String) = rootLogger.assertLog(assertion, msg)
@@ -35,40 +46,13 @@ class AdaptingLogger(val rootLogger: VarLogger) extends VarLogger {
   override def isTraceEnabled = rootLogger.isTraceEnabled
 }
 
-/**
- * A thin wrapper around log4j.
- */
-object Log extends ExtendedLog(Log4JLogger.logger) {
-  def forName(name: String)     = new ExtendedLog(Log4JLogger.forName(name))
-  def forClass[T: Manifest]     = new ExtendedLog(Log4JLogger.forClass(implicitly[Manifest[T]].erasure))
-
-  /** Returns logging thresholds for Info, Warn, and Error */
-  def orderOfMagnitudeLoggingThresholds(infoThreshold: Int, scale: Int = 10) = Map(
-    Levels.Info → infoThreshold, Levels.Warn → (infoThreshold * scale), Levels.Error → (infoThreshold * scale * scale))
-}
-
 trait Log {
-  lazy val log: ExtendedLog = new ExtendedLog(Log4JLogger.forClass(getClass))
+  lazy val log: VarLogger = Log4JLogger.forClass(getClass)
 }
 
-class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
+trait VarLogger {
   def infoWithTime[T](message: String)(f: => T): T = withTime(message, msg => info(msg), f)
   def debugWithTime[T](message: String)(f: => T): T = withTime(message, msg => debug(msg), f)
-
-  def withName[T](name: String)(f: => T): T = ThreadUtils.withNamedThread(name)(f)
-
-  private def withTime[T](message: String, logger: AnyRef => Unit, f: => T) = {
-    val stopwatch = new Stopwatch()
-
-    withName(message) {
-      Profiler.time(message) {
-        logger(message + " Start")
-        val result = f;
-        logger(message + " Complete. Time: " + stopwatch)
-        result
-      }
-    }
-  }
 
   def debugWithTimeGapTop[T](message:String)(f: =>T) = {
     println("")
@@ -80,6 +64,21 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
     println("")
     println("")
     r
+  }
+
+  def withName[T](name: String)(f: => T): T = ThreadUtils.withNamedThread(name)(f)
+
+  protected def withTime[T](message: String, logger: AnyRef => Unit, f: => T) = {
+    val stopwatch = new Stopwatch()
+
+    withName(message) {
+      Profiler.time(message) {
+        logger(message + " Start")
+        val result = f;
+        logger(message + " Complete. Time: " + stopwatch)
+        result
+      }
+    }
   }
 
   /**
@@ -115,9 +114,8 @@ class ExtendedLog(adapted: VarLogger) extends AdaptingLogger(adapted) {
   def logException[T](msg: String = "")(action: => T): Either[Throwable, T] = {
     ClosureUtil.safely { action }.update(t => error(msg, t), identity)
   }
-}
 
-trait VarLogger {
+
   def isTraceEnabled: Boolean = false
 
   def trace(msg: => AnyRef): Unit = ()
@@ -191,9 +189,9 @@ object Levels extends Enumeration {
 object Log4JLogger {
   //System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 
-  lazy val logger = new Log4JLogger(Logger.getRootLogger, levelTransformer)
-  def forName(name: String) = new Log4JLogger(Logger.getLogger(name), levelTransformer)
-  def forClass(clazz: Class[_]) = new Log4JLogger(Logger.getLogger(clazz), levelTransformer)
+  lazy val logger: VarLogger = new Log4JLogger(Logger.getRootLogger, levelTransformer)
+  def forName(name: String): VarLogger = new Log4JLogger(Logger.getLogger(name), levelTransformer)
+  def forClass(clazz: Class[_]): VarLogger = new Log4JLogger(Logger.getLogger(clazz), levelTransformer)
 
   private val levelTransformer = new DynamicVariable[(Levels.Value) => Levels.Value](identity _)
 
