@@ -246,7 +246,7 @@ class WebStartServlet(prefix:String, serverName:String, externalURL:String, main
                   <!-- with the options initial-heap-size='128m' max-heap-size='1024m'
                     Starling would not start on Scotts machine. There's just an error dialog:
                     'Could not create the java virtual machine' -->
-                  <j2se version='1.6+' max-heap-size='812m' java-vm-args='-Dsun.java2d.d3d=false'/>
+                  <j2se version='1.6+' max-heap-size='500m' java-vm-args='-Dsun.java2d.d3d=false'/>
                   <jar href='booter.jar'/>
                 </resources>
                 <application-desc main-class="starling.booter.Booter">
