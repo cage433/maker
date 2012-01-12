@@ -82,7 +82,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
       tooltip = "Valuations need the 'current' day, in particular for discounts, forward FX, vols. Also trades with a trade day after this day are ignored. This day can not be before the curve data day."
     }
     val marketDayAndTimeChooser = new DayAndTimeChooser(timeOfDay0 = TimeOfDay.StartOfDay) {
-      leftDisabledTooltip = "The market day can not be before the curve data day"
+      leftDisabledTooltip = "The market day cannot be before the curve data day"
     }
 
     val thetaToLabel = new ResizingLabel("Theta to:") {

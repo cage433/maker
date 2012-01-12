@@ -161,9 +161,7 @@ class DayChooser(day0:Day = Day.today, enableFlags:Boolean = true, showDay:Boole
     day = d
   }
 
-  val leftPanel = new ArrowPanel("insets 0 2lp 0 3lp", leftIcon, previousDay, dayField) {
-    tooltip = "Market day can not be before curve data day"
-  }
+  val leftPanel = new ArrowPanel("insets 0 2lp 0 3lp", leftIcon, previousDay, dayField)
   val rightPanel = new ArrowPanel("insets 0 3lp 0 2lp", rightIcon, nextDay, dayField)
 
   val endPanel = new MigPanel("insets 0 0 0 2lp") {
