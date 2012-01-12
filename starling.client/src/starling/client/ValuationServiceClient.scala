@@ -3,6 +3,8 @@ package starling.client
 import starling.daterange.Day
 import com.trafigura.services.valuation.{TitanMarketDataIdentifier, ValuationServiceApi}
 import com.trafigura.services.marketdata.MarketDataServiceApi
+import starling.titan.valuation._
+import starling.utils.Stopwatch
 
 
 /**
@@ -22,13 +24,39 @@ object ValuationServiceClient {
 
       def testQuotaValuation() {
         println("Calling valueAllQuotas...")
-        val sw = System.currentTimeMillis()
+        val sw = new Stopwatch()
 
-        //val x = valuationService.valueSingleTradeQuotas("306")
+        val (_, valuationResult) = valuationService.valueAllTradeQuotas(None)
+        //val (_, valuationResult) = valuationService.valueAllTradeQuotas(Some(TitanMarketDataIdentifier(latestSnapshotIdentifier, Day.today, Day.today)))
 
-        val (_, valuationResult) = valuationService.valueAllTradeQuotas(Some(TitanMarketDataIdentifier(latestSnapshotIdentifier, Day.today, Day.today)))
-        val (worked, errors) = valuationResult.values.partition(_ isRight)
-        println("Worked " + worked.size + ", failed " + errors.size)
+        println("Took " + sw)
+
+        val (worked, errors) = valuationResult.values.partition(_.isRight)
+        val quotaValuations : List[QuotaValuation] = worked.collect{case Right(qv) => qv}.flatten.toList  // .flatMap(_.right.get).toList
+
+        val pAssignmentValuations : List[CostsAndIncomeAllocatedPurchaseAssignmentValuation] = quotaValuations.flatMap{
+          case pqv : PurchaseQuotaValuation => pqv.assignmentValuations.values
+          case _ => Nil
+        }
+
+        val sAssignmentValuations : List[CostsAndIncomeAllocatedSaleAssignmentValuation] = quotaValuations.flatMap{
+          case sqv : SalesQuotaValuation => sqv.assignmentValuations.values
+          case _ => Nil
+        }
+
+        val assignmentValuationsCount = pAssignmentValuations.size + sAssignmentValuations.size
+
+        val unassignedValuations : List[PricingValuationDetails] = quotaValuations.flatMap{
+          case sqv : SalesQuotaValuation => sqv.unallocatedValuationDetails match {
+            case Right(uv) => uv
+            case _ => Nil
+          }
+          case _ => Nil
+        }.toList
+
+        println("Worked trades " + worked.size + ", failed trades " + errors.size)
+        println("Worked quotaValuations " + quotaValuations.size + ", assignmentValuations "  + assignmentValuationsCount + ", unassignedValuations " + unassignedValuations.size)
+
         println("Errors: ")
         errors.foreach(println)
 
@@ -43,7 +71,7 @@ object ValuationServiceClient {
 
         println("\n\nWorked, details " + worked.mkString("\n"))
 
-        println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(valuationResult.size, worked.size, errors.size, snapshotIdentifiers.head, System.currentTimeMillis() - sw))
+        println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(valuationResult.size, worked.size, errors.size, snapshotIdentifiers.head, sw))
       }
 
       testQuotaValuation()

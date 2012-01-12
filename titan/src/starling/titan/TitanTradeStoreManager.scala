@@ -57,7 +57,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     edmTrades.retain(_.identifier.value != titanTradeID)
   }
   def edmInventoryLeaves : List[InventoryItem] = {
-    log.logWithTime("Took %d to get inv leaves", 10) {
+    log.logWithTime("Took %d ms to get inv leaves", 10) {
       val allInventoryIds = edmInventoryItems.keySet
       val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
       allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList

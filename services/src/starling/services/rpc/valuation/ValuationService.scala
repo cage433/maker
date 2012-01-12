@@ -7,9 +7,8 @@ import starling.utils.{Log, Stopwatch}
 import starling.instrument.physical.PhysicalMetalForward
 import valuation.QuotaValuation
 import com.trafigura.services.TitanSnapshotIdentifier
-import starling.titan.EDMConversions._
 import starling.db.SnapshotID
-import starling.daterange.{DayAndTime, TimeOfDay, Day}
+import starling.daterange.{DayAndTime, Day}
 import starling.gui.api.SnapshotMarketDataVersion
 
 /**
@@ -45,17 +44,16 @@ case class ValuationService(
       }
     }
   }
-  def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier] = None) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
 
+  def valueAllTradeQuotas(maybeMarketDataIdentifier : Option[TitanMarketDataIdentifier] = None) : (TitanMarketDataIdentifier, Map[String, Either[String, List[QuotaValuation]]]) = {
+    val sw = new Stopwatch()
     val (marketDataIdentifier, env) = marketDataIdentifierAndEnvironment(maybeMarketDataIdentifier)
     log.info("valueAllTradeQuotas called with market identifier %s".format(marketDataIdentifier))
-    val sw = new Stopwatch()
     val forwards : List[PhysicalMetalForward] = titanTradeStore.getAllForwards().collect{case (_, Right(fwd)) => fwd}.toList
     log.info("Got Edm Trade results, trade result count = " + forwards.size)
-    val valuations = forwards.map{
-      fwd =>
-        (fwd.titanTradeID, fwd.costsAndIncomeQuotaValueBreakdown(env))
-    }.toMap
+
+    val valuations : Map[String, Either[String, List[QuotaValuation]]] = forwards.par.map(
+      fwd => fwd.titanTradeID -> fwd.costsAndIncomeQuotaValueBreakdown(env)).seq.toMap
 
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
@@ -76,6 +74,4 @@ case class ValuationService(
       case Left(err) => Left(err)
     }
   }
-
 }
-
