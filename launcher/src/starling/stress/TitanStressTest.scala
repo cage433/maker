@@ -32,6 +32,7 @@ object TitanStressTest {
     val source = "stress"
     val propsMap = props0.starlingProps +
       ("ImportMarketDataAutomatically" -> PropertyValue(source, "false")) +
+      ("ServerType" -> PropertyValue(source, "FC2")) +
       ("RabbitEnabled" -> PropertyValue(source, "false")) +
       ("TitanRabbitBrokerHost" -> PropertyValue(source, "")) +
       ("ImportsBookClosesFromEAI" -> PropertyValue(source, "false")) +
