@@ -16,6 +16,7 @@ import starling.utils.CollectionUtils._
 import starling.market._
 import starling.eai._
 import starling.gui.api.Desk
+import scalaz.Scalaz._
 
 case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
 
@@ -347,7 +348,7 @@ case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
 
   def comment = string(CommentColumn, 255)
 
-  def getStrategyFromDealId(eaiStrategyDB: EAIStrategyDB, userDealID: String): (Option[TreeID], Option[TreeID]) = {
+  private def getStrategyFromDealId(eaiStrategyDB: EAIStrategyDB, userDealID: String): (Option[TreeID], Option[TreeID]) = {
     val (strategyID, dealID) = userDealID match {
       case empty: String if empty.trim.isEmpty => (None, None)
       case strategy => {
@@ -361,10 +362,7 @@ case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
   }
 
   def attributes(eaiStrategyDB: EAIStrategyDB, eaiDealBookMapping: EAIDealBookMapping, subgroupNamePrefix: String) = {
-    val r = getStrategyFromDealId(eaiStrategyDB, row(StrategyColumn).toString)
-
-    val strategyID: Option[TreeID] = r._1
-    val dealID: Option[TreeID] = r._2
+    val (strategyID, dealID) = getStrategyFromDealId(eaiStrategyDB, row(StrategyColumn).toString)
 
     val trader = string(TraderColumn)
     val tradedFor = string(TradedForColumn) match {
@@ -373,12 +371,6 @@ case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
     }
 
     val bookID = TreeID(eaiDealBookMapping.book(dealID.get.id))
-    Desk.eaiDeskFromID(bookID.id) match {
-      case None => { // sanity check
-        throw new Exception("Deal id " + dealID.get.id + " refers to a book (" + bookID + ") that Starling doesn't support.")
-      }
-      case _ =>
-    }
     val broker = this.broker
     val comment = this.comment
     val clearer = this.clearingHouse
@@ -399,12 +391,12 @@ case class ExcelRow(row: Map[String, Any], currentlyLoggedOn: User) {
     val subgroup = subgroupNamePrefix.trim
 
     val s = "Oil Derivatives/"
-    val desk = Desk.eaiDeskFromID(bookID).get
+    val deskName = Desk.eaiDeskFromID(bookID).fold(_.name, "Unknown")
+
     if ("live" == subgroup.toLowerCase) {
-      s + "Live/" + desk.name + "/" + user.username
+      s + "Live/" + deskName + "/" + user.username
     } else {
-      s + "Scratch/" +
-        desk.name + "/" + user.name + "/" + subgroup
+      s + "Scratch/" + deskName + "/" + user.name + "/" + subgroup
     }
   }
 }

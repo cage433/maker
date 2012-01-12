@@ -9,7 +9,6 @@ import java.io.File
 import starling.reports.impl.ReportsBromptonActivator
 import starling.rabbiteventviewer.internal.RabbitEventViewerServiceBromptonActivator
 import starling.trade.impl.osgi.TradeBromptonActivator
-import starling.props.internal.PropsBromptonActivator
 import starling.metals.MetalsBromptonActivator
 import starling.webservice.HttpWebserviceBromptonActivator
 import starling.manager.BromptonActivator
@@ -24,16 +23,15 @@ import starling.utils.{SingleClasspathBroadcasterActivator, Log}
 object Server {
 
   def main(args:Array[String]) {
-    run
-  }
-
-  def run = {
-    System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     PropsHelper.writeDefaults
     val props = PropsHelper.defaultProps
+    run(props)
+  }
+
+  def run(props:Props) = {
+    System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     writePIDFile()
     val baseActivators = List[Class[_ <: BromptonActivator]](
-      classOf[PropsBromptonActivator],
       classOf[SingleClasspathBroadcasterActivator],
       classOf[AuthBromptonActivator],
       classOf[ServicesBromptonActivator],
@@ -48,7 +46,7 @@ object Server {
       classOf[LoopyxlBromptonActivator]
     )
     val activators = baseActivators ::: (if (props.ServerType() == ServerTypeLabel.FC2) metalsActivators else Nil)
-    val single = new SingleClasspathManager(false, activators)
+    val single = new SingleClasspathManager(true, activators, List( (classOf[Props], props)) )
     writePIDFile()
     Log.infoWithTime("Launching starling server") {
       try {

@@ -14,7 +14,19 @@ case class Stopwatch(name : String = ""){
   def ms() : Long = (nanos) / 1000000
   def s() : Long = ms / 1000
   def toStringSeconds = s() + "(s)"
-  override def toString : String = name + "  " +Stopwatch.milliToHumanString(ms())
+  def asString = {
+    if (name.nonEmpty) {
+      name + "  " +Stopwatch.milliToHumanString(ms())
+    } else {
+      Stopwatch.milliToHumanString(ms())
+    }
+  }
+  def asStringAndReset = {
+    val s = asString
+    reset()
+    s
+  }
+  override def toString : String = asString
 }
 
 object Stopwatch {
@@ -43,7 +55,7 @@ object Stopwatch {
     Format.format(new Date(milli))
   }
 
-  def timeWithInfo[T](f: =>T):(TimingInfo, T) = {
+  def timeWithInfo[T](f: =>T): (TimingInfo, T) = {
     val stopWatch = new Stopwatch
     val result = f
     (TimingInfo(stopWatch.startTime, stopWatch.currentTime), result)
@@ -57,8 +69,8 @@ case class TimingInfo(startTime:Long, endTime:Long) {
 
   def loggingLevel(thresholds: Map[Levels.Value, Int]): Levels.Value = loggingLevel(thresholds.toSeq : _*)
 
-  def loggingLevel(infoThreshold: Int, scale: Int = 10): Levels.Value = loggingLevel(
-    Levels.Info → infoThreshold, Levels.Warn → (infoThreshold * scale), Levels.Error → (infoThreshold * scale * scale))
+  def loggingLevel(infoThreshold: Int, scale: Int = 10): Levels.Value =
+    loggingLevel(Log.orderOfMagnitudeLoggingThresholds(infoThreshold, scale))
 
   val timeTaken = (endTime - startTime) / 1000000
   val timeTakenInMilliSeconds : Double = (endTime - startTime) / 1000000.0

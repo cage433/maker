@@ -195,7 +195,7 @@ class ReportServiceInternal(reportContextBuilder:ReportContextBuilder, tradeStor
 
   def singleTradeReport(trade: Trade, curveIdentifier: CurveIdentifier, reportSpecificChoices : ReportSpecificChoices): TradeValuation = {
     try {
-      val defaultContext = reportContextBuilder.contextFromCurveIdentifier(curveIdentifier)
+      val defaultContext = cache.memoize(curveIdentifier, reportContextBuilder.contextFromCurveIdentifier(curveIdentifier))
       import ReportSpecificOptions._
       val explanation = reportSpecificChoices.getOrElse(valuationCurrencyLabel, defaultLabel) match {
         case `defaultLabel` => trade.explain(defaultContext.environment, trade.valuationCCY)

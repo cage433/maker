@@ -72,8 +72,11 @@ case class StarlingLocalCache(localCache:HeterogeneousMap[LocalCacheKey]) {
     }
   }
 
-  def latestDeskTradeTimestamp(desk:Desk) = localCache(DeskCloses)(desk)(TradeTimestamp.magicLatestTimestampDay).head
-
+  def latestDeskTradeTimestamp(desk:Desk) = {
+    val closes = localCache(DeskCloses)(desk)
+    val newest = closes.keys.max
+    closes(newest).max
+  }
 
   def deskCloses(desk: Option[Desk]): List[TradeTimestamp] = desk.map(deskCloses).getOrElse(Nil)
   def deskCloses(desk: Desk): List[TradeTimestamp] = {

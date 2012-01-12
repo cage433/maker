@@ -45,6 +45,11 @@ class QlikViewUpdater(serverUrl: String, spotFXTaskName: String, notifier: Notif
     }
   }
 
+  println("")
+  println("")
+  println("*** QUICKJXCSKLDJ ")
+  println("")
+  println("")
   private val h = new Http
   private val getTaskID = new RetryingAction(() => QlikViewUpdater.extractTaskID(spotFXTaskName, XML.load(urlOf("GetTasks"))))
   private def runTask(taskID: String) = h(url(urlOf("RunTask")).POST << Map("taskID" → taskID) as_str)

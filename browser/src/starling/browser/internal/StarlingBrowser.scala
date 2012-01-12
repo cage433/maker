@@ -771,7 +771,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     starlingBrowserUI.setContent(content, cancelAction)
   }
 
-  def setError(title:String="Error", error:String="", throwable:Option[Throwable]=None) {
+  def setError(title:String="Error", error:String="") {
     genericLockedUI.setClient(greyClient)
     genericLockedUI.setLocked(true)
     setButtonsEnabled(false)
@@ -782,7 +782,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       refreshAction.enabled = history(current).refreshPage.isDefined
     }
 
-    starlingBrowserUI.setError(title, error, throwable, reset())
+    starlingBrowserUI.setError(title, error, None, reset())
   }
 
   def clearContent() {
@@ -832,14 +832,31 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case FailureSubmitResponse(t) => {
             timer.stop()
             t.printStackTrace()
-            starlingBrowserUI.setError("There was an error whilst generating your page", t.getMessage, Some(t), {
-              setScreenLocked(false)
-              refreshBrowserBar()
-              refreshAction.enabled = history(current).refreshPage.isDefined
-            })
+            setError("There was an error whilst generating your page", Some(t))
           }
         }
       }
+    })
+  }
+
+  private def setError(title:String, t:Option[Throwable]) {
+    def extractMessage(t:Throwable, limit:Int=10):String = {
+      if (t.getMessage == null || t.getMessage.isEmpty) {
+        if (t.getCause != null && limit > 0) {
+          extractMessage(t.getCause, limit-1)
+        } else {
+          t.getClass.getSimpleName
+        }
+      } else {
+        t.getMessage
+      }
+    }
+    val message = t.map(extractMessage(_)).getOrElse("")
+    tabComponent.setBusy(false)
+    starlingBrowserUI.setError(title, message, t, {
+      setScreenLocked(false)
+      refreshBrowserBar()
+      refreshAction.enabled = history(current).refreshPage.isDefined
     })
   }
 

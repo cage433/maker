@@ -13,6 +13,7 @@ import starling.pivot._
 import controller.ChildKey
 import collection.immutable.{Map, TreeMap}
 import collection.mutable.{HashSet, HashMap}
+import starling.manager.Profiler
 
 class FieldList(pivotTableModel:PivotTableModel, _fields:Seq[Field], fieldChooserType:FieldChooserType) {
   def get(index:Int) = _fields(index)
@@ -344,11 +345,19 @@ object PivotTableModel {
 //    }
 
     val (fs, pivotTable) = if (pivotFieldParams.calculate) {
-      _createPivotTableData(dataSource, pivotFieldParams.pivotFieldState)
+      Profiler.time("_createPivotTableData"){_createPivotTableData(dataSource, pivotFieldParams.pivotFieldState)}
     } else {
       val pfs = pivotFieldParams.pivotFieldState.getOrElse(PivotFieldsState.Blank)
       val pt = PivotTable.singleCellPivotTable("Calculation is off")
       (pfs, pt)
+    }
+
+    val numberOfRowHeaderAndMainTableCells = (pivotTable.columnNode.numLeafChildren + pivotTable.rowFields.size) * pivotTable.rowNode.numLeafChildren
+    val pivotTableToUse = if (numberOfRowHeaderAndMainTableCells > 1500000) {
+      val message = "The table is too big. Please filter or rearrange the fields. Failing that, call a developer."
+      pivotTable.toError(message)
+    } else {
+      pivotTable
     }
 
     val reportSpecificOptions = dataSource.reportSpecificOptions
@@ -361,7 +370,7 @@ object PivotTableModel {
       dataFields = dataSource.fieldDetails.filter(_.isDataField).map(_.field).toSet,
       pivotFieldsState = fsToUse,
       drillDownGroups = dataSource.drillDownGroups,
-      pivotTable = pivotTable,
+      pivotTable = pivotTableToUse,
       availablePages = dataSource.availablePages,
       if (initialState == PivotFieldsState.Blank) None else Some(initialState),
       reportSpecificOptions = reportSpecificOptions)
@@ -718,8 +727,8 @@ object PivotTableModel {
 
       val (mainTableBucket, rowAxisRoot, columnAxisRoot, maxDepths) = Log.infoWithTime("Generating bucket"){generateMainData(pivotState, pivotResult, fieldDetailsLookup, treeDepths, allEditableInfo0)}
       val mainTableBucketWithSubtotals = Log.debugWithTimeGapBottom("Adding subtotals"){withSubtotals(mainTableBucket)}
-      val compressedMap = compress(mainTableBucketWithSubtotals)
-      val possibleValuesConvertedToTree = possibleValuesToTree(pivotResult, fieldDetailsLookup)
+      val compressedMap = Profiler.time("compress mainTableBucketWithSubtotals"){compress(mainTableBucketWithSubtotals)}
+      val possibleValuesConvertedToTree = Profiler.time("possibleValuesToTree"){possibleValuesToTree(pivotResult, fieldDetailsLookup)}
       val rowFieldHeadingCount = fieldIndexes(pivotState.rowFields, treeDepths, fieldDetailsLookup)
       val fieldInfo = FieldInfo(Map() ++ fieldDetailsLookup.map{case (f,fd) => (f -> fd.formatter)}, treeDepths.keySet.toList)
 

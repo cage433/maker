@@ -9,15 +9,13 @@ import starling.tradestore.TradeStore.StoreResults
 import starling.utils.ImplicitConversions._
 import com.trafigura.edm.logistics.inventory.{CancelledInventoryItemStatus, InventoryItem, LogisticsQuota}
 import com.trafigura.edm.common.units.TitanId
-import starling.utils.{Stopwatch, Startable, Log}
-import starling.instrument.TradeID._
-import starling.db.TitanTradeSystem
-import starling.instrument.ErrorInstrument._
-import starling.instrument.{ErrorInstrument, TradeID, Trade}
+import starling.instrument.{ErrorInstrument, Trade}
+import starling.utils.{TimingInfo, Stopwatch, Startable, Log}
 
 case class TitanServiceCache(private val refData : TitanTacticalRefData,
                              private val edmTradeServices : TitanEdmTradeService,
-                             private val logisticsServices : TitanLogisticsServices) extends Log with Startable {
+                             private val logisticsServices : TitanLogisticsServices,
+                             private val ready : () => Unit) extends Log with Startable {
   import scala.collection.mutable
   type InventoryID = String
   val edmTrades = mutable.Set[EDMPhysicalTrade]()
@@ -32,8 +30,9 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
 
     val allInventory = {
       val sw = new Stopwatch()
+      log.info("Loading Logistics inventory, assignments and quota data...")
       val inventory = logisticsServices.inventoryService.service.getAllInventory()
-      log.info("Loaded %d inventory in %s".format(inventory.associatedInventory.size, sw.toString))
+      log.info("Loaded %d inventory and %d quotas in %s".format(inventory.associatedInventory.size, inventory.associatedQuota.size, sw.toString))
       inventory
     }
 
@@ -41,6 +40,8 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     edmInventoryItems ++= allInventory.associatedInventory.filter(i => i.status != CancelledInventoryItemStatus).map{inv => inv.id -> inv}
     edmLogisticsQuotas.clear
     edmLogisticsQuotas ++= allInventory.associatedQuota
+
+    ready()
   }
 
   def tradeForwardBuilder: PhysicalMetalForwardBuilder = {
@@ -56,9 +57,11 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     edmTrades.retain(_.identifier.value != titanTradeID)
   }
   def edmInventoryLeaves : List[InventoryItem] = {
-    val allInventoryIds = edmInventoryItems.keySet
-    val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
-    allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+    log.logWithTime("Took %d to get inv leaves", 10) {
+      val allInventoryIds = edmInventoryItems.keySet
+      val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
+      allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+    }
   }
 
   def removeInventory(inventoryID : String) {
@@ -156,8 +159,8 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     log.info(">>updateTradeStore eventID %s".format(eventID))
 
     val sw = new Stopwatch()
-    val updatedStarlingTrades = cache.edmTrades.flatMap(trade => cache.tradeForwardBuilder.apply(trade, eventID))
-
+    val pmfBuilder = cache.tradeForwardBuilder
+    val updatedStarlingTrades = cache.edmTrades.flatMap(trade => pmfBuilder.apply(trade, eventID))
     log.info("Got %d updated starling trades, took %s".format(updatedStarlingTrades.size, sw.toString))
 
     val duplicates = updatedStarlingTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
@@ -271,7 +274,7 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
 
 object TitanTradeStoreManager{
   def apply(refData : TitanTacticalRefData, titanTradeStore : TitanTradeStore,
-            edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices), titanTradeStore)
+            edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices, rabbitReadyFn : () => Unit) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices, rabbitReadyFn), titanTradeStore)
 }
 
 case class TitanTradeUpdateResult(

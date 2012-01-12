@@ -118,7 +118,7 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
       case _ => price
     }
   }
-}
+  }
 
 /**
  * An index on a single underlying
@@ -145,7 +145,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
     }
   }
 
-  def provideFixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
+  protected def provideFixingOrForwardPrice(env : Environment, observationDay : Day) = env.fixingOrForwardPrice(this, observationDay)
 
   def observationTimeOfDay = ObservationTimeOfDay.Default
 
@@ -208,7 +208,7 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   def observedOptionPeriod(observationDay: Day) : DateRange
 
   def indexes = Set(this)
-}
+  }
 
 case class PublishedIndex(
   override val name: String,
@@ -524,8 +524,8 @@ case class LmeLowestOfFourIndex(market : FuturesMarket) extends IndexWithDailyPr
 
   //override def level(observationDay : Day) = Level.Bid
 
-  def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
-    cashIndex.provideFixingOrForwardPrice(env, observationDay) min threeMonthIndex.provideFixingOrForwardPrice(env, observationDay)
+  protected def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
+    cashIndex.fixingOrForwardPrice(env, observationDay) min threeMonthIndex.fixingOrForwardPrice(env, observationDay)
   }
   def indexes = Set(cashIndex, threeMonthIndex)
   val name = "LME " + market.commodity + " low 4"
@@ -539,7 +539,7 @@ case class LmeAverageOfFourIndex(market : FuturesMarket) extends IndexWithDailyP
 
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     Quantity.average(
-      indexes.toList.map(_.provideFixingOrForwardPrice(env, observationDay))
+      indexes.toList.map(_.fixingOrForwardPrice(env, observationDay))
     )
   }
   def indexes = Set(cashBidIndex, cashAskIndex, threeMonthBidIndex, threeMonthAskIndex)
@@ -552,7 +552,7 @@ case class LmeAve4MaxSettIndex(market : FuturesMarket) extends IndexWithDailyPri
   def indexes = ave4Index.indexes ++ cashAskIndex.indexes
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     // Despite the misleading name for this index, it is actually a minimum
-    ave4Index.provideFixingOrForwardPrice(env, observationDay) min cashAskIndex.provideFixingOrForwardPrice(env, observationDay)
+    ave4Index.fixingOrForwardPrice(env, observationDay) min cashAskIndex.fixingOrForwardPrice(env, observationDay)
   }
 
   val name = "LME " + market.commodity + " ave 4 max sett"

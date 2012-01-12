@@ -6,11 +6,11 @@ import starling.pivot.model.PivotTableModel
 import starling.marketdata._
 import starling.db._
 import starling.utils.ImplicitConversions._
-import starling.manager.BromptonContext
 import starling.curves.{EnvironmentRules, CurveViewer}
 import starling.utils.cache.CacheFactory
 import starling.pivot.{PivotTableDataSource, NullPivotTableDataSource, PivotFieldParams, PivotEdits}
 import starling.fc2.api.{FC2InitialData, FC2Facility}
+import starling.manager.{Profiler, BromptonContext}
 
 
 trait MarketDataPageIdentifierReaderProvider {
@@ -144,7 +144,7 @@ class FC2FacilityImpl(service: FC2Service,
 
   def readAllMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], edits:PivotEdits, pivotFieldParams:PivotFieldParams):PivotData = {
     val dataSource = service.marketDataSource(marketDataIdentifier, marketDataTypeLabel, edits)
-    PivotTableModel.createPivotData(dataSource, pivotFieldParams)
+    Profiler.time("Create Pivot Data") {PivotTableModel.createPivotData(dataSource, pivotFieldParams)}
   }
 
   def saveMarketData(marketDataIdentifier:MarketDataPageIdentifier, marketDataTypeLabel:Option[MarketDataTypeLabel], pivotEdits:PivotEdits) = {

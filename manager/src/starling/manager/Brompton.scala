@@ -38,16 +38,19 @@ trait BromptonActivator {
 class ServiceProperty(val name:String, val value:AnyRef)
 
 case class ServiceProperties(properties: ServiceProperty*) {
-  def get[T <: ServiceProperty : Manifest]: T = {
+  def apply[T <: ServiceProperty : Manifest]: T = get[T].getOrElse(
+    throw new Exception("No property of type: " + implicitly[Manifest[T]].erasure))
+
+  def get[T <: ServiceProperty : Manifest]: Option[T] = {
     val propertyType = implicitly[Manifest[T]].erasure
 
-    properties.find(property => propertyType.isAssignableFrom(property.getClass)).getOrElse(
-      throw new Exception("No property of type: " + propertyType)).asInstanceOf[T]
+    properties.find(property => propertyType.isAssignableFrom(property.getClass)).asInstanceOf[Option[T]]
   }
 
   def toDictionary: Dictionary[_, _] = mapToDictionary(properties.map(p => p.name → p.value).toMap)
   def toFilters: List[String] = properties.map { sp => "("+sp.name+"="+sp.value+")"}.toList
   def contains(serviceProperties: ServiceProperties) = serviceProperties.properties.forall(p => properties.contains(p))
+  def +(property: ServiceProperty) = ServiceProperties((property :: properties.toList) : _*)
 
   private def mapToDictionary(map:Map[String,AnyRef]):Dictionary[_,_] = {
     val table = new Hashtable[String,AnyRef]()
@@ -64,6 +67,7 @@ object ExportTitanRMIProperty extends ServiceProperty("export.rmi.titan", java.l
 object ExportTitanHTTPProperty extends ServiceProperty("export.http.titan", java.lang.Boolean.TRUE)
 object ExportXlloopProperty extends ServiceProperty("export.xlloop", java.lang.Boolean.TRUE)
 object ExportLoopyProperty extends ServiceProperty("export.loopy", java.lang.Boolean.TRUE)
+case class ProxiedService(implementationClass: Class[_]) extends ServiceProperty("proxied.service", implementationClass)
 
 
 class NoServiceFoundException(message:String) extends RuntimeException(message)

@@ -82,7 +82,6 @@ class RichMutableMapTests extends WordSpec with ShouldMatchers with RichMaps {
   }
 }
 
-
 class BidirectionalMapTests extends TestNGSuite with ShouldMatchers {
   val bimap = BidirectionalHashMap.empty[Int, String]
   val counter = new AtomicInteger(0)

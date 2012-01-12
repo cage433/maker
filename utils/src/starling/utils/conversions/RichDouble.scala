@@ -20,11 +20,11 @@ trait RichDouble {
     def format(formatString: String, addSpace: Boolean = true, negativeBrackets: Boolean = true) = {
       val decimalFormat = new DecimalFormat(formatString)
       decimalFormat.setRoundingMode(RoundingMode.HALF_UP)
-      if (d < 0.0 && negativeBrackets) {
+      (if (d < 0.0 && negativeBrackets) {
         "(" + decimalFormat.format(d.abs) + ")"
       } else {
-        decimalFormat.format(d) + (if(addSpace) " " else "")
-      }
+        decimalFormat.format(d)
+      }) + (if(addSpace) " " else "")
     }
 
     /**

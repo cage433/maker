@@ -7,6 +7,7 @@ import java.lang.String
 import starling.utils.cache.CacheFactory.{StatsListener, Stats, Cache, CacheImpl}
 import java.util.concurrent._
 import collection.JavaConversions._
+import starling.manager.Profiler
 
 class SimpleCacheImpl(val soft: Boolean) extends CacheImpl {
   private val caches:ConcurrentMap[String, FutureTask[SimpleCache]] = new MapMaker().concurrencyLevel(16).makeMap[String, FutureTask[SimpleCache]]
