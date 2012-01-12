@@ -312,6 +312,19 @@ import starling.quantity.RichQuantity._
     Quantity.average(List(1 (USD), 50 (US_CENT))) should be === (75 (US_CENT))
   }
 
+  @Test def minOrNamedQuantitiesShouldIncludeExplanation {
+    val left = 50(GBP)
+    val right = 0(GBP)
+
+    left min right should be === right
+
+    val namedLeft = left.named("left")
+    val namedRight = right.named("right")
+
+    val result = (namedLeft min namedRight).safeCast[FunctionNamedQuantity]
+    result should be === Some(FunctionNamedQuantity("min", List(namedLeft, namedRight), left min right))
+  }
+
   private def values = Quantity(12.34, UOM.USD) :: multiplicativeZeros ::: additiveZeros
   private def additiveZeros = List(Quantity.NULL, Quantity(0, UOM.NULL))
   private def multiplicativeZeros = List(Quantity.ONE, Quantity(1, UOM.SCALAR))
