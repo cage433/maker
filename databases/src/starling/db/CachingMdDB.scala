@@ -12,9 +12,9 @@ class CachingMdDB(adapted: MdDB) extends AdaptingMdDB(adapted) {
 
   override def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName,
     observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
-    marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
+    marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketDataRows)] = {
 
-    def filterInMemory(result: List[(TimedMarketDataKey, MarketData)]): List[(TimedMarketDataKey, MarketData)] = {
+    def filterInMemory(result: List[(TimedMarketDataKey, MarketDataRows)]): List[(TimedMarketDataKey, MarketDataRows)] = {
       val truePredicate = (e: TimedMarketDataKey) => true
 
       val observationDayPredicate =
@@ -39,7 +39,7 @@ class CachingMdDB(adapted: MdDB) extends AdaptingMdDB(adapted) {
       (observationDays, observationTimes, marketDataKeys) match {
         case (None, None, None) => cache.memoizeZ(allDataKey) { _ => super.query(version, mds, marketDataType, None, None, None) }
         case _ => {
-          cache.get[allDataKey.type, List[(TimedMarketDataKey, MarketData)]](allDataKey).fold(allData => filterInMemory(allData),
+          cache.get[allDataKey.type, List[(TimedMarketDataKey, MarketDataRows)]](allDataKey).fold(allData => filterInMemory(allData),
             super.query(version, mds, marketDataType, observationDays, observationTimes, marketDataKeys))
         }
       }

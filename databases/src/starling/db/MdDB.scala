@@ -9,18 +9,18 @@ import collection.immutable.{Iterable, Map}
 import scalaz.Scalaz._
 import starling.richdb.RichResultSetRow
 
-object MdDB {
-  def apply(db: DBTrait[RichResultSetRow]): MdDB = if (false) {
-    val fast = VersionTransformingMdDB(new NewSchemaMdDB(db, new MarketDataTypes(ReferenceDataLookup.Null)), db).toIdentity
-    val slow = VersionTransformingMdDB(new SlowMdDB(db), db).reverse
-
-    VerifyingDynamicProxy.create(fast, slow, throwFailures = false)
-  } else {
-
-    new SlowMdDB(db)
-//    new NewSchemaMdDB(db)
-  }
-}
+//object MdDB {
+//  def apply(db: DBTrait[RichResultSetRow]): MdDB = if (false) {
+//    val fast = VersionTransformingMdDB(new NewSchemaMdDB(db, new MarketDataTypes(ReferenceDataLookup.Null)), db).toIdentity
+//    val slow = VersionTransformingMdDB(new SlowMdDB(db), db).reverse
+//
+//    VerifyingDynamicProxy.create(fast, slow, throwFailures = false)
+//  } else {
+//
+//    new SlowMdDB(db)
+////    new NewSchemaMdDB(db)
+//  }
+//}
 
 trait MdDB {
   def checkIntegrity(): Unit
@@ -39,7 +39,7 @@ trait MdDB {
 
   def query(version: Int, mds: List[MarketDataSet], marketDataType: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]], observationTimes: Option[Set[ObservationTimeOfDay]],
-            marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)]
+            marketDataKeys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketDataRows)]
 
   def readLatest(id: MarketDataID): Option[VersionedMarketData]
   def latestVersionForAllMarketDataSets(): Map[MarketDataSet, Int] = latestVersionForMarketDataSets() ++ latestExcelVersions()

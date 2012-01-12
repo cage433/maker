@@ -5,7 +5,8 @@ import starling.daterange.Day
 import starling.utils.ImplicitConversions._
 import scalaz.Scalaz._
 import starling.db.MarketDataStore
-import starling.marketdata.{MarketData, TimedMarketDataKey, MarketDataKey, MarketDataTypeName}
+import starling.marketdata._
+import starling.pivot.Row
 
 trait MarketDataEventSource {
   type Key
@@ -47,9 +48,11 @@ abstract class AbstractMarketDataProvider[Key, MarketType, CurveType](marketData
   val marketDataType: MarketDataTypeName
   val marketDataKeys: Option[Set[MarketDataKey]]
 
-  def marketDataFor(pricingGroup: PricingGroup, version: Int, observationDay: Day) = marketDataFor(
-    marketDataStore.query(MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), SpecificMarketDataVersion(version)),
-      marketDataType, Some(Set(Some(observationDay))), None, marketDataKeys))
+  def marketDataFor(pricingGroup: PricingGroup, version: Int, observationDay: Day) = {
+    val x: List[(TimedMarketDataKey, MarketDataRows)] = marketDataStore.query(MarketDataIdentifier(MarketDataSelection(Some(pricingGroup)), SpecificMarketDataVersion(version)),
+      marketDataType, Some(Set(Some(observationDay))), None, marketDataKeys)
+    marketDataFor(x.map { case (key,rows) => key -> marketDataStore.marketDataTypes.fromName(key.key.typeName).createValue(rows.rows.map(Row(_)))})
+  }
 
   def marketDataFor(timedData: List[(TimedMarketDataKey, MarketData)]): NestedMap[Key, MarketType, CurveType]
 }

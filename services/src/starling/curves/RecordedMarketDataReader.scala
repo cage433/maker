@@ -23,12 +23,14 @@ class RecordedMarketDataReader(val identifier:String, recorded:List[(TimedMarket
     marketDataType: MarketDataTypeName,
     observationDays: Option[Set[Option[Day]]],
     observationTimes: Option[Set[ObservationTimeOfDay]],
-    keys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketData)] = {
+    keys: Option[Set[MarketDataKey]]): List[(TimedMarketDataKey, MarketDataRows)] = {
 
     recorded.filter(_.head.typeName == marketDataType).
     filter { case (timedKey,data) => observationDays.map( days => days.contains(timedKey.day)).getOrElse(true)}.
     filter { case (timedKey,data) => observationTimes.map( times => times.contains(timedKey.timeOfDay)).getOrElse(true)}.
-    filter { case (timedKey,data) => keys.map( ks => ks.contains(timedKey.key)).getOrElse(true) }
+    filter { case (timedKey,data) => keys.map( ks => ks.contains(timedKey.key)).getOrElse(true) }.
+    map { case (key,marketData) => (key, MarketDataRows(marketDataTypes.fromName(key.typeName).castRows(key.key, marketData).map(_.value).toList)) }
+
   }
 
   override def toString = identifier + "\n  " + recorded.mkString("\n  ")
