@@ -30,8 +30,9 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
 
     val allInventory = {
       val sw = new Stopwatch()
+      log.info("Loading Logistics inventory, assignments and quota data...")
       val inventory = logisticsServices.inventoryService.service.getAllInventory()
-      log.info("Loaded %d inventory in %s".format(inventory.associatedInventory.size, sw.toString))
+      log.info("Loaded %d inventory and %d quotas in %s".format(inventory.associatedInventory.size, inventory.associatedQuota.size, sw.toString))
       inventory
     }
 
@@ -59,8 +60,7 @@ case class TitanServiceCache(private val refData : TitanTacticalRefData,
     log.logWithTime("Took %d to get inv leaves", 10) {
       val allInventoryIds = edmInventoryItems.keySet
       val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentId.map(_.toString)}.toSet
-      val r = allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
-      r
+      allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
     }
   }
 
