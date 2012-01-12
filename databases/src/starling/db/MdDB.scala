@@ -4,23 +4,8 @@ import starling.marketdata._
 import starling.utils.ImplicitConversions._
 import starling.daterange._
 import java.lang.String
-import starling.utils._
-import collection.immutable.{Iterable, Map}
-import scalaz.Scalaz._
-import starling.richdb.RichResultSetRow
+import collection.immutable.Map
 
-//object MdDB {
-//  def apply(db: DBTrait[RichResultSetRow]): MdDB = if (false) {
-//    val fast = VersionTransformingMdDB(new NewSchemaMdDB(db, new MarketDataTypes(ReferenceDataLookup.Null)), db).toIdentity
-//    val slow = VersionTransformingMdDB(new SlowMdDB(db), db).reverse
-//
-//    VerifyingDynamicProxy.create(fast, slow, throwFailures = false)
-//  } else {
-//
-//    new SlowMdDB(db)
-////    new NewSchemaMdDB(db)
-//  }
-//}
 
 trait MdDB {
   def checkIntegrity(): Unit
