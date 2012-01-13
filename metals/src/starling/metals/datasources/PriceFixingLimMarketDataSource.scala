@@ -38,10 +38,6 @@ case class PriceFixingLimMarketDataSource(service: LIMService, emailService: Ema
   override def description = descriptionFor(sources)
   def read(day: Day) = Map(getValuesForType(earliestDayToImport(day), day, sources))
 
-  override def eventSources(marketDataStore: MarketDataStore) = {
-    List(new PriceFixingDataEventSource(PricingGroup.Metals, ReferenceInterestMarketDataProvider(marketDataStore)))
-  }
-
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     TaskDescription("Verify LME AMR1 Fixings Available", limDaily(LME.calendar, 12 H 30), notImplemented),
     TaskDescription("Verify LME OFFICIAL Fixings Available", limDaily(LME.calendar, 13 H 30), notImplemented),
@@ -106,21 +102,7 @@ object BloombergTokyoCompositeFXRates extends LimSource {
   }
 }
 
-case class PriceFixingDataEventSource(pricingGroup: PricingGroup,
-  provider: MarketDataProvider[(Day, String), UOM, PriceFixingsHistoryData]) extends PricingGroupMarketDataEventSource {
-
-  type Key = (Day, String)
-  type MarketType = UOM
-  type CurveType = PriceFixingsHistoryData
-
-  protected def marketDataEvent(change:MarketDataChange, key:(Day,String), marketTypes: List[UOM], snapshot:SnapshotIDLabel) = {
-    Some(ReferenceInterestRateDataEvent(change.observationDay, key._2, marketTypes, snapshot, change.isCorrection))
-  }
-
-  protected def marketDataProvider = Some(provider)
-}
-
-case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore)
+case class BrokenReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore)
   extends AbstractMarketDataProvider[(Day, String), UOM, PriceFixingsHistoryData](marketDataStore) {
 
   val marketDataType = PriceFixingsHistoryDataType.name

@@ -15,6 +15,8 @@ import starling.db.{NormalMarketDataReader, MarketDataStore}
 import starling.quantity.{Quantity, UOM}
 import collection.immutable.{Map, List}
 import org.joda.time.Period
+import starling.utils.ImplicitConversions
+import starling.databases.{MarketDataChange, PricingGroupMarketDataEventSource, MarketDataProvider, AbstractMarketDataProvider}
 
 
 case class ForwardRateLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
@@ -44,6 +46,10 @@ case class ForwardRateLimMarketDataSource(service: LIMService, emailService: Ema
 
     TaskDescription("Verify HIBOR Available", limDaily(SHFE.calendar, 11 H 00), notImplemented)
   ).filterNot(_.task == notImplemented)
+
+  override def eventSources(marketDataStore: MarketDataStore) = {
+    List(new ForwardRateDataEventSource(PricingGroup.Metals, ReferenceInterestMarketDataProvider(marketDataStore)))
+  }
 }
 
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailService: EmailService, template: Email)
@@ -84,3 +90,35 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailServ
   private def latestLimOnlyMarketDataReader(marketDataStore: MarketDataStore) = new NormalMarketDataReader(
     marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals))))
 }
+
+case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore)
+  extends AbstractMarketDataProvider[ForwardRateSource, UOM, Map[Tenor, Quantity]](marketDataStore) {
+
+  val marketDataType = ForwardRateDataType.name
+  val marketDataKeys = None
+
+  def marketDataFor(timedData: List[(TimedMarketDataKey, MarketData)]) = {
+    val x: List[(UOM, ImplicitConversions.NestedMap[ForwardRateSource, Tenor, Quantity])] = timedData.collect {
+      case (TimedMarketDataKey(_, ForwardRateDataKey(currency)), ForwardRateData(data)) => (currency, data)
+    }
+
+    val y: Map[UOM, Map[ForwardRateSource, Map[Tenor, Quantity]]] = x.toMap
+
+    y.flipNesting
+  }
+}
+
+case class ForwardRateDataEventSource(pricingGroup: PricingGroup,
+  provider: MarketDataProvider[ForwardRateSource, UOM, Map[Tenor, Quantity]]) extends PricingGroupMarketDataEventSource {
+
+  type Key = ForwardRateSource
+  type MarketType = UOM
+  type CurveType = Map[Tenor, Quantity]
+
+  protected def marketDataEvent(change: MarketDataChange, source: ForwardRateSource, currencies: List[UOM], snapshot: SnapshotIDLabel) = {
+    Some(ReferenceInterestRateDataEvent(change.observationDay, source.value, currencies, snapshot, change.isCorrection))
+  }
+
+  protected def marketDataProvider = Some(provider)
+}
+
