@@ -396,7 +396,7 @@ object Index {
     )
     yield (LmeCashSettlementIndex(market, level))
   }
-  def allView : List[Index] = provider.allIndexes ::: lmeIndicesView ::: BrentCFDSpreadIndex.all
+  def allView : List[Index] = provider.allIndexesView ::: lmeIndicesView ::: BrentCFDSpreadIndex.all
   def futuresMarketIndexesView : List[FuturesFrontPeriodIndex] = allView.flatMap{case i:FuturesFrontPeriodIndex => Some(i); case _ => None}
   def publishedIndexesView : List[PublishedIndex] = allView.flatMap{case i:PublishedIndex => Some(i); case _ => None}
   def formulaIndexesView : List[FormulaIndex] = allView.flatMap{case i:FormulaIndex => Some(i); case _ => None}

@@ -335,7 +335,7 @@ object Market {
   /**
    * Views of current markets
    */
-  def futuresMarketsView = provider.allFuturesMarkets
+  def futuresMarketsView = provider.allFuturesMarketsView
   def allMarketsView: List[CommodityMarket] = futuresMarketsView ::: Index.publishedIndexesView
 }
 

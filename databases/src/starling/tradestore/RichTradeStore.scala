@@ -25,7 +25,7 @@ import starling.utils.{STable, Log}
 import starling.utils.cache.CacheFactory
 import collection.immutable.{TreeMap, Map, Set, List}
 import scalaz.Scalaz._
-import collection.parallel.immutable.ParMap
+import starling.concurrent.MP._
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {
@@ -430,7 +430,7 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
       val pivotData = {
         Log.infoWithTime("Building pivot data") {
           val versions = readAll(timestamp, Some(expiryDay), marketDay = marketDay).values
-          versions.par.flatMap {
+          versions.mpFlatMap {
             case version => {
               val (trade, details) = TradeAndFields(version) |> (v => (v.trade, v.fields))
               tradeableTypes += trade.tradeable.tradeableType
@@ -494,7 +494,7 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
   def utps(timestamp: Timestamp, marketDay: Day, expiryDay: Day, predicate: TradePredicate, utpPartitioningFields: List[PField]): Map[UTPIdentifier, UTP] = Log.infoWithTime("Creating UTPs") {
     val filter = fromPredicate(predicate)
     val versions = readAll(timestamp, Some(expiryDay), marketDay = Some(marketDay)).values
-    val a = versions.par.flatMap {
+    val a = versions.mpFlatMap {
       case version => {
         val (trade, details) = TradeAndFields(version) |> (v => (v.trade, v.fields))
         val joinedTradeAttributeDetails = joiningTradeAttributeFieldValues(trade.attributes)

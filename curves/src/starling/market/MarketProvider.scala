@@ -6,20 +6,16 @@ import concurrent.stm._
 import starling.utils.ImplicitConversions._
 
 trait MarketLookup {
-  def allMarkets:List[Market]
+  def initial: (List[Market], List[Index])
 
-  def allIndexes:List[Index]
-
-  /**
-   * This should be called if markets change
-   */
-  def changed() = atomic {
+  def changed(allMarkets:List[Market], allIndexes:List[Index]): Unit = atomic {
     implicit txn => stored() = Stored(allMarkets, allIndexes)
   }
 
-  private lazy val stored = Ref(Stored(allMarkets, allIndexes))
+  protected lazy val stored: Ref[Stored] = Ref(Stored.apply _ tupled initial)
+  protected def storedInstance = stored.single()
 
-  private case class Stored(allMarkets:List[Market], allIndexes:List[Index]) {
+  protected case class Stored(allMarkets:List[Market], allIndexes:List[Index]) {
     lazy val marketNameMap = allMarkets.map(m => m.name.toLowerCase -> m).toMap
 
     lazy val marketEAIMap = allMarkets.flatMap {
@@ -51,32 +47,36 @@ trait MarketLookup {
     }.toMap
   }
 
-  protected[market] def futuresMarket(name:String):Option[FuturesMarket] = getAsType(stored.single().marketNameMap, name.toLowerCase, classOf[FuturesMarket])
+  protected[market] def futuresMarket(name:String):Option[FuturesMarket] = {
+    getAsType(storedInstance.marketNameMap, name.toLowerCase, classOf[FuturesMarket])
+  }
 
-  protected[market] def futuresMarket(eaiQuoteID:Int):Option[FuturesMarket] = getAsType(stored.single().marketEAIMap, eaiQuoteID, classOf[FuturesMarket])
+  protected[market] def futuresMarket(eaiQuoteID:Int):Option[FuturesMarket] = getAsType(storedInstance.marketEAIMap, eaiQuoteID, classOf[FuturesMarket])
 
-  protected[market] def futuresSpreadMarket(name:String):Option[FuturesSpreadMarket] = getAsType(stored.single().marketNameMap, name.toLowerCase, classOf[FuturesSpreadMarket])
+  protected[market] def futuresSpreadMarket(name:String):Option[FuturesSpreadMarket] = getAsType(storedInstance.marketNameMap, name.toLowerCase, classOf[FuturesSpreadMarket])
 
-  protected[market] def futuresSpreadMarket(eaiQuoteID:Int):Option[FuturesSpreadMarket] = getAsType(stored.single().marketEAIMap, eaiQuoteID, classOf[FuturesSpreadMarket])
+  protected[market] def futuresSpreadMarket(eaiQuoteID:Int):Option[FuturesSpreadMarket] = getAsType(storedInstance.marketEAIMap, eaiQuoteID, classOf[FuturesSpreadMarket])
 
-  private def getAsType[K, V <: AnyRef, R](map:Map[K, V], key:K, klass:Class[_]):Option[R] = map.get(key) match {
+  protected def getAsType[K, V <: AnyRef, R](map:Map[K, V], key:K, klass:Class[_]):Option[R] = map.get(key) match {
     case Some(v) if klass.isAssignableFrom(v.getClass) => Some(v.asInstanceOf[R])
     case None => None
     case Some(v) => throw new Exception("Not the right type: " +(v, v.getClass, klass))
   }
 
-  protected[market] def index(name:String):Option[Index] = stored.single().indexNameMap.get(name.toLowerCase)
+  protected[market] def index(name:String):Option[Index] = storedInstance.indexNameMap.get(name.toLowerCase)
 
-  protected[market] def index(eaiQuoteID:Int):Option[Index] = stored.single().indexEAIMap.get(eaiQuoteID)
+  protected[market] def index(eaiQuoteID:Int):Option[Index] = storedInstance.indexEAIMap.get(eaiQuoteID)
 
-  protected[market] def allFuturesMarkets:List[FuturesMarket] = allMarkets.flatMap {
+  protected[market] def allIndexesView:List[Index] = storedInstance.allIndexes
+
+  protected[market] def allFuturesMarketsView:List[FuturesMarket] = storedInstance.allMarkets.flatMap {
     case f:FuturesMarket => Some(f)
     case _ => None
   }
 
-  protected[market] def getPublishedIndexForMarket(market:CommodityMarket):Option[PublishedIndex] = stored.single().marketToPublishedIndexMap.get(market)
+  protected[market] def getPublishedIndexForMarket(market:CommodityMarket):Option[PublishedIndex] = storedInstance.marketToPublishedIndexMap.get(market)
 
-  protected[market] def futuresMarketToIndex(market: FuturesMarket): Option[FuturesFrontPeriodIndex] = stored.single().marketToFrontPeriodIndexMap.get(market)
+  protected[market] def futuresMarketToIndex(market: FuturesMarket): Option[FuturesFrontPeriodIndex] = storedInstance.marketToFrontPeriodIndexMap.get(market)
 }
 
 trait MarketLookupCreator {

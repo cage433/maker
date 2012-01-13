@@ -20,7 +20,7 @@ object UOMType {
 
   /**
    * Returns a unique type. A unit built from this will never be convertible
-   * to another unit with separate logic (e.g. Day can't be converted to Month)
+   * to another unit without separate conversion logic.
    */
   def unique: UOMType = create()
 

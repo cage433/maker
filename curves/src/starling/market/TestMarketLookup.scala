@@ -52,4 +52,8 @@ case object TestMarketLookup extends MarketLookup {
     case Left(m:FuturesMarket) => Some(m)
     case _ => None
   }
+
+  def changed():Unit = changed(allMarkets, allIndexes)
+
+  def initial = (allMarkets, allIndexes)
 }

@@ -13,10 +13,12 @@ object EAIAndStarlingMarketCompare {
    * TODO only compares published indexes in detail at the moment
    */
   def compare(eai: EAIMarketLookup, starling: StarlingMarketLookup) {
+    val (allEAIMarkets, allEAIIndexes) = eai.initial
+    val (allStarlingMarkets, allStarlingIndexes) = starling.initial
     Log.infoWithTime("Comparing EAI and Starling markets") {
       {
-        val eaiIndexes = eai.allIndexes.toSet
-        val starlingIndexes = starling.allIndexes.toSet
+        val eaiIndexes = allEAIIndexes.toSet
+        val starlingIndexes = allStarlingIndexes.toSet
         val eaiExtras = eaiIndexes.map(_.eaiQuoteID) -- starlingIndexes.map(_.eaiQuoteID)
         if (eaiExtras.size > 0) {
           Log.warn("EAI has some extra indexes: " + eaiExtras.size + ", " + eaiExtras)
@@ -60,8 +62,8 @@ object EAIAndStarlingMarketCompare {
       println("")
 
       {
-        val eaiMarkets: Set[CommodityMarket] = eai.allMarkets.toSet.asInstanceOf[Set[CommodityMarket]]
-        val starlingMarkets: Set[CommodityMarket] = starling.allMarkets.toSet.asInstanceOf[Set[CommodityMarket]]
+        val eaiMarkets: Set[CommodityMarket] = allEAIMarkets.toSet.asInstanceOf[Set[CommodityMarket]]
+        val starlingMarkets: Set[CommodityMarket] = allStarlingMarkets.toSet.asInstanceOf[Set[CommodityMarket]]
         val eaiExtras = eaiMarkets.map(_.eaiQuoteID) -- starlingMarkets.map(_.eaiQuoteID)
         if (eaiExtras.size > 0) {
           Log.warn("EAI has some extra markets: " + eaiExtras)
