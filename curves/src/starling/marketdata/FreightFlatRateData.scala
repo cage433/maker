@@ -74,9 +74,6 @@ case class FreightFlatRateDataKey(market: CommodityMarket) extends MarketDataKey
 
   def humanName = market.name
 
-  override def unmarshallDB(dbValue: Any): marketDataType =
-    FreightFlatRateData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)
-
   def fields = Set(marketField, marketTenorField).map(_.field)
 }
 

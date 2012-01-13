@@ -104,9 +104,6 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   def typeName = PriceDataType.name
   def humanName = market.name
 
-  override def unmarshallDB(dbValue: Any): marketDataType =
-    PriceData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)
-
   def fields = market.safeCast[FuturesMarket].fold(_ => Set(exchangeField.field), Set.empty[Field]) ++
     Set(marketField, marketCommodityField, marketTenorField).map(_.field)
 }
