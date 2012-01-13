@@ -8,7 +8,7 @@ import java.io.{BufferedOutputStream, ByteArrayOutputStream, ByteArrayInputStrea
 import scala.ref.SoftReference
 import starling.manager.TimeTree
 
-class PageInfo(val page: Page, val pageResponse:PageResponse, val bookmark:Bookmark, var pageComponent:Option[PageComponent],
+class PageInfo(val page: Page, val pageResponse:SoftReference[PageResponse], val bookmark:Bookmark, var pageComponent:Option[PageComponent],
                var pageComponentSoft:SoftReference[PageComponent], var componentState:Option[ComponentState],
                var refreshPage:Option[(Page,Boolean)], val pageTime:Long,
                val timeTree:TimeTree,
