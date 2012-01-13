@@ -1,8 +1,10 @@
 package starling.utils
 
-import java.io._
+//import java.io.
 import collection.mutable.{HashMap, MapLike}
 import scalaz.Scalaz._
+import starling.instrument.utils.StarlingXStream
+import java.io.{ObjectOutputStream, FileOutputStream, FileInputStream, File}
 
 trait PersistentCollection{
   def file : File
@@ -10,11 +12,10 @@ trait PersistentCollection{
 
   protected def readCollection : Option[Object]= {
     if (file.exists) {
-      val fis = new FileInputStream(file)
-      val ins = new ObjectInputStream(fis)
-      val collection = ins.readObject()
-      ins.close();
-      Some(collection)
+      val fis: FileInputStream = new FileInputStream(file)
+      val text = org.apache.commons.io.IOUtils.toString(fis)
+      fis.close
+      Some(StarlingXStream.read(text).asInstanceOf[AnyRef])
     } else {
       None
     }
@@ -24,9 +25,8 @@ trait PersistentCollection{
   protected def persist{
     file.getParentFile().mkdirs()
     val fos = new FileOutputStream(file)
-    val out = new ObjectOutputStream(fos);
-    out.writeObject(collection)
-    out.close()
+    org.apache.commons.io.IOUtils.write(StarlingXStream.write(collection), fos)
+    fos.close()
   }
 }
 

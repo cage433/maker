@@ -118,6 +118,15 @@ trait IndexWithDailyPrices extends Index with KnownObservation {
       case _ => price
     }
   }
+
+  /**
+   * For serialization
+   */
+  def indexWithDailyPricesLabel : IndexWithDailyPricesLabel
+}
+
+trait IndexWithDailyPricesLabel {
+  def index : IndexWithDailyPrices
 }
 
 /**
@@ -210,6 +219,10 @@ trait SingleIndex extends IndexWithDailyPrices with FixingHistoryLookup {
   def indexes = Set(this)
 }
 
+case class PublishedIndexLabel(name : String) extends IndexWithDailyPricesLabel{
+  def index = Index.publishedIndexFromName(name)
+}
+
 case class PublishedIndex(
   override val name: String,
   override val eaiQuoteID: Option[Int],
@@ -224,6 +237,8 @@ case class PublishedIndex(
   override val level: Level = Level.Mid) extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, Day, commodity, conversions, limSymbol, precision) with SingleIndex
 {
   type marketType = CommodityMarket
+
+  def indexWithDailyPricesLabel = PublishedIndexLabel(name)
 
   override def isObservationDay(day: Day): Boolean = super[SingleIndex].isObservationDay(day)
 
@@ -266,6 +281,10 @@ case class PublishedIndex(
   }
 }
 
+case class FuturesFrontPeriodIndexLabel(name : String) extends IndexWithDailyPricesLabel{
+  def index = Index.futuresFrontPeriodIndexFromName(name)
+}
+
 case class FuturesFrontPeriodIndex(
   marketName: String,
   override val eaiQuoteID: Option[Int],
@@ -278,6 +297,9 @@ case class FuturesFrontPeriodIndex(
   def futuresMarket = market
   val name = marketName
   lazy val level = market.exchange.fixingLevel
+
+
+  def indexWithDailyPricesLabel = FuturesFrontPeriodIndexLabel(name)
 
   def observedPeriod(observationDay : Day) : DateRange = {
     val frontMonth = market.frontPeriod(observationDay.addBusinessDays(market.businessCalendar, rollBeforeDays))
@@ -494,8 +516,16 @@ trait LMESingleIndex extends SingleIndex {
   def observedOptionPeriod(observationDay: Day) = throw new Exception("Options not supported for LME indices")
   override def observationTimeOfDay = ObservationTimeOfDay.LME_Official
 }
+
+case class LmeCashSettlementIndexLabel(marketName : String, level : Level) extends IndexWithDailyPricesLabel{
+  def index = LmeCashSettlementIndex(Market.futuresMarketFromName(marketName), level)
+}
+
 case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends LMESingleIndex {
   val name = "LME " + market.commodity + " cash " + level.name
+
+
+  def indexWithDailyPricesLabel = LmeCashSettlementIndexLabel(market.name, level)
 
   def observedPeriod(day : Day) = {
     assert(isObservationDay(day), day + " is not an observation day for " + this)
@@ -507,8 +537,15 @@ case class LmeCashSettlementIndex(market : FuturesMarket, level : Level) extends
   override def observationTimeOfDay = ObservationTimeOfDay.LME_Official
 }
 
+case class LmeThreeMonthIndexLabel(marketName : String, level : Level) extends IndexWithDailyPricesLabel{
+  def index = LmeThreeMonthIndex(Market.futuresMarketFromName(marketName), level)
+}
+
 case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LMESingleIndex{
   val name = "LME " + market.commodity + " 3m " + level.name
+
+
+  def indexWithDailyPricesLabel = LmeThreeMonthIndexLabel(market.name, level)
 
   def observedPeriod(day : Day) = {
     assert(isObservationDay(day), day + " is not an observation day for " + this)
@@ -518,11 +555,15 @@ case class LmeThreeMonthIndex(market : FuturesMarket, level : Level) extends LME
   def storedFixingPeriodForDay(day: Day) = StoredFixingPeriod.tenor(Tenor.ThreeMonths)
 }
 
+case class LmeLowestOfFourIndexLabel(marketName : String) extends IndexWithDailyPricesLabel{
+  def index = LmeLowestOfFourIndex(Market.futuresMarketFromName(marketName))
+}
+
 case class LmeLowestOfFourIndex(market : FuturesMarket) extends IndexWithDailyPrices {
   private val cashIndex = LmeCashSettlementIndex(market, Level.Bid)
   private val threeMonthIndex = LmeThreeMonthIndex(market, Level.Bid)
 
-  //override def level(observationDay : Day) = Level.Bid
+  def indexWithDailyPricesLabel = LmeLowestOfFourIndexLabel(market.name)
 
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     cashIndex.provideFixingOrForwardPrice(env, observationDay) min threeMonthIndex.provideFixingOrForwardPrice(env, observationDay)
@@ -531,11 +572,18 @@ case class LmeLowestOfFourIndex(market : FuturesMarket) extends IndexWithDailyPr
   val name = "LME " + market.commodity + " low 4"
 }
 
+case class LmeAverageOfFourIndexLabel(marketName : String) extends IndexWithDailyPricesLabel{
+  def index = LmeAverageOfFourIndex(Market.futuresMarketFromName(marketName))
+}
+
 case class LmeAverageOfFourIndex(market : FuturesMarket) extends IndexWithDailyPrices {
   private val cashBidIndex = LmeCashSettlementIndex(market, Level.Bid)
   private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
   private val threeMonthBidIndex = LmeThreeMonthIndex(market, Level.Bid)
   private val threeMonthAskIndex = LmeThreeMonthIndex(market, Level.Ask)
+
+
+  def indexWithDailyPricesLabel = LmeAverageOfFourIndexLabel(market.name)
 
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     Quantity.average(
@@ -546,9 +594,16 @@ case class LmeAverageOfFourIndex(market : FuturesMarket) extends IndexWithDailyP
   val name = "LME " + market.commodity + " average 4"
 }
 
+case class LmeAve4MaxSettIndexLabel(marketName : String) extends IndexWithDailyPricesLabel{
+  def index = LmeAve4MaxSettIndex(Market.futuresMarketFromName(marketName))
+}
+
 case class LmeAve4MaxSettIndex(market : FuturesMarket) extends IndexWithDailyPrices {
   private val ave4Index = LmeAverageOfFourIndex(market)
   private val cashAskIndex = LmeCashSettlementIndex(market, Level.Ask)
+
+  def indexWithDailyPricesLabel = LmeAve4MaxSettIndexLabel(market.name)
+
   def indexes = ave4Index.indexes ++ cashAskIndex.indexes
   def provideFixingOrForwardPrice(env : Environment, observationDay : Day) : Quantity = {
     // Despite the misleading name for this index, it is actually a minimum
@@ -573,6 +628,8 @@ object ShfeVwapMonthIndex {
  * Wraps a normal front futures market with handling for end of month official month vwap price fixings
  */
 case class ShfeVwapMonthIndex(marketName : String, market : FuturesMarket) extends SingleIndex {
+
+  def indexWithDailyPricesLabel = null
 
   def level = Level.VwapMonthIndexLevel
 

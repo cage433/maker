@@ -39,10 +39,8 @@ case class Inventory(item: InventoryItem) {
 class TitanSystemOfRecord(manager : TitanTradeStoreManager)
   extends SystemOfRecord with Log {
 
-  // TODO Louis - 21.12.2011
-  // This should be fixed so that it doesn't store trades in the tradestore
-  def allTrades : Seq[Trade] = {
-    manager.updateTradeStore("allTrade import request")
+   def allTrades : Seq[Trade] = {
+    manager.reimportAllTrades
     val allTrades = manager.allStarlingTrades
     val duplicates = allTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
     assert(duplicates.isEmpty, "duplicates found: \n" + duplicates.mkString("\n"))

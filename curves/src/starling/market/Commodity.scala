@@ -9,7 +9,7 @@ import starling.marketdata.{GradeAreaBenchmarkMarketDataKey, MarketDataKey, Coun
 import starling.utils.Log
 
 
-trait Commodity {
+trait Commodity extends Serializable{
   def hasRepresentativeMarket = Commodity.hasStandardFuturesMarket(this)
   lazy val representativeMarket = Commodity.standardFuturesMarket(this)
   lazy val standardFuturesUOM = Commodity.standardFuturesUOM(this)

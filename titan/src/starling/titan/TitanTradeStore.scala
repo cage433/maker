@@ -30,7 +30,7 @@ object TitanTradeStore {
   val contractFinalised_str = "Contract Finalised"
   val tolerancePlus_str = "Tolerance Plus"
   val toleranceMinus_str = "Tolerance Minus"
-  val eventIDs_str = "Event IDs" // The ids of the events that resulted in this version of the trade
+  val eventIDs_str = "Event ID" // The ids of the events that resulted in this version of the trade
 
   val labels = List(quotaID_str, assignmentID_str, titanTradeID_str,
                     inventoryID_str, groupCompany_str, comment_str,
@@ -55,7 +55,7 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     val contractFinalised = row.getString("ContractFinalised")
     val tolerancePlus = row.getPercentage("TolerancePlus")
     val toleranceMinus = row.getPercentage("ToleranceMinus")
-    val eventIDs = row.getString("EventIDs").split(",").toList
+    val eventIDs = row.getString("EventID").split(",").toList
 
     TitanTradeAttributes(quotaID, quotaQuantity, titanTradeID, groupCompany, comment, submitted, shape, contractFinalised, tolerancePlus, toleranceMinus, eventIDs)
   }

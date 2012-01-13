@@ -11,6 +11,7 @@ import starling.utils.ImplicitConversions._
 import util.matching.Regex
 import starling.marketdata.{PriceFixingsHistoryDataKey, MarketDataKey}
 import starling.quantity._
+import java.io.{ObjectInputStream, ObjectOutputStream}
 
 trait Market extends Ordered[Market]{
   val name: String
@@ -138,6 +139,7 @@ class FuturesMarket(
         ) extends CommodityMarket(name, lotSize, uom, currency, businessCalendar, eaiQuoteID, tenor, commodity, conversions, limSymbol, precision)
           with KnownExpiry {
   assert(commodity != null)
+
 
   /**
    * Trinity stores Futures periods as days, regardless of the market

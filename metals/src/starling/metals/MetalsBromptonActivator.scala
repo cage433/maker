@@ -76,7 +76,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val titanTradeStoreManager: TitanTradeStoreManager = {
       val manager = TitanTradeStoreManager(
-        TitanServiceCache2(
+        TitanServiceCache(
           titanServices, titanServices, logisticsServices,
           new PersistentSet(props.QuotaDetailsCacheFile()),
           new PersistentMap(props.LogisticsInventoryCacheFile()),
