@@ -18,14 +18,15 @@ import collection.immutable.{List, Map}
 
 
 case class TitanServiceCache(
-  private val refData: TitanTacticalRefData,
-  private val edmTradeServices: TitanEdmTradeService,
+  private val edmTradeServices: TitanTradeMgmtServices,
   private val logisticsServices: TitanLogisticsServices,
   private val edmQuotaDetails: mutable.Set[TradeManagementQuotaDetails],
   private val edmInventoryItems: mutable.Map[String, LogisticsInventory],
   private val isQuotaFullyAllocated: mutable.Map[String, Boolean]
 
 ) extends Log with Startable {
+  def externalServicesAreReady: Boolean = edmTradeServices.servicesReady && logisticsServices.servicesReady
+
   type InventoryID = String
 
   private val lock = new Object
@@ -33,9 +34,9 @@ case class TitanServiceCache(
 //
   def rebuild{
     edmQuotaDetails.clear
-    edmQuotaDetails ++= edmTradeServices.getAllCompletedPhysicalTrades().flatMap{tr => TradeManagementQuotaDetails.buildListOfQuotaDetails(refData, tr, "Get All")}
+    edmQuotaDetails ++= edmTradeServices.getAllCompletedPhysicalTrades().flatMap{tr => TradeManagementQuotaDetails.buildListOfQuotaDetails(edmTradeServices, tr, "Get All")}
 
-    val allInventory = logisticsServices.inventoryService.service.getAllInventory()
+    val allInventory: LogisticsInventoryResponse = logisticsServices.getAllInventory()
 
     edmInventoryItems.clear
     edmInventoryItems ++= allInventory.associatedInventory.filter(i => i.status != CancelledInventoryItemStatus).map{inv => inv.id -> LogisticsInventory(inv, "Get All")}
@@ -89,7 +90,7 @@ case class TitanServiceCache(
   def updateInventory(inventoryID : String, eventID : String) {
     lock.synchronized{
 
-      val logisticsResponse: LogisticsInventoryResponse = logisticsServices.inventoryService.service.getInventoryById(inventoryID.toInt)
+      val logisticsResponse: LogisticsInventoryResponse = logisticsServices.getInventoryById(inventoryID.toInt)
       assert(logisticsResponse.associatedInventory.size == 1, "Expected a single piece of inventory")
       val newInventory = logisticsResponse.associatedInventory.head
 
@@ -120,13 +121,13 @@ case class TitanServiceCache(
       val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
 
       assert(newTrade.state == CompletedTradeState, "Unexpected state for trade " + newTrade.state + ", expected " + CompletedTradeState)
-      var quotaDetails = TradeManagementQuotaDetails.buildListOfQuotaDetails(refData, newTrade, eventID)
+      var quotaDetails = TradeManagementQuotaDetails.buildListOfQuotaDetails(edmTradeServices, newTrade, eventID)
       edmQuotaDetails ++= quotaDetails
       quotaDetails.flatMap(buildTradesForQuota)
     }
   }
 
-  private val forwardBuilder = new PhysicalMetalForwardBuilder(refData)
+  private val forwardBuilder = new PhysicalMetalForwardBuilder(edmTradeServices)
   def buildTradesForQuota(qd : TradeManagementQuotaDetails) : List[Trade] = {
     val quotaID = qd.quotaID
     val invItems = quotaIDToInventory.getOrElse(quotaID, Nil)
@@ -145,6 +146,8 @@ case class TitanServiceCache(
  * Manage the trade store trades via changes at trade, quota, inventory and assignment level
  */
 case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : TitanTradeStore, rabbitReadyFn: () => Unit) extends Log with Startable {
+  def externalServicesAreReady: Boolean = cache.externalServicesAreReady
+
 
   override def start = cache.start
 
@@ -303,23 +306,6 @@ case class TitanTradeStoreManager(cache : TitanServiceCache, titanTradeStore : T
     result
   }
 }
-
-//object TitanTradeStoreManager{
-  //<<<<<<< HEAD
-  //def apply(refData : TitanTacticalRefData, titanTradeStore : TitanTradeStore,
-    //edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices, rabbitReadyFn : () => Unit) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices, rabbitReadyFn), titanTradeStore)
-  //||||||| merged common ancestors
-  //def apply(refData : TitanTacticalRefData, titanTradeStore : TitanTradeStore,
-    //edmTradeServices : TitanEdmTradeService, logisticsServices : TitanLogisticsServices) : TitanTradeStoreManager = TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices), titanTradeStore)
-  //=======
-  //def apply(
-    //refData : TitanTacticalRefData,
-    //titanTradeStore : TitanTradeStore,
-    //edmTradeServices : TitanEdmTradeService,
-    //logisticsServices : TitanLogisticsServices
-    //) : TitanTradeStoreManager = null// TitanTradeStoreManager(TitanServiceCache(refData, edmTradeServices, logisticsServices), titanTradeStore)
-  //>>>>>>> Persisted external service data
-  //}
 
 case class TitanTradeUpdateResult(
       tradeStoreResults : StoreResults,

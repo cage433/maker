@@ -7,7 +7,7 @@ import starling.curves._
 import starling.manager._
 import starling.marketdata.{MarketDataTypes, ReferenceDataLookup}
 import starling.services.jmx.StarlingJMX
-import starling.services.rpc.logistics.{FileMockedTitanLogisticsServices, DefaultTitanLogisticsServices}
+import starling.services.rpc.logistics.{DefaultTitanLogisticsServices}
 import starling.services.rpc.valuation._
 import starling.metals.trinity.XRTGenerator
 import starling.services.trinity.{FCLGenerator}
@@ -32,8 +32,8 @@ import starling.calendar.{BusinessCalendar, BusinessCalendars}
 import com.trafigura.services.Logistics.LogisticsServiceApi
 import java.util.Timer
 import starling.daterange.{Notifier, TimedNotifier, TimeOfDay}
-import java.util.concurrent.ScheduledExecutorService
 import starling.titan._
+import java.util.concurrent.{FutureTask, ScheduledExecutorService}
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -70,14 +70,14 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
 
     val environmentProvider = new DefaultEnvironmentProvider(marketDataStore, referenceDataLookup)
 
-    val titanServices = context.awaitService(classOf[TitanServices])
+    val titanServices = context.awaitService(classOf[TitanTradeMgmtServices])
     val logisticsServices = context.awaitService(classOf[TitanLogisticsServices])
 
 
     val titanTradeStoreManager: TitanTradeStoreManager = {
       val manager = TitanTradeStoreManager(
         TitanServiceCache(
-          titanServices, titanServices, logisticsServices,
+          titanServices, logisticsServices,
           new PersistentSet(props.QuotaDetailsCacheFile()),
           new PersistentMap(props.LogisticsInventoryCacheFile()),
           new PersistentMap(props.IsQuotaFullyAllocatedCacheFile())
@@ -98,8 +98,33 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       val starlingDB = DB(props.StarlingDatabase( ))
       val rabbitEventDatabase = new DefaultRabbitEventDatabase(starlingDB, osgiBroadcaster)
 
-      titanRabbitEventServices.addClient(new TitanEventHandler(osgiBroadcaster, titanTradeStoreManager,
-        environmentProvider, rabbitEventDatabase))
+      new FutureTask(
+        new Runnable(){
+          var timeTillRetry = 1000
+          val maxTimeToRetry = 30 * 1000
+          def run() {
+            var externalServicesAreReady = false
+            while (! externalServicesAreReady){
+              val areNowReady = try {
+                titanTradeStoreManager.externalServicesAreReady
+              } catch {
+                case e => Log.warn("Error received when checking services are ready", e) ; false
+              }
+              if (areNowReady)
+                externalServicesAreReady = true
+              else {
+                Log.info("Titan services not ready - will retry in " + (timeTillRetry / 1000) + "(s)")
+                Thread.sleep(timeTillRetry)
+                timeTillRetry = (timeTillRetry * 2) min maxTimeToRetry
+              }
+            }
+            titanRabbitEventServices.addClient(new TitanEventHandler(osgiBroadcaster, titanTradeStoreManager,
+              environmentProvider, rabbitEventDatabase))
+          }
+        },
+        "No value returned"
+      ).run()
+
 
       context.registerService(classOf[RabbitEventDatabase], rabbitEventDatabase)
     }
@@ -151,7 +176,7 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       import com.trafigura.services.marketdata._
       import starling.services.rpc.marketdata._
       val marketDataService = new MarketDataService(marketDataStore, context.awaitService(classOf[Notifier]))
-      val logisticsService = new LogisticsService(titanServices, logisticsServices)
+      val logisticsService = new LogisticsService(logisticsServices)
 
       context.registerService(classOf[MarketDataServiceApi], marketDataService, ServiceProperties(ExportTitanRMIProperty, ExportTitanHTTPProperty))
       context.registerService(classOf[ExampleServiceApi], ExampleService, ServiceProperties(ExportTitanHTTPProperty))

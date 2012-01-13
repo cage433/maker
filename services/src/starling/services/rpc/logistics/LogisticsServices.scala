@@ -5,30 +5,30 @@ import org.jboss.resteasy.client.{ProxyFactory, ClientExecutor}
 import com.trafigura.edm.logistics.inventory._
 import com.trafigura.edm.trademgmt.physicaltradespecs.PhysicalTradeQuota
 import com.trafigura.edm.trademgmt.trades.{PhysicalTrade => EDMPhysicalTrade}
-import starling.services.rpc.refdata.FileMockedTitanServices
 import starling.titan.LogisticsServices._
 import starling.titan._
 import starling.services.rpc.FileUtils
 import org.codehaus.jettison.json.JSONObject
 import starling.props.{PropsHelper, Props}
-import com.trafigura.edm.common.units.TitanId
+import starling.utils.Log
+import starling.services.rpc.refdata.{ExternalTitanService, FileMockedTitanServices}
 
 
 /**
  * logistics service interface
  */
-case class DefaultTitanLogisticsServices(props: Props) extends TitanLogisticsServices {
-  val inventoryService = DefaultTitanLogisticsInventoryServices(props)
-}
-
-case class DefaultTitanLogisticsInventoryServices(props: Props) extends TitanLogisticsInventoryServices {
+case class DefaultTitanLogisticsServices(props: Props) extends TitanLogisticsServices with ExternalTitanService{
 
   import JMXEnabler._
+
+
+  def serviceLocations = List(props.LogisticsServiceLocation())
+
   private val rmetadminuser = props.ServiceInternalAdminUser()
   private val logisticsServiceURL = props.TitanLogisticsServiceUrl()
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
-  lazy val service : EdmInventoryServiceWithGetAllInventory =
+  lazy val inventoryService : EdmInventoryServiceWithGetAllInventory =
     new EdmInventoryServiceResourceProxy(ProxyFactory.create(classOf[EdmInventoryServiceResource], logisticsServiceURL, clientExecutor)) {
 
       def getAllInventory() : LogisticsInventoryResponse = {
@@ -36,42 +36,35 @@ case class DefaultTitanLogisticsInventoryServices(props: Props) extends TitanLog
         getInventoryByGroupCompanyId("*")
       }
     }
+
+  def getAllInventory() = inventoryService.getAllInventory()
+
+  def getInventoryById(inventoryId: Int) = inventoryService.getInventoryById(inventoryId)
 }
 
 
-/**
- * service mocks...
- */
-case class FileMockedTitanLogisticsServices() extends TitanLogisticsServices {
-  val inventoryService = FileMockedTitanLogisticsInventoryServices()
-}
+case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsServices {
 
-case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInventoryServices {
   import FileUtils._
-  import LogisticServices._
-  println("starting file mocked titan logistics services")
+  Log.debug("starting file mocked titan logistics services")
+
+  def servicesReady = true
+
   private val inventoryFile = "/tests/valuationservice/testdata/logisticsEdmInventory.json"
   private val inventoryPath = getFileUrl(inventoryFile)
   private val loadedInventory = loadJsonValuesFromFileUrl(inventoryPath).map(s => LogisticsInventoryResponse.fromJson(new JSONObject(s)).asInstanceOf[LogisticsInventoryResponse]).head
   
   private var inventoryMap : Map[String, InventoryItem] = loadedInventory.associatedInventory.map(i => i.oid.contents.toString -> i).toMap
   private val quotaMap : Map[String, LogisticsQuota] = loadedInventory.associatedQuota.map(q => q.quotaName -> q).toMap
+  def getAllInventory() : LogisticsInventoryResponse = loadedInventory
 
-  lazy val service : EdmInventoryServiceWithGetAllInventory = new EdmInventoryService() {
-    def getInventoryById(inventoryId : Int) : LogisticsInventoryResponse = {
-      val i = inventoryMap(inventoryId.toString) // mimick service by throwing an exception on not found
-      LogisticsInventoryResponse(
-        associatedQuota = List(quotaMap(i.purchaseAssignment.quotaName)) ::: Option(i.salesAssignment).map(sa => quotaMap(sa.quotaName)).toList,
-        associatedInventory = List(i)
-      )
-    }
-
-    def getInventoryTreeByPurchaseQuotaId(quotaId : String) : LogisticsInventoryResponse = null //inventoryMap.values.toList.filter(_.purchaseAssignment.quotaName == quotaId)
-    def getInventoryByGroupCompanyId(groupCompanyMappingCode : String) = loadedInventory
-    def getAllInventory() : LogisticsInventoryResponse = getInventoryByGroupCompanyId("")
-    def getAllInventoryItems() : List[InventoryItem] = inventoryMap.values.toList
-    def getInventoryTreeByPurchaseQuotaTitanId(id : TitanId) : LogisticsInventoryResponse = null
-  }
+  def getInventoryById(id : Int) = {
+        val i = inventoryMap(id.toString) // mimick service by throwing an exception on not found
+        LogisticsInventoryResponse(
+          associatedQuota = List(quotaMap(i.purchaseAssignment.quotaName)) ::: Option(i.salesAssignment).map(sa => quotaMap(sa.quotaName)).toList,
+          associatedInventory = List(i)
+        )
+      }
 
   def updateInventory(item : InventoryItem) {
     inventoryMap = inventoryMap.updated(item.oid.contents.toString, item)
@@ -82,13 +75,12 @@ case class FileMockedTitanLogisticsInventoryServices() extends TitanLogisticsInv
 /**
  * generates mock service data for logistics mock services
  */
-case class LogisticsJsonMockDataFileGenerator(titanEdmTradeService : TitanServices, logisticsServices : TitanLogisticsServices) {
+case class LogisticsJsonMockDataFileGenerator(titanEdmTradeService : TitanTradeMgmtServices, logisticsServices : TitanLogisticsServices) {
   import FileUtils._
   val fileOutputPath = "/tmp"
   val inventoryFilePath = fileOutputPath + "/logisticsEdmInventory.json"
 
-  val inventoryService = logisticsServices.inventoryService.service
-  val trades : List[EDMPhysicalTrade] = titanEdmTradeService.titanGetEdmTradesService.getAll().results.map(_.trade).filter(_ != null).map(_.asInstanceOf[EDMPhysicalTrade])
+  val trades : List[EDMPhysicalTrade] = titanEdmTradeService.getAllCompletedPhysicalTrades()
 
   val purchaseQuotas : List[PhysicalTradeQuota] = trades.filter(_.direction == "P").flatMap(t => t.quotas)
   val allQuotasMap = trades.flatMap(t => t.quotas.map(q => NeptuneId(q.detail.identifier.value).identifier -> q))
@@ -96,7 +88,7 @@ case class LogisticsJsonMockDataFileGenerator(titanEdmTradeService : TitanServic
   val quotaIds = purchaseQuotas.map(q => NeptuneId(q.detail.identifier.value).identifier).filter(id => id != null)
   println("quotaIds count %d".format(quotaIds.size))
 
-  val inventory = inventoryService.getAllInventory()
+  val inventory = logisticsServices.getAllInventory()
   println("Inventory, loaded %d associated inventory items and %d associated quotas".format(inventory.associatedInventory.size, inventory.associatedQuota.size))
   writeJson(inventoryFilePath, List(inventory))
 }

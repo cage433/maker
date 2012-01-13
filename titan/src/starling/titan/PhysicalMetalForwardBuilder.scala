@@ -42,11 +42,11 @@ object TradeManagementQuotaDetails{
     detail.deliverySpecs.head
   }
 
-  def buildListOfQuotaDetails(refData: TitanTacticalRefData, trade : EDMPhysicalTrade, eventID : String) : List[TradeManagementQuotaDetails] = {
+  def buildListOfQuotaDetails(refData: TitanTradeMgmtServices, trade : EDMPhysicalTrade, eventID : String) : List[TradeManagementQuotaDetails] = {
     trade.quotas.map{q => apply(refData, trade, q.detail, eventID)}
   }
 
-  def apply(refData: TitanTacticalRefData, trade : EDMPhysicalTrade, detail : QuotaDetails, eventID : String) : TradeManagementQuotaDetails = {
+  def apply(refData: TitanTradeMgmtServices, trade : EDMPhysicalTrade, detail : QuotaDetails, eventID : String) : TradeManagementQuotaDetails = {
     import refData._
     val deliverySpec_ = deliverySpec(detail)
     val commodityGUID: GUID = deliverySpec_.materialSpec.asInstanceOf[CommoditySpec].commodity
@@ -107,7 +107,7 @@ object TradeManagementQuotaDetails{
     )
   }
 
-  def buildTradeAttributes(refData: TitanTacticalRefData, trade : EDMPhysicalTrade, detail : QuotaDetails, eventID : String) : TitanTradeAttributes = {
+  def buildTradeAttributes(refData: TitanTradeMgmtServices, trade : EDMPhysicalTrade, detail : QuotaDetails, eventID : String) : TitanTradeAttributes = {
     import refData._
     val deliverySpec_ = {
       assert(detail.deliverySpecs.size == 1, "Requires there to be a single delivery spec")
@@ -209,7 +209,7 @@ object LogisticsInventory{
   }
 }
 
-class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData) extends Log{
+class PhysicalMetalForwardBuilder(refData: TitanTradeMgmtServices) extends Log{
 
   def build(tmqd : TradeManagementQuotaDetails, inventoryItems : List[LogisticsInventory], isFullyAllocated : Boolean) : List[Trade] = {
 

@@ -57,39 +57,35 @@ object LogisticsServices {
   }
 }
 
-import LogisticsServices._
-
-trait TitanLogisticsInventoryServices extends ServiceProxy[EdmInventoryServiceWithGetAllInventory]
-
 trait ServiceProxy[T] {
   val service : T
 }
 
-trait TitanLogisticsServices {
-  val inventoryService : TitanLogisticsInventoryServices
+trait TitanServices{
+  def servicesReady : Boolean
+}
+trait TitanLogisticsServices extends TitanServices with Log{
+  def getAllInventory() : LogisticsInventoryResponse
+  def getInventoryById(inventoryId : Int) : LogisticsInventoryResponse
+
 }
 
+trait TitanTradeMgmtServices extends TitanServices with Log {
 
-/**
- * Tactical ref data, service proxies / data
- *   also includes the trademgmt EDM trade serivce, this should be refactored to  separate out at some point
- */
-trait TitanTacticalRefData {
 
   val edmMetalByGUID: Map[GUID, Metal]
   val futuresExchangeByID: Map[String, Market]
   val counterpartiesByGUID: Map[GUID, Counterparty]
-  val shapesByGUID : Map[GUID, Shape]
-  val gradeByGUID : Map[GUID, Grade]
-  val locationsByGUID : Map[GUID, Location]
-  val destLocationsByGUID : Map[GUID, DestinationLocation]
-  val groupCompaniesByGUID : Map[GUID, GroupCompany]
-}
+  val shapesByGUID: Map[GUID, Shape]
+  val gradeByGUID: Map[GUID, Grade]
+  val locationsByGUID: Map[GUID, Location]
+  val destLocationsByGUID: Map[GUID, DestinationLocation]
+  val groupCompaniesByGUID: Map[GUID, GroupCompany]
 
-trait TitanEdmTradeService extends Log {
-  val titanGetEdmTradesService : EdmGetTrades
 
- def getTrade(id : TitanId) : EDMPhysicalTrade = {
+  val titanGetEdmTradesService: EdmGetTrades
+
+  def getTrade(id: TitanId): EDMPhysicalTrade = {
     try {
       val trade = titanGetEdmTradesService.get(id).asInstanceOf[EDMPhysicalTrade]
 
@@ -100,11 +96,11 @@ trait TitanEdmTradeService extends Log {
       trade
     }
     catch {
-      case e : Throwable => throw new ExternalTitanServiceFailed(e)
+      case e: Throwable => throw new ExternalTitanServiceFailed(e)
     }
   }
 
-  def getAllCompletedPhysicalTrades() : List[EDMPhysicalTrade] = {
+  def getAllCompletedPhysicalTrades(): List[EDMPhysicalTrade] = {
     try {
       val sw = new Stopwatch()
       log.info("Calling EDM Trade service")
@@ -116,7 +112,9 @@ trait TitanEdmTradeService extends Log {
       log.info("Got Edm Trade results, trade result count = " + edmTradeResult.results.size)
 
       val edmTrades = edmTradeResult.results.filter(_.error == null).map(_.trade)
-        .collect({ case t : EDMPhysicalTrade if (t != null) => t }).filter(pt => pt.state == CompletedTradeState)
+        .collect({
+        case t: EDMPhysicalTrade if (t != null) => t
+      }).filter(pt => pt.state == CompletedTradeState)
 
       val dupTrades = edmTrades.groupBy(_.identifier)
       assert(!dupTrades.exists(_._2.size > 1), "Duplicate trade Ids received from EDM trade service, ".format(dupTrades.keys.mkString(", ")))
@@ -129,9 +127,9 @@ trait TitanEdmTradeService extends Log {
       edmTrades
     }
     catch {
-      case e : Throwable => {
+      case e: Throwable => {
         e.getCause match {
-          case _ : TradeManagementCacheNotReady => {
+          case _: TradeManagementCacheNotReady => {
             Log.error("Trade management cache not ready")
             Nil
           }
@@ -142,6 +140,5 @@ trait TitanEdmTradeService extends Log {
   }
 }
 
-trait TitanServices extends TitanTacticalRefData with TitanEdmTradeService
 
 class ExternalTitanServiceFailed(cause : Throwable) extends Exception(cause)

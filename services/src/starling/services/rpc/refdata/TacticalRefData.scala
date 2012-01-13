@@ -7,22 +7,59 @@ import org.codehaus.jettison.json.JSONObject
 import com.trafigura.edm.trademgmt.trade._
 import com.trafigura.edm.trademgmt.trades.{Trade, PhysicalTrade => EDMPhysicalTrade}
 import com.trafigura.tradinghub.support.GUID
-import starling.titan.TitanServices
 import com.trafigura.trademgmt.internal.refinedmetal.{Counterparty, Metal, Market, Shape, Grade, Location, DestinationLocation, GroupCompany}
 import com.trafigura.timer.Timer
 import com.trafigura.edm.common.units.TitanId
 import starling.utils.conversions.RichMapWithErrors._
 import com.trafigura.trademgmt.internal.refinedmetalreferencedata._
 import org.joda.time.DateTime
+import dispatch.Http
+import java.net.URL
+import dispatch.:/._
+import starling.titan.{JMXEnabler, TitanTradeMgmtServices}
+import starling.utils.Log
+import org.apache.commons.httpclient.methods.GetMethod
+import org.apache.commons.httpclient.params.HttpMethodParams
+import org.apache.commons.httpclient.{DefaultHttpMethodRetryHandler, HttpClient}
 
+
+trait ExternalTitanService{
+  private def isReady(serviceLocation : String) : Boolean = {
+    Log.info("Checking if service " + serviceLocation + " is ready")
+    val isReady = try {
+      val url : String = serviceLocation + "/info"
+      val client = new HttpClient()
+
+      val method = new GetMethod(url)
+
+      method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
+        new DefaultHttpMethodRetryHandler(3, false))
+
+      client.executeMethod(method)
+
+      val statusLine = method.getStatusLine()
+      statusLine.getStatusCode() == 200
+    } catch {
+      case e =>
+        Log.error("Service " + serviceLocation + " error", e)
+        false
+    }
+    Log.info("Service " + serviceLocation + (if (isReady) " is" else " not") + " available")
+    isReady
+  }
+  def serviceLocations : List[String]
+  def servicesReady() : Boolean = serviceLocations.forall(isReady(_))
+}
 /**
  * Tactical ref data, service proxies / data
  *   also includes the trademgmt EDM trade serivce, this should be refactored to separate out at some point
  */
-case class DefaultTitanServices(props: Props) extends TitanServices {
+case class DefaultTitanTradeMgmtServices(props: Props) extends ExternalTitanService with TitanTradeMgmtServices {
   val rmetadminuser = props.ServiceInternalAdminUser()
   val tradeServiceURL = props.EdmTradeServiceUrl()
   val refdataServiceURL = props.TacticalRefDataServiceUrl()
+
+  def serviceLocations = List(props.EdmTradeServiceLocation(), props.RefDataServiceLocation())
 
   private lazy val clientExecutor: ClientExecutor = new ComponentTestClientExecutor(rmetadminuser)
 
@@ -65,7 +102,7 @@ case class DefaultTitanServices(props: Props) extends TitanServices {
 /**
  * Looks like real ref-data, but really it comes from static data for testing purposes
  */
-case class FileMockedTitanServices() extends TitanServices {
+case class FileMockedTitanServices() extends TitanTradeMgmtServices {
 
   import starling.services.rpc.FileUtils._
 
@@ -73,6 +110,9 @@ case class FileMockedTitanServices() extends TitanServices {
   val tradesFile = getClass.getResource(resourcePath + "/allEdmTrades.json.zip") // "/edmTrades.json")
   val metalsFile = getClass.getResource(resourcePath + "/metals.json")
   val exchangesFile = getClass.getResource(resourcePath + "/exchanges.json")
+
+
+  def servicesReady = true
 
   val titanGetEdmTradesService : EdmGetTrades = new EdmGetTrades {
     def getAll() : TradeResults = new TradeResults() {

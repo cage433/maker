@@ -20,9 +20,9 @@ import java.util.concurrent.{ScheduledExecutorService, ScheduledThreadPoolExecut
 import starling.utils.NamedDaemonThreadFactory
 import starling.props.ServerTypeLabel
 import starling.services.rabbit.{DefaultTitanRabbitEventServices, TitanRabbitEventServices}
-import starling.services.rpc.refdata.DefaultTitanServices
+import starling.services.rpc.refdata.DefaultTitanTradeMgmtServices
 import starling.services.rpc.logistics.DefaultTitanLogisticsServices
-import starling.titan.{TitanLogisticsServices, TitanServices}
+import starling.titan.{TitanLogisticsServices, TitanTradeMgmtServices}
 
 class ServicesBromptonActivator extends BromptonActivator {
   def start(context: BromptonContext) {
@@ -120,7 +120,7 @@ class ServicesBromptonActivator extends BromptonActivator {
 
     if (props.ServerType() == ServerTypeLabel.FC2){
       context.registerService(classOf[TitanRabbitEventServices], new DefaultTitanRabbitEventServices(props))
-      context.registerService(classOf[TitanServices], new DefaultTitanServices(props))
+      context.registerService(classOf[TitanTradeMgmtServices], new DefaultTitanTradeMgmtServices(props))
       context.registerService(classOf[TitanLogisticsServices], new DefaultTitanLogisticsServices(props))
     }
 

@@ -5,7 +5,7 @@ import starling.manager.Memoize
 import starling.utils.cache.CacheFactory
 
 /**
- * Caches the result of all method calls unless they have the annotation @Memoize
+ * Caches the result of all method calls if they have the annotation @Memoize
  */
 object ThreadSafeCachingProxy{
   case class MethodInvocation(klass:String, method:String, args:List[Any])
