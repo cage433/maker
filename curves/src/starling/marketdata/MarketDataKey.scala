@@ -66,7 +66,7 @@ trait DBKey[K <: DBKey[K]] {
 
 case class MarketDataValueKey(id: Int, row: Row) extends DBKey[MarketDataValueKey] {
   lazy val dbMap: Map[String, Any] = Map("valueKey" → row.dbValue)
-  def sameValuesAs(that: MarketDataValueKey) = that.copy(id = id) == this
+  def sameValuesAs(that: MarketDataValueKey) = row == that.row
   def fields = row.fields
 }
 
