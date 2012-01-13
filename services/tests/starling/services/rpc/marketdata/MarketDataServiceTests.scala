@@ -1,7 +1,6 @@
 package starling.services.rpc.marketdata
 
 import starling.utils.{JMocker, StarlingSpec}
-import starling.services.rpc.valuation.EnvironmentProvider
 import com.trafigura.services.valuation.TitanMarketDataIdentifier
 import starling.utils.ImplicitConversions._
 import org.scalatest.matchers.ShouldMatchers
@@ -10,13 +9,12 @@ import org.jmock.Expectations._
 import starling.marketdata._
 import starling.quantity.{Quantity, UOMSymbol, UOM}
 import starling.titan.EDMConversions._
-import com.trafigura.services.TitanSerializableCurrency
 import com.trafigura.services.marketdata.{MarketDataServiceApi, SpotFXRate}
 import starling.gui.api.{PricingGroup, MarketDataIdentifier}
-import starling.market.Market
 import starling.daterange.{Location, ObservationTimeOfDay, Day, TemporalSpec}
 import starling.calendar.{WeekdayBusinessCalendar, Clock}
 import Day._
+import starling.pivot.Field
 
 class MarketDataServiceTests extends StarlingSpec with JMocker with TemporalSpec {
   import context._; import expectations._
@@ -26,8 +24,8 @@ class MarketDataServiceTests extends StarlingSpec with JMocker with TemporalSpec
 
     def between = try {
       rate.rate.uom.reverse |> (uom => (UOM.fromIdentifier(uom(1)), UOM.fromIdentifier(uom(-1))))
-    } catch { case _ =>
-      throw new Exception("Rate without numerator or denominator: " + rate)
+    } catch { case e =>
+      throw new Exception("Rate without numerator or denominator: " + rate, e)
     }
   }
 
@@ -166,7 +164,7 @@ class MarketDataServiceTests extends StarlingSpec with JMocker with TemporalSpec
 
   private def dataFor(day: Day, currencies: Set[UOM]) = currencies.map { ccy =>
     TimedMarketDataKey(day.atTimeOfDay(ObservationTimeOfDay.LondonClose), SpotFXDataKey(ccy)) →
-      SpotFXData(Quantity(1.0, ccy / UOM.USD))
+      MarketDataRows(List(Map(Field("Rate") → Quantity(1.0, ccy / UOM.USD))))
   }.toList
 
   override protected val frozenDay = Some(observationDay)
