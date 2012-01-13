@@ -7,7 +7,7 @@ import starling.db.DBWriter
 import starling.tradestore.eai.EAITradeStore
 
 class Patch136_AddRoundingOverrideToTradeTables extends Patch {
-  val tables = "IntradayTrades" :: EAITradeStore.tables
+  val tables = "IntradayTrades" :: EAITradeStore.tables.filterNot(_.contains("150"))
 
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) {
     starling.inTransaction {

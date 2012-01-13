@@ -16,11 +16,12 @@ object DatabaseUtils {
     println("")
     val dataSource = DataSourceFactory.getDataSource(database, user, password)
     val starlingDB = new DB(dataSource)
+    val sourceServer = if (fromDatabase == "starling_eai_prod") "'ttraflonsql12\\db12'" else "'ttraflocosql08\\db08'"
     // Copy the database from the last backup.
     starlingDB.inTransaction {
       writer => writer.update(
         "EXEC SQLAdmin.SelfServe.RefreshDB " +
-          "@SourceServer = 'ttraflocosql08\\db08', " +
+          "@SourceServer = " + sourceServer + ", " +
           "@SourceDatabase = '" + fromDatabase + "', " +
           "@TargetDatabase = '" + toDatabaseName + "'"
         )
@@ -78,8 +79,8 @@ object DatabaseUtils {
 object RefreshDatabase {
   System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
   def main(args:Array[String]) {
-    val from = "starling_ci_qa"
-    val to = "starling_thomasr1"
+    val from = "starling_eai_prod"
+    val to = "starling_thomasr2"
     Log.infoWithTime("Backup") { DatabaseUtils.backupDatabase(from) }
     Log.infoWithTime("Copy") { DatabaseUtils.refreshDatabase(from, to) }
   }
