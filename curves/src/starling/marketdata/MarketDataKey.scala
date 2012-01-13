@@ -40,8 +40,6 @@ trait MarketDataKey {
     cast(reader.read(TimedMarketDataKey(observationPoint, this)))
 
   private def cast(marketData:MarketData):marketDataType = marketData.asInstanceOf[marketDataType]
-
-  def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
 }
 
 case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDataKey) {
@@ -52,8 +50,6 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
 
   def typeName = key.typeName
   def fieldValues(marketDataType: MarketDataType) = marketDataType.fieldValues(key)
-
-  def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 
   def asTuple = (observationPoint, key)
   def copyDay(other: Day) = copy(observationPoint.copyDay(other))
