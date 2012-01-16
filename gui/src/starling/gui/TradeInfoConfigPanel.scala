@@ -1,6 +1,6 @@
 package starling.gui
 
-import api.{TradePageParameters, TradeExpiryDay, ReportParameters}
+import api.{Desk, TradePageParameters, TradeExpiryDay, ReportParameters}
 import pages.{PivotPageState, TradeSelectionPage, ConfigPanel}
 import starling.browser.common.GuiUtils._
 import swing.Label
@@ -81,7 +81,14 @@ class TradeInfoConfigPanel(context:PageContext, rp:ReportParameters) extends Mig
             List((Field("Stragegy"), AllSelection))
           }
 
-          val rowFields = List(Field("Instrument"), Field("Market"))
+          // TODO - we need to somehow set this up as the default layout for the desk.
+          val rowFields = tradeSelection.desk.map(d => {
+            if (d == Desk.Titan) {
+              List(Field("Instrument"))
+            } else {
+              List(Field("Instrument"), Field("Market"))
+            }
+          }).getOrElse(List(Field("Instrument"), Field("Market")))
 
           val pfs = Some(new PivotFieldsState(filters = filtersToUse, rowFields = rowFields, columns = ColumnTrees(Field("Trade Count"), true)))
           val pfp = PivotFieldParams(true, pfs)
