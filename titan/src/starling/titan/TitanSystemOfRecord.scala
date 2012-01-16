@@ -42,7 +42,7 @@ class TitanSystemOfRecord(manager : TitanTradeStoreManager)
   // TODO Louis - 21.12.2011
   // This should be fixed so that it doesn't store trades in the tradestore
   def allTrades(f: (Trade) => Unit) : (Int, Set[String]) = {
-    manager.updateTradeStore("allTrade import request")
+    val tradeStoreResults = manager.updateTradeStore("allTrade import request")
     val allTrades = manager.allStarlingTrades
 
     val duplicates = allTrades.groupBy(_.tradeID).filter(kv => kv._2.size > 1)
@@ -51,6 +51,9 @@ class TitanSystemOfRecord(manager : TitanTradeStoreManager)
     allTrades.map(f)
 
     val tradeErrors = allTrades.map(_.tradeable).collect{case ErrorInstrument(err) => err}
+
+    log.info("tradeStoreResults, inserted %d, updated %d, deleted %d, error trades %d".format(tradeStoreResults.inserted, tradeStoreResults.updated, tradeStoreResults.deleted, tradeErrors.size))
+
     (tradeErrors.size, tradeErrors.toSet)
   }
 
