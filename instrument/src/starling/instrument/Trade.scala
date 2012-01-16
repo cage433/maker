@@ -58,7 +58,8 @@ case class Trade(
 
   def premium: Option[Quantity] = Trade.extractPremium(costs)
 
-  override lazy val hashCode: Int = tradeID.hashCode()
+  private lazy val hashCodeVal : Int = tradeID.hashCode()
+  override def hashCode() : Int = hashCodeVal
 }
 
 object Trade {
