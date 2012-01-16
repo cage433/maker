@@ -15,7 +15,7 @@ import starling.utils.ImplicitConversions._
 import starling.utils.Log
 import starling.quantity.{Percentage, UOM}
 import starling.metals.datasources.{LIBORFixingsSource, LIBORCalculator}
-import starling.marketdata.{ForwardRateSource, TimedMarketDataKey, PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
+import starling.marketdata.{ForwardRatePublisher, TimedMarketDataKey, PriceFixingsHistoryData, PriceFixingsHistoryDataKey}
 
 
 class XRTGenerator(marketDataStore: MarketDataStore) {
@@ -43,7 +43,7 @@ object XRTGenerator {
   }
 
   private def liborFixingsHistoryData(marketDataStore: MarketDataStore, observationDay: Day): Map[UOM, PriceFixingsHistoryData] =
-    currencies(ForwardRateSource.LIBOR).toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, currency)).toOption)
+    currencies(ForwardRatePublisher.LIBOR).toMapWithSomeValues(currency => safely(read(marketDataStore, observationDay, currency)).toOption)
 
   private def read(marketDataStore: MarketDataStore, observationDay: Day, currency: UOM) =
     latestLimOnlyMarketDataReader(marketDataStore).readAs[PriceFixingsHistoryData](TimedMarketDataKey(

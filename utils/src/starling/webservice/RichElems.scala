@@ -8,12 +8,18 @@ import xml._
 import scalaz.Scalaz._
 import transform.{RewriteRule, RuleTransformer}
 
+trait RichRewriteRule {
+  implicit def nodeToNode(f: Node => Node) = new RewriteRule {
+    override def transform(node: Node) = f(node)
+  }
+}
+
 trait RichElems {
   import RichJValue._
 
   implicit def enrichElem(elem: Elem) = new RichElem(elem)
 
-  class RichElem(elem: Elem) {
+  class RichElem(elem: Elem) extends RichRewriteRule {
     def toJSON: JValue = {
       def parse(text: String): JValue = text match {
         case Double(double) => JDouble(double)
@@ -35,12 +41,9 @@ trait RichElems {
     }
 
     def transform(f: Function[Node, Node]) = {
-      val transformer = new RuleTransformer(new RewriteRule {
-        override def transform(node: Node) = f(node)
-      })
+      val transformer = new RuleTransformer(f)
 
       transformer.transform(elem).head
     }
   }
 }
-

@@ -15,7 +15,7 @@ import starling.utils.Pattern._
 import Day._
 import UOM._
 import starling.calendar.{BusinessCalendars, BusinessCalendarSet}
-import starling.marketdata.ForwardRateSource
+import starling.marketdata.ForwardRatePublisher
 
 
 case class LIBORFixing(currency: UOM, fixingDay: Day, tenor: Tenor, rate: Quantity) extends Ordered[LIBORFixing] {
@@ -118,7 +118,7 @@ object LIBORCalculator {
     //SEK → BusinessCalendarSet("SEK LIBOR", Location.Unknown, Set(6 Jan 2011, 2 Jun 2011, 24 Jun 2011))
   )
 
-  val currencies = Map(ForwardRateSource.LIBOR ->> (CAD, EUR, GBP, USD, AUD, CHF, JPY, NZD), ForwardRateSource.SHIBOR ->> CNY)
+  val currencies = Map(ForwardRatePublisher.LIBOR ->> (CAD, EUR, GBP, USD, AUD, CHF, JPY, NZD), ForwardRatePublisher.SHIBOR ->> CNY)
 
   val calendars = overnightCalendars ++ spotNextCalendars
   def firstTenorFor(currency: UOM) = if (overnightCalendars.contains(currency)) ON else SN
