@@ -93,7 +93,7 @@ case class TradeStores(
         new TradeSet(TitanTradeSystem, standardStoreFor(TitanTradeSystem), predicate)
       )
       override def initialState = {
-        Some(PivotFieldsState(dataFields = List(Field("Trade Count")), rowFields = List(Field("Instrument"))))
+        Some(PivotFieldsState(dataFields = List(Field("Trade Count")), rowFields = List(Field("Group Company"), Field("Instrument"))))
       }
     }
   ) ++ Desk.eaiDesks.map(eaiDesk)
