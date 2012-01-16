@@ -350,12 +350,12 @@ object Index {
   private def provider = MarketProvider.provider
 
   def indexFromName(name: String): Index = provider.index(name).getOrElse(throw new Exception("No index: " + name))
-  def publishedIndexFromName(name: String): PublishedIndex = indexFromName(name).cast[PublishedIndex]
+  def publishedIndexFromName(name: String): PublishedIndex = indexFromName(name).as[PublishedIndex]
   def futuresFrontPeriodIndexFromName(name: String): FuturesFrontPeriodIndex = indexFromName(name).asInstanceOf[FuturesFrontPeriodIndex]
   def formulaIndexFromName(name: String): FormulaIndex = indexFromName(name).asInstanceOf[FormulaIndex]
 
   val FromName = Extractor.from[String](provider.index)
-  val PublishedIndex = FromName andThen(_.safeCast[PublishedIndex])
+  val PublishedIndex = FromName andThen(_.cast[PublishedIndex])
 
   lazy val WTI10 = futuresFrontPeriodIndexFromName("NYMEX WTI 1st month")
   lazy val WTI20 = futuresFrontPeriodIndexFromName("NYMEX WTI 2nd month")

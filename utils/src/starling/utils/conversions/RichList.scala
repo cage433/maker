@@ -14,7 +14,7 @@ trait RichList {
 
   class RichList[A](list : List[A]) {
     def castValues[T](error : Any => T)(implicit m : Manifest[T]) : List[T] = m.castAll(list, error)
-    def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.safeCast(_))
+    def filterCast[T](implicit m : Manifest[T]): List[T] = list.flatMap(m.cast(_))
 
     def allSame[B](f : A => B) : Boolean = if (list.length < 2) true else {
       val first = f(list(0))

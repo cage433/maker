@@ -28,7 +28,7 @@ class CompositeBroadcaster(broadcasters: (Boolean, Broadcaster)*) extends Broadc
 }
 
 abstract class TypedBroadcaster[T](implicit manifest: Manifest[T]) extends Broadcaster {
-  override def broadcast(event: Event) = manifest.safeCast(event).foreach(typedBroadcast)
+  override def broadcast(event: Event) = manifest.cast(event).foreach(typedBroadcast)
 
   def typedBroadcast(t: T)
 }

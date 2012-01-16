@@ -99,7 +99,7 @@ trait LIMConnection {
 }
 
 class LimNode(parent: Object) {
-  private val parentNode : Option[LimNode] = parent.safeCast[LimNode]
+  private val parentNode : Option[LimNode] = parent.cast[LimNode]
   def name: String = parentNode.map(_.name + ":").getOrElse("") + fields(parent).find(_.get(parent) == this).get.getName
   def children = fields(this).map(_.get(this)).toList.asInstanceOf[List[LimNode]]
   override def toString = name

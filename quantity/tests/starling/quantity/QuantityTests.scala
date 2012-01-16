@@ -321,7 +321,7 @@ import starling.quantity.RichQuantity._
     val namedLeft = left.named("left")
     val namedRight = right.named("right")
 
-    val result = (namedLeft min namedRight).safeCast[FunctionNamedQuantity]
+    val result = (namedLeft min namedRight).cast[FunctionNamedQuantity]
     result should be === Some(FunctionNamedQuantity("min", List(namedLeft, namedRight), left min right))
   }
 

@@ -58,7 +58,7 @@ case class TableCell(value:Any, text:String, textPosition:TextPosition = CenterT
       case _ => None
     }
   }
-  def pivotQuantityValue: Option[PivotQuantity] = value.safeCast[PivotQuantity]
+  def pivotQuantityValue: Option[PivotQuantity] = value.cast[PivotQuantity]
   def errors:Set[StackTrace] = {
     if (!isError) {
       Set()

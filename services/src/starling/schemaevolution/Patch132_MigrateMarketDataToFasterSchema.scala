@@ -560,7 +560,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
     failingXml.foreach(xml => {
       val obj = StarlingXStream.read(cleanUpXml(xml))
 
-      obj.safeCast[PriceFixingsHistoryData].map { priceFixingsHistoryData => {
+      obj.cast[PriceFixingsHistoryData].map { priceFixingsHistoryData => {
         val rows: Iterable[Row] = PriceFixingsHistoryDataType.castRows(
           PriceFixingsHistoryDataKey("", Some("")), priceFixingsHistoryData)
 

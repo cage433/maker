@@ -83,7 +83,7 @@ object PriceDataType extends MarketDataType {
     marketField.field → key.market.name,
     marketCommodityField.field → key.market.commodity.toString,
     marketTenorField.field → key.market.tenor.toString) +?
-    (exchangeField.field → key.market.safeCast[FuturesMarket].map(_.exchange.name))
+    (exchangeField.field → key.market.cast[FuturesMarket].map(_.exchange.name))
 
   def rows(key: PriceDataKey, data: PriceData) = data.prices.map { case (period, price) => {
     Row(marketField.field → key.market.name,
@@ -91,7 +91,7 @@ object PriceDataType extends MarketDataType {
       marketTenorField.field → key.market.tenor.toString,
       periodField.field → period,
       validity.field → price.warning.isEmpty,
-      priceField.field → price) +? (exchangeField.field → key.market.safeCast[FuturesMarket].map(_.exchange.name))
+      priceField.field → price) +? (exchangeField.field → key.market.cast[FuturesMarket].map(_.exchange.name))
   } }
 }
 
@@ -104,7 +104,7 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   def typeName = PriceDataType.name
   def humanName = market.name
 
-  def fields = market.safeCast[FuturesMarket].fold(_ => Set(exchangeField.field), Set.empty[Field]) ++
+  def fields = market.cast[FuturesMarket].fold(_ => Set(exchangeField.field), Set.empty[Field]) ++
     Set(marketField, marketCommodityField, marketTenorField).map(_.field)
 }
 
