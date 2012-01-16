@@ -56,7 +56,7 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailServ
   extends EmailingScheduledTask(emailService, template) {
 
   import LIBORCalculator._
-  private val currencies = LIBORCalculator.currencies(ForwardRateSource.LIBOR)
+  private val currencies = LIBORCalculator.currencies(ForwardRatePublisher.LIBOR)
 
   protected def emailFor(observationDay: Day) = {
     val liborFixings: NestedMap[UOM, Tenor, (Quantity, Day)] = latestLiborFixings(marketDataStore, observationDay)
@@ -85,38 +85,32 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailServ
 
   private def read(marketDataStore: MarketDataStore, observationDay: Day, key: ForwardRateDataKey): Option[Map[Tenor, Quantity]] =
     latestLimOnlyMarketDataReader(marketDataStore).readAs[ForwardRateData](TimedMarketDataKey(
-      observationDay.atTimeOfDay(key.observationTime), key)).rates.get(ForwardRateSource.LIBOR)
+      observationDay.atTimeOfDay(key.observationTime), key)).rates.get(ForwardRatePublisher.LIBOR)
 
   private def latestLimOnlyMarketDataReader(marketDataStore: MarketDataStore) = new NormalMarketDataReader(
     marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals))))
 }
 
 case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore)
-  extends AbstractMarketDataProvider[ForwardRateSource, UOM, Map[Tenor, Quantity]](marketDataStore) {
+  extends AbstractMarketDataProvider[ForwardRatePublisher, UOM, Map[Tenor, Quantity]](marketDataStore) {
 
   val marketDataType = ForwardRateDataType.name
   val marketDataKeys = None
 
-  def marketDataFor(timedData: List[(TimedMarketDataKey, MarketData)]) = {
-    val x: List[(UOM, ImplicitConversions.NestedMap[ForwardRateSource, Tenor, Quantity])] = timedData.collect {
-      case (TimedMarketDataKey(_, ForwardRateDataKey(currency)), ForwardRateData(data)) => (currency, data)
-    }
-
-    val y: Map[UOM, Map[ForwardRateSource, Map[Tenor, Quantity]]] = x.toMap
-
-    y.flipNesting
-  }
+  def marketDataFor(timedData: List[(TimedMarketDataKey, MarketData)]) = timedData.collect {
+    case (TimedMarketDataKey(_, ForwardRateDataKey(currency)), ForwardRateData(data)) => (currency, data)
+  }.toMap.flipNesting
 }
 
 case class ForwardRateDataEventSource(pricingGroup: PricingGroup,
-  provider: MarketDataProvider[ForwardRateSource, UOM, Map[Tenor, Quantity]]) extends PricingGroupMarketDataEventSource {
+  provider: MarketDataProvider[ForwardRatePublisher, UOM, Map[Tenor, Quantity]]) extends PricingGroupMarketDataEventSource {
 
-  type Key = ForwardRateSource
+  type Key = ForwardRatePublisher
   type MarketType = UOM
   type CurveType = Map[Tenor, Quantity]
 
-  protected def marketDataEvent(change: MarketDataChange, source: ForwardRateSource, currencies: List[UOM], snapshot: SnapshotIDLabel) = {
-    Some(ReferenceInterestRateDataEvent(change.observationDay, source.value, currencies, snapshot, change.isCorrection))
+  protected def marketDataEvent(change: MarketDataChange, publisher: ForwardRatePublisher, currencies: List[UOM], snapshot: SnapshotIDLabel) = {
+    Some(ReferenceInterestRateDataEvent(change.observationDay, publisher.value, currencies, snapshot, change.isCorrection))
   }
 
   protected def marketDataProvider = Some(provider)

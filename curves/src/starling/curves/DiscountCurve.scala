@@ -6,7 +6,7 @@ import starling.daterange.{DateRange, Day, DayAndTime}
 import starling.quantity.{UOM, Quantity}
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
-import starling.marketdata.ForwardRateSource._
+import starling.marketdata.ForwardRatePublisher._
 import starling.metals.datasources.LIBORFixing
 import scalaz.Scalaz._
 import starling.marketdata.{ReferenceDataLookup, ForwardRateDataKey, ForwardRateData}

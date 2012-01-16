@@ -20,20 +20,20 @@ object LIBORFixingsSource extends LimSource {
   def marketDataEntriesFrom(connection: LIMConnection, start: Day, end: Day) = {
     val rates: NestedMap[Day, Relation, Double] = connection.getPrices(relations, Level.Close, start, end)
 
-    val groupedRates: NestedMap3[TimedMarketDataKey, ForwardRateSource, Tenor, Quantity] =
+    val groupedRates: NestedMap3[TimedMarketDataKey, ForwardRatePublisher, Tenor, Quantity] =
       rates.mapNested { case (observationDay, relation, rate) =>
-        relation.timedKey(observationDay) → (relation.source, (relation.tenor, Quantity(rate, UOM.PERCENT)))
+        relation.timedKey(observationDay) → (relation.publisher, (relation.tenor, Quantity(rate, UOM.PERCENT)))
       }.toNestedMap3
 
     groupedRates.map { case (timedKey, ratesForKey) => new MarketDataEntry(timedKey, ForwardRateData(ratesForKey)) }
   }
 
-  private val relations = ForwardRateSource.values.flatMap { source =>
+  private val relations = ForwardRatePublisher.values.flatMap { source =>
     List(source) ⊛ source.currencies.toList ⊛ source.tenors ⊛ List("%d%s", "%02d%s") apply(Relation.apply)
   }.distinctBy(_.toString)
 
-  private case class Relation(source: ForwardRateSource, currency: UOM, tenor: Tenor, tenorFormat: String) {
+  private case class Relation(publisher: ForwardRatePublisher, currency: UOM, tenor: Tenor, tenorFormat: String) {
     def timedKey(observationDay: Day) = ForwardRateDataKey(currency).onDay(observationDay)
-    override def toString = "TRAF.%s.%s.%s" % (source, currency, tenor.format(tenorFormat))
+    override def toString = "TRAF.%s.%s.%s" % (publisher, currency, tenor.format(tenorFormat))
   }
 }
