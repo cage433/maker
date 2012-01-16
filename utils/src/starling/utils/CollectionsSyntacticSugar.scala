@@ -5,7 +5,7 @@ import starling.utils.ImplicitConversions._
 import collection.{IterableLike, TraversableLike, SeqLike}
 import collection.mutable.{Map => MMap}
 import scalaz.Scalaz._
-
+import shapeless.Typeable
 
 
 trait CollectionsSyntacticSugar {

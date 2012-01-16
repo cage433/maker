@@ -46,4 +46,14 @@ class CollectionsSyntacticSugarTests extends WordSpec with ShouldMatchers with C
       Map(1 → Map("foo" → Map(1.2 → RED, 2.1 → CYAN), "food" → Map(3.4 → BLUE, 4.3 → YELLOW)),
           2 → Map("bar" → Map(2.3 → GREEN, 3.2 → MAGENTA), "barf" → Map(4.5 → WHITE, 5.4 → BLACK)))
   }
+
+  "mapFirst" in {
+    List((1, "foo"), (2, "bar")).mapFirst(_ * 2) should be === List((2, "foo"), (4, "bar"))
+    Set((1, "foo"), (2, "bar")).mapFirst(_ * 2) should be === Set((2, "foo"), (4, "bar"))
+  }
+
+  "mapSecond" in {
+    List((1, "foo"), (2, "bar")).mapSecond(_ + "!") should be === List((1, "foo!"), (2, "bar!"))
+    Set((1, "foo"), (2, "bar")).mapSecond(_ + "!") should be === Set((1, "foo!"), (2, "bar!"))
+  }
 }

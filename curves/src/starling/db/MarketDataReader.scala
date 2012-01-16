@@ -6,6 +6,7 @@ import starling.marketdata._
 
 import starling.utils.ImplicitConversions._
 import starling.pivot.Row
+import collection.Traversable
 
 
 trait MarketDataReader {
@@ -20,11 +21,17 @@ trait MarketDataReader {
 
   def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataTypeName): List[TimedMarketDataKey]
 
-  def readAll(marketDataType: MarketDataTypeName, observationPoint:ObservationPoint) = read(
+  def readAll(marketDataType: MarketDataTypeName, observationPoint:ObservationPoint): List[(MarketDataKey, MarketDataRows)] = read(
     marketDataType,
     observationDays = Some(Set(observationPoint.day)),
     observationTimes = Some(Set(observationPoint.timeOfDay))
   ).mapFirst(_.key)
+
+  def readAll[MDT <: MarketDataType](dataType: MDT, observationPoint: ObservationPoint): List[(MDT#keyType, MDT#dataType)] = {
+    readAll(dataType.name, observationPoint).collect {
+      case (key: MDT#keyType, rows) => key → rows.toMarketData(dataType)
+    }
+  }
 
   //Helper concrete methods
   def read(timedKey: TimedMarketDataKey): MarketData = {
@@ -55,13 +62,9 @@ trait MarketDataReader {
 
   def readAs[T <: MarketData](timedKey: TimedMarketDataKey) = read(timedKey).asInstanceOf[T]
 
-  def readAllPrices(observationPoint:ObservationPoint):List[(PriceDataKey, PriceData)] = {
-    read(PriceDataType.name, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)))
-      .mapFirst(_.key).filterCast[(PriceDataKey, PriceData)]
-  }
+  def readAllPrices(observationPoint: ObservationPoint): List[(PriceDataKey, PriceData)] =
+    readAll(PriceDataType, observationPoint)
 
-  def readAllVols(observationPoint: ObservationPoint):List[(OilVolSurfaceDataKey, OilVolSurfaceData)] = {
-    read(OilVolSurfaceDataType.name, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)))
-      .mapFirst(_.key).filterCast[(OilVolSurfaceDataKey, OilVolSurfaceData)]
-  }
+  def readAllVols(observationPoint: ObservationPoint): List[(OilVolSurfaceDataKey, OilVolSurfaceData)] =
+    readAll(OilVolSurfaceDataType, observationPoint)
 }

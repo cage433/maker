@@ -5,6 +5,7 @@ import ImplicitConversions._
 import scalaz.Scalaz._
 import collection.generic.CanBuildFrom
 import collection.{Traversable, TraversableLike}
+import shapeless.Typeable
 
 trait RichAnys {
   implicit def enrichAny[T](value: T) = new RichAny(value)
@@ -44,8 +45,9 @@ class RichAny[T](protected val value: T) {
   def safePartialMatch[V](message: => String)(pfn: PartialFunction[T, V]): Option[V] =
     try { ||>(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
 
-  def equalTo[V: Manifest](f: V => Boolean): Boolean = cast[V].map(f).getOrElse(false)
-  def cast[V: Manifest]: Option[V] = implicitly[Manifest[V]].cast(value)
+  /** Determines if this is of type V and passes all predicates */
+  def equalTo[V: Typeable](predicates: (V => Boolean)*): Boolean = cast[V].fold(v => predicates.forall(f => f(v)), false)
+  def cast[V](implicit t: Typeable[V]): Option[V] = t.cast(value).filter(_ != null)
 
   /** Replacement for asInstanceOf, logs more information upon failure */
   def as[V: Manifest]: V = implicitly[Manifest[V]].as(value)
