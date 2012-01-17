@@ -163,6 +163,7 @@ class ManualReportConfigPanel(context:PageContext, reportParameters:ReportParame
         }
         updateMarketDayLeftEnabled()
         updateThetaLeftEnabled()
+        updateRunButton()
       }
       case DayChangedEvent(`thetaToDayChooser`, _, _) => {
         updateThetaLeftEnabled()
