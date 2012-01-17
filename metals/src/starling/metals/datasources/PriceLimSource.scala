@@ -44,7 +44,6 @@ class LMEPriceLimSource extends PriceLimSource(FuturesExchangeFactory.LME, LIMSe
 
   private case class Relation(market: FuturesMarket, day: Day) {
     def priceFor(price: Double): (DateRange, Double) = day → (price * market.limSymbol.fold(_.multiplier, 1.0))
-
     override def toString = "TRAF.LME.%S.%s" % (market.commodity.limName, day.toString("yyyy.MM.dd"))
   }
 }

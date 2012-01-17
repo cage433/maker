@@ -11,15 +11,12 @@ import starling.utils.ImplicitConversions._
 import starling.gui.api._
 import starling.scheduler.TaskDescription
 import starling.db.{MarketDataStore, MarketDataEntry}
-import starling.databases.{AbstractMarketDataProvider, PricingGroupMarketDataEventSource, MarketDataChange, MarketDataProvider}
-import starling.lim.{LIMService, LIMConnection, LimNode}
+import starling.databases.{AbstractMarketDataProvider}
+import starling.lim.{LIMService, LIMConnection}
 import Level._
 import LIMService.TopRelation._
 import starling.services.EmailService
-import com.lim.mimapi.RelType
-import starling.quantity.{Quantity, UOM}
-import starling.utils.{ImplicitConversions, Log, Pattern}
-import Pattern._
+import starling.quantity.UOM
 import scalaz.Scalaz._
 import collection.immutable.{Map, List}
 
@@ -27,7 +24,7 @@ import collection.immutable.{Map, List}
 object PriceFixingLimMarketDataSource {
   val sources = List(LMEFixings, BloombergTokyoCompositeFXRates, BalticFixings,
     new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE),
-    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX)) ::: SpotFXFixings.all
+    new MonthlyFuturesFixings(Trafigura.Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX))
 }
 
 case class PriceFixingLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)

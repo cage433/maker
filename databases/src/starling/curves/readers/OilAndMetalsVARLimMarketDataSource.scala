@@ -105,5 +105,6 @@ class OilAndMetalsVARLimMarketDataSource(service: LIMService, override val marke
 
   private case class Relation(relation: String, deliveryMonth: DateRange) {
     val period = StoredFixingPeriod.dateRange(deliveryMonth)
+    override def toString = relation
   }
 }

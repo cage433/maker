@@ -6,14 +6,11 @@ import starling.daterange._
 import starling.market._
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
-import starling.scheduler.ScheduledTime._
 import starling.db.{MarketDataStore, MarketDataEntry}
 import starling.gui.api._
 import starling.quantity.{UOMSymbol, Quantity, UOM}
 import starling.databases.{AbstractMarketDataProvider, MarketDataChange, PricingGroupMarketDataEventSource, MarketDataProvider}
 import starling.lim.LIMService
-import starling.utils.Pattern._
-import Level._
 import LIMService.TopRelation._
 import ObservationTimeOfDay._
 import starling.scheduler.{ScheduledTime, ScheduledTask, TaskDescription}
@@ -26,7 +23,7 @@ import starling.utils.ImplicitConversions
 
 
 object SpotFXLimMarketDataSource {
-  val sources = List(BloombergGenericFXRates)
+  val sources = BloombergGenericFXRates :: SpotFXFixings.all
 
   val titanCurrencies = UOMSymbol.currenciesToImportFromLIM.map(UOM.asUOM(_)).filter(_ != UOM.USD)
 }
@@ -94,7 +91,7 @@ object BloombergGenericFXRates extends LimSource {
   private case class Relation(from: UOM, to: UOM) {
     require(from == UOM.USD || to == UOM.USD)
 
-    def limRelation = "TRAF.BGNL.%s%s" % (from, to)
+    override def toString = "TRAF.BGNL.%s%s" % (from, to)
 
     def entryFor(observationPoint: ObservationPoint, rate: Double) = MarketDataEntry(observationPoint,
       SpotFXDataKey((from == UOM.USD) ? to | from), SpotFXData(Quantity(rate, to / from)))
