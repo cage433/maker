@@ -248,6 +248,22 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
+  private def imageOrBlank(pageInfo:PageInfo) = {
+    val width = currentComponent.peer.getWidth
+    val height = currentComponent.peer.getHeight
+    pageInfo.image match {
+      case Some(i) => i
+      case None => {
+        val i = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+        val graphics = i.getGraphics.asInstanceOf[Graphics2D]
+        graphics.setColor(GuiUtils.PanelBackgroundColour)
+        graphics.fillRect(0,0,width,height)
+        graphics.dispose()
+        i
+      }
+    }
+  }
+
   // pageInfo is the page you are going back to. indexGoingFrom is the "current" page.
   private def showPageBack(indexGoingTo:Int) {
     history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
@@ -282,7 +298,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         history(indexGoingFrom).image = image1
 
-        val image2 = pageInfo.image
+        val image2 = imageOrBlank(pageInfo)
         backSlideClient.setImages(image1, image2)
         val animator = new Animator(slideTime)
         animator.setAcceleration(slideAcceleration)
@@ -439,7 +455,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
 
         history(indexGoingFrom).image = image1
 
-        val image2 = pageInfo.image
+        val image2 = imageOrBlank(pageInfo)
         forwardSlideClient.setImages(image1, image2)
         val animator = new Animator(slideTime)
         animator.setAcceleration(slideAcceleration)
@@ -912,7 +928,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         history(current).image = image1
         current = index
 
-        val image2 = pageInfo.image
+        val image2 = imageOrBlank(pageInfo)
         backSlideClient.setImages(image1, image2)
         val animator = new Animator(slideTime)
         animator.setAcceleration(slideAcceleration)
@@ -966,7 +982,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         history(current).image = image1
         current = index
 
-        val image2 = pageInfo.image
+        val image2 = imageOrBlank(pageInfo)
         forwardSlideClient.setImages(image1, image2)
         val animator = new Animator(slideTime)
         animator.setAcceleration(slideAcceleration)
@@ -1154,10 +1170,6 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         waitingFor -= Some(threadID)
         onEDT({ // I shouldn't really need to do another onEDT here but if I don't, clicking on the Home Button causes the slide effect to flicker.
           done(pageResponse, page)
-          onEDT({
-//            genericLockedUI.setLocked(false)
-//            tabComponent.setBusy(false)
-          })
         })
       }
     }
