@@ -21,9 +21,18 @@ abstract class ClosesEnvironmentRule extends EnvironmentRule{
       marketDataReader.read(TimedMarketDataKey(ObservationPoint(marketDataDay, timeOfDay), key))
     }
     val priceDataMap = Market.futuresMarketsView.safeMap {
-      market =>
-        val marketData = readForThisMarketDataDay(market.closeTime, PriceDataKey(market))
-        PriceDataKey(market) → marketData.asInstanceOf[PriceData]
+      market => {
+        market.exchange match {
+          case FuturesExchangeFactory.COMEX | FuturesExchangeFactory.EXBXG => {
+            val marketData = readForThisMarketDataDay(market.closeTime, PriceFixingsHistoryDataKey(market))
+            PriceDataKey(market) → marketData.asInstanceOf[PriceFixingsHistoryData].toPriceData(Level.Close)
+          }
+          case _ => {
+            val marketData = readForThisMarketDataDay(market.closeTime, PriceDataKey(market))
+            PriceDataKey(market) → marketData.asInstanceOf[PriceData]
+          }
+        }
+      }
     }.toMap
 
     new MarketDataSlice {

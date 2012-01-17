@@ -1,21 +1,16 @@
 package starling.instrument
 
-
-import physical.{Cargo, PhysicalMetalAssignment}
-import starling.quantity.UOM.{USD, BBL}
-import starling.richdb.RichInstrumentResultSetRow
+import physical.PhysicalMetalAssignment
+import starling.quantity.UOM.USD
 import starling.quantity.Quantity._
 import starling.curves._
-import interestrate.{DayCountActual365, DayCountActualActual}
 import starling.market._
-import rules.{RoundingMethodRule, SwapPricingRule}
 import starling.daterange._
-import starling.varcalculator._
-import starling.utils.ImplicitConversions._
-import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
-import starling.marketdata.ReferenceDataLookup
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity, UOM}
+import starling.utils.log.Logger
+import java.text.DecimalFormat
+
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -59,7 +54,7 @@ object InstrumentType {
 }
 /** The supertype of all instruments, including trades, which in turn contain instruments.
  */
-trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
+trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation with Logger {
 
   def assets(env:Environment):Assets
   def assets(env:Environment, ccy : UOM):Assets = Assets(assets(env).assets.map(_.inCCY(env, ccy)))
@@ -77,7 +72,14 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
       }
     }
 
-    assert(explained.isAlmostEqual(mtm(env, ccy), 1e-6), "Explanation not the same as the mtm: " + (explained, mtm(env, ccy)))
+    val mtmVal = mtm(env, ccy)
+    if (!explained.isAlmostEqual(mtmVal, 1e-6)) {
+      val maxTol = 5e-3
+      val fmt = new DecimalFormat("#0.000000000000000")
+      Log.warn("explained %s != mtm %s, difference is %s, maxTol = %f".format(explained.format(fmt), mtmVal.format(fmt), (explained - mtmVal).format(fmt), maxTol))
+      assert(explained.isAlmostEqual(mtmVal, maxTol), "Explanation not the same as the mtm: " + (explained, mtm(env, ccy)))
+    }
+
     explained
   }
 

@@ -21,7 +21,6 @@ object PriceLimMarketDataSource extends scalaz.Options {
   import LIMService.TopRelation.Trafigura._
 
   val sources = List(new LMEPriceLimSource,
-    new MonthlyPriceLimSource(Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX),
     new MonthlyPriceLimSource(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE))
 }
 
@@ -39,7 +38,6 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     task("LME Metals", limDaily(LME.calendar, 20 H 00), lme, marketDataStore),
-    task("COMEX Metals", limDaily(COMEX.calendar, 18 H 00), comex, marketDataStore),
     task("SHFE Metals", limDaily(SHFE.calendar, 16 H 02), shfe, marketDataStore)
   )
 
@@ -47,7 +45,7 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
 //    "WuXi Metals") with NullMarketDataEventSource
 //      tasks(daily(SFE, 16 H 30), availabilityBroadcaster.verifyPricesAvailable(exbxgMetals), verifyPricesValid(exbxgMetals))
 
-  private lazy val limMetalMarketsForExchanges@List(lme, comex, shfe) = sources.map(pricesSource => {
+  private lazy val limMetalMarketsForExchanges@List(lme, shfe) = sources.map(pricesSource => {
     pricesSource.exchange.markets.filter(_.limSymbol.isDefined).filter(isMetal).filter(correspondsToBloombergImport(pricesSource.node))
   } )
 

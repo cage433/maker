@@ -3,13 +3,13 @@ package starling.marketdata
 import collection.{Map, SortedMap}
 import collection.immutable.TreeMap
 
-import starling.daterange.StoredFixingPeriod
 import starling.market._
-import starling.pivot.MarketValue
 import starling.quantity.Quantity
 import starling.utils.ImplicitConversions._
 import starling.utils.conversions.Tuple2Ordering
 import starling.curves.MissingMarketDataException
+import starling.daterange.{DateRange, StoredFixingPeriod}
+import starling.pivot.{PivotQuantity, MarketValue}
 
 
 case class PriceFixingsHistoryData(fixings: SortedMap[(Level, StoredFixingPeriod), MarketValue]) extends MarketData {
@@ -24,6 +24,11 @@ case class PriceFixingsHistoryData(fixings: SortedMap[(Level, StoredFixingPeriod
   }
 
   def fixingsFor(levelsAndPeriods: List[(Level, StoredFixingPeriod)]) = fixings.toMap.filterKeys(levelsAndPeriods)
+
+  def toPriceData(level:Level) = {
+    val prices = fixings.collect { case ((`level`, StoredFixingPeriod.DateRange(period)), MarketValue.Quantity(q)) =>  period -> q.pq }
+    PriceData(prices.toMap)
+  }
 
   def +(other: PriceFixingsHistoryData) = {
     val combinedFixings = fixings ++ other.fixings; PriceFixingsHistoryData.create(combinedFixings)
