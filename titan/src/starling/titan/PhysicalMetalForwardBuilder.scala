@@ -38,8 +38,8 @@ class PhysicalMetalForwardBuilder(refData: TitanTacticalRefData,
 
   def apply(trade: EDMPhysicalTrade, eventID : String) : List[Trade] = {
 
-    val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company")
-    val counterparty = Option(trade.counterparty).flatMap(c => Option(c.counterparty)).flatMap(c => counterpartiesByGUID.get(c)).flatMap(c => Option(c.name)).getOrElse("No Counterparty available")
+    val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company").trim
+    val counterparty = Option(trade.counterparty).flatMap(c => Option(c.counterparty)).flatMap(c => counterpartiesByGUID.get(c)).flatMap(c => Option(c.name)).getOrElse("No Counterparty available").trim
 
     val comments = Option(trade.comments).getOrElse("").trim // we can get null as empty comments
     val contractFinalised = trade.contractFinalised.toString
