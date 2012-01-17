@@ -79,7 +79,7 @@ case class Row(value: Map[Field, Any]) { self =>
   @elidable(elidable.ASSERTION)
   private def assertNoDuplicates(entry: (Field, Any)) = {
     value.get(entry._1).foreach(existingValue => if ((existingValue ?? "") != (entry._2 ?? "")) Log.warn(
-      "Cannot add duplicate entry: %s into Row: %s" % (entry, self.toString)))
+      "Cannot add duplicate entry: %s into Row: %s" % (entry.toString(), self.toString)))
   }
 
   @elidable(elidable.ASSERTION)

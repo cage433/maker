@@ -9,7 +9,8 @@ class RichStringTests extends WordSpec with ShouldMatchers with RichString {
   }
 
   "%" in {
+    val tuple = ("x", "y")
     ("x: %s, y: %s" % ("x", "y")) should be === "x: x, y: y"
-    ("x: %s, y: %s" % (("x", "x"), ("y", "y"))) should be === "x: (x,x), y: (y,y)"
+    ("x: %s, y: %s" % tuple) should be === "x: x, y: y"
   }
 }
