@@ -5,6 +5,8 @@ import starling.quantity._
 import starling.utils.sql.PersistAsBlob
 import scalaz.Scalaz._
 import starling.utils.ImplicitConversions._
+import annotation.elidable
+import starling.utils.Log
 
 
 object Row {
@@ -22,16 +24,17 @@ object Row {
   def create(rows: Traversable[Map[Field, Any]]): List[Row] = rows.map(Row(_)).toList
 }
 
-case class Row(value: Map[Field, Any]) {
+case class Row(value: Map[Field, Any]) { self =>
   def fields = value.keySet
 
   lazy val dbValue = new PersistAsBlob(value.mapKeys(_.name).sorted)
 
-  def +(entry: (Field, Any)): Row = copy(value + entry)
-  def +(other: Row) = copy(value ++ other.value)
+  def +(entry: (Field, Any)): Row = copy(value + checkNoDuplicates(entry))
+  def +(other: Row) = copy(value ++ checkNoDuplicates(other.value))
   def +?(entry: (Field, Option[Any])): Row = entry._2.fold(any => this + (entry._1 → any), this)
   def +?(entry: Option[(Field, Any)]): Row = entry.fold(this + _, this)
-  def ++(other: Map[Field, Any]): Row = copy(value ++ other)
+  def ++(other: Map[Field, Any]): Row = copy(value ++ checkNoDuplicates(other))
+  def amend(other: Map[Field, Any]): Row = copy(value ++ other)
   def :::?(other: Option[Row]): Row = other.fold(this + _, this)
   def -(key: Field): Row = copy(value - key)
   def updated(key: Field, v: Any): Row = copy(value.updated(key, v))
@@ -69,4 +72,16 @@ case class Row(value: Map[Field, Any]) {
     case q: Quantity => PivotQuantity(q)
     case pq: PivotQuantity => pq
   }
+
+  @inline private def checkNoDuplicates(entry: (Field, Any)): (Field, Any)         = { assertNoDuplicates(entry);   entry   }
+  @inline private def checkNoDuplicates(entries: Map[Field, Any]): Map[Field, Any] = { assertNoDuplicates(entries); entries }
+
+  @elidable(elidable.ASSERTION)
+  private def assertNoDuplicates(entry: (Field, Any)) = {
+    value.get(entry._1).foreach(existingValue => if ((existingValue ?? "") != (entry._2 ?? "")) Log.warn(
+      "Cannot add duplicate entry: %s into Row: %s" % (entry, self.toString)))
+  }
+
+  @elidable(elidable.ASSERTION)
+  private def assertNoDuplicates(entries: Map[Field, Any]): Unit = entries.foreach(assertNoDuplicates)
 }

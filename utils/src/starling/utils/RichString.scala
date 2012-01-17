@@ -28,7 +28,6 @@ trait RichString {
       case x: Long => new java.lang.Long(x) :: Nil
       case x: Float => new java.lang.Float(x) :: Nil
       case x: Double => new java.lang.Double(x) :: Nil
-      case x: (Any, Any) => boxValue(x._1) ++ boxValue(x._2)
       case x: Unit => "()" :: Nil
       case x: AnyRef => x :: Nil
     }

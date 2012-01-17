@@ -12,4 +12,10 @@ class ObservationPointTests extends WordSpec with ShouldMatchers {
   "can replace time of day" in {
     ObservationPoint(observationDay, Default).copyTime(Some(SHFEClose)) should be === ObservationPoint(observationDay, SHFEClose)
   }
+
+  "parsing" should {
+    "default to Default ObservationTimeOfDay" in {
+      ObservationPoint.parse(new java.lang.Double(observationDay.toExcel)) should be === ObservationPoint(observationDay, Default)
+    }
+  }
 }
