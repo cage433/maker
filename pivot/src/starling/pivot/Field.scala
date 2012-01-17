@@ -458,6 +458,7 @@ class CodedFormatterAndParser(codesToName:Map[String,String]) extends PivotForma
       case values:Set[_] if values.size == 1 => singleValue(values.iterator.next.asInstanceOf[String])
       case values:Set[_] => DefaultPivotFormatter.formatMany(values, v => codeToName(v.asInstanceOf[String]))
       case code:String => singleValue(code)
+      case v => new TableCell(v)
     }
   }
   private def codeToName(code:String) = codesToName.getOrElse(code, code)
