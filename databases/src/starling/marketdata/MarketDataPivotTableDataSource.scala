@@ -114,7 +114,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
                   Nil //Delete the row if the measure has been deleted
                 } else {
                   affectedRows.map {
-                    case (_, row) => (Amended, row ++ amends.filter(_._2.isDefined).mapValues(_.get))
+                    case (_, row) => (Amended, row amend amends.filter(_._2.isDefined).mapValues(_.get))
                   }
                 }
               }
