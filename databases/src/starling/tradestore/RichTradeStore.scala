@@ -36,8 +36,13 @@ object TradeableFields {
       val quantity = classOf[Quantity]
       val spreadOrQuantity = classOf[SpreadOrQuantity]
       val period = classOf[Period]
+      val QuantityString = "Quantity"
+      val AssignmentIDString = "Assignment ID"
+      val InventoryIDString = "Inventory ID"
       (name, klass) match {
-        case ("Quantity", _) => (new TradeIDGroupingSumPivotQuantityFieldDetails("Quantity"), (t: Trade, q: Any) => Map(t.tradeID.toString -> q))
+        case (QuantityString, _) => (new TradeIDGroupingSumPivotQuantityFieldDetails(QuantityString), (t: Trade, q: Any) => Map(t.tradeID.toString -> q))
+        case (AssignmentIDString, _) => (StringToNumberFieldDetails(AssignmentIDString), (t: Trade, v: Any) => v.toString.asInstanceOf[Any])
+        case (InventoryIDString, _) => (StringToNumberFieldDetails(InventoryIDString), (t: Trade, v: Any) => v.toString.asInstanceOf[Any])
         case (_, `dateRange`) => (new PeriodFieldDetails(name), (t: Trade, v: Any) => {
           v match {
             case d: DateRange => DateRangePeriod(d)
@@ -537,4 +542,25 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
 
   def pivotDrillDownGroups(): List[DrillDownInfo]
 
+}
+
+object StringToNumberWithErrorCheckingComparator extends Ordering[Any] {
+  def compare(x:Any, y:Any) = {
+    (x,y) match {
+      case (s1:String, s2:String) => {
+        val errorNumber = -123456L
+        val number1 = try {s1.toLong} catch {case t => errorNumber}
+        val number2 = try {s2.toLong} catch {case t => errorNumber}
+        if ((number1 == errorNumber) && (number2 == errorNumber)) {
+          s1.compare(s2)
+        } else {
+          number1.compareTo(number2)
+        }
+      }
+    }
+  }
+}
+
+case class StringToNumberFieldDetails(name0:String) extends FieldDetails(name0) {
+  override def comparator = StringToNumberWithErrorCheckingComparator
 }
