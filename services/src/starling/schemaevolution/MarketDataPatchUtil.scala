@@ -20,6 +20,14 @@ case class MarketDataPatchUtil(db: RichDB, writer: DBWriter) {
     if (removeOrphaned) removeOrphanedMarketDataValueKeys
   }
 
+  def deleteExtendedKeys(marketDataType:String, marketDataKeyPattern:String) {
+    writer.update("DELETE FROM MarketDataValue WHERE extendedKey IN (" +
+      "SELECT DISTINCT id FROM MarketDataExtendedKey WHERE marketDataType = :marketDataType and marketDataKey like :marketDataKey)",
+      Map("marketDataType" -> marketDataType, "marketDataKey" -> marketDataKeyPattern)
+    )
+    writer.delete("MarketDataExtendedKey", ("marketDataType" eql marketDataType) and ("marketDataKey" like marketDataKeyPattern))
+  }
+
   def removeOrphanedMarketDataValueKeys {
     // a more efficient alternative could be to query for them before removing the MarketDataValues, but that could result in a large 'in clause'
     writer.update("DELETE FROM MarketDataValueKey WHERE id NOT IN (SELECT DISTINCT valueKey FROM MarketDataValue)")
