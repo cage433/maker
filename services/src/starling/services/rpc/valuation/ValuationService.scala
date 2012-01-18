@@ -20,6 +20,10 @@ case class ValuationService(
 )
   extends ValuationServiceApi with Log {
 
+  // mutable counters for service stats
+  var valueAllTradesCount = 0L
+  var valueAllTradesTimeMs = 0L
+
   /**
    * Use a valuation snapshot if it occurred recently, with the market data from its associated
    * observation day. If no suitable valuation snapshot exists then us the most recent from last night.
@@ -57,7 +61,13 @@ case class ValuationService(
 
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
-    log.info("Worked " + worked.size + ", failed " + errors.size + ", took " + sw)
+
+
+    valueAllTradesCount += 1
+    valueAllTradesTimeMs = valueAllTradesTimeMs + sw.ms()
+    log.info("Worked %d, errors %d, took %s, number of calls %d, average time %dms".format(
+      worked.size, errors.size, sw, valueAllTradesCount, valueAllTradesTimeMs.toDouble/valueAllTradesCount))
+
     (marketDataIdentifier, valuations)
   }
 

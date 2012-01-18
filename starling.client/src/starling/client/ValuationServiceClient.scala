@@ -14,6 +14,7 @@ object ValuationServiceClient {
   def main(args:Array[String]) = BouncyRMIServiceApi().using { marketDataService: MarketDataServiceApi =>
     BouncyRMIServiceApi().using { valuationService: ValuationServiceApi =>
       try {
+        val noOfRuns = 10
         println("Calling marketDataSnapshotIDs...")
 
         val valFn = () => valuationService.valueAllTradeQuotas(None)
@@ -34,14 +35,17 @@ object ValuationServiceClient {
 
           stats(snapshot, valuationResult, sw)
 
-          for(x <- 1 to 100) {
-            println("%d\nCalling valueAllQuotas..." + x)
+          val times = (1 to noOfRuns).map(n => {
+            println("\nRun %d Calling valueAllQuotas...".format(n))
             sw.reset
             val (_, valuationResult) = valFn()
-            println("Took " + sw)
+            println("Run %d Took %s".format(n, sw))
             val (worked, errors) = valuationResult.values.partition(_.isRight)
-            println("Worked trades " + worked.size + ", failed trades " + errors.size)
-          }
+            println("Run %d Worked trades %d, failed trades %d".format(n, worked.size, errors.size))
+            sw.ms()
+          })
+
+          println("average time over %d runs, %dms".format(noOfRuns, times.sum / times.size))
         }
 
         def stats(snapshot : TitanMarketDataIdentifier, valuationResult : Map[String, Either[String, List[QuotaValuation]]], sw : Stopwatch) {
@@ -83,9 +87,9 @@ object ValuationServiceClient {
           println("\nMissing Levels " + missingLevels.mkString("\n"))
           println("\nMisc " + other2.mkString("\n"))
 
-          println("\n\nWorked, details " + worked.mkString("\n"))
+          //println("\n\nWorked, details " + worked.mkString("\n"))
 
-          println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %d ms".format(valuationResult.size, worked.size, errors.size, snapshotIdentifiers.head, sw))
+          println("Valuation service result, valued quotas, total size %d, worked %d, failed %d, using snapshot %s, took %s".format(valuationResult.size, worked.size, errors.size, snapshotIdentifiers.head, sw))
         }
 
         testQuotaValuation()
