@@ -63,7 +63,7 @@ import starling.quantity.RichQuantity._
     assertFalse(Qty(6, USD).isAlmostEqualRel(Qty(5, USD), .9))
     assertFalse(Qty(6, USD).isAlmostEqualRel(Qty(6, EUR), 10))
 
-    // check normal case is ssame as isAlmostEqual
+    // check that in the normal cases isAlmostEqualRel is same as isAlmostEqual
     val a1 = Qty(1.000000, MT)
     val b1 = Qty(1.000001, MT)
     assertTrue(a1.isAlmostEqual(b1, 1E-06))
@@ -82,10 +82,16 @@ import starling.quantity.RichQuantity._
     assertFalse(a3.isAlmostEqual(b3, 1E-06))
     assertFalse(a3 isAlmostEqualRel b3)
 
-    val a4 = Qty(000000.0, MT)
-    val b4 = Qty(000000.0, MT)
+    val a4 = Qty(0.000000, MT)
+    val b4 = Qty(0.000001, MT)
     assertTrue(a4.isAlmostEqual(b4, 1E-06))
     assertTrue(a4 isAlmostEqualRel b4)
+
+    // check that zero works (is equal)
+    val a5 = Qty(000000.0, MT)
+    val b5 = Qty(000000.0, MT)
+    assertTrue(a5.isAlmostEqual(b5, 1E-06))
+    assertTrue(a5 isAlmostEqualRel b5)
   }
 
   @Test
