@@ -4,8 +4,6 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.Test
 import starling.quantity.UOM._
-import starling.quantity.Quantity._
-import starling.quantity.Quantity
 
 class ConversionsTests extends TestNGSuite with ShouldMatchers {
 

@@ -247,11 +247,11 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
 
         val groupedNewRows: Map[TimedMarketDataKey, List[Row]] = newRowsWithAllFieldsPresent.groupBy { row => {
           val observationPoint = {
-            if (row(observationDayField.field) == UndefinedValue) {
+            if (row[AnyRef](observationDayField.field) == UndefinedValue) {
               ObservationPoint.RealTime
             } else {
               ObservationPoint(
-                row(observationDayField.field).asInstanceOf[Day],
+                row[Day](observationDayField.field),
                 ObservationTimeOfDay.fromName(row.string(observationTimeField))
               )
             }

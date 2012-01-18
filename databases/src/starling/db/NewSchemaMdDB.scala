@@ -393,7 +393,7 @@ class NewSchemaMdDB(db: DBTrait[RichResultSetRow], dataTypes: MarketDataTypes) e
     def valueFields = extendedKey.marketDataType.valueFields
     def combinedKey = (timedKey, valueKey)
 
-    lazy val row = if (value==null || uom == null) {
+    lazy val row = if (uom == null) {
       None
     } else {
       require(comment.isDefined == (valueFields.size == 2), "Inconsistent number of fields (%s) vs values (%s)" %

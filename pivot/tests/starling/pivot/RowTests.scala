@@ -2,6 +2,7 @@ package starling.pivot
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.WordSpec
+import scalaz.Scalaz._
 
 
 class RowTests extends WordSpec with ShouldMatchers {
