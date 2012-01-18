@@ -91,7 +91,6 @@ class SpreadStdDevSurfaceDataBuilder(var uom:Option[UOM] = None) {
 
 case class SpreadStdDevSurfaceDataKey(market : FuturesMarket) extends MarketDataKey {
   type marketDataType = SpreadStdDevSurfaceData
-  type marketDataDBType = SpreadStdDevSurfaceData
   def typeName = SpreadStdDevSurfaceDataType.name
   def humanName = market.toString
   def fields = Set(SpreadStdDevSurfaceDataType.marketField.field)

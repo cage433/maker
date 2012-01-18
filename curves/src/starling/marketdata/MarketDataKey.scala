@@ -13,7 +13,6 @@ import starling.daterange.{Day, ObservationPoint}
 trait MarketDataKey {
   //the type of MarketData returned when using this key
   type marketDataType <: MarketData
-  type marketDataDBType
 
   //the MarketDataType object for this type
   def typeName:MarketDataTypeName

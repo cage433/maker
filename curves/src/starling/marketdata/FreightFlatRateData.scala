@@ -68,7 +68,6 @@ case class FreightFlatRateDataKey(market: CommodityMarket) extends MarketDataKey
   require(market.priceUOM != null, "missing priceUOM in market: " + market)
 
   type marketDataType = FreightFlatRateData
-  type marketDataDBType = FreightFlatRateDataDTO
 
   def typeName = FreightFlatRateDataType.name
 
@@ -83,10 +82,6 @@ case class FreightFlatRateData(prices: Map[Year, PivotQuantity]) extends MarketD
   def isEmpty = prices.isEmpty
 
   def nonEmpty = prices.nonEmpty
-
-  override def marshall = FreightFlatRateDataDTO(TreeMap.empty[Year, Double] ++ prices.mapValues(_.doubleValue.get))
-
-  lazy val sortedKeys = marshall.prices.keySet
 
   override def size = prices.size
 }

@@ -69,7 +69,6 @@ object OilVolSurfaceDataType extends MarketDataType{
 
 case class OilVolSurfaceDataKey(market: CommodityMarket) extends MarketDataKey {
   type marketDataType = OilVolSurfaceData
-  type marketDataDBType = OilVolSurfaceData
   def typeName = OilVolSurfaceDataType.name
   def humanName = market.toString
   def fields = Set(OilVolSurfaceDataType.marketField.field)

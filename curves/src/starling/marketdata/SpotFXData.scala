@@ -36,7 +36,6 @@ object SpotFXDataType extends MarketDataType {
  */
 case class SpotFXDataKey(ccy: UOM) extends MarketDataKey {
   type marketDataType = SpotFXData
-  type marketDataDBType = SpotFXData
   def typeName = SpotFXDataType.name
   def humanName = ccy.toString
   def fields = Set(SpotFXDataType.currencyField.field)

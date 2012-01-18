@@ -100,7 +100,6 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   require(market.priceUOM != null, "missing priceUOM in market: " + market)
 
   type marketDataType = PriceData
-  type marketDataDBType = PriceDataDTO
   def typeName = PriceDataType.name
   def humanName = market.name
 
@@ -114,9 +113,7 @@ case class PriceData(prices: Map[DateRange, PivotQuantity]) extends MarketData {
   def isEmpty = prices.isEmpty
   def nonEmpty = prices.nonEmpty
 
-  override def marshall = PriceDataDTO(TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.doubleValue.get))
-
-  lazy val sortedKeys = marshall.prices.keySet
+  lazy val sortedKeys = (TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.doubleValue.get)).keySet
   override def size = prices.size
 }
 

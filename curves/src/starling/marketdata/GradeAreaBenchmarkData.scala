@@ -40,7 +40,6 @@ case class GradeAreaBenchmarkData(areaData : NestedMap[(GradeCode, AreaCode), Da
 /** Benchmark area market data key represents a list of grade, area market data rows keyed per commodity */
 case class GradeAreaBenchmarkMarketDataKey(commodity : Commodity) extends MarketDataKey {
   type marketDataType = GradeAreaBenchmarkData
-  type marketDataDBType = GradeAreaBenchmarkData
   def typeName = MarketDataTypeName("GradeAreaBenchmark")
   def humanName = commodity.toString
   def fields = Set(Field("Commodity"))

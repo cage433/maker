@@ -13,6 +13,10 @@ import starling.quantity.UOM._
 import starling.instrument.utils.StarlingXStream
 import collection.immutable.Map
 import starling.services.StarlingInit
+import collection.immutable.{TreeMap, Map}
+import starling.marketdata._
+import starling.daterange.{Year, DateRange, Day}
+import collection.SortedMap
 
 
 object AddBGNExchangeRates{
@@ -37,7 +41,7 @@ object AddBGNExchangeRates{
           case (snapshotID, observationDay) =>
             if (rates.contains(observationDay)) {
               val data = new SpotFXData(Quantity(rates(observationDay), USD / BGN))
-              val dataXml = StarlingXStream.write(data.marshall)
+              val dataXml = StarlingXStream.write(marshall(data))
               writer.insert(
                 "SnapshotData",
                 Map(
@@ -51,6 +55,15 @@ object AddBGNExchangeRates{
     }
   }
 
+  private def marshall(data: MarketData) = data match {
+    case PriceData(prices) =>
+      PriceDataDTO(TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.doubleValue.get))
+
+    case FreightFlatRateData(prices) =>
+      FreightFlatRateDataDTO(TreeMap.empty[Year, Double] ++ prices.mapValues(_.doubleValue.get))
+
+    case _ => data
+  }
 }
 class Patch18_AddBGNExchangeRates extends Patch {
 

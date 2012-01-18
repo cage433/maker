@@ -52,7 +52,6 @@ case class ForwardRateDataKey(ccy: UOM) extends MarketDataKey {
   ccy.ensuring(_.isCurrency, ccy + " is not a currency")
 
   type marketDataType = ForwardRateData
-  type marketDataDBType = ForwardRateData
   def typeName = ForwardRateDataType.name
   def humanName = ccy.toString
   def fields = Set(ForwardRateDataType.currencyField.field)
