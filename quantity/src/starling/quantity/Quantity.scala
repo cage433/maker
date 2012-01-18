@@ -251,6 +251,22 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
             )
   }
 
+  def isAlmostEqualRel(other : Quantity, tolerance : Double = 1E-06, maxRe : Double = 1E-06) = {
+    val thisBase = this.inBaseUOM
+    val otherBase = other.inBaseUOM
+    val tol = Quantity(tolerance, uom).inBaseUOM
+    thisBase.uom == otherBase.uom && (
+        mabs(thisBase.value - otherBase.value) <= tol.value.abs ||
+        thisBase.value.isInfinite && otherBase.value.isInfinite ||
+        thisBase.value.isNaN && otherBase.value.isNaN || {
+          if (!this.isZero && !other.isZero) {
+            val relErr = (if (other > this) (this - other) / other else (this - other) / this).abs
+            relErr <= maxRe
+          } else false
+        }
+      )
+  }
+
   /**
    * Should be: inBaseUOM.value.hashCode
    * but this is faster. Multiplaction is in the same order as base conversion is

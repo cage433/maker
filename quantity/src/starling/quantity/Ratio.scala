@@ -1,6 +1,9 @@
 package starling.quantity
 
+import annotation.tailrec
+
 object Ratio {
+  @tailrec
   def gcd(a: Long, b: Long): Long = b match {
     case 0 => a
     case _ => gcd(b, a % b)

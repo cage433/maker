@@ -73,12 +73,7 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation wit
     }
 
     val mtmVal = mtm(env, ccy)
-    if (!explained.isAlmostEqual(mtmVal, 1e-6)) {
-      val maxTol = 5e-3
-      val fmt = new DecimalFormat("#0.000000000000000")
-      Log.warn("explained %s != mtm %s, difference is %s, maxTol = %f".format(explained.format(fmt), mtmVal.format(fmt), (explained - mtmVal).format(fmt), maxTol))
-      assert(explained.isAlmostEqual(mtmVal, maxTol), "Explanation not the same as the mtm: " + (explained, mtm(env, ccy)))
-    }
+    assert(explained isAlmostEqualRel mtmVal, "Explanation not the same as the mtm: " + (explained, mtmVal))
 
     explained
   }
