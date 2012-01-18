@@ -62,10 +62,9 @@ case class ValuationService(
     log.info("Valuation took " + sw)
     val (worked, errors) = valuations.values.partition(_ isRight)
 
-
     valueAllTradesCount += 1
     valueAllTradesTimeMs = valueAllTradesTimeMs + sw.ms()
-    log.info("Worked %d, errors %d, took %s, number of calls %d, average time %dms".format(
+    log.info("Worked %d, errors %d, took %s, number of calls %d, average time %fms".format(
       worked.size, errors.size, sw, valueAllTradesCount, valueAllTradesTimeMs.toDouble/valueAllTradesCount))
 
     (marketDataIdentifier, valuations)
