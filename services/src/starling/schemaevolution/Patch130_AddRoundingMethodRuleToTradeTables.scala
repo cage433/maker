@@ -8,7 +8,7 @@ import starling.dbx.QueryBuilder._
 import starling.tradestore.eai.EAITradeStore
 
 class Patch130_AddRoundingMethodRuleToTradeTables extends Patch {
-  val tables = "IntradayTrades" :: EAITradeStore.tables
+  val tables = "IntradayTrades" :: EAITradeStore.tables.filterNot(_.contains("150"))
 
   protected def runPatch(starlingInit: StarlingInit, starling: RichDB, writer: DBWriter) {
     starling.inTransaction {

@@ -134,12 +134,12 @@ object Hedge{
     val market = liveFutures.head.market
     assert(liveFutures.forall(_.market == market), "All liveFutures must be for the same market")
 
-    if (!Index.futuresMarketToIndexMap.contains(market))
+    if (!Index.futuresMarketToIndex(market).isDefined)
       return List(liveFutures.map(_ -> 1.0).toMap)
     if (market.tenor != Month)
       return List(liveFutures.map(_ -> 1.0).toMap)
 
-    val index = Index.futuresMarketToIndexMap(market)
+    val index = Index.futuresMarketToIndex(market).get
     netFuturesByContiguousMonths(env.marketDay, liveFutures).flatMap(breakContiguousFuturesBySign).map{
       case contiguousFutures => {
         val months = contiguousFutures.map(_.delivery.asInstanceOf[Month])

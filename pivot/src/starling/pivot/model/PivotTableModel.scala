@@ -352,6 +352,14 @@ object PivotTableModel {
       (pfs, pt)
     }
 
+    val numberOfRowHeaderAndMainTableCells = (pivotTable.columnNode.numLeafChildren + pivotTable.rowFields.size) * pivotTable.rowNode.numLeafChildren
+    val pivotTableToUse = if (numberOfRowHeaderAndMainTableCells > 1500000) {
+      val message = "The table is too big. Please filter or rearrange the fields. Failing that, call a developer."
+      pivotTable.toError(message)
+    } else {
+      pivotTable
+    }
+
     val reportSpecificOptions = dataSource.reportSpecificOptions
     val fsToUse = setDefaultReportSpecificChoices(reportSpecificOptions, fs)
 
@@ -362,7 +370,7 @@ object PivotTableModel {
       dataFields = dataSource.fieldDetails.filter(_.isDataField).map(_.field).toSet,
       pivotFieldsState = fsToUse,
       drillDownGroups = dataSource.drillDownGroups,
-      pivotTable = pivotTable,
+      pivotTable = pivotTableToUse,
       availablePages = dataSource.availablePages,
       if (initialState == PivotFieldsState.Blank) None else Some(initialState),
       reportSpecificOptions = reportSpecificOptions)

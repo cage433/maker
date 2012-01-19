@@ -31,7 +31,7 @@ class HttpWebserviceBromptonActivator extends BromptonActivator with Log {
   private def addRootServlet(rootContext: Context, rootServlet: RootServlet, context: BromptonContext) {
     context.createServiceTracker(Some(classOf[HttpServlet]), ServiceProperties(), new BromptonServiceCallback[HttpServlet]() {
       def serviceAdded(ref: BromptonServiceReference, properties: ServiceProperties, service: HttpServlet) {
-        val servletPath = properties.get[HttpContext].context
+        val servletPath = properties[HttpContext].context
 
         rootContext.addServlet(new ServletHolder(service.asInstanceOf[HttpServlet]), "/" + servletPath + "/*")
         rootServlet.paths += servletPath

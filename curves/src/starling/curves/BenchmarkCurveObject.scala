@@ -29,7 +29,7 @@ case class AreaBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCur
   override def typeName = PriceDataType.name
   def marketDataKey = GradeAreaBenchmarkMarketDataKey(commodity)
   def underlying = commodity.toString + " Benchmark"
-  def buildFromMarketData(marketDay : DayAndTime, marketData : GradeAreaBenchmarkData) : CurveObject = {
+  def buildFromMarketData(marketDay : DayAndTime, marketData : GradeAreaBenchmarkData, refData : ReferenceDataLookup) : CurveObject = {
     AreaBenchmarkCurveObject(marketDay, marketData)
   }
 }
@@ -50,10 +50,10 @@ case class AreaBenchmarkCurveObject(marketDayAndTime : DayAndTime, marketData : 
   }
 }
 
-case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, grade : GradeCode, tenor:Tenor, refData : ReferenceDataLookup,
+case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCountryCode, grade : GradeCode, tenor:Tenor,
   override val ignoreShiftsIfPermitted: Boolean = false
 )
-  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity, refData), (country, grade, tenor), ignoreShiftsIfPermitted)
+  extends AtomicDatumKey(CountryBenchmarkCurveKey(commodity), (country, grade, tenor), ignoreShiftsIfPermitted)
 {
   def periodKey : Option[Period] = None
   def nullValue = Quantity(0.0, commodity.representativeMarket.priceUOM)
@@ -69,11 +69,11 @@ case class CountryBenchmarkAtomicKey(commodity: Commodity, country: NeptuneCount
 /**
  * Benchmark curve key for benchmark location data
  */
-case class CountryBenchmarkCurveKey(commodity : Commodity, refData : ReferenceDataLookup) extends NonHistoricalCurveKey[CountryBenchmarkData]{
+case class CountryBenchmarkCurveKey(commodity : Commodity) extends NonHistoricalCurveKey[CountryBenchmarkData]{
   override def typeName = PriceDataType.name
   def marketDataKey = CountryBenchmarkMarketDataKey(commodity)
   def underlying = commodity.toString + " Benchmark"
-  def buildFromMarketData(marketDay : DayAndTime, marketData : CountryBenchmarkData) : CurveObject = {
+  def buildFromMarketData(marketDay : DayAndTime, marketData : CountryBenchmarkData, refData : ReferenceDataLookup) : CurveObject = {
     CountryBenchmarkCurveObject(marketDay, marketData, refData)
   }
 }

@@ -198,6 +198,10 @@ case class AxisNode(axisValue:AxisValue, children:List[AxisNode]=Nil) {
     }
   }
 
+  def numLeafChildren:Int = {
+    if (children.isEmpty) 1 else children.map(_.numLeafChildren).sum
+  }
+
   def flatten(previous:Option[AxisNode], refresh:Boolean, path:List[AxisValue], subTotals:Boolean, recursiveCollapsed:Boolean, collapsedState:CollapsedState,
               disabledSubTotals:List[Field], formatInfo:FieldInfo, extraFormatInfo:ExtraFormatInfo):List[List[AxisCell]] = {
     val pathToHere = axisValue :: path
@@ -307,7 +311,7 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
     (grid.rowData, grid.colData, grid.mainData, grid.colUOMS, grid.mainTableUpdateInfo, grid.rowUpdateInfo, grid.columnUpdateInfo)
   }
 
-  def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid ={
+  def createGrid(extractUOMs:Boolean = true, addExtraColumnRow:Boolean = true):PivotGrid = {
     val aggregatedMainBucket = table.aggregatedMainBucket
     val zeroFields = table.zeroFields
     val rowsToRemove:Set[List[ChildKey]] = (if (otherLayoutInfo.removeZeros && (fieldState.columns.allFields.toSet & zeroFields).nonEmpty) {
@@ -387,72 +391,63 @@ case class PivotTableConverter(otherLayoutInfo:OtherLayoutInfo = OtherLayoutInfo
       }}
     }}
 
-    // We need to check dimensions here as if the table is too big we run out of memory.
-    if (rowDataWithNullsAdded.length * colData(0).length > 1000000) {
-      val fakeRowData = Array(Array(AxisCell.Null))
-      val fakeColData = Array(Array(AxisCell.Null))
-      val fakeMainData = Array(Array(TableCell("Table too big, rearrange fields. " +
-              "The report ran but the table to display the result is too big, please rearrange fields or call a developer")))
-      PivotGrid(fakeRowData, fakeColData, fakeMainData)
-    } else {
-      // Note below that we are using rowData rather than rowDataWithNullsAdded. This is because the rowData matches the aggregatedMainBucket.
-      val (mainData, columnUOMs, cellUpdateInfoList) = nMainTableCells(rowData, cdX, extractUOMs)
+    // Note below that we are using rowData rather than rowDataWithNullsAdded. This is because the rowData matches the aggregatedMainBucket.
+    val (mainData, columnUOMs, cellUpdateInfoList) = nMainTableCells(rowData, cdX, extractUOMs)
 
-      if (extractUOMs) {
-        // Extract the UOM label as far towards the top of the column header table as possible.
-        val startRow = colData.indexWhere(_(0) != AxisCell.Filler)
-        if (startRow != -1) {
+    if (extractUOMs) {
+      // Extract the UOM label as far towards the top of the column header table as possible.
+      val startRow = colData.indexWhere(_(0) != AxisCell.Filler)
+      if (startRow != -1) {
 
-          def getSpans(row:Array[AxisCell]):List[(Int,Int)] = {
-            val spans = new ListBuffer[(Int,Int)]()
-            var currentCol = 0
-            while (currentCol < row.length) {
-              row(currentCol).span match {
-                case None => {
-                  spans += ((currentCol,currentCol))
-                  currentCol += 1
-                }
-                case Some(c) => {
-                  spans += ((currentCol,currentCol+c-1))
-                  currentCol += c
-                }
+        def getSpans(row:Array[AxisCell]):List[(Int,Int)] = {
+          val spans = new ListBuffer[(Int,Int)]()
+          var currentCol = 0
+          while (currentCol < row.length) {
+            row(currentCol).span match {
+              case None => {
+                spans += ((currentCol,currentCol))
+                currentCol += 1
+              }
+              case Some(c) => {
+                spans += ((currentCol,currentCol+c-1))
+                currentCol += c
               }
             }
-            spans.toList
           }
+          spans.toList
+        }
 
-          var columnsNotHandled = (0 until columnUOMs.length).toSet.filter(n => columnUOMs(n).toString.length() > 0)
-          var currentRow = startRow
-          while (columnsNotHandled.nonEmpty && (currentRow < colData.length)) {
-            val spans = getSpans(colData(currentRow)).filter{case (start, end) => columnsNotHandled.contains(start)}
-            spans.foreach{case (start, end) => {
-              if ((start to end).map(c => columnUOMs(c)).distinct.size == 1) {
-                val current = colData(currentRow)(start)
-                val uom = columnUOMs(start).toString
-                if (uom.length > 0) {
-                  colData(currentRow)(start) = current.changeLabel(current.text + " (" + uom + ")")
-                }
-                columnsNotHandled --= (start to end).toSet
+        var columnsNotHandled = (0 until columnUOMs.length).toSet.filter(n => columnUOMs(n).toString.length() > 0)
+        var currentRow = startRow
+        while (columnsNotHandled.nonEmpty && (currentRow < colData.length)) {
+          val spans = getSpans(colData(currentRow)).filter{case (start, end) => columnsNotHandled.contains(start)}
+          spans.foreach{case (start, end) => {
+            if ((start to end).map(c => columnUOMs(c)).distinct.size == 1) {
+              val current = colData(currentRow)(start)
+              val uom = columnUOMs(start).toString
+              if (uom.length > 0) {
+                colData(currentRow)(start) = current.changeLabel(current.text + " (" + uom + ")")
               }
-            }}
-            currentRow += 1
-          }
+              columnsNotHandled --= (start to end).toSet
+            }
+          }}
+          currentRow += 1
         }
       }
-      val rowDataArray = rowDataWithNullsAdded.map(_.toArray).toArray
-
-      def axisCellUpdateInfo(cells:Array[Array[AxisCell]]) = {
-        cells.zipWithIndex.flatMap{case (arrayOfCells, i) => arrayOfCells.zipWithIndex.flatMap{case (cell, j) => {
-          if (cell.changed) Some(CellUpdateInfo(i, j, true, 0.0f)) else None
-        }}}
-      }
-      val (rowAxisCellUpdateInfo, colAxisCellUpdateInfo) = previousPageData match {
-        case None => (Nil,Nil)
-        case Some(_) => (axisCellUpdateInfo(rowDataArray).toList, axisCellUpdateInfo(colData).toList)
-      }
-
-      PivotGrid(rowDataArray, colData, mainData, columnUOMs, cellUpdateInfoList, rowAxisCellUpdateInfo, colAxisCellUpdateInfo)
     }
+    val rowDataArray = rowDataWithNullsAdded.map(_.toArray).toArray
+
+    def axisCellUpdateInfo(cells:Array[Array[AxisCell]]) = {
+      cells.zipWithIndex.flatMap{case (arrayOfCells, i) => arrayOfCells.zipWithIndex.flatMap{case (cell, j) => {
+        if (cell.changed) Some(CellUpdateInfo(i, j, true, 0.0f)) else None
+      }}}
+    }
+    val (rowAxisCellUpdateInfo, colAxisCellUpdateInfo) = previousPageData match {
+      case None => (Nil,Nil)
+      case Some(_) => (axisCellUpdateInfo(rowDataArray).toList, axisCellUpdateInfo(colData).toList)
+    }
+
+    PivotGrid(rowDataArray, colData, mainData, columnUOMs, cellUpdateInfoList, rowAxisCellUpdateInfo, colAxisCellUpdateInfo)
   }
 
   private def nMainTableCells(flattenedRowValues:List[List[AxisCell]], flattenedColValues:List[List[AxisCell]], extractUOMs:Boolean = true) = {

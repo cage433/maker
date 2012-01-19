@@ -11,7 +11,7 @@ class VolSurfaceData
 object OilVolSurfaceDataType extends MarketDataType{
   type dataType = OilVolSurfaceData
   type keyType = OilVolSurfaceDataKey
-  lazy val keys : List[OilVolSurfaceDataKey] = Market.all.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
+  lazy val keys : List[OilVolSurfaceDataKey] = Market.allMarketsView.filter(_.volatilityID.isDefined).map(OilVolSurfaceDataKey)
   val humanName = "vol surface data"
 
   def extendedKeys = List(marketField)
@@ -69,7 +69,6 @@ object OilVolSurfaceDataType extends MarketDataType{
 
 case class OilVolSurfaceDataKey(market: CommodityMarket) extends MarketDataKey {
   type marketDataType = OilVolSurfaceData
-  type marketDataDBType = OilVolSurfaceData
   def typeName = OilVolSurfaceDataType.name
   def humanName = market.toString
   def fields = Set(OilVolSurfaceDataType.marketField.field)

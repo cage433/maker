@@ -305,7 +305,7 @@ class DBMarketDataStore(db: MdDB, tags: MarketDataSnapshots, val marketDataSourc
 
   def query(marketDataIdentifier: MarketDataIdentifier, marketDataType: MarketDataTypeName,
             observationDays: Option[Set[Option[Day]]] = None, observationTimes: Option[Set[ObservationTimeOfDay]] = None,
-            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketData)] = {
+            marketDataKeys: Option[Set[MarketDataKey]] = None): List[(TimedMarketDataKey, MarketDataRows)] = {
     val version = versionForMarketDataVersion(marketDataIdentifier.marketDataVersion)
     val mds = marketDataSets(marketDataIdentifier)
     db.query(version, mds, marketDataType, observationDays, observationTimes, marketDataKeys)

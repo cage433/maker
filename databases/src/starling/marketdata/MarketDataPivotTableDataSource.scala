@@ -20,6 +20,7 @@ import collection.immutable.{Map, Iterable}
 import scalaz.Scalaz._
 import java.lang.IllegalStateException
 import starling.utils.ImplicitConversions
+import utils.TimestampPivotFormatter
 
 /**
  * Represents raw market data as pivot data
@@ -32,6 +33,9 @@ import starling.utils.ImplicitConversions
 object MarketDataPivotTableDataSource {
   val observationTimeField = FieldDetails.list("Observation Time", ObservationTimeOfDay.names)
   val observationDayField = FieldDetails("Observation Day", ObservationDayPivotParser)
+  val sourceField = FieldDetails.createMeasure("Source")
+  val userField = FieldDetails.createMeasure("User")
+  val timestampField = FieldDetails.createMeasure("Timestamp", TimestampPivotFormatter)
 }
 
 class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: MarketDataStore,
@@ -41,7 +45,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
   val keyAndDataFields = marketDataType.fields.map(_.field).toSet
 
   val fieldDetailsGroups = List(
-    FieldDetailsGroup("Market Data Fields", observationDayField :: observationTimeField :: marketDataType.fields)
+    FieldDetailsGroup("Market Data Fields", userField :: timestampField :: sourceField :: observationDayField :: observationTimeField :: marketDataType.fields)
   )
   lazy val fieldDetails:List[FieldDetails] = fieldDetailsGroups.flatMap(_.fields)
 
@@ -110,7 +114,7 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
                   Nil //Delete the row if the measure has been deleted
                 } else {
                   affectedRows.map {
-                    case (_, row) => (Amended, row ++ amends.filter(_._2.isDefined).mapValues(_.get))
+                    case (_, row) => (Amended, row amend amends.filter(_._2.isDefined).mapValues(_.get))
                   }
                 }
               }
@@ -243,11 +247,11 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
 
         val groupedNewRows: Map[TimedMarketDataKey, List[Row]] = newRowsWithAllFieldsPresent.groupBy { row => {
           val observationPoint = {
-            if (row(observationDayField.field) == UndefinedValue) {
+            if (row[AnyRef](observationDayField.field) == UndefinedValue) {
               ObservationPoint.RealTime
             } else {
               ObservationPoint(
-                row(observationDayField.field).asInstanceOf[Day],
+                row[Day](observationDayField.field),
                 ObservationTimeOfDay.fromName(row.string(observationTimeField))
               )
             }
@@ -320,9 +324,9 @@ class PrebuiltMarketDataPivotData(reader: MarketDataReader, marketDataStore: Mar
       val observationTimes: Option[Set[ObservationTimeOfDay]] = selectedValues[String](observationTimeField.field).map(_.map(t=>ObservationTimeOfDay.fromShortOrLongName(t.get)))
 
       val allData = reader.read(marketDataType.name, observationDays, observationTimes, keyClause)
-      allData.flatMap { case (timedKey, data) => {
-        dataType(timedKey.key).castRows(timedKey.key, data).map { row => {
-          row + (observationTimeField.field → timedKey.timeName) +? (observationDayField.field → timedKey.day)
+      allData.flatMap { case (timedKey, rows) => {
+        rows.rows.map { row => {
+          (marketDataType.fieldValues(timedKey.key) ++ row) + (observationTimeField.field → timedKey.timeName) +? (observationDayField.field → timedKey.day)
         } }
       } }
     }

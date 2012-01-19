@@ -1,6 +1,7 @@
 package starling.utils.conversions
 
 import starling.utils.ImplicitConversions._
+import shapeless.Typeable
 
 
 trait RichManifest {
@@ -9,11 +10,11 @@ trait RichManifest {
   class RichManifest[T](manifest : Manifest[T]) {
     def isInstance(any: Any) = manifest.erasure.isInstance(any)
 
-    def cast(any: Any): T = safeCast(any).getOrElse(
+    /** Replacement for asInstanceOf, logs more information upon failure */
+    def as(any: Any)(implicit t: Typeable[T]): T = any.cast[T].getOrElse(
       throw new Exception("%s [%s] is not of type %s" % (any, getClassOf(any), manifest.erasure)))
 
-    def safeCast(any: Any): Option[T] = if (any != null && isInstance(any)) Some(any.asInstanceOf[T]) else None
-    def castAll(list: List[Any], error: Any => T): List[T] = list.map(value => safeCast(value).getOrElse(error(value)))
+    def castAll(list: List[Any], error: Any => T)(implicit t: Typeable[T]): List[T] = list.map(value => value.cast[T].getOrElse(error(value)))
     def requireNotNull(value: T) = {
       val n = nullTypes(value)
       if (!n.isEmpty) {

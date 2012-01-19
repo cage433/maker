@@ -12,7 +12,11 @@ object ReflectionEquals {
     !bla && method.getParameterTypes.isEmpty
   }
 
-  case class Diff(field: Method, aa: AnyRef, bb: AnyRef)
+  case class Diff(field: Method, aa: AnyRef, bb: AnyRef) {
+
+    override def toString =
+      "Differences for getter method '%s'\n1: '%s'\n2: '%s'".format(field, aa, bb)
+  }
 
   def fieldsThatDiffer[A<:AnyRef, B<:AnyRef](a: A, b: B) = {
     val fields = a.getClass.getDeclaredMethods.filter(isFieldAccessor)

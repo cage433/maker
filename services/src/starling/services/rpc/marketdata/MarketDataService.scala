@@ -92,7 +92,7 @@ class MarketDataService(marketDataStore: MarketDataStore, notifier: Notifier = N
   }
 
   private def getReferenceInterestRates(snapshotId: TitanSnapshotIdentifier, observationDates: Iterable[Day], keys: MarketDataKey*) = {
-    val fixings: List[(Option[Day], MarketDataKey, ForwardRateData)] = query[ForwardRateData](snapshotId, observationDates, ForwardRateDataType, keys : _*)
+    val fixings: List[(Option[Day], MarketDataKey, ForwardRateData)] = query(snapshotId, observationDates, ForwardRateDataType, keys : _*)
 
     fixings.collect { case (Some(obsDay), ForwardRateDataKey(UOMToTitanCurrency(ccy)), forwardRates) => forwardRates.rates.mapNested {
       case (source, tenor, rate) =>
@@ -105,7 +105,7 @@ class MarketDataService(marketDataStore: MarketDataStore, notifier: Notifier = N
     spotFXRatesFor(marketDataID.snapshotIdentifier, marketDataID.observationDay, keys : _*)
 
   private def spotFXRatesFor(snapshotID: TitanSnapshotIdentifier, observationDays: Iterable[Day], keys: MarketDataKey*) = {
-    val rates = query[SpotFXData](snapshotID, observationDays, SpotFXDataType, keys : _*)
+    val rates = query(snapshotID, observationDays, SpotFXDataType, keys : _*)
 
     val allDays = rates.collect { case (Some(observationDay), SpotFXDataKey(UOMToTitanCurrency(_)), SpotFXData(rate))
       if (!rate.isZero) => (observationDay, if (rate.denominatorUOM == UOM.USD) rate.invert else rate)
@@ -124,15 +124,14 @@ class MarketDataService(marketDataStore: MarketDataStore, notifier: Notifier = N
   private def containsAllTitanCurrencies(rates: List[SpotFXRate]): Boolean =
     expectedCurrencies.forall(uom => rates.exists(_.rate.uom.contains(uom)))
 
-  private def query[MD <: MarketData : Manifest](snapshotId: TitanSnapshotIdentifier, observationDates: Iterable[Day],
-    marketDataType: MarketDataType, keys: MarketDataKey*): List[(Option[Day], MarketDataKey, MD)] = {
+  private def query[MDT <: MarketDataType : Manifest](snapshotId: TitanSnapshotIdentifier, observationDates: Iterable[Day],
+    marketDataType: MDT, keys: MarketDataKey*): List[(Option[Day], MarketDataKey, MDT#dataType)] = {
 
     val observationDays: Option[Set[Option[Day]]] = observationDates.ifDefined(_.map(some(_)).toSet)
     val marketDataKeys: Option[Set[MarketDataKey]] = keys.ifDefined(_.toSet)
 
     marketDataStore.query(identifierFor(snapshotId), marketDataType.name, observationDays, None, marketDataKeys)
-      .map { case (timedKey, data) => (timedKey.day, timedKey.key, data) }
-      .filterCast[(Option[Day], MarketDataKey, MD)]
+      .map { case (timedKey, data) => (timedKey.day, timedKey.key, data.toMarketData(marketDataType)) }
   }
 
   private def identifierFor(snapshotId: TitanSnapshotIdentifier) = MarketDataIdentifier(

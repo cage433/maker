@@ -43,6 +43,27 @@ class RichMultiMapTests extends WordSpec with ShouldMatchers with RichMaps with 
     Map(1 ->> (1, 2, 3), 2 ->> (2, 3, 4)) union Map(1 ->> (4, 5, 6), 3 ->> (3, 4, 5)) should be ===
       Map(1 ->> (1, 2, 3, 4, 5, 6), 2 ->> (2, 3, 4), 3 ->> (3, 4, 5))
   }
+
+  "can reverse multimap" in {
+    Map(1 ->> (2, 3), 2 ->> (3, 4)).reverseMulti.mapValues(_.sorted) should be ===
+      Map(2 ->> (1), 3 ->> (1, 2), 4 ->> (2))
+  }
+
+  "can flatten" in {
+    Map(1 ->> (10, 20, 30), 2 ->> (40, 50, 60)).flatMultiMap(kv => kv._1 + kv._2).toList should be ===
+      List(11, 21, 31, 42, 52, 62)
+  }
+}
+
+class RichNestedMapTests extends WordSpec with ShouldMatchers with RichMaps {
+  "can pair inner and outer keys" in  {
+    Map(1 → Map(2 → 20, 3 → 30)).pairKeys should be === Map((1, 2) → 20, (1, 3) → 30)
+  }
+
+  "can map inner values" in {
+    Map(1 → Map(2 → 20, 3 → 30)).mapInnerValues(_ * 2) should be ===
+      Map(1 → Map(2 → 40, 3 → 60))
+  }
 }
 
 class RichMutableMapTests extends WordSpec with ShouldMatchers with RichMaps {
@@ -60,7 +81,6 @@ class RichMutableMapTests extends WordSpec with ShouldMatchers with RichMaps {
     map should be === Map(1 → "initial updated").mutable
   }
 }
-
 
 class BidirectionalMapTests extends TestNGSuite with ShouldMatchers {
   val bimap = BidirectionalHashMap.empty[Int, String]

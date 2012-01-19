@@ -11,6 +11,7 @@ import starling.maths._
 import starling.instrument._
 import starling.db._
 import starling.models._
+import starling.tradeimport.ClosedDesks
 import starling.utils._
 import starling.gui.api._
 import starling.curves._
@@ -44,14 +45,14 @@ lazy val devInstance = init()
 lazy val rmiInstance = starling.services.StarlingInit.rmiInstance
 
 lazy val neptuneRefData = devInstance.referenceDataLookup
-def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
+def makeEnv(pricingGroup : PricingGroup, marketDay : DayAndTime) : Environment = {
   val marketDataStore = devInstance.marketDataStore
 
   val marketDataSelection = MarketDataSelection(Some(pricingGroup), None)
   val marketDataID = marketDataStore.latestMarketDataIdentifier(marketDataSelection)
   val reader = new NormalMarketDataReader(marketDataStore, marketDataID)
 
-  val rule = new ClosesEnvironmentRule(neptuneRefData)
+  val rule = new MostRecentClosesEnvironmentRule(neptuneRefData)
   rule.createEnv(marketDay, reader).environment
 //  val marketDataSlice = new MarketDataReaderMarketDataSlice(reader, ObservationPoint(marketDay, ObservationTimeOfDay.LMEClose), Map(), new MarketDataTypes(neptuneRefData))
 //  Environment(
@@ -63,8 +64,13 @@ def makeEnv(pricingGroup : PricingGroup, marketDay : Day) : Environment = {
 //    ))
 }
 lazy val titanTradeStore = {
-  val ts = new starling.titan.TitanTradeStore(new RichDB(devInstance.props.StarlingDatabase(), new RichResultSetRowFactory), Broadcaster.Null, TitanTradeSystem, neptuneRefData)
-  ts.init
+  val broadcaster = Broadcaster.Null
+  val dbConnection = devInstance.props.StarlingDatabase()
+  val richDB = new RichDB(dbConnection, new RichResultSetRowFactory)
+
+  val closedDesks = new ClosedDesks(broadcaster, richDB.db)
+  val ts = new starling.titan.TitanTradeStore(richDB, broadcaster, TitanTradeSystem, neptuneRefData, closedDesks)
+  //ts.init
   ts
 }
 
@@ -77,13 +83,14 @@ def titanTradeables = titanTrades.map(_.tradeable).flatMap{
 lazy val titanServices = new DefaultTitanServices(devInstance.props)
 lazy val logisticsServices = new DefaultTitanLogisticsServices(devInstance.props)
 
-lazy val edmTrades = titanServices.getAllCompletedTrades
+lazy val edmTrades = titanServices.getAllCompletedPhysicalTrades
 
 lazy val titanTradeStoreManager = TitanTradeStoreManager(
   titanServices,
   titanTradeStore,
   titanServices,
-  logisticsServices
+  logisticsServices,
+  () =>  {}
 )
 
 lazy val environmentProvider = new DefaultEnvironmentProvider(devInstance.marketDataStore, neptuneRefData)

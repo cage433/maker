@@ -7,14 +7,14 @@ import collection.immutable._
 
 
 class AdaptingMdDB(adapted: MdDB) extends MdDB {
-  def checkIntegrity() = adapted.checkIntegrity
-  def readAll() = adapted.readAll
-  def marketDataSetNames() = adapted.marketDataSetNames
+  def checkIntegrity() = adapted.checkIntegrity()
+  def readAll() = adapted.readAll()
+  def marketDataSetNames() = adapted.marketDataSetNames()
   def observationDaysByMarketDataSet = adapted.observationDaysByMarketDataSet
-  def latestVersionForMarketDataSets() = adapted.latestVersionForMarketDataSets
+  def latestVersionForMarketDataSets() = adapted.latestVersionForMarketDataSets()
   def latestObservationDaysFor(marketDataSets: List[MarketDataSet], marketDataType: MarketDataTypeName) =
     adapted.latestObservationDaysFor(marketDataSets, marketDataType)
-  def latestExcelVersions() = adapted.latestExcelVersions
+  def latestExcelVersions() = adapted.latestExcelVersions()
   def store(data: List[MarketDataUpdate], marketDataSet: MarketDataSet) = adapted.store(data, marketDataSet)
   def maxVersionForMarketDataSetNames(names: List[String]) = adapted.maxVersionForMarketDataSetNames(names)
 

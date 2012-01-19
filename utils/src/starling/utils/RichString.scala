@@ -2,7 +2,6 @@ package starling.utils
 
 import java.net.{URLDecoder, URLEncoder}
 
-import starling.utils.Pattern._
 import scalaz.Scalaz._
 import collection.Seq
 import java.security.MessageDigest
@@ -28,6 +27,7 @@ trait RichString {
       case x: Long => new java.lang.Long(x) :: Nil
       case x: Float => new java.lang.Float(x) :: Nil
       case x: Double => new java.lang.Double(x) :: Nil
+      // TODO: [17 Jan 2012]: Replace with generic implementation x.productIterator.toSeq.flatMap(boxValue)
       case x: (Any, Any) => boxValue(x._1) ++ boxValue(x._2)
       case x: Unit => "()" :: Nil
       case x: AnyRef => x :: Nil
@@ -82,6 +82,9 @@ trait RichString {
       val md5 = MessageDigest.getInstance("MD5").updateIt(_.reset(), _.update(s.getBytes))
 
       md5.digest().map(0xFF & _).map { "%02x".format(_) }.foldLeft(""){_ + _}
+    }
+    def replaceAll(replacements: Map[String, String]): String = {
+      (s /: replacements)((acc, replacement) => acc.replaceAll(replacement._1, replacement._2))
     }
 
     def ci = new CaseInsensitive(s)

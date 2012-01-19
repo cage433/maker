@@ -3,7 +3,7 @@ package starling.curves
 import starling.daterange.DayAndTime
 import starling.utils.cache.CacheFactory
 import starling.market.HasImpliedVol
-import starling.marketdata.{MarketDataTypeName, MarketDataKey, MarketData}
+import starling.marketdata.{ReferenceDataLookup, MarketDataTypeName, MarketDataKey, MarketData}
 
 
 /**
@@ -14,7 +14,7 @@ import starling.marketdata.{MarketDataTypeName, MarketDataKey, MarketData}
  * @see AtomicMarketDatum
  */
 trait CurveKey {
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice): CurveObject
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice, refData : ReferenceDataLookup): CurveObject
 
   /**
    * A string that represents the underlying for this key. E.g. a price key for ICE WTI would
@@ -35,11 +35,11 @@ trait CurveKey {
 }
 
 trait NonHistoricalCurveKey[T <: MarketData] extends CurveKey {
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice): CurveObject = {
-    buildFromMarketData(marketDayAndTime, marketDataSlice.read(marketDataKey).asInstanceOf[T])
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice, refData : ReferenceDataLookup): CurveObject = {
+    buildFromMarketData(marketDayAndTime, marketDataSlice.read(marketDataKey).asInstanceOf[T], refData)
   }
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: T): CurveObject
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: T, refData : ReferenceDataLookup): CurveObject
 
   def marketDataKey: MarketDataKey
 

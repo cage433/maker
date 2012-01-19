@@ -1,6 +1,5 @@
 package starling.utils
 
-import starling.utils.{ReceiversBroadcaster}
 import starling.manager._
 
 class SingleClasspathBroadcasterActivator extends BromptonActivator {

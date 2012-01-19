@@ -62,6 +62,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   })
 
+  // For debug reasons sometimes we don't want to cache components.
   private val componentCaching = true
 
   private val starlingBrowserUI = new StarlingBrowserUI
@@ -200,34 +201,22 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  private val undoAction = Action("undoAction") {
-    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
-    currentComponent.resetDynamicState()
-    val oldIndex = current
-    current-=1
-    val pageInfo = history(current)
-    onEDT(showPageBack(pageInfo, oldIndex))
-  }
+  private val undoAction = Action("undoAction") {showPageBack(current - 1)}
 
   private val backPageAction = new AbstractAction {
     def actionPerformed(e:ActionEvent) {
-      history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
-      currentComponent.resetDynamicState()
-
       // Look for a page that is different to the current one.
-      val oldIndex = current
       val currentText = history(current).page.text
       val testIndex = history.toList.reverse.indexWhere(_.page.text != currentText, history.length - current)
-      current = if (testIndex == -1) {
+      var newIndex = if (testIndex == -1) {
         0
       } else {
         history.length - testIndex - 1
       }
-      if ((current + 1) != oldIndex) {
-        current += 1
+      if ((newIndex + 1) != current) {
+        newIndex += 1
       }
-      val pageInfo = history(current)
-      showPageBack(pageInfo, oldIndex)
+      showPageBack(newIndex)
     }
   }
 
@@ -250,52 +239,88 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     addressBar.titleText.peer.setCaretPosition(0)
   }
 
-  // pageInfo is the page you are going back to. indexGoingFrom is the "current" page.
-  private def showPageBack(pageInfo: PageInfo, indexGoingFrom:Int) {
-    updateRefreshState(pageInfo)
-    val page = pageInfo.page
-    if (page.text == (history(indexGoingFrom).page.text)) {
-      // Move back without sliding.
-      showPage(pageInfo, indexGoingFrom)
-      refreshBrowserBar()
-    } else {
-      setButtonsEnabled(false)
-      setTitleText(page.text)
-      addressIcon.image = page.icon
-      tabComponent.setTextFromPage(page)
-
-      // Slide back.
-      genericLockedUI.setLocked(true)
-      genericLockedUI.setClient(backSlideClient)
-      val width = currentComponent.peer.getWidth
-      val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
-      val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
-      currentComponent.peer.paint(graphics)
-      graphics.dispose()
-
-      history(indexGoingFrom).image = image1
-
-      val image2 = pageInfo.image
-      backSlideClient.setImages(image1, image2)
-      val animator = new Animator(slideTime)
-      animator.setAcceleration(slideAcceleration)
-      animator.setDeceleration(slideAcceleration)
-      val timingTarget = new TimingTargetAdapter {
-        override def timingEvent(fraction: Float) {backSlideClient.setX(fraction * width)}
-
-        override def end() {
-          backSlideClient.setX(width)
-          refreshBrowserBar()
-          onEDT({
-            showPage(pageInfo, indexGoingFrom)
-            setScreenLocked(false)
-            backSlideClient.reset
-          })
-        }
+  private def showPageMaybeRegeneratingPageResponse(pageInfo:PageInfo, finished:((PageResponse,Page)=>Unit)) {
+    pageInfo.pageResponse.get match {
+      case Some(pr) => {
+        finished(pr, pageInfo.page)
       }
-      animator.addTarget(timingTarget)
-      animator.start()
+      case _ => buildPageResponse(Left(pageInfo.page), (timeTree) => {}, finished)
     }
+  }
+
+  private def imageOrBlank(pageInfo:PageInfo) = {
+    val width = currentComponent.peer.getWidth
+    val height = currentComponent.peer.getHeight
+    pageInfo.image match {
+      case Some(i) => i
+      case None => {
+        val i = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+        val graphics = i.getGraphics.asInstanceOf[Graphics2D]
+        graphics.setColor(GuiUtils.PanelBackgroundColour)
+        graphics.fillRect(0,0,width,height)
+        graphics.dispose()
+        i
+      }
+    }
+  }
+
+  // pageInfo is the page you are going back to. indexGoingFrom is the "current" page.
+  private def showPageBack(indexGoingTo:Int) {
+    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
+    currentComponent.resetDynamicState()
+    val indexGoingFrom = current
+    val pageInfo = history(indexGoingTo)
+
+    def finished(pageResponse:PageResponse, page:Page) {
+      current = indexGoingTo
+      updateRefreshState(pageInfo)
+      val page = pageInfo.page
+      if (page.text == (history(indexGoingFrom).page.text)) {
+        // Move back without sliding.
+        showPage(pageResponse, pageInfo, indexGoingFrom)
+        refreshBrowserBar()
+        genericLockedUI.setLocked(false)
+        tabComponent.setBusy(false)
+      } else {
+        setButtonsEnabled(false)
+        setTitleText(page.text)
+        addressIcon.image = page.icon
+        tabComponent.setTextFromPage(page)
+
+        // Slide back.
+        genericLockedUI.setLocked(true)
+        genericLockedUI.setClient(backSlideClient)
+        val width = currentComponent.peer.getWidth
+        val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
+        val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
+        currentComponent.peer.paint(graphics)
+        graphics.dispose()
+
+        history(indexGoingFrom).image = image1
+
+        val image2 = imageOrBlank(pageInfo)
+        backSlideClient.setImages(image1, image2)
+        val animator = new Animator(slideTime)
+        animator.setAcceleration(slideAcceleration)
+        animator.setDeceleration(slideAcceleration)
+        val timingTarget = new TimingTargetAdapter {
+          override def timingEvent(fraction: Float) {backSlideClient.setX(fraction * width)}
+
+          override def end() {
+            backSlideClient.setX(width)
+            refreshBrowserBar()
+            onEDT({
+              showPage(pageResponse, pageInfo, indexGoingFrom)
+              setScreenLocked(false)
+              backSlideClient.reset
+            })
+          }
+        }
+        animator.addTarget(timingTarget)
+        animator.start()
+      }
+    }
+    showPageMaybeRegeneratingPageResponse(pageInfo, finished)
   }
 
   peer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "utilsPage")
@@ -317,12 +342,12 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
           case None => None
           case Some(pc) => pc.getState
         }
-        val (rebuiltPageComponent, _) = createPopulatedComponent(currentPage, info.pageResponse)
+        val (rebuiltPageComponent, _) = createPopulatedComponent(currentPage, currentPageResponse)
         rebuiltPageComponent.setState(currentState)
         val pageInfo = new PageInfo(currentPage, info.pageResponse, currentBookmark, Some(rebuiltPageComponent),
           new SoftReference(rebuiltPageComponent), currentState, info.refreshPage, System.currentTimeMillis()-start, info.timeTree)
         history(current) = pageInfo
-        showPage(pageInfo, current)
+        showPage(currentPageResponse, pageInfo, current)
       }
     }
   })
@@ -359,15 +384,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  private val redoAction = Action("redoAction") {
-    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
-    starlingBrowserUI.clearContentPanel()
-    currentComponent.resetDynamicState()
-    val oldIndex = current
-    current+=1
-    val pageInfo = history(current)
-    showPageForward(pageInfo, oldIndex)
-  }
+  private val redoAction = Action("redoAction") {showPageForward(current + 1)}
 
   val redoButton = new NavigationButton {
     icon = BrowserIcons.icon("/icons/edit-redo.png")
@@ -388,73 +405,79 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  private def showPageForward(pageInfo: PageInfo, indexGoingFrom:Int) {
-    updateRefreshState(pageInfo)
-    if (history(indexGoingFrom).page.text == pageInfo.page.text) {
-      showPage(pageInfo, indexGoingFrom)
-      refreshBrowserBar()
-    } else {
-      setButtonsEnabled(false)
-      setTitleText(pageInfo.page.text)
-      addressIcon.image = pageInfo.page.icon
-      tabComponent.setTextFromPage(pageInfo.page)
-
-      // Slide forward.
-      genericLockedUI.setLocked(true)
-      genericLockedUI.setClient(forwardSlideClient)
-      val width = currentComponent.peer.getWidth
-      val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
-      val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
-      currentComponent.peer.paint(graphics)
-      graphics.dispose()
-
-      history(indexGoingFrom).image = image1
-
-      val image2 = pageInfo.image
-      forwardSlideClient.setImages(image1, image2)
-      val animator = new Animator(slideTime)
-      animator.setAcceleration(slideAcceleration)
-      animator.setDeceleration(slideAcceleration)
-      val timingTarget = new TimingTargetAdapter {
-        override def timingEvent(fraction: Float) {forwardSlideClient.setX(-fraction * width)}
-
-        override def end() {
-          forwardSlideClient.setX(-width)
-          refreshBrowserBar()
-          onEDT({
-            showPage(pageInfo, indexGoingFrom)
-            setScreenLocked(false)
-            forwardSlideClient.reset
-          })
-        }
-      }
-      animator.addTarget(timingTarget)
-      animator.start()
-    }
-  }
-
   val forwardButton:Button = new NavigationButton {
     icon = BrowserIcons.icon("/icons/go-next.png")
     peer.setMnemonic(java.awt.event.KeyEvent.VK_RIGHT)
     tooltip = "Forward to next page (Alt+Right)"
-	  reactions += {
-         case ButtonClicked(button) => {
-           starlingBrowserUI.clearContentPanel()
-           currentComponent.resetDynamicState()
-
-           val oldIndex = current
-           val currentText = history(current).page.text
-           val testIndex = history.toList.indexWhere(_.page.text != currentText, current)
-           current = if (testIndex == -1) {
-             history.length - 1
-           } else {
-             testIndex
-           }
-
-           val pageInfo = history(current)
-        	 showPageForward(pageInfo, oldIndex)
-         }
+    reactions += {
+      case ButtonClicked(button) => {
+        val currentText = history(current).page.text
+        val testIndex = history.toList.indexWhere(_.page.text != currentText, current)
+        val indexTo = if (testIndex == -1) {
+          history.length - 1
+        } else {
+          testIndex
+        }
+        showPageForward(indexTo)
+      }
     }
+  }
+
+  private def showPageForward(indexGoingTo:Int) {
+    history(current).componentForFocus = currentFocus.map(c => new SoftReference(c))
+    starlingBrowserUI.clearContentPanel()
+    currentComponent.resetDynamicState()
+    val pageInfo = history(indexGoingTo)
+    val indexGoingFrom = current
+
+    def finished(pageResponse:PageResponse, page:Page) {
+      current = indexGoingTo
+      updateRefreshState(pageInfo)
+      if (history(indexGoingFrom).page.text == pageInfo.page.text) {
+        showPage(pageResponse, pageInfo, indexGoingFrom)
+        refreshBrowserBar()
+        genericLockedUI.setLocked(false)
+        tabComponent.setBusy(false)
+      } else {
+        setButtonsEnabled(false)
+        setTitleText(pageInfo.page.text)
+        addressIcon.image = pageInfo.page.icon
+        tabComponent.setTextFromPage(pageInfo.page)
+
+        // Slide forward.
+        genericLockedUI.setLocked(true)
+        genericLockedUI.setClient(forwardSlideClient)
+        val width = currentComponent.peer.getWidth
+        val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
+        val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
+        currentComponent.peer.paint(graphics)
+        graphics.dispose()
+
+        history(indexGoingFrom).image = image1
+
+        val image2 = imageOrBlank(pageInfo)
+        forwardSlideClient.setImages(image1, image2)
+        val animator = new Animator(slideTime)
+        animator.setAcceleration(slideAcceleration)
+        animator.setDeceleration(slideAcceleration)
+        val timingTarget = new TimingTargetAdapter {
+          override def timingEvent(fraction: Float) {forwardSlideClient.setX(-fraction * width)}
+
+          override def end() {
+            forwardSlideClient.setX(-width)
+            refreshBrowserBar()
+            onEDT({
+              showPage(pageResponse, pageInfo, indexGoingFrom)
+              setScreenLocked(false)
+              forwardSlideClient.reset
+            })
+          }
+        }
+        animator.addTarget(timingTarget)
+        animator.start()
+      }
+    }
+    showPageMaybeRegeneratingPageResponse(pageInfo, finished)
   }
 
   val liveUpdateCheckbox = new CheckBox("Live") {
@@ -485,7 +508,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
            waitingFor = Set()
            val pageInfo = history(current)
            pageInfo.pageComponent.get.restoreToCorrectViewForBack()
-           showPage(pageInfo, current)
+           showPage(currentPageResponse, pageInfo, current)
            peer.setEnabled(false)
            setScreenLocked(false)
            refreshBrowserBar()
@@ -642,6 +665,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   peer.getActionMap.put("viewSettingsAction", viewSettingsAction.peer)
   
   var currentComponent:PageComponent = new NullPageComponent()
+  var currentPageResponse:PageResponse = _
   mainPanel.peer.add(currentComponent.peer)
   var waitingFor:Set[Option[Int]] = Set()
 
@@ -876,101 +900,111 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   }
 
   def goBackToPage(pageInfo:PageInfo, index:Int) {
-    val page = pageInfo.page
-    val oldCurrent = current
-    if (page.text == (history(current).page.text)) {
-      // Move back without sliding.
-      current = index
-      showPage(pageInfo, oldCurrent)
-      refreshBrowserBar()
-    } else {
-      setButtonsEnabled(false)
-      setTitleText(page.text)
-      addressIcon.image = page.icon
-      tabComponent.setTextFromPage(page)
+    def finished(pageResponse:PageResponse, page:Page) {
+      val page = pageInfo.page
+      val oldCurrent = current
+      if (page.text == (history(current).page.text)) {
+        // Move back without sliding.
+        current = index
+        showPage(pageResponse, pageInfo, oldCurrent)
+        refreshBrowserBar()
+        genericLockedUI.setLocked(false)
+        tabComponent.setBusy(false)
+      } else {
+        setButtonsEnabled(false)
+        setTitleText(page.text)
+        addressIcon.image = page.icon
+        tabComponent.setTextFromPage(page)
 
-      // Slide back.
-      genericLockedUI.setLocked(true)
-      genericLockedUI.setClient(backSlideClient)
-      val width = currentComponent.peer.getWidth
-      val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
-      val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
-      currentComponent.peer.paint(graphics)
-      graphics.dispose()
+        // Slide back.
+        genericLockedUI.setLocked(true)
+        genericLockedUI.setClient(backSlideClient)
+        val width = currentComponent.peer.getWidth
+        val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
+        val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
+        currentComponent.peer.paint(graphics)
+        graphics.dispose()
 
-      history(current).image = image1
-      current = index
+        history(current).image = image1
+        current = index
 
-      val image2 = pageInfo.image
-      backSlideClient.setImages(image1, image2)
-      val animator = new Animator(slideTime)
-      animator.setAcceleration(slideAcceleration)
-      animator.setDeceleration(slideAcceleration)
-      val timingTarget = new TimingTargetAdapter {
-        override def timingEvent(fraction: Float) {backSlideClient.setX(fraction * width)}
+        val image2 = imageOrBlank(pageInfo)
+        backSlideClient.setImages(image1, image2)
+        val animator = new Animator(slideTime)
+        animator.setAcceleration(slideAcceleration)
+        animator.setDeceleration(slideAcceleration)
+        val timingTarget = new TimingTargetAdapter {
+          override def timingEvent(fraction: Float) {backSlideClient.setX(fraction * width)}
 
-        override def end() {
-          backSlideClient.setX(width)
-          refreshBrowserBar()
-          onEDT({
-            showPage(pageInfo, oldCurrent)
-            setScreenLocked(false)
-            backSlideClient.reset
-          })
+          override def end() {
+            backSlideClient.setX(width)
+            refreshBrowserBar()
+            onEDT({
+              showPage(pageResponse, pageInfo, oldCurrent)
+              setScreenLocked(false)
+              backSlideClient.reset
+            })
+          }
         }
+        animator.addTarget(timingTarget)
+        animator.start()
       }
-      animator.addTarget(timingTarget)
-      animator.start()
     }
+    showPageMaybeRegeneratingPageResponse(pageInfo, finished)
   }
 
   def goForwardToPage(pageInfo:PageInfo, index:Int) {
-    val page = pageInfo.page
-    val oldCurrent = current
-    if (page.text == (history(current).page.text)) {
-      // Move forward without sliding.
-      current = index
-      showPage(pageInfo, oldCurrent)
-      refreshBrowserBar()
-    } else {
-      setButtonsEnabled(false)
-      setTitleText(page.text)
-      addressIcon.image = page.icon
-      tabComponent.setTextFromPage(page)
+    def finished(pageResponse:PageResponse, page:Page) {
+      val page = pageInfo.page
+      val oldCurrent = current
+      if (page.text == (history(current).page.text)) {
+        // Move forward without sliding.
+        current = index
+        showPage(pageResponse, pageInfo, oldCurrent)
+        refreshBrowserBar()
+        genericLockedUI.setLocked(false)
+        tabComponent.setBusy(false)
+      } else {
+        setButtonsEnabled(false)
+        setTitleText(page.text)
+        addressIcon.image = page.icon
+        tabComponent.setTextFromPage(page)
 
-      // Slide forward.
-      genericLockedUI.setLocked(true)
-      genericLockedUI.setClient(forwardSlideClient)
-      val width = currentComponent.peer.getWidth
-      val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
-      val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
-      currentComponent.peer.paint(graphics)
-      graphics.dispose()
+        // Slide forward.
+        genericLockedUI.setLocked(true)
+        genericLockedUI.setClient(forwardSlideClient)
+        val width = currentComponent.peer.getWidth
+        val image1 = new BufferedImage(width, currentComponent.peer.getHeight, BufferedImage.TYPE_INT_RGB)
+        val graphics = image1.getGraphics.asInstanceOf[Graphics2D]
+        currentComponent.peer.paint(graphics)
+        graphics.dispose()
 
-      history(current).image = image1
-      current = index
+        history(current).image = image1
+        current = index
 
-      val image2 = pageInfo.image
-      forwardSlideClient.setImages(image1, image2)
-      val animator = new Animator(slideTime)
-      animator.setAcceleration(slideAcceleration)
-      animator.setDeceleration(slideAcceleration)
-      val timingTarget = new TimingTargetAdapter {
-        override def timingEvent(fraction: Float) {forwardSlideClient.setX(-fraction * width)}
+        val image2 = imageOrBlank(pageInfo)
+        forwardSlideClient.setImages(image1, image2)
+        val animator = new Animator(slideTime)
+        animator.setAcceleration(slideAcceleration)
+        animator.setDeceleration(slideAcceleration)
+        val timingTarget = new TimingTargetAdapter {
+          override def timingEvent(fraction: Float) {forwardSlideClient.setX(-fraction * width)}
 
-        override def end() {
-          forwardSlideClient.setX(-width)
-          refreshBrowserBar()
-          onEDT({
-            showPage(pageInfo, oldCurrent)
-            setScreenLocked(false)
-            forwardSlideClient.reset
-          })
+          override def end() {
+            forwardSlideClient.setX(-width)
+            refreshBrowserBar()
+            onEDT({
+              showPage(pageResponse, pageInfo, oldCurrent)
+              setScreenLocked(false)
+              forwardSlideClient.reset
+            })
+          }
         }
+        animator.addTarget(timingTarget)
+        animator.start()
       }
-      animator.addTarget(timingTarget)
-      animator.start()
     }
+    showPageMaybeRegeneratingPageResponse(pageInfo, finished)
   }
 
   def goTo(page:Page) { goTo(Left(page)) }
@@ -978,11 +1012,143 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
   def goTo(pageOrPageBuilder:Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])]) {
     val start = System.currentTimeMillis()
     val treeTimes = new ArrayBuffer[TimeTree]()
+
+    def logPageTime(timeTree:TimeTree) {
+      treeTimes.append(timeTree)
+    }
+
+    def finished(pageResponse:PageResponse, page:Page) {
+      def showError(title: String, message: String, throwable:Option[Throwable]) {
+        starlingBrowserUI.setError(title, message, throwable, {
+          if (current != -1) {
+            val currentPageInfo:PageInfo = history(current)
+            currentPageInfo.pageComponent match {
+              case Some(pc) => {
+                pc.resetDynamicState()
+                pc.restoreToCorrectViewForBack()
+              }
+              case None =>
+            }
+            setScreenLocked(false)
+            refreshBrowserBar()
+            refreshAction.enabled = currentPageInfo.refreshPage.isDefined
+          } else {
+            // We have come to a new starling browser but we have had an error - Remove the starling browser.
+            windowMethods.closeTabIfPossible()
+            windowMethods.setBusy(false)
+          }
+        })
+      }
+
+      // If we have an error and apply special processing here if required, otherwise display page as desired.
+      pageResponse match {
+        case FailurePageResponse(t:Throwable) => t match {
+          case e: UndeclaredThrowableException => {
+            e.printStackTrace()
+            showError("There was an error whilst generating your page", e.getUndeclaredThrowable.getMessage, Some(e.getUndeclaredThrowable))
+          }
+          case e => {
+            e.printStackTrace()
+            showError("There was an error whilst generating your page", e.getMessage, Some(e))
+          }
+        }
+        case SuccessPageResponse(_,bookmark) => {
+
+          // Generate the image here.
+          val currentTypeState = currentComponent.getTypeState
+          val currentTypeFocusInfo = currentComponent.getTypeFocusInfo
+          val width = currentComponent.peer.getWidth
+          val height = currentComponent.peer.getHeight
+          val image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+          val graphics = image.getGraphics.asInstanceOf[Graphics2D]
+          currentComponent.peer.paint(graphics)
+          graphics.dispose()
+
+          if (!history.isEmpty) {
+            history(current).image = image
+          }
+
+          imageClient.image = image
+          genericLockedUI.setClient(imageClient)
+
+          val (pageComponent, createComponentTime) = createPopulatedComponent(page, pageResponse)
+          treeTimes.append(createComponentTime)
+          pageComponent.setTypeState(currentTypeState)
+          val latestPage = page.latestPage(lCache)
+          val needToRefreshPage = if (latestPage != page) {
+            Some((latestPage, true))
+          } else {
+            None
+          }
+          val pageTime = System.currentTimeMillis() - start
+          val time = TimeTree.create("Page: " + page.text, treeTimes.toList, pageTime)
+          val pageInfo = new PageInfo(page, new SoftReference(pageResponse), bookmark, Some(pageComponent), new SoftReference(pageComponent), None, needToRefreshPage, pageTime, time)
+          history.append(pageInfo)
+          val oldCurrent = current
+          current+=1
+
+          currentComponent.restoreToCorrectViewForBack()
+
+          // Do we need to slide?
+          if ((history.size > 1) && (history(oldCurrent).page.text != page.text)) {
+            showPage(pageResponse, pageInfo, oldCurrent, false, false)
+            setTitleText(page.text)
+            addressIcon.image = page.icon
+            tabComponent.setTextFromPage(page)
+
+            onEDT({ // This onEDT is needed as we need to give the component time to get onto the page before we can paint it into a buffer.
+              val image2 = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+              val graphics = image2.getGraphics
+              pageComponent.peer.paint(graphics)
+              graphics.dispose()
+
+              forwardSlideClient.setImages(image, image2)
+              genericLockedUI.setClient(forwardSlideClient)
+              imageClient.reset
+
+              val animator = new Animator(slideTime)
+              animator.setAcceleration(slideAcceleration)
+              animator.setDeceleration(slideAcceleration)
+              val timingTarget = new TimingTargetAdapter {
+                override def timingEvent(fraction: Float) {forwardSlideClient.setX(-fraction * width)}
+                override def end() {
+                  forwardSlideClient.setX(-width)
+                  refreshBrowserBar()
+                  onEDT({
+                    bookmarkButton.refresh()
+                    setScreenLocked(false)
+                    forwardSlideClient.reset
+                    sortOutFocus()
+                  })
+                }
+              }
+              animator.addTarget(timingTarget)
+              animator.start()
+            })
+          } else {
+            onEDT({
+              val shouldDoFocus = if (currentTypeFocusInfo.isDefined) false else true
+              showPage(pageResponse, pageInfo, oldCurrent, shouldDoFocus = shouldDoFocus)
+              onEDT(currentComponent.setTypeFocusInfo(currentTypeFocusInfo))
+              refreshBrowserBar()
+              setScreenLocked(false)
+              imageClient.reset
+            })
+          }
+        }
+      }
+    }
+
+    history.reduceToSize(math.max(0, current+1))
+    buildPageResponse(pageOrPageBuilder, logPageTime, finished)
+  }
+
+  def buildPageResponse(pageOrPageBuilder:Either[Page,(ServerContext=>Page, PartialFunction[Throwable, Unit])],
+                        logPageTime:(TimeTree=>Unit), done:((PageResponse,Page)=>Unit)) {
     genericLockedUI.setLocked(true)
     tabComponent.setBusy(true)
     setButtonsEnabled(false)
     stopButton.enabled = true
-    history.reduceToSize(math.max(0, current+1))
     threadSequence+=1
     val threadID = threadSequence
     waitingFor += Some(threadID)
@@ -1003,131 +1169,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
       if (waitingFor.contains(Some(threadID))) {
         waitingFor -= Some(threadID)
         onEDT({ // I shouldn't really need to do another onEDT here but if I don't, clicking on the Home Button causes the slide effect to flicker.
-          def showError(title: String, message: String, throwable:Option[Throwable]) {
-            starlingBrowserUI.setError(title, message, throwable, {
-              if (current != -1) {
-                val currentPageInfo:PageInfo = history(current)
-                currentPageInfo.pageComponent match {
-                  case Some(pc) => {
-                    pc.resetDynamicState()
-                    pc.restoreToCorrectViewForBack()
-                  }
-                  case None =>
-                }
-                setScreenLocked(false)
-                refreshBrowserBar()
-                refreshAction.enabled = currentPageInfo.refreshPage.isDefined
-              } else {
-                // We have come to a new starling browser but we have had an error - Remove the starling browser.
-                windowMethods.closeTabIfPossible()
-                windowMethods.setBusy(false)
-              }
-            })
-          }
-
-          // If we have an error and apply special processing here if required, otherwise display page as desired.
-          pageResponse match {
-            case FailurePageResponse(t:Throwable) => t match {
-              case e: UndeclaredThrowableException => {
-                e.printStackTrace()
-                showError("There was an error whilst generating your page", e.getUndeclaredThrowable.getMessage, Some(e.getUndeclaredThrowable))
-              }
-              case e => {
-                e.printStackTrace()
-                showError("There was an error whilst generating your page", e.getMessage, Some(e))
-              }
-            }
-            case SuccessPageResponse(_,bookmark) => {
-
-              // Generate the image here.
-              val currentTypeState = currentComponent.getTypeState
-              val currentTypeFocusInfo = currentComponent.getTypeFocusInfo
-              val width = currentComponent.peer.getWidth
-              val height = currentComponent.peer.getHeight
-              val image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-              val graphics = image.getGraphics.asInstanceOf[Graphics2D]
-              currentComponent.peer.paint(graphics)
-              graphics.dispose()
-
-              if (!history.isEmpty) {
-                history(current).image = image
-              }
-
-              imageClient.image = image
-              genericLockedUI.setClient(imageClient)
-
-              val (pageComponent, createComponentTime) = createPopulatedComponent(page, pageResponse)
-              treeTimes.append(createComponentTime)
-              pageComponent.setTypeState(currentTypeState)
-              val latestPage = page.latestPage(lCache)
-              val needToRefreshPage = if (latestPage != page) {
-                Some((latestPage, true))
-              } else {
-                None
-              }
-              val pageTime = System.currentTimeMillis() - start
-              val time = TimeTree.create("Page: " + page.text, treeTimes.toList, pageTime)
-              val pageInfo = new PageInfo(page, pageResponse, bookmark, Some(pageComponent), new SoftReference(pageComponent), None, needToRefreshPage, pageTime, time)
-              history.append(pageInfo)
-              val oldCurrent = current
-              current+=1
-
-              currentComponent.restoreToCorrectViewForBack()
-
-              // Do we need to slide?
-              if ((history.size > 1) && (history(oldCurrent).page.text != page.text)) {
-                showPage(pageInfo, oldCurrent, false, false)
-                setTitleText(page.text)
-                addressIcon.image = page.icon
-                tabComponent.setTextFromPage(page)
-
-                onEDT({ // This onEDT is needed as we need to give the component time to get onto the page before we can paint it into a buffer.
-                  val image2 = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-                  val graphics = image2.getGraphics
-                  pageComponent.peer.paint(graphics)
-                  graphics.dispose()
-
-                  forwardSlideClient.setImages(image, image2)
-                  genericLockedUI.setClient(forwardSlideClient)
-                  imageClient.reset
-
-                  val animator = new Animator(slideTime)
-                  animator.setAcceleration(slideAcceleration)
-                  animator.setDeceleration(slideAcceleration)
-                  val timingTarget = new TimingTargetAdapter {
-                    override def timingEvent(fraction: Float) {forwardSlideClient.setX(-fraction * width)}
-                    override def end() {
-                      forwardSlideClient.setX(-width)
-                      refreshBrowserBar()
-                      onEDT({
-                        bookmarkButton.refresh()
-                        setScreenLocked(false)
-                        forwardSlideClient.reset
-                        sortOutFocus()
-                      })
-                    }
-                  }
-                  animator.addTarget(timingTarget)
-                  animator.start()
-                })
-              } else {
-                onEDT({
-                  val shouldDoFocus = if (currentTypeFocusInfo.isDefined) false else true
-                  showPage(pageInfo, oldCurrent, shouldDoFocus = shouldDoFocus)
-                  onEDT(currentComponent.setTypeFocusInfo(currentTypeFocusInfo))
-                  refreshBrowserBar()
-                  setScreenLocked(false)
-                  imageClient.reset
-                })
-              }
-            }
-          }
+          done(pageResponse, page)
         })
       }
-    }
-
-    def logPageTime(timeTree:TimeTree) {
-      treeTimes.append(timeTree)
     }
 
     pageOrPageBuilder match {
@@ -1183,7 +1227,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     val previousTypeState = previousComponent.getTypeState
     val (newPage, usePreviousPageData) = pageInfo.refreshPage.get
     val previousPageData = if (usePreviousPageData) {
-      pageInfo.pageResponse match {
+      currentPageResponse match {
         case SuccessPageResponse(pd,_) => Some(PreviousPageData(pd, previousComponent.getRefreshInfo))
         case _ => None
       }
@@ -1209,9 +1253,9 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
         val (pageComponent,_ ) = createPopulatedComponent(newPage, pageResponse, previousPageData)
         pageComponent.setState(previousState)
         pageComponent.setTypeState(previousTypeState)
-        val pageInfo = new PageInfo(newPage, pageResponse, newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None, System.currentTimeMillis() - start, timeTree)
+        val pageInfo = new PageInfo(newPage, new SoftReference(pageResponse), newBookmark, Some(pageComponent), new SoftReference(pageComponent), previousState, None, System.currentTimeMillis() - start, timeTree)
         history(current) = pageInfo
-        showPage(pageInfo, current)
+        showPage(pageResponse, pageInfo, current)
         setScreenLocked(false)
         refreshBrowserBar()
       }
@@ -1264,7 +1308,8 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
     }
   }
 
-  def showPage(pageInfo: PageInfo, indexFrom:Int, buildingPage:Boolean=true, shouldDoFocus:Boolean=true) {
+  def showPage(pageResponse:PageResponse, pageInfo: PageInfo, indexFrom:Int, buildingPage:Boolean=true, shouldDoFocus:Boolean=true) {
+    currentPageResponse = pageResponse
     // Get any state from the component and save it.
     for (pI <- history) {
       if (pI != pageInfo) {
@@ -1301,7 +1346,7 @@ class StarlingBrowser(pageBuilder:PageBuilder, lCache:LocalCache, userSettings:U
             c
           }
           case None => {
-            val (c,_) = createPopulatedComponent(page, pageInfo.pageResponse)
+            val (c,_) = createPopulatedComponent(page, pageResponse)
             pageInfo.pageComponent = Some(c)
             pageInfo.pageComponentSoft = new SoftReference(c)
             c.setState(pageInfo.componentState)
@@ -1354,7 +1399,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
 
   def browserBundles = bundles.values.toList
   def bundleFor(name:String) = bundles.getOrElse(name, throw new Exception("No bundle for name " + name))
-  val pageDataCache = new scala.collection.mutable.HashMap[Page,PageResponse]
+  val pageDataCache = new scala.collection.mutable.HashMap[Page,SoftReference[PageResponse]]
   val threads = Executors.newFixedThreadPool(10, new ThreadFactory {
     def newThread(r:Runnable) = {
       val t = new Thread(r)
@@ -1383,21 +1428,6 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
       }
     })
   }
-
-//  def buildNoCache(page:Page, then:(PageResponse=>Unit)) {
-//    threads.execute(new Runnable{
-//      def run() {
-//        val pageResponse:PageResponse = BrowserLog.infoWithTime("BuildNoCache page " + page.text) {
-//          createPageResponse(page)
-//        }
-//        onEDT(try {
-//          then(pageResponse)
-//        } catch {
-//          case t => FailurePageResponse(t)
-//        })
-//      }
-//    })
-//  }
 
   def createPageResponse(page: Page): (PageResponse, TimeTree) = {
     Profiler.captureTime("creatPageResponse") {
@@ -1452,9 +1482,8 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
 
   def build(logPageTime:(TimeTree=>Unit), page:Page, then:(Page,PageResponse)=>Unit) {
     assert(javax.swing.SwingUtilities.isEventDispatchThread, "This must be called on the EDT")
-    if (pageDataCache.contains(page)) {
-      then(page,pageDataCache(page))
-    } else {
+
+    def generatePageResponse() {
       pageToThens.get(page) match {
         case None => {
           pageToThens += (page -> List(then))
@@ -1465,7 +1494,7 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
             onEDT({
               logPageTime(timeTree)
               if(pageResponse.isInstanceOf[SuccessPageResponse]) {
-                pageDataCache(page) = pageResponse
+                pageDataCache(page) = new SoftReference(pageResponse)
               }
               pageToThens(page).foreach(_(page,pageResponse))
               pageToThens -= page
@@ -1477,6 +1506,18 @@ class PageBuilder(val remotePublisher:Publisher, val serverContext:ServerContext
           pageToThens += (page -> (then :: list))
         }
       }
+    }
+
+    val entriesThatAreFreed = pageDataCache.filter{case (k,v) => !v.get.isDefined}
+    entriesThatAreFreed.foreach{case (k,_) => pageDataCache.remove(k)}
+
+    if (pageDataCache.contains(page)) {
+      pageDataCache(page).get match {
+        case Some(pr) => then(page,pr)
+        case None => generatePageResponse()
+      }
+    } else {
+      generatePageResponse()
     }
   }
 }

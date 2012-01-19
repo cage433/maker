@@ -69,14 +69,14 @@ case class TitanTradeAttributes(
     case (k, v) => Field(k) -> v
   }
 
-  override def hashCode() = ScalaRunTime._hashCode(copy(eventIDs = Nil))
+  override def hashCode() = ScalaRunTime._hashCode(copy(eventIDs = Nil, comment = ""))
 
   // We don't want to use eventID in hashCode and equals as it changes every time a trade
   // is published on the bus, even if the trade has not changed. If we include it in hashCode
   // and equals it looks like the trade has changed and we store a new revision.
   override def equals(obj:Any) = obj match {
     case other:TitanTradeAttributes => {
-      ScalaRunTime._equals(this, other.copy(eventIDs = this.eventIDs))
+      ScalaRunTime._equals(this, other.copy(eventIDs = this.eventIDs, comment = this.comment))
     }
     case _ => false
   }

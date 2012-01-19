@@ -9,21 +9,29 @@ import starling.market._
 import rules.{PrecisionRules, MarketPrecisionFactory, Precision}
 import starling.calendar.{BusinessCalendar, HolidayTablesFactory, BusinessCalendars}
 import starling.daterange.{Day, Month}
+import starling.utils.ImplicitConversions._
 
 class EAIMarketLookup(eai: DB, expiryRules: FuturesExpiryRules) extends MarketLookup {
-  /**
-   * map of eaiquoteid to index
-   */
-  lazy val table: List[Either[CommodityMarket, Index]] = load
+  private def loadAll = {
+    /**
+     * map of eaiquoteid to index
+     */
+    val table: List[Either[CommodityMarket, Index]] = load
 
-  lazy val allMarkets = table.flatMap {
-    case Left(m: FuturesMarket) => Some(m)
-    case _ => None
+    val allMarkets = table.flatMap {
+      case Left(m: FuturesMarket) => Some(m)
+      case _ => None
+    }
+    val allIndexes = table.flatMap {
+      case Right(m) => Some(m)
+      case _ => None
+    }
+    (allMarkets, allIndexes)
   }
-  lazy val allIndexes = table.flatMap {
-    case Right(m) => Some(m)
-    case _ => None
-  }
+
+  def initial = loadAll
+
+  def reload = changed _ tupled(loadAll)
 
   lazy val cals: BusinessCalendars = new BusinessCalendars(HolidayTablesFactory.holidayTables)
   lazy val expiry: FuturesExpiryRules = FuturesExpiryRuleFactory.expiryRules

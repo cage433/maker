@@ -5,6 +5,7 @@ import ImplicitConversions._
 import scalaz.Scalaz._
 import collection.generic.CanBuildFrom
 import collection.{Traversable, TraversableLike}
+import shapeless.Typeable
 
 trait RichAnys {
   implicit def enrichAny[T](value: T) = new RichAny(value)
@@ -44,10 +45,12 @@ class RichAny[T](protected val value: T) {
   def safePartialMatch[V](message: => String)(pfn: PartialFunction[T, V]): Option[V] =
     try { ||>(pfn) } catch { case _ => Log.warn(message + ": " + value); None }
 
-  def equalTo[V: Manifest](f: V => Boolean): Boolean = safeCast[V].map(f).getOrElse(false)
-  def safeCast[V: Manifest]: Option[V] = implicitly[Manifest[V]].safeCast(value)
-  def cast[V: Manifest]: V = implicitly[Manifest[V]].cast(value)
-  def castOrElse[V: Manifest](alternative: T => V): V = implicitly[Manifest[V]].safeCast(value).getOrElse(alternative(value))
+  /** Determines if this is of type V and passes all predicates */
+  def equalTo[V: Typeable](predicates: (V => Boolean)*): Boolean = cast[V].fold(v => predicates.forall(f => f(v)), false)
+  def cast[V](implicit t: Typeable[V]): Option[V] = t.cast(value).filter(_ != null)
+
+  /** Replacement for asInstanceOf, logs more information upon failure */
+  def as[V: Manifest]: V = implicitly[Manifest[V]].as(value)
   def pair[V](f: T => V): (T, V) = value → f(value)
   def pairWithTraversable[V](f: T => Traversable[V]): scala.Traversable[(T, V)] = pairWith(f(value))
   def pairWith[Repr, V, That](tl: TraversableLike[V, Repr])(implicit cbf: CanBuildFrom[Repr, (T, V), That]): That = tl.inversePairWith(value)
@@ -63,7 +66,7 @@ class RichAny[T](protected val value: T) {
 
   def const[V] = (v:V) => value
   def transform[T1 <: T](pf: PartialFunction[T, T1]): T = pf.asFunction(value)
-  def transformOne[T1 <: T : Manifest](f: (T1) => T1): T = safeCast[T1].fold(f, value)
+  def transformOne[T1 <: T : Manifest](f: (T1) => T1): T = cast[T1].fold(f, value)
 
   private def perform(action: => Unit): T = { action; value }
 }

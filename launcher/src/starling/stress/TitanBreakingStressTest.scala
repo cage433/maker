@@ -1,4 +1,4 @@
-package starling.launcher
+package starling.stress
 
 import collection.mutable.ListBuffer
 import starling.bouncyrmi.BouncyRMIClient
@@ -12,14 +12,14 @@ import starling.daterange.Day
 import starling.utils.{ThreadUtils, Stopwatch}
 import starling.pivot._
 import starling.gui.api._
-import StressTest._
+import TitanStressTest._
 import java.util.Random
 
 /**
  * Each client requests the same market data at a random point inside a 10 second window. The number of clients increases until the time it takes
  * a single client to receive the market data is greater than 10 seconds.
  */
-object BreakingStressTest {
+object TitanBreakingStressTest {
   def main(args:Array[String]) {
 
     val largeDataSet = true
@@ -40,7 +40,7 @@ object BreakingStressTest {
       val day = Day(2012, 1, 6)
       val stopwatch = Stopwatch()
 
-      val (tradeFacility1, fc2Facility1, reportFacility1) = createTradeFC2AndReportFacility(props)
+      val (_, fc2Facility1, _) = createTradeFC2AndReportFacility(props)
 
       val pricingGroup = PricingGroup.Metals
       val latestMarketDataVersion = fc2Facility1.init().pricingGroupLatestMarketDataVersions(pricingGroup)
@@ -136,14 +136,14 @@ object BreakingStressTest {
 
   val clients = new ListBuffer[BouncyRMIClient]()
 
-  def createClient(props:Props) = {
+  private def createClient(props:Props) = {
     val client = new BouncyRMIClient("localhost", props.RmiPort(), Client.Null)
     client.startBlocking()
     clients += client
     client
   }
 
-  def createTradeFC2AndReportFacility(props:Props) = {
+  private def createTradeFC2AndReportFacility(props:Props) = {
     val client = createClient(props)
     (client.proxy(classOf[TradeFacility]), client.proxy(classOf[FC2Facility]), client.proxy(classOf[ReportFacility]))
   }

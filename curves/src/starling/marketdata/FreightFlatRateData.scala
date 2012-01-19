@@ -15,7 +15,7 @@ object FreightFlatRateDataType extends MarketDataType {
   type dataType = FreightFlatRateData
   type keyType = FreightFlatRateDataKey
   val humanName = "Freight flat rates"
-  lazy val keys: List[FreightFlatRateDataKey] = Market.all.filter(_.commodity == Freight).filter(_.currency == UOM.WSC).map(FreightFlatRateDataKey)
+  lazy val keys: List[FreightFlatRateDataKey] = Market.allMarketsView.filter(_.commodity == Freight).filter(_.currency == UOM.WSC).map(FreightFlatRateDataKey)
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   lazy val marketTenorField = FieldDetails("Market Tenor")
   lazy val periodField = FieldDetails("Period", PeriodPivotParser, PeriodPivotFormatter)
@@ -68,14 +68,10 @@ case class FreightFlatRateDataKey(market: CommodityMarket) extends MarketDataKey
   require(market.priceUOM != null, "missing priceUOM in market: " + market)
 
   type marketDataType = FreightFlatRateData
-  type marketDataDBType = FreightFlatRateDataDTO
 
   def typeName = FreightFlatRateDataType.name
 
   def humanName = market.name
-
-  override def unmarshallDB(dbValue: Any): marketDataType =
-    FreightFlatRateData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)
 
   def fields = Set(marketField, marketTenorField).map(_.field)
 }
@@ -86,10 +82,6 @@ case class FreightFlatRateData(prices: Map[Year, PivotQuantity]) extends MarketD
   def isEmpty = prices.isEmpty
 
   def nonEmpty = prices.nonEmpty
-
-  override def marshall = FreightFlatRateDataDTO(TreeMap.empty[Year, Double] ++ prices.mapValues(_.doubleValue.get))
-
-  lazy val sortedKeys = marshall.prices.keySet
 
   override def size = prices.size
 }

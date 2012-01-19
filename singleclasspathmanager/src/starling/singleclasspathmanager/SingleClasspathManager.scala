@@ -64,8 +64,14 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
       klass:Class[T],
       service:T,
       properties:ServiceProperties = ServiceProperties()) = {
-      val cachingService = if (cacheServices && klass.isInterface) ThreadSafeCachingProxy.createProxy(klass, service) else service
-      register(klass, cachingService.asInstanceOf[AnyRef], properties)
+
+      val (cachingService, props) = (cacheServices && klass.isInterface, asRef(service)) match {
+        case (true, Some(aService)) =>
+          (ThreadSafeCachingProxy.createProxy(klass, service), properties + ProxiedService(aService.getClass))
+        case _ => (service, properties)
+      }
+
+      register(klass, cachingService.asInstanceOf[AnyRef], props)
       new BromptonServiceRegistration() {
         def unregister() { throw new Exception("Unsupported") }
       }
@@ -135,4 +141,6 @@ class SingleClasspathManager(cacheServices:Boolean, activators:List[Class[_ <: B
   } catch {
     case t => t.printStackTrace(Console.err)
   }
+
+  private def asRef(any: Any): Option[AnyRef] = if (any.isInstanceOf[AnyRef]) Some(any.asInstanceOf[AnyRef]) else None
 }

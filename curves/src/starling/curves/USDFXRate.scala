@@ -1,12 +1,12 @@
 package starling.curves
 
-import starling.marketdata.{SpotFXDataKey, SpotFXData}
 import starling.quantity.{UOM, Quantity}
 import starling.quantity.UOM.USD
 import starling.daterange.{Day, DayAndTime}
 import java.lang.String
 import collection.immutable.Set
 import starling.daterange.TenorType
+import starling.marketdata.{ReferenceDataLookup, SpotFXDataKey, SpotFXData}
 
 case class USDFXRate(
   marketDayAndTime : DayAndTime,
@@ -24,7 +24,7 @@ case class USDFXRate(
 
 case class USDFXRateCurveKey(ccy : UOM) extends NonHistoricalCurveKey[SpotFXData]{
   def marketDataKey = SpotFXDataKey(ccy)
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpotFXData) = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpotFXData, refData : ReferenceDataLookup) = {
     val marketDataRate = marketData.rate.named("Market spot rate")
     val fxRate = {
       (marketData.rate.uom.numeratorUOM, marketData.rate.uom.denominatorUOM) match {

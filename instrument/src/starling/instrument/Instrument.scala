@@ -1,21 +1,16 @@
 package starling.instrument
 
-
-import physical.{Cargo, PhysicalMetalAssignment}
-import starling.quantity.UOM.{USD, BBL}
-import starling.richdb.RichInstrumentResultSetRow
+import physical.PhysicalMetalAssignment
+import starling.quantity.UOM.USD
 import starling.quantity.Quantity._
 import starling.curves._
-import interestrate.{DayCountActual365, DayCountActualActual}
 import starling.market._
-import rules.{RoundingMethodRule, SwapPricingRule}
 import starling.daterange._
-import starling.varcalculator._
-import starling.utils.ImplicitConversions._
-import starling.models.DefaultRiskParameters
 import starling.utils.CollectionUtils
-import starling.marketdata.ReferenceDataLookup
 import starling.quantity.{SimpleNamedQuantity, NamedQuantity, Quantity, UOM}
+import starling.utils.log.Logger
+import java.text.DecimalFormat
+
 
 trait AsUtpPortfolio {
   def asUtpPortfolio(tradeDay:Day): UTP_Portfolio
@@ -59,7 +54,7 @@ object InstrumentType {
 }
 /** The supertype of all instruments, including trades, which in turn contain instruments.
  */
-trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
+trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation with Logger {
 
   def assets(env:Environment):Assets
   def assets(env:Environment, ccy : UOM):Assets = Assets(assets(env).assets.map(_.inCCY(env, ccy)))
@@ -77,7 +72,9 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
       }
     }
 
-    assert(explained.isAlmostEqual(mtm(env, ccy), 1e-6), "Explanation not the same as the mtm: " + (explained, mtm(env, ccy)))
+    val mtmVal = mtm(env, ccy)
+    assert(explained isAlmostEqualRel mtmVal, "Explanation not the same as the mtm: " + (explained, mtmVal))
+
     explained
   }
 
@@ -169,8 +166,8 @@ trait Instrument extends Ordered[Instrument] with Greeks with PnlExplanation {
         val futuresPeriod = if (market.tenor == Day) market.observationDays(period).last else period
         Some(Future(market, futuresPeriod, 0.0(market.priceUOM), 1.0(market.uom)))
       }
-      case PriceDifferentiable(market : CommodityMarket, period) if Index.marketToPublishedIndexMap.contains(market) => {
-        buildSwap(Index.marketToPublishedIndexMap(market), period)
+      case PriceDifferentiable(market : CommodityMarket, period) if Index.getPublishedIndexForMarket(market).isDefined => {
+        buildSwap(Index.getPublishedIndexForMarket(market).get, period)
       }
       case FuturesSpreadPrice(market, SpreadPeriod(m1: Month, m2: Month)) => Some(FuturesCalendarSpread(market, m1, m2, 0.0(market.priceUOM), 0.0(market.priceUOM), 1.0(market.uom)))
       case SwapPrice(index, period) => {

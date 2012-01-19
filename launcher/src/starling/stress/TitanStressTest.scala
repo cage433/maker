@@ -1,4 +1,4 @@
-package starling.launcher
+package starling.stress
 
 import starling.startserver.Server
 import starling.trade.facility.TradeFacility
@@ -18,12 +18,13 @@ import collection.immutable.TreeSet
 import starling.tradestore.TradePredicate
 import starling.manager.{TimeTree, Profiler}
 import starling.daterange.{Timestamp, Day}
+import starling.launcher.DevLauncher
 
 /**
  * Does various tests but the main idea for most of them is this: 200 clients make a server request at a random time within a 10 second window.
  * The time it takes for all clients to finish is recorded as well as the longest time for a single client to get it's result back.
  */
-object StressTest {
+object TitanStressTest {
   def initialSetupAndReturnProps = {
     System.setProperty("log4j.configuration", "utils/resources/log4j.properties")
     val props0 = DevLauncher.propsWithUnusedPort()
@@ -31,6 +32,7 @@ object StressTest {
     val source = "stress"
     val propsMap = props0.starlingProps +
       ("ImportMarketDataAutomatically" -> PropertyValue(source, "false")) +
+      ("ServerType" -> PropertyValue(source, "FC2")) +
       ("RabbitEnabled" -> PropertyValue(source, "false")) +
       ("TitanRabbitBrokerHost" -> PropertyValue(source, "")) +
       ("ImportsBookClosesFromEAI" -> PropertyValue(source, "false")) +
@@ -319,6 +321,12 @@ object StressTest {
     val twoHundredClientsRunningSameReportWithDifferentLayouts = stopwatch.asStringAndReset
     val maxSingleReadFor200ClientsRunningTheSameReportWithDifferentLayouts = maxSingleReadText(twoHundredClientsRunningSameReportWithDifferentLayoutsResults)
 
+    val twoHundredClientsRunningSameReportWithDifferentLayoutsWithMarketDataImportResults = twoHundredReportFacilities.map(reportFacility => {
+      runReportAfterDelay(reportFacility, reportParameters1, randomPivotFieldParams, random.nextInt(10000).toLong)
+    })
+    fc2Facility1.importData(marketDataSelection, day)
+    twoHundredClientsRunningSameReportWithDifferentLayoutsWithMarketDataImportResults.map(_.thread.join())
+    val maxSingleReadFor200ClientsRunningTheSameReportWithDifferentLayoutsWithMarketDataImport = maxSingleReadText(twoHundredClientsRunningSameReportWithDifferentLayoutsWithMarketDataImportResults)
 
     // *** Tidy up and output
 
@@ -376,6 +384,7 @@ object StressTest {
       ("200 clients running the same report and layout as above with random delay up to 10 seconds max single read:", maxRun200ClientsSameReportAndLayoutAsAbove),
       ("200 clients running the same report with different layouts with random delay up to 10 seconds:", twoHundredClientsRunningSameReportWithDifferentLayouts),
       ("200 clients running the same report with different layouts with random delay up to 10 seconds max single read:", maxSingleReadFor200ClientsRunningTheSameReportWithDifferentLayouts),
+      ("200 clients running the same report with different layouts and market data import with random delay up to 10 seconds max single read:", maxSingleReadFor200ClientsRunningTheSameReportWithDifferentLayoutsWithMarketDataImport),
       ("", "")
     )
     val maxLength = output.map(_._1.length()).max + 1
@@ -482,14 +491,14 @@ object StressTest {
 
   val clients = new ListBuffer[BouncyRMIClient]()
 
-  def createClient(props:Props) = {
+  private def createClient(props:Props) = {
     val client = new BouncyRMIClient("localhost", props.RmiPort(), Client.Null)
     client.startBlocking()
     clients += client
     client
   }
 
-  def createTradeFC2AndReportFacility(props:Props) = {
+  private def createTradeFC2AndReportFacility(props:Props) = {
     val client = createClient(props)
     (client.proxy(classOf[TradeFacility]), client.proxy(classOf[FC2Facility]), client.proxy(classOf[ReportFacility]))
   }
@@ -497,6 +506,10 @@ object StressTest {
   def maxSingleReadText(readResults:IndexedSeq[ReadResult]) = {
     Stopwatch.milliToHumanString(readResults.map(_.maxMillis()).max) +
       " - average: " + Stopwatch.milliToHumanString(readResults.map(_.maxMillis()).sum / readResults.size)
+  }
+
+  def maxSingleReadTextNoDesc(readResults:IndexedSeq[ReadResult]) = {
+    readResults.map(_.maxMillis()).max + "\t" + (readResults.map(_.maxMillis()).sum / readResults.size)
   }
 }
 

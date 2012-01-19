@@ -12,7 +12,7 @@ import starling.daterange._
 import scalaz.Scalaz._
 
 object ValidMarketParserObject {
-  lazy val Parser = new SpecifiedValuesParser(Market.all.map(_.name).toSet)
+  lazy val Parser = new SpecifiedValuesParser(Market.allMarketsView.map(_.name).toSet)
 }
 
 object PeriodComparator extends Ordering[Any] {
@@ -51,7 +51,7 @@ object PriceDataType extends MarketDataType {
   type dataType = PriceData
   type keyType = PriceDataKey
   val humanName = "prices"
-  lazy val keys = Market.all.map(PriceDataKey)
+  lazy val keys = Market.allMarketsView.map(PriceDataKey)
   lazy val exchangeField = FieldDetails("Exchange")
   lazy val marketField = FieldDetails("Market", ValidMarketParserObject.Parser)
   lazy val marketCommodityField = FieldDetails("Market Commodity")
@@ -83,7 +83,7 @@ object PriceDataType extends MarketDataType {
     marketField.field → key.market.name,
     marketCommodityField.field → key.market.commodity.toString,
     marketTenorField.field → key.market.tenor.toString) +?
-    (exchangeField.field → key.market.safeCast[FuturesMarket].map(_.exchange.name))
+    (exchangeField.field → key.market.cast[FuturesMarket].map(_.exchange.name))
 
   def rows(key: PriceDataKey, data: PriceData) = data.prices.map { case (period, price) => {
     Row(marketField.field → key.market.name,
@@ -91,7 +91,7 @@ object PriceDataType extends MarketDataType {
       marketTenorField.field → key.market.tenor.toString,
       periodField.field → period,
       validity.field → price.warning.isEmpty,
-      priceField.field → price) +? (exchangeField.field → key.market.safeCast[FuturesMarket].map(_.exchange.name))
+      priceField.field → price) +? (exchangeField.field → key.market.cast[FuturesMarket].map(_.exchange.name))
   } }
 }
 
@@ -100,14 +100,10 @@ case class PriceDataKey(market: CommodityMarket) extends MarketDataKey {
   require(market.priceUOM != null, "missing priceUOM in market: " + market)
 
   type marketDataType = PriceData
-  type marketDataDBType = PriceDataDTO
   def typeName = PriceDataType.name
   def humanName = market.name
 
-  override def unmarshallDB(dbValue: Any): marketDataType =
-    PriceData.fromSorted(dbValue.asInstanceOf[marketDataDBType].prices, market.priceUOM)
-
-  def fields = market.safeCast[FuturesMarket].fold(_ => Set(exchangeField.field), Set.empty[Field]) ++
+  def fields = market.cast[FuturesMarket].fold(_ => Set(exchangeField.field), Set.empty[Field]) ++
     Set(marketField, marketCommodityField, marketTenorField).map(_.field)
 }
 
@@ -117,9 +113,7 @@ case class PriceData(prices: Map[DateRange, PivotQuantity]) extends MarketData {
   def isEmpty = prices.isEmpty
   def nonEmpty = prices.nonEmpty
 
-  override def marshall = PriceDataDTO(TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.doubleValue.get))
-
-  lazy val sortedKeys = marshall.prices.keySet
+  lazy val sortedKeys = (TreeMap.empty[DateRange, Double] ++ prices.mapValues(_.doubleValue.get)).keySet
   override def size = prices.size
 }
 

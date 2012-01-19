@@ -5,6 +5,8 @@ import starling.daterange.{ObservationTimeOfDay, Day, ObservationPoint}
 import starling.marketdata._
 
 import starling.utils.ImplicitConversions._
+import starling.pivot.Row
+import collection.Traversable
 
 
 trait MarketDataReader {
@@ -15,22 +17,31 @@ trait MarketDataReader {
 
   def read(marketDataType: MarketDataTypeName, observationDays: Option[Set[Option[Day]]] = None,
            observationTimes: Option[Set[ObservationTimeOfDay]] = None,
-           keys: Option[Set[MarketDataKey]]=None): List[(TimedMarketDataKey, MarketData)]
+           keys: Option[Set[MarketDataKey]]=None): List[(TimedMarketDataKey, MarketDataRows)]
 
   def readAllObservationDayAndMarketDataKeys(marketDataType: MarketDataTypeName): List[TimedMarketDataKey]
 
-  def readAll(marketDataType: MarketDataTypeName, observationPoint:ObservationPoint) = read(
+  def readAll(marketDataType: MarketDataTypeName, observationPoint:ObservationPoint): List[(MarketDataKey, MarketDataRows)] = read(
     marketDataType,
     observationDays = Some(Set(observationPoint.day)),
     observationTimes = Some(Set(observationPoint.timeOfDay))
   ).mapFirst(_.key)
 
+  def readAll[MDT <: MarketDataType](dataType: MDT, observationPoint: ObservationPoint): List[(MDT#keyType, MDT#dataType)] = {
+    readAll(dataType.name, observationPoint).collect {
+      case (key: MDT#keyType, rows) => key → rows.toMarketData(dataType)
+    }
+  }
+
   //Helper concrete methods
   def read(timedKey: TimedMarketDataKey): MarketData = {
     val key = timedKey.key
     val observationPoint = timedKey.observationPoint
+    val marketDataType = marketDataTypes.fromName(key.typeName)
     read(key.typeName, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)), Some(Set(key))).headOption match {
-      case Some((_,marketData)) => marketData
+      case Some((_,rows)) => {
+        marketDataType.createValue(rows.rows.map(Row(_))).asInstanceOf[MarketData]
+      }
       case None => {
         val marketDataType = marketDataTypes.fromName(key.typeName)
         val short = "No " + timedKey.key.humanName + " " + marketDataType.humanName
@@ -51,13 +62,9 @@ trait MarketDataReader {
 
   def readAs[T <: MarketData](timedKey: TimedMarketDataKey) = read(timedKey).asInstanceOf[T]
 
-  def readAllPrices(observationPoint:ObservationPoint):List[(PriceDataKey, PriceData)] = {
-    read(PriceDataType.name, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)))
-      .mapFirst(_.key).filterCast[(PriceDataKey, PriceData)]
-  }
+  def readAllPrices(observationPoint: ObservationPoint): List[(PriceDataKey, PriceData)] =
+    readAll(PriceDataType, observationPoint)
 
-  def readAllVols(observationPoint: ObservationPoint):List[(OilVolSurfaceDataKey, OilVolSurfaceData)] = {
-    read(OilVolSurfaceDataType.name, Some(Set(observationPoint.day)), Some(Set(observationPoint.timeOfDay)))
-      .mapFirst(_.key).filterCast[(OilVolSurfaceDataKey, OilVolSurfaceData)]
-  }
+  def readAllVols(observationPoint: ObservationPoint): List[(OilVolSurfaceDataKey, OilVolSurfaceData)] =
+    readAll(OilVolSurfaceDataType, observationPoint)
 }

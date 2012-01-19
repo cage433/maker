@@ -10,12 +10,11 @@ import starling.instrument.physical.{PhysicalMetalAssignmentOrUnassignedSalesQuo
 import starling.marketdata._
 import starling.pivot._
 import starling.gui.api.Desk
-import starling.tradestore.{RichTradeStore, TradeableFields, TradeRow, TradeStore}
 import starling.tradeimport.ClosedDesks
 import starling.daterange.Timestamp
 import concurrent.stm._
 import starling.instrument.{TradeID, Trade, TradeableType, TradeSystem}
-import java.lang.String
+import starling.tradestore._
 
 object TitanTradeStore {
   val quotaID_str = "Quota ID"
@@ -92,7 +91,12 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
   }
 
   override val tradeAttributeFieldDetails =
-    TitanTradeStore.labels.map{ label => FieldDetails(label)} ++ TitanTradeStore.qtyLabels.map(lbl => new QuantityLabelFieldDetails(lbl))
+    TitanTradeStore.labels.map{ label => {
+      label match {
+        case TitanTradeStore.titanTradeID_str => StringToNumberFieldDetails(label)
+        case _ => FieldDetails(label)
+      }
+    }} ++ TitanTradeStore.qtyLabels.map(lbl => new QuantityLabelFieldDetails(lbl))
 
   override def tradeableFieldDetails:List[FieldDetails] = (TradeableFields.fieldDetails :::
     FieldDetails.coded("Benchmark Country Code", refDataLookup.countries.values) ::
@@ -127,4 +131,3 @@ class TitanTradeStore(db: RichDB, broadcaster:Broadcaster, tradeSystem:TradeSyst
     PhysicalMetalForwardBuilder(getTradesForTitanTradeID(titanTradeID))
   }
 }
-

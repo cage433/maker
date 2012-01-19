@@ -13,7 +13,7 @@ import org.scalatest.prop.Checkers
 import org.scalacheck.{Gen, Arbitrary, Prop}
 import Prop._
 import org.testng.Assert
-import starling.marketdata.ForwardRateSource
+import starling.marketdata.ForwardRatePublisher
 
 trait RichArbitrary {
   implicit def enrichArbitrary[T](arbitrary: Arbitrary[T]) = new {
@@ -32,7 +32,7 @@ class LiborFixingTests extends WordSpec with ShouldMatchers with Checkers with H
   }
 
   private val dodgyFixings = Set(JPY → (21 Dec 2011), JPY → (29 Dec 2011))//, SEK → (29 Dec 2011), DKK → (29 Dec 2011))
-  private val currencies = LIBORCalculator.currencies(ForwardRateSource.LIBOR).toSet
+  private val currencies = LIBORCalculator.currencies(ForwardRatePublisher.LIBOR).toSet
 
   //println("Dodgy fixings: " + dodgyFixings)
 

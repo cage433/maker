@@ -13,7 +13,7 @@ abstract class VerifyMarketDataAvailable(marketDataStore: MarketDataStore, selec
 
   extends EmailingScheduledTask(emailService, template) {
 
-  final protected def queryLatest(observationDay: Day): List[(TimedMarketDataKey, MarketData)] = {
+  final protected def queryLatest(observationDay: Day): List[(TimedMarketDataKey, MarketDataRows)] = {
     marketDataStore.queryLatest(selection, marketDataType, Some(Set(Some(observationDay))), None, Some(marketDataKeys))
   }
 }

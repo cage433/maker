@@ -67,7 +67,6 @@ class CountryBenchmarkDataType(referenceData: ReferenceDataLookup = ReferenceDat
 
 case class CountryBenchmarkMarketDataKey(commodity: Commodity) extends MarketDataKey {
   type marketDataType = CountryBenchmarkData
-  type marketDataDBType = CountryBenchmarkData
   def typeName = MarketDataTypeName("CountryBenchmark")
   def humanName = commodity.toString
   def fields = Set(Field("Commodity"))

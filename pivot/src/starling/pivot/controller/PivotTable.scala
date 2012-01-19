@@ -8,7 +8,7 @@ import collection.immutable.List._
 import java.lang.Boolean
 
 case class TreePivotFilter(root:TreePivotFilterNode) {
-  def singleValue = root.children match {case v :: Nil => v.value}
+  def singleValue = root.children match {case v :: Nil => v.value; case _ => sys.error(root + " has more than one value") }
 }
 case class TreePivotFilterNode(value:Any, children:List[TreePivotFilterNode]) {
   def this(value:Any) = this(value, List())
@@ -120,11 +120,18 @@ case class PivotTable(rowFields:List[Field], rowFieldHeadingCount:Array[Int], ro
       rowsBuffer.toList
     }
   }
+
+  def toError(message:String) = {
+    copy(rowNode = AxisNode.Null, columnNode = AxisNode.Null, aggregatedMainBucket = PivotTable.bucketWithMessage(message))
+  }
 }
 
 object PivotTable {
+  def bucketWithMessage(message:String) = {
+    Map( (List(AxisValue.Null.childKey), List(AxisValue.Null.childKey)) -> MeasureCell(Some(message), CellState.NormalCellState))
+  }
+
   def singleCellPivotTable(text:String) = {
-    val bucket = Map( (List(AxisValue.Null.childKey), List(AxisValue.Null.childKey)) -> MeasureCell(Some(text), CellState.NormalCellState))
-    PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FieldInfo.Blank, bucket)
+    PivotTable(List(), Array(), AxisNode.Null, AxisNode.Null, Map(), TreeDetails(Map(), Map()), None, FieldInfo.Blank, bucketWithMessage(text))
   }
 }

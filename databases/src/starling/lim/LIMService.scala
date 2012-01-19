@@ -5,6 +5,9 @@ import com.lim.mimapi._
 import starling.daterange.Day
 import market._
 import starling.utils.ImplicitConversions._
+import java.lang.String
+import collection.immutable.{Set, Map}
+import starling.utils.ImplicitConversions
 
 
 trait LIMService {
@@ -75,11 +78,19 @@ trait LIMConnection {
   def getPrice(childRelation: String, level: Level, day: Day): Option[Double] =
     getPrices(childRelation, level, from = day, to = day).get(day)
 
-  def getPrices(childRelations: Iterable[String], level: Level, from: Day, to: Day): Map[(String, Day), Double] = {
-    childRelations.flatMap(childRelation => getPrices(childRelation, level, from, to).mapKeys(day => childRelation → day)).toMap
+  def getPrices[T](children: Iterable[T], level: Level, from: Day, to: Day): NestedMap[Day, T, Double] = {
+    children.toMapWithValues(child => getPrices(child.toString, level, from, to)).flipNesting
+  }
+
+  def getPrices[T](children: Iterable[T], levels: List[Level], from: Day, to: Day): NestedMap3[Day, T, Level, Double] = {
+    children.toMapWithValues(child => getPrices(child.toString, levels, from, to)).mapValues(_.flipNesting).flipNesting
   }
 
   def getPrices(childRelation: String, level: Level, from: Day, to: Day): Map[Day, Double]
+  def getPrices(childRelation: String, levels: List[Level], from: Day, to: Day): NestedMap[Level, Day, Double] = {
+    levels.toMapWithValues(getPrices(childRelation, _, from, to))
+  }
+
   def getData(query: String): Map[Day, Array[Double]]
 
   def fromLIM(mimDate: MimDateTime): Day = fromLIM(mimDate.getDate)
@@ -88,7 +99,7 @@ trait LIMConnection {
 }
 
 class LimNode(parent: Object) {
-  private val parentNode : Option[LimNode] = parent.safeCast[LimNode]
+  private val parentNode : Option[LimNode] = parent.cast[LimNode]
   def name: String = parentNode.map(_.name + ":").getOrElse("") + fields(parent).find(_.get(parent) == this).get.getName
   def children = fields(this).map(_.get(this)).toList.asInstanceOf[List[LimNode]]
   override def toString = name

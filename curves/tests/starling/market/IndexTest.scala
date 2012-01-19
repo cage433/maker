@@ -17,4 +17,20 @@ class IndexTest extends TestMarketTest with TestNGSuite{
     assertEquals(i1, i2)
   }
 
+  @Test
+  def testFuturesMarketToIndexMap {
+    val futuresMarketToIndexMap = Map(
+        Market.ICE_BRENT -> Index.BRT11,
+        Market.ICE_GAS_OIL -> Index.GO11,
+        Market.NYMEX_GASOLINE -> Index.RBOB10,
+        Market.NYMEX_HEATING -> Index.HO10,
+        Market.NYMEX_WTI -> Index.WTI10,
+        Market.ICE_WTI -> Index.ICEWTI10
+      )
+    futuresMarketToIndexMap.map {
+      case (m, i) => {
+        assertEquals(Index.futuresMarketToIndex(m), Some(i))
+      }
+    }
+  }
 }

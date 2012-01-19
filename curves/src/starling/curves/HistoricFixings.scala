@@ -4,7 +4,7 @@ import starling.market._
 import starling.quantity.Quantity
 import starling.daterange.ObservationPoint
 import starling.daterange._
-import starling.marketdata.PriceFixingsHistoryDataType
+import starling.marketdata.{ReferenceDataLookup, PriceFixingsHistoryDataType}
 
 
 /** A history of fixings for a given market -
@@ -29,7 +29,7 @@ trait FixingHistoryLookup {
 case class FixingsHistoryKey(fixing: FixingHistoryLookup)
   extends CurveKey {
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice): CurveObject = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketDataSlice: MarketDataSlice, refData : ReferenceDataLookup): CurveObject = {
     FixingsHistory(marketDayAndTime, marketDataSlice, this)
   }
 

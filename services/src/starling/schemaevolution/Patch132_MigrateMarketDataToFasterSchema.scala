@@ -6,26 +6,30 @@ import starling.utils.ImplicitConversions._
 import java.lang.String
 import collection.immutable.Map
 import starling.utils.ClosureUtil._
-import starling.curves.SpreadStdDevSurfaceData
 import starling.quantity.{UOM, Quantity, Percentage}
-import starling.daterange.{Day, SpreadPeriod, Period, ObservationTimeOfDay}
 import scala.Any
 import collection.mutable.{Map => MMap}
 import java.util.concurrent.ConcurrentMap
 import scalaz.Scalaz._
-import collection.Iterable
 import starling.marketdata._
 import starling.instrument.utils.StarlingXStream
 import starling.services.StarlingInit
 import starling.richdb.RichDB
 import starling.props.PropsHelper
-import starling.pivot.{Row, Field, PivotQuantity}
 import system.{PatchContext, Patch}
-
+import starling.curves.{SpreadStdDevSurfaceDataKey, SpreadStdDevSurfaceData}
+import com.thoughtworks.xstream.XStream
+import collection.{SortedMap, Iterable}
+import starling.daterange._
+import starling.market.Level
+import starling.pivot.{MarketValue, Row, Field, PivotQuantity}
+import starling.pivot.Row._
 
 class Patch132_MigrateMarketDataToFasterSchema extends Patch {
-  protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) =
+  protected def runPatch(init: StarlingInit, starling: RichDB, writer: DBWriter) = {
+    writer.update("update Markets set exchange = 'SHFE' where exchange = 'SFS'")
     MigrateMarketDataSchema(writer, starling.db, init.neptuneRichDB, init.dataTypes).migrateData
+  }
 }
 
 class Patch133_MakeVersionNullableInMarketDataComment extends Patch {
@@ -155,9 +159,8 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
         case None => {
           val inserts: Map[MarketDataValueKey, (Any, Any)] = rs.getStringOption("data").map { xml =>
             readRows(xml, key, version).flatMap { row => {
-              val valueKey = getValueKey(key, row)
-
-              getUOMValueOption(key, row) flatMap { uomValue => Some(valueKey → uomValue) }
+              val valueKey = MarketDataValueKey(-1, row.row)
+              row.uomValueOption flatMap { uomValue => Some(valueKey → uomValue) }
             } }
           }.getOrElse(Nil).toMap
 
@@ -168,9 +171,9 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
 
           val inserts: Map[MarketDataValueKey, (Any, Any)] = rs.getStringOption("data").map { xml =>
             readRows(xml, key, version).flatMap { row => {
-              val valueKey = getValueKey(key, row)
+              val valueKey = MarketDataValueKey(-1, row.row)
 
-              getUOMValueOption(key, row) flatMap {
+              row.uomValueOption flatMap {
                 case uomValue if (previousInserts.get(valueKey) == Some(uomValue)) => { deletes.remove(valueKey); None }
                 case uomValue => Some(valueKey → uomValue)
               }
@@ -249,45 +252,62 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
     writer.insertAndReturnKey("MarketDataValueKey", "id", key.dbMap).toInt
   })
 
-  private def getUOMValueOption(key: MarketDataKey, row: Row): Option[(String, Double)] = {
-    val values: List[Any] = getValues(key, row)
-
-    val uomValueOption: Option[(String, Double)] = values match {
-      case Nil => log.info("Nil " + key); None
-      case one :: Nil => {
-        one match {
-          case q: Quantity => Some((q.uom.toString, q.value))
-          case pq: PivotQuantity if pq.quantityValue.isDefined => Some((pq.quantityValue.get.uom.toString, pq.quantityValue.get.value))
-          case pc: Percentage => Some(("%", pc.value))
-          case other => log.info("unexpected value " + other.asInstanceOf[AnyRef].getClass + "" + other); None
-        }
-      }
-      case many => log.info("Many " + key + "" + many); None
-    }
-
-    uomValueOption
-  }
+//  private def getUOMValueOption(key: MarketDataKey, row: Row): Option[(String, Double)] = {
+//    val values: List[Any] = getValues(key, row)
+//
+//    val uomValueOption: Option[(String, Double)] = values match {
+//      case Nil => log.info("Nil " + key); None
+//      case one :: Nil => {
+//        one match {
+//          case q: Quantity => Some((q.uom.toString, q.value))
+//          case pq: PivotQuantity if pq.quantityValue.isDefined => Some((pq.quantityValue.get.uom.toString, pq.quantityValue.get.value))
+//          case pc: Percentage => Some(("%", pc.value))
+//          case other => log.info("unexpected value " + other.asInstanceOf[AnyRef].getClass + "" + other); None
+//        }
+//      }
+//      case many => log.info("Many " + key + "" + many); None
+//    }
+//
+//    uomValueOption
+//  }
 
   private def getValues(key: MarketDataKey, row: Row): List[Any] = {
     dataTypes.fromName(key.typeName).valueFields.toList.flatMap(f => row.get[Any](f))
   }
 
-  private def readRows(xml: String, key: MarketDataKey, version: Int): Iterable[Row] = {
-    val refactoredData = try {
-      StarlingXStream.read(cleanUpXml(xml))
-    } catch {
-      case e => log.fatal(xml + "\nbroken version: " + version); throw e
+  val xstream = StarlingXStream.createXStream
+  xstream.alias("starling.marketdata.PriceDataDTO", classOf[FakePriceData])
+  xstream.alias("starling.marketdata.PriceFixingsHistoryData", classOf[FakePriceFixingsHistoryData])
+  xstream.alias("starling.marketdata.FreightFlatRateData", classOf[FakeFreightFlatRateData])
+  xstream.alias("starling.marketdata.OilVolSurfaceData", classOf[FakeOilVolSurfaceData])
+  xstream.alias("starling.curves.SpreadStdDevSurfaceData", classOf[FakeSpreadStdDevSurfaceData])
+
+  private def readRows(xml: String, key: MarketDataKey, version: Int): Iterable[MyEntry] = {
+    key match {
+      case f:ForwardRateDataKey => Nil
+      case f:SpotFXDataKey => Nil
+      case _ => {
+        val data = try {
+          xstream.fromXML(cleanUpXml(xml))
+        } catch {
+          case e => log.fatal(xml + "\nbroken version: " + version); throw e
+        }
+        (data, key) match {
+          case (d:FakePriceData, k:PriceDataKey) => d.rows(k)
+          case (d:FakePriceFixingsHistoryData, k:PriceFixingsHistoryDataKey) => d.rows
+          case (d:FakeFreightFlatRateData, k:FreightFlatRateDataKey) => d.rows
+          case (d:FakeOilVolSurfaceData, k:OilVolSurfaceDataKey) => d.rows
+          case (d:FakeSpreadStdDevSurfaceData, k:SpreadStdDevSurfaceDataKey) => d.rows(k)
+          case other => {
+            println("ERROR No match for " + other)
+            Nil
+          }
+        }
+      }
     }
-
-    dataTypes.fromName(key.typeName).castRows(key, key.unmarshallDB(refactoredData))
   }
 
-  private def getValueKey(key: MarketDataKey, row: Row): MarketDataValueKey = {
-    val dataType = dataTypes.fromName(key.typeName)
-    val fields = dataType.keyFields -- dataType.fieldValues(key).fields
 
-    MarketDataValueKey(-1, row.filterKeys(fields.contains))
-  }
 
   val failingXml= List("""
 <starling.curves.SpreadStdDevSurfaceData>
@@ -540,7 +560,7 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
     failingXml.foreach(xml => {
       val obj = StarlingXStream.read(cleanUpXml(xml))
 
-      obj.safeCast[PriceFixingsHistoryData].map { priceFixingsHistoryData => {
+      obj.cast[PriceFixingsHistoryData].map { priceFixingsHistoryData => {
         val rows: Iterable[Row] = PriceFixingsHistoryDataType.castRows(
           PriceFixingsHistoryDataKey("", Some("")), priceFixingsHistoryData)
 
@@ -551,3 +571,71 @@ case class MigrateMarketDataSchema(writer: DBWriter, db: DB, neptuneDB: RichDB, 
     })
   }
 }
+
+case class FakePriceData(prices: SortedMap[DateRange, Double]) {
+  def rows(k:PriceDataKey) = prices.map { case (period,price) => {
+    MyEntry(Row(Field("Period") -> period), Some((k.market.priceUOM.identifier, price)))
+  }}
+}
+case class FakePriceFixingsHistoryData(fixings: SortedMap[(Level, StoredFixingPeriod), MarketValue]) {
+  def rows = {
+    fixings.map { case ((level, period), fixing) => {
+      val v = fixing.value match {
+        case Left(q) => (q.uom.identifier, q.value)
+        case Right(p) => ("%", p.value)
+      }
+      MyEntry(Row(Field("Level") → level.name, Field("Period") → period), Some(v))
+    } }
+  }
+}
+case class FakeFreightFlatRateData(prices: Map[Year, PivotQuantity]) {
+  def rows = {
+    prices.map { case (period, price) => {
+      val q = price.quantityValue.get
+      MyEntry(Row(Field("Period") → period), Some(q.uom.identifier, q.value))
+    }  }
+  }
+}
+case class FakeOilVolSurfaceData(periods : Array[DateRange], atmVols : Array[Percentage], skewDeltas : Array[Double], skews : Array[Array[Percentage]]) {
+  def rows = {
+    (periods zipWithIndex).flatMap { case (period, index) => {
+      val atmVol = atmVols(index)
+      ((skewDeltas zip skews).toList.map { case (delta, vols) => {
+        MyEntry(Row(Field("Period") → period,Field("Delta") → delta.toString), Some(("%", vols(index).value)) )
+      }}) ::: List(MyEntry(Row(Field("Period") → period, Field("Delta") -> "ATM"), Some(("%", atmVol)) ))
+    } }
+  }
+}
+case class FakeSpreadStdDevSurfaceData(periods : Array[Period], atm : Array[Double], call : Array[Double], put : Array[Double], uom : UOM) {
+  def rows(key: SpreadStdDevSurfaceDataKey) = {
+    periods.zipWithIndex.flatMap {
+      case (period, index) => {
+        Map("ATM" -> atm(index), "Call" -> call(index), "Put" -> put(index)).map {
+          case (label, sd) => {
+            val (gap, first, last) = period match {
+              case SpreadPeriod(first: Month, last: Month) => {
+                val gap = (last - first) match {
+                  case 1 => "Month"
+                  case 6 => "Half-Year"
+                  case 12 => "Year"
+                  case n => n + " Month"
+                }
+                (gap, first, last)
+              }
+              case DateRangePeriod(dr: Month) => ("None", dr, dr)
+            }
+            MyEntry(Row(
+              Field("Spread Type") → gap,
+              Field("First Period") -> first, Field("Last Period") -> last,
+              Field("Period") -> period,
+              Field("Delta")  → label
+              ), Some(uom.identifier, sd))
+          }
+        }.toList
+      }
+    }
+  }
+}
+
+
+case class MyEntry(row:Row, uomValueOption:Option[(String,Double)])

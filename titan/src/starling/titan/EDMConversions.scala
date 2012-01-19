@@ -20,87 +20,107 @@ import starling.instrument.physical.PhysicalMetalAssignment
 case class InvalidUomException(msg : String) extends Exception(msg)
 
 object EDMConversions {
-  implicit def enrichEDMInventoryItem(inv : InventoryItem) = new {
+
+  implicit def toRichEDMInventoryItem(inv : InventoryItem) = RichEDMInventoryItemForTitan(inv)
+  implicit def toRichQuantity(q : Quantity) = RichQuantityForTitan(q)
+  implicit def toRichTitanTenor(tenor : Tenor) = RichTitanTenorForTitan(tenor)
+  implicit def toRichUOM(uom : UOM) = RichUOMForTitan(uom)
+  implicit def toRichPercentage(percentage : Percentage) = RichPercentageForTitan(percentage)
+  implicit def toRichDay(day: Day) = RichDayForTitan(day)
+  implicit def toRichSnapshotID(snapshotID: SnapshotID) = RichSnapshotIDForTitan(snapshotID)
+  implicit def toRichSerializableDate(date: TitanSerializableDate) = RichTitanSerializableDate(date)
+  implicit def toRichSerializableDateRange(dateRange: TitanSerializableDateRange) = RichTitanSerializableDateRange(dateRange)
+  implicit def toRichSerializableCurrency(currency: TitanSerializableCurrency) = RichTitanSerializableCurrency(currency)
+  implicit def toRichTitanMarketDataIdentifier(marketDataID : TitanMarketDataIdentifier) = RichTitanMarketDataIdentifier(marketDataID)
+  implicit def toRichTitanMarketDataIdentifier(snapshotID : TitanSnapshotIdentifier) = RichTitanMarketDataIdentifierForTitan(snapshotID)
+  implicit def toRichTitanQuantity(q: TitanQuantity) = RichTitanQuantity(q)
+  implicit def toRichTitanDate(date: TitanDate) = RichTitanDate(date)
+  implicit def toRichTitanDateRange(dateRange: TitanDateRange) = RichTitanDateRange(dateRange)
+  implicit def toRichFundamentalUOM(uom: FundamentalUOM) = RichFundamentalUOMForTitan(uom)
+  implicit def enhanceStarlingTrade(trade : Trade) = RichStarlingTradeForTitan(trade)
+
+  // Starling implicits
+  case class RichEDMInventoryItemForTitan(inv : InventoryItem) {
     val id = inv.oid.contents.toString
   }
-  // Starling implicits
-  implicit def enrichQuantity(q: Quantity) = new {
+
+  case class RichQuantityForTitan(q: Quantity) {
     def toTitan = toTitanQuantity(q)
     def toSerializable = toTitanSerializableQuantity(q)
     def toSerializablePercentage = TitanSerializablePercentage(q.checkedValue(UOM.PERCENT))
   }
 
-  implicit def enrichTenor(tenor: Tenor) = new {
+  case class RichTitanTenorForTitan(tenor: Tenor) {
     def toTitan: Maturity = Maturity.get(tenor.toString)
   }
 
-  implicit def enrichUOM(uom: UOM) = new {
+  case class RichUOMForTitan(uom : UOM) {
     def titanCurrency: Option[TitanCurrency] = toTitan.map(edm => TitanCurrency().update(_.name = edm.name))
     def serializableCurrency: Option[TitanSerializableCurrency] =
       starlingUomToEdmUomName.get(uom).map(fuom => TitanSerializableCurrency(fuom))
     def toTitan: Option[FundamentalUOM] = starlingUomToEdmUomName.get(uom).map(n => new FundamentalUOM{ name = n})
   }
 
-  implicit def enrichPercentage(percentage: Percentage) = new {
+  case class RichPercentageForTitan(percentage : Percentage) {
     def toTitan = TitanPercentage(Some(percentage.value))
     def toSerializable = TitanSerializablePercentage(percentage.value)
   }
 
-  implicit def enrichDay(day: Day) = new {
+  case class RichDayForTitan(day : Day) {
     def toTitan = TitanDate(day.toLocalDate)
     def toSerializable = TitanSerializableDate(day.toLocalDate)
   }
 
-  implicit def enrichSnapshotID(snapshotID: SnapshotID) = new {
+  case class RichSnapshotIDForTitan(snapshotID : SnapshotID) {
     def toSerializable = TitanSnapshotIdentifier(snapshotID.id.toString)
   }
 
   // 'Serializable' implicits
-  implicit def enrichSerializableDate(date: TitanSerializableDate) = new {
+  case class RichTitanSerializableDate(date : TitanSerializableDate) {
     def fromSerializable = Day.fromLocalDate(date.value)
     def toDateRange = new TitanSerializableDateRange(date.value, date.value)
   }
 
-  implicit def enrichSerializableDateRange(dateRange: TitanSerializableDateRange) = new {
+  case class RichTitanSerializableDateRange(dateRange : TitanSerializableDateRange) {
     def fromSerializable = DateRange(Day.fromLocalDate(dateRange.start), Day.fromLocalDate(dateRange.end))
   }
 
-  implicit def enrichSerializableCurrency(currency: TitanSerializableCurrency) = new {
+  case class RichTitanSerializableCurrency(currency : TitanSerializableCurrency) {
     def fromSerializable = UOM.asUOM(edmToStarlingUomSymbol(currency.name))
   }
 
   val UOMToTitanCurrency: Extractor[UOM, TitanSerializableCurrency] = Extractor.from[UOM](_.serializableCurrency)
   val StringToTitanCurrency: Extractor[Any, TitanSerializableCurrency] = UOM.Currency.andThen(UOMToTitanCurrency)
 
-  implicit def enrichTitanMarketDataIdentifier(marketDataID : TitanMarketDataIdentifier) = new {
+  case class RichTitanMarketDataIdentifier(marketDataID : TitanMarketDataIdentifier) {
     def intId = marketDataID.snapshotIdentifier.id.toInt
     def toTitanDate = TitanSerializableDate(marketDataID.observationDay.toJodaLocalDate)
     def toDay = marketDataID.observationDay
     def fromTitan(marketDataStore: MarketDataStore): Option[SnapshotID] = marketDataStore.snapshotFromID(intId)
   }
 
-  implicit def enrichTitanMarketDataIdentifier(snapshotID : TitanSnapshotIdentifier) = new {
+  case class RichTitanMarketDataIdentifierForTitan(snapshotID : TitanSnapshotIdentifier) {
     def intId = snapshotID.id.toInt
     def fromTitan(marketDataStore: MarketDataStore): Option[SnapshotID] = marketDataStore.snapshotFromID(intId)
   }
 
   // Titan implicits
-  implicit def enrichTitanQuantity(q: TitanQuantity) = new {
+  case class RichTitanQuantity(q: TitanQuantity) {
     def fromTitan = fromTitanQuantity(q)
   }
 
-  implicit def enrichTitanDate(date: TitanDate) = new {
+  case class RichTitanDate(date : TitanDate) {
     def fromTitan = Day.fromLocalDate(date.value)
   }
 
-  implicit def enrichTitanDateRange(dateRange: TitanDateRange) = new {
+  case class RichTitanDateRange(dateRange: TitanDateRange) {
     def fromTitan = new SimpleDateRange(startDay, endDay)
     def contains(date: TitanDate) = fromTitan.contains(date.fromTitan)
     def startDay = Day.fromLocalDate(dateRange.start.dateValue)
     def endDay = Day.fromLocalDate(dateRange.finish.dateValue)
   }
 
-  implicit def enrichFundamentalUOM(uom: FundamentalUOM) = new {
+  case class RichFundamentalUOMForTitan(uom: FundamentalUOM) {
     def fromTitan = UOM.asUOM(edmToStarlingUomSymbol(uom.name))
     def titanCurrency: TitanCurrency = TitanCurrency().update(_.name = uom.name)
   }
@@ -169,7 +189,7 @@ object EDMConversions {
     TitanSerializableQuantity(q.value, uomMap)
   }
 
-  implicit def enhanceStarlingTrade(trade : Trade) = new {
+  case class RichStarlingTradeForTitan(trade : Trade) {
     def titanTradeID : Option[String] = trade.attributes match {
       case tta : TitanTradeAttributes => Some(tta.titanTradeID)
       case _ => None

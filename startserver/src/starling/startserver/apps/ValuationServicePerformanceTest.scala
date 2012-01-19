@@ -8,7 +8,6 @@ import starling.auth.osgi.AuthBromptonActivator
 import starling.services.osgi.ServicesBromptonActivator
 import starling.bouncyrmi.BouncyRMIServerBromptonActivator
 import starling.singleclasspathmanager.SingleClasspathManager
-import starling.titan.TitanEdmTradeService
 import starling.services.rpc.valuation.ValuationService
 import starling.services.rpc.marketdata.MarketDataService
 import starling.daterange.Day

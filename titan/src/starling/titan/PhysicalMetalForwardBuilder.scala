@@ -89,7 +89,7 @@ object TradeManagementQuotaDetails{
       case EDMTrade.SALE => false
       case _ => throw new Exception(" Invalid direction " + trade.direction)
     }
-    val counterparty = counterpartiesByGUID(trade.counterparty.counterparty).name
+    val counterparty = Option(trade.counterparty).flatMap(c => Option(c.counterparty)).flatMap(c => counterpartiesByGUID.get(c)).flatMap(c => Option(c.name)).getOrElse("No Counterparty available").trim
 
     TradeManagementQuotaDetails(
       isPurchase,
@@ -116,8 +116,8 @@ object TradeManagementQuotaDetails{
     val quotaID = NeptuneId(detail.identifier).identifier
     val quotaQuantity : Quantity = deliverySpec_.quantity
     val titanTradeID = NeptuneId(trade.identifier).identifier
-    val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company")
-    val comments = trade.comments
+    val groupCompany = groupCompaniesByGUID.get(trade.groupCompany).map(_.name).getOrElse("Unknown Group Company").trim
+    val comments = Option(trade.comments).getOrElse("").trim // we can get null as empty comments
     val contractFinalised = trade.contractFinalised.toString
     val submittedDay = Day.fromLocalDate(trade.submitted.toLocalDate)
     val shape = deliverySpec_.materialSpec match {

@@ -101,8 +101,8 @@ case class FFA(
   }
 
   override def hedgingInstrument(env:Environment, diff:EnvironmentDifferentiable) = diff match {
-    case PriceDifferentiable(market:CommodityMarket, period) if Index.marketToPublishedIndexMap.contains(market) => {
-      val index = Index.marketToPublishedIndexMap(market)
+    case PriceDifferentiable(market:CommodityMarket, period) if Index.getPublishedIndexForMarket(market).isDefined => {
+      val index = Index.getPublishedIndexForMarket(market).get
       assert(index == this.index, "Wrong index for this: " + (index, this))
       Some(this.copy(volume = Quantity(1, volume.uom), fixed = Percentage(0.0)))
     }

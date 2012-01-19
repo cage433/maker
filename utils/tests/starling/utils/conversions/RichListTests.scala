@@ -33,5 +33,11 @@ class RichListTests extends TestNGSuite with ShouldMatchers {
     trimXML(List(1,2,3).mkHtml()) should be === <ul><li>1</li><li>2</li><li>3</li></ul>
   }
 
+  @Test def filterCastShouldDiscardUncastableElements {
+    List(1, "foo", 2, "bar").filterCast[String] should be === List("foo", "bar")
+    List((1, "foo"), ("bar", 2)).filterCast[(Int, String)] should be === List((1, "foo"))
+    List((1, "foo", 10), ("bar", 2, 20)).filterCast[(Int, String, Int)] should be === List((1, "foo", 10))
+  }
+
   private def trimXML(s: String): Node = Utility.trim(XML.loadString(s))
 }

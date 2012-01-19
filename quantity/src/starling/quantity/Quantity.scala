@@ -251,6 +251,22 @@ class Quantity(val value : Double, val uom : UOM) extends Ordered[Quantity] with
             )
   }
 
+  def isAlmostEqualRel(other : Quantity, tolerance : Double = 1E-06, maxRe : Double = 1E-06) = {
+    val thisBase = this.inBaseUOM
+    val otherBase = other.inBaseUOM
+    val tol = Quantity(tolerance, uom).inBaseUOM
+    thisBase.uom == otherBase.uom && (
+        mabs(thisBase.value - otherBase.value) <= tol.value.abs ||
+        thisBase.value.isInfinite && otherBase.value.isInfinite ||
+        thisBase.value.isNaN && otherBase.value.isNaN || {
+          if (!this.isZero && !other.isZero) {
+            val relErr = (if (other > this) (this - other) / other else (this - other) / this).abs
+            relErr <= maxRe
+          } else false
+        }
+      )
+  }
+
   /**
    * Should be: inBaseUOM.value.hashCode
    * but this is faster. Multiplaction is in the same order as base conversion is
@@ -341,6 +357,7 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   override def / (rhs: Quantity)   = guard(rhs == Quantity.ONE, BinOpNamedQuantity("÷", this, asNamedQuantity(rhs), quantity / rhs))
   override def + (rhs: Quantity)   = guard(quantity + rhs == quantity, BinOpNamedQuantity("+", this, asNamedQuantity(rhs), quantity + rhs))
   override def - (rhs: Quantity)   = guard(quantity - rhs == quantity, BinOpNamedQuantity("-", this, asNamedQuantity(rhs), quantity - rhs))
+  override def min(rhs: Quantity)  = FunctionNamedQuantity("min", List(this, asNamedQuantity(rhs)), quantity min rhs)
   override def unary_-             = NegateNamedQuantity(this)
   override def abs                 = FunctionNamedQuantity("abs", List(this), quantity.abs)
   override def invert              = InvertNamedQuantity(this)
@@ -369,7 +386,7 @@ abstract class NamedQuantity(val quantity : Quantity) extends Quantity(quantity.
   private def guard(condition: Boolean, fn: => NamedQuantity) = if (condition) this else fn
 
   override def round(dp:Int) = RoundedNamedQuantity(this, dp)
-  def withNewName(newName : String) = SimpleNamedQuantity(newName, quantity)
+  def withNewName(newName : String) = quantity.named(newName)
 }
 
 object NamedQuantity{

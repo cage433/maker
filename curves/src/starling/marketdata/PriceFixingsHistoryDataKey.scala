@@ -8,7 +8,6 @@ import starling.pivot.Row
 
 case class PriceFixingsHistoryDataKey(marketName: String, exchangeName: Option[String] = None) extends MarketDataKey {
   type marketDataType = PriceFixingsHistoryData
-  type marketDataDBType = PriceFixingsHistoryData
   def typeName = PriceFixingsHistoryDataType.name
   def humanName = exchangeName.map(e => if (marketName.startsWith(e)) marketName else { e + " " + marketName}).getOrElse(marketName)
   def fields = Set(PriceFixingsHistoryDataType.marketField.field)

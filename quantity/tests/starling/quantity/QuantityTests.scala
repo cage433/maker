@@ -2,7 +2,6 @@ package starling.quantity
 
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations._
-import org.testng.Assert._
 import starling.utils.ScalaTestUtils
 import starling.utils.ScalaTestUtils._
 import starling.quantity.{Quantity => Qty}
@@ -10,6 +9,7 @@ import starling.quantity.utils.QuantityTestUtils._
 import org.scalatest.matchers.ShouldMatchers
 import java.lang.String
 import starling.utils.ImplicitConversions._
+import org.testng.Assert._
 
 class QuantityTests extends TestNGSuite with ShouldMatchers {
 
@@ -55,6 +55,43 @@ import starling.quantity.RichQuantity._
     assertTrue(Qty(6, USD).isAlmostEqual(Qty(5, USD), 1.1))
     assertFalse(Qty(6, USD).isAlmostEqual(Qty(5, USD), .9))
     assertFalse(Qty(6, USD).isAlmostEqual(Qty(6, EUR), 10))
+  }
+
+  @Test
+  def almostEqRel() {
+    assertTrue(Qty(6, USD).isAlmostEqualRel(Qty(5, USD), 1.1))
+    assertFalse(Qty(6, USD).isAlmostEqualRel(Qty(5, USD), .9))
+    assertFalse(Qty(6, USD).isAlmostEqualRel(Qty(6, EUR), 10))
+
+    // check that in the normal cases isAlmostEqualRel is same as isAlmostEqual
+    val a1 = Qty(1.000000, MT)
+    val b1 = Qty(1.000001, MT)
+    assertTrue(a1.isAlmostEqual(b1, 1E-06))
+    assertTrue(a1 isAlmostEqualRel b1)
+
+    // check that when the abd error is large but the relative error is small then
+    //   this fails for isAlmostEqual and succeeds for isAlmostEqualRel
+    val a2 = Qty(100000.0, MT)
+    val b2 = Qty(100000.1, MT)
+    assertFalse(a2.isAlmostEqual(b2, 1E-06))
+    assertTrue(a2 isAlmostEqualRel b2)
+
+    // check that when either number is zero only absolute difference is used
+    val a3 = Qty(000000.0, MT)
+    val b3 = Qty(000000.1, MT)
+    assertFalse(a3.isAlmostEqual(b3, 1E-06))
+    assertFalse(a3 isAlmostEqualRel b3)
+
+    val a4 = Qty(0.000000, MT)
+    val b4 = Qty(0.000001, MT)
+    assertTrue(a4.isAlmostEqual(b4, 1E-06))
+    assertTrue(a4 isAlmostEqualRel b4)
+
+    // check that zero works (is equal)
+    val a5 = Qty(000000.0, MT)
+    val b5 = Qty(000000.0, MT)
+    assertTrue(a5.isAlmostEqual(b5, 1E-06))
+    assertTrue(a5 isAlmostEqualRel b5)
   }
 
   @Test
@@ -310,6 +347,19 @@ import starling.quantity.RichQuantity._
 
   @Test def averageOfQuantitiesWithSameBaseUnit {
     Quantity.average(List(1 (USD), 50 (US_CENT))) should be === (75 (US_CENT))
+  }
+
+  @Test def minOrNamedQuantitiesShouldIncludeExplanation {
+    val left = 50(GBP)
+    val right = 0(GBP)
+
+    left min right should be === right
+
+    val namedLeft = left.named("left")
+    val namedRight = right.named("right")
+
+    val result = (namedLeft min namedRight).cast[FunctionNamedQuantity]
+    result should be === Some(FunctionNamedQuantity("min", List(namedLeft, namedRight), left min right))
   }
 
   private def values = Quantity(12.34, UOM.USD) :: multiplicativeZeros ::: additiveZeros

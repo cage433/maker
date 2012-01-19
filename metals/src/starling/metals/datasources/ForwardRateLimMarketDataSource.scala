@@ -15,6 +15,8 @@ import starling.db.{NormalMarketDataReader, MarketDataStore}
 import starling.quantity.{Quantity, UOM}
 import collection.immutable.{Map, List}
 import org.joda.time.Period
+import starling.utils.ImplicitConversions
+import starling.databases.{MarketDataChange, PricingGroupMarketDataEventSource, MarketDataProvider, AbstractMarketDataProvider}
 
 
 case class ForwardRateLimMarketDataSource(service: LIMService, emailService: EmailService, template: Email)
@@ -44,13 +46,17 @@ case class ForwardRateLimMarketDataSource(service: LIMService, emailService: Ema
 
     TaskDescription("Verify HIBOR Available", limDaily(SHFE.calendar, 11 H 00), notImplemented)
   ).filterNot(_.task == notImplemented)
+
+  override def eventSources(marketDataStore: MarketDataStore) = {
+    List(new ForwardRateDataEventSource(PricingGroup.Metals, ReferenceInterestMarketDataProvider(marketDataStore)))
+  }
 }
 
 class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailService: EmailService, template: Email)
   extends EmailingScheduledTask(emailService, template) {
 
   import LIBORCalculator._
-  private val currencies = LIBORCalculator.currencies(ForwardRateSource.LIBOR)
+  private val currencies = LIBORCalculator.currencies(ForwardRatePublisher.LIBOR)
 
   protected def emailFor(observationDay: Day) = {
     val liborFixings: NestedMap[UOM, Tenor, (Quantity, Day)] = latestLiborFixings(marketDataStore, observationDay)
@@ -79,8 +85,34 @@ class VerifyLiborMaturitiesAvailable(marketDataStore: MarketDataStore, emailServ
 
   private def read(marketDataStore: MarketDataStore, observationDay: Day, key: ForwardRateDataKey): Option[Map[Tenor, Quantity]] =
     latestLimOnlyMarketDataReader(marketDataStore).readAs[ForwardRateData](TimedMarketDataKey(
-      observationDay.atTimeOfDay(key.observationTime), key)).rates.get(ForwardRateSource.LIBOR)
+      observationDay.atTimeOfDay(key.observationTime), key)).rates.get(ForwardRatePublisher.LIBOR)
 
   private def latestLimOnlyMarketDataReader(marketDataStore: MarketDataStore) = new NormalMarketDataReader(
     marketDataStore, marketDataStore.latestMarketDataIdentifier(MarketDataSelection(Some(PricingGroup.Metals))))
 }
+
+case class ReferenceInterestMarketDataProvider(marketDataStore : MarketDataStore)
+  extends AbstractMarketDataProvider[ForwardRatePublisher, UOM, Map[Tenor, Quantity]](marketDataStore) {
+
+  val marketDataType = ForwardRateDataType.name
+  val marketDataKeys = None
+
+  def marketDataFor(timedData: List[(TimedMarketDataKey, MarketData)]) = timedData.collect {
+    case (TimedMarketDataKey(_, ForwardRateDataKey(currency)), ForwardRateData(data)) => (currency, data)
+  }.toMap.flipNesting
+}
+
+case class ForwardRateDataEventSource(pricingGroup: PricingGroup,
+  provider: MarketDataProvider[ForwardRatePublisher, UOM, Map[Tenor, Quantity]]) extends PricingGroupMarketDataEventSource {
+
+  type Key = ForwardRatePublisher
+  type MarketType = UOM
+  type CurveType = Map[Tenor, Quantity]
+
+  protected def marketDataEvent(change: MarketDataChange, publisher: ForwardRatePublisher, currencies: List[UOM], snapshot: SnapshotIDLabel) = {
+    Some(ReferenceInterestRateDataEvent(change.observationDay, publisher.value, currencies, snapshot, change.isCorrection))
+  }
+
+  protected def marketDataProvider = Some(provider)
+}
+

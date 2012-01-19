@@ -9,10 +9,10 @@ import starling.maths.RandomVariables
 import starling.quantity.{Quantity, UOM, Percentage}
 import starling.quantity.utils.QuantityTestUtils._
 import starling.utils.{Log, StarlingTest}
-import starling.marketdata.{ForwardRateSource, ForwardRateData, MarketData}
 import starling.daterange._
 import starling.metals.datasources.LIBORFixing._
 import starling.metals.datasources.LIBORFixing
+import starling.marketdata.{ReferenceDataLookup, ForwardRatePublisher, ForwardRateData, MarketData}
 
 class DiscountCurveTests extends StarlingTest with Log {
 	@Test
@@ -148,19 +148,19 @@ class DiscountCurveTests extends StarlingTest with Log {
     val ccy = USD
     val marketDay = Day(2011, 12, 1).endOfDay
     val rates = ForwardRateData(
-      Map(ForwardRateSource.LIBOR ->
+      Map(ForwardRatePublisher.LIBOR ->
         Map(
           Tenor.OneMonth -> 1.3 (PERCENT),
           Tenor.TwoMonths -> 1.5 (PERCENT),
           Tenor.ThreeMonths -> 1.7 (PERCENT),
           Tenor.SixMonths -> 2.0 (PERCENT)
         )))
-    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates)
+    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates, ReferenceDataLookup.Null)
     val env = Environment(
       new MappingCurveObjectEnvironment(Map[CurveKey, CurveObject](DiscountCurveKey(ccy) ->discountCurve), marketDay)
     )
 
-    rates.rates(ForwardRateSource.LIBOR).foreach{
+    rates.rates(ForwardRatePublisher.LIBOR).foreach{
       case (tenor, rate) =>
         val fixing =  LIBORFixing(ccy, marketDay.day, tenor, rate)
         val forwardRate = env.forwardRate(ccy, fixing.fixingDay, fixing.maturityDay, DayCountActual365)
@@ -175,14 +175,14 @@ class DiscountCurveTests extends StarlingTest with Log {
     val ccy = USD
     val marketDay = Day(2011, 12, 1).endOfDay
     val rates = ForwardRateData(
-      Map(ForwardRateSource.LIBOR ->
+      Map(ForwardRatePublisher.LIBOR ->
         Map(
           Tenor.OneMonth -> 1.3 (PERCENT),
           Tenor.TwoMonths -> 1.5 (PERCENT),
           Tenor.ThreeMonths -> 1.7 (PERCENT),
           Tenor.OneYear -> 2.0 (PERCENT)
         )))
-    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates)
+    val discountCurve = DiscountCurveKey(ccy).buildFromMarketData(marketDay, rates, ReferenceDataLookup.Null)
     val env = Environment(
       new MappingCurveObjectEnvironment(Map[CurveKey, CurveObject](DiscountCurveKey(ccy) ->discountCurve), marketDay)
     )

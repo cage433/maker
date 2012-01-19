@@ -91,7 +91,6 @@ class SpreadStdDevSurfaceDataBuilder(var uom:Option[UOM] = None) {
 
 case class SpreadStdDevSurfaceDataKey(market : FuturesMarket) extends MarketDataKey {
   type marketDataType = SpreadStdDevSurfaceData
-  type marketDataDBType = SpreadStdDevSurfaceData
   def typeName = SpreadStdDevSurfaceDataType.name
   def humanName = market.toString
   def fields = Set(SpreadStdDevSurfaceDataType.marketField.field)
@@ -140,7 +139,7 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
     columnFields=List(deltaField.field)
   )
 
-  val keys = List(SpreadStdDevSurfaceDataKey(Market.NYMEX_WTI))
+  def keys = List(SpreadStdDevSurfaceDataKey(Market.NYMEX_WTI))
   type dataType = SpreadStdDevSurfaceData
   type keyType = SpreadStdDevSurfaceDataKey
 
@@ -227,7 +226,7 @@ case class SpreadAtmStdDevCurveKey(market : FuturesMarket)
 
   def marketDataKey = SpreadStdDevSurfaceDataKey(market)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData) = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData, refData : ReferenceDataLookup) = {
     new SpreadAtmStdDev(marketDayAndTime, market, marketData)
   }
 
@@ -239,7 +238,7 @@ case class SpreadSkewStdDevCurveKey(market : FuturesMarket)
 
   def marketDataKey = SpreadStdDevSurfaceDataKey(market)
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData) = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, marketData: SpreadStdDevSurfaceData, refData : ReferenceDataLookup) = {
     new SpreadSkewStdDevs(marketDayAndTime, market, marketData)
   }
 

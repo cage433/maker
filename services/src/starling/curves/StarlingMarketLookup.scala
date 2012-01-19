@@ -7,22 +7,23 @@ import starling.dbx.QueryBuilder._
 import starling.utils.Log
 import java.util.concurrent.atomic.AtomicBoolean
 
-class StarlingMarketLookup(db: DB, businessCalendars: BusinessCalendars, expiryRules: FuturesExpiryRules) extends MarketLookup {
-  /**
-   * map of eaiquoteid to index
-   */
-  lazy val table: List[Either[Market, Index]] = load
-
+class StarlingMarketLookup(db:DB, businessCalendars:BusinessCalendars, expiryRules:FuturesExpiryRules) extends MarketLookup {
   val loading = new AtomicBoolean(false)
 
-  lazy val allMarkets = table.flatMap {
-    case Left(m: Market) => Some(m)
-    case _ => None
-  } ::: Market.EXBXG_MARKETS
+  def initial = {
+    val table:List[Either[Market, Index]] = load
 
-  lazy val allIndexes = table.flatMap {
-    case Right(m) => Some(m)
-    case _ => None
+    val allMarkets = table.flatMap {
+      case Left(m:Market) => Some(m)
+      case _ => None
+    } ::: Market.EXBXG_MARKETS
+
+    val allIndexes = table.flatMap {
+      case Right(m) => Some(m)
+      case _ => None
+    }
+
+    (allMarkets, allIndexes)
   }
 
   private def load = {
@@ -40,7 +41,7 @@ class StarlingMarketLookup(db: DB, businessCalendars: BusinessCalendars, expiryR
       val lines = maps.map {
         map =>
           new MarketParser.Line {
-            def get(name: String) = map(name.toLowerCase)
+            def get(name:String) = map(name.toLowerCase)
 
             override def toString = map.toString
           }

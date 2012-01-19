@@ -19,7 +19,6 @@ case class FreightParityDataKey(contractualIncoterm: IncotermCode, contractualLo
   destinationIncoterm: IncotermCode, destinationLocation: NeptuneCountryCode) extends MarketDataKey {
 
   type marketDataType = FreightParityData
-  type marketDataDBType = FreightParityData
   def typeName = MarketDataTypeName("FreightParity")
   def humanName = ""
   def fields = Set("Contractual Incoterm", "Contractual Location", "Destination Incoterm", "Destination Location").map(Field(_))

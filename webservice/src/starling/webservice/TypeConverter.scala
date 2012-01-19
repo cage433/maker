@@ -32,7 +32,7 @@ case class OptionTypeConverter(baseType: Class[_], genericType: Type) extends Ty
     case element => Some(element)
   } }
 
-  private def toList(value: AnyRef): List[_] = value.castOrElse[ArrayList[_]](_ => new ArrayList()).toList
+  private def toList(value: AnyRef): List[_] = (value.cast[ArrayList[_]] | new ArrayList()).toList
 }
 
 case class NullTypeConverter(baseType: Class[_], genericType: Type) extends TypeConverter {

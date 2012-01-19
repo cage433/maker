@@ -2,13 +2,13 @@ package starling.curves
 
 import starling.daterange._
 import starling.market._
-import starling.marketdata.{PriceData, PriceDataKey}
 import starling.quantity.Quantity
 import starling.utils.Log
 import starling.utils.cache.CacheFactory
 import starling.utils.ImplicitConversions._
 import collection.immutable.Map
 import starling.pivot.PivotQuantity
+import starling.marketdata.{ReferenceDataLookup, PriceData, PriceDataKey}
 
 case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveKey[PriceData] {
 
@@ -19,7 +19,7 @@ case class ForwardCurveKey(market : CommodityMarket) extends NonHistoricalCurveK
     }
   }
 
-  def buildFromMarketData(marketDayAndTime: DayAndTime, priceData: PriceData) = {
+  def buildFromMarketData(marketDayAndTime: DayAndTime, priceData: PriceData, refData : ReferenceDataLookup) = {
     if (priceData.isEmpty) {
       throw new MissingMarketDataException("No market data for " + market + " on " + marketDayAndTime)
     } else {

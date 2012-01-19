@@ -13,7 +13,6 @@ import starling.daterange.{Day, ObservationPoint}
 trait MarketDataKey {
   //the type of MarketData returned when using this key
   type marketDataType <: MarketData
-  type marketDataDBType
 
   //the MarketDataType object for this type
   def typeName:MarketDataTypeName
@@ -40,8 +39,6 @@ trait MarketDataKey {
     cast(reader.read(TimedMarketDataKey(observationPoint, this)))
 
   private def cast(marketData:MarketData):marketDataType = marketData.asInstanceOf[marketDataType]
-
-  def unmarshallDB(dbValue: Any): marketDataType = dbValue.asInstanceOf[marketDataType]
 }
 
 case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDataKey) {
@@ -52,8 +49,6 @@ case class TimedMarketDataKey(observationPoint: ObservationPoint, key: MarketDat
 
   def typeName = key.typeName
   def fieldValues(marketDataType: MarketDataType) = marketDataType.fieldValues(key)
-
-  def unmarshallDB(dbValue: Any) = key.unmarshallDB(dbValue)
 
   def asTuple = (observationPoint, key)
   def copyDay(other: Day) = copy(observationPoint.copyDay(other))
@@ -66,7 +61,7 @@ trait DBKey[K <: DBKey[K]] {
 
 case class MarketDataValueKey(id: Int, row: Row) extends DBKey[MarketDataValueKey] {
   lazy val dbMap: Map[String, Any] = Map("valueKey" → row.dbValue)
-  def sameValuesAs(that: MarketDataValueKey) = that.copy(id = id) == this
+  def sameValuesAs(that: MarketDataValueKey) = row == that.row
   def fields = row.fields
 }
 

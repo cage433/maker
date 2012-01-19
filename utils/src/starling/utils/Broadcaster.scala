@@ -2,8 +2,9 @@ package starling.utils
 
 import swing.event.Event
 import scala.collection.JavaConversions._
-import ImplicitConversions._
 import starling.manager.{QueuedReceiver, Receiver, Broadcaster}
+import shapeless.Typeable
+
 
 class ReceiversBroadcaster extends Broadcaster with Log {
   val receivers = new java.util.concurrent.ConcurrentHashMap[AnyRef,Receiver]()
@@ -27,8 +28,8 @@ class CompositeBroadcaster(broadcasters: (Boolean, Broadcaster)*) extends Broadc
   def broadcast(event: Event) = enabledBroadcasters.map(_.broadcast(event))
 }
 
-abstract class TypedBroadcaster[T](implicit manifest: Manifest[T]) extends Broadcaster {
-  override def broadcast(event: Event) = manifest.safeCast(event).foreach(typedBroadcast)
+abstract class TypedBroadcaster[T](implicit typeable: Typeable[T]) extends Broadcaster {
+  override def broadcast(event: Event) = typeable.cast(event).foreach(typedBroadcast)
 
   def typedBroadcast(t: T)
 }

@@ -440,6 +440,7 @@ case class TradeSelectionPage(
       }
 
       val intraDayPanel = new MigPanel {
+        visible = (context.localCache.version.serverType.toLowerCase != "fc2")
         border = RoundedBorder(colour = PivotTableBackgroundColour)
 
         add(intradayTradesCheckBox)
@@ -457,7 +458,7 @@ case class TradeSelectionPage(
 
       add(tradeSystemPanel)
       add(liveOnPanel, "wrap")
-      add(intraDayPanel, "spanx, split")
+      add(intraDayPanel, "spanx, split, hidemode 3")
       add(singleTradePanel)
 
       override def revert() {

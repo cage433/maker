@@ -25,7 +25,7 @@ import starling.utils.{STable, Log}
 import starling.utils.cache.CacheFactory
 import collection.immutable.{TreeMap, Map, Set, List}
 import scalaz.Scalaz._
-import collection.parallel.immutable.ParMap
+import starling.concurrent.MP._
 
 //This is the code which maps from TradeableType.fields to FieldDetails
 object TradeableFields {
@@ -36,8 +36,13 @@ object TradeableFields {
       val quantity = classOf[Quantity]
       val spreadOrQuantity = classOf[SpreadOrQuantity]
       val period = classOf[Period]
+      val QuantityString = "Quantity"
+      val AssignmentIDString = "Assignment ID"
+      val InventoryIDString = "Inventory ID"
       (name, klass) match {
-        case ("Quantity", _) => (new TradeIDGroupingSumPivotQuantityFieldDetails("Quantity"), (t: Trade, q: Any) => Map(t.tradeID.toString -> q))
+        case (QuantityString, _) => (new TradeIDGroupingSumPivotQuantityFieldDetails(QuantityString), (t: Trade, q: Any) => Map(t.tradeID.toString -> q))
+        case (AssignmentIDString, _) => (StringToNumberFieldDetails(AssignmentIDString), (t: Trade, v: Any) => v.toString.asInstanceOf[Any])
+        case (InventoryIDString, _) => (StringToNumberFieldDetails(InventoryIDString), (t: Trade, v: Any) => v.toString.asInstanceOf[Any])
         case (_, `dateRange`) => (new PeriodFieldDetails(name), (t: Trade, v: Any) => {
           v match {
             case d: DateRange => DateRangePeriod(d)
@@ -425,7 +430,7 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
       val pivotData = {
         Log.infoWithTime("Building pivot data") {
           val versions = readAll(timestamp, Some(expiryDay), marketDay = marketDay).values
-          versions.par.flatMap {
+          versions.mpFlatMap {
             case version => {
               val (trade, details) = TradeAndFields(version) |> (v => (v.trade, v.fields))
               tradeableTypes += trade.tradeable.tradeableType
@@ -489,7 +494,7 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
   def utps(timestamp: Timestamp, marketDay: Day, expiryDay: Day, predicate: TradePredicate, utpPartitioningFields: List[PField]): Map[UTPIdentifier, UTP] = Log.infoWithTime("Creating UTPs") {
     val filter = fromPredicate(predicate)
     val versions = readAll(timestamp, Some(expiryDay), marketDay = Some(marketDay)).values
-    val a = versions.par.flatMap {
+    val a = versions.mpFlatMap {
       case version => {
         val (trade, details) = TradeAndFields(version) |> (v => (v.trade, v.fields))
         val joinedTradeAttributeDetails = joiningTradeAttributeFieldValues(trade.attributes)
@@ -519,7 +524,7 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
 
   def pivotInitialState(tradeableTypes: Set[TradeableType[_]]): DefaultPivotState
 
-  protected val instrumentFilteredDrillDown = {
+  protected lazy val instrumentFilteredDrillDown = {
     import starling.pivot.{
     Field => PivotField
     }
@@ -537,4 +542,25 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
 
   def pivotDrillDownGroups(): List[DrillDownInfo]
 
+}
+
+object StringToNumberWithErrorCheckingComparator extends Ordering[Any] {
+  def compare(x:Any, y:Any) = {
+    (x,y) match {
+      case (s1:String, s2:String) => {
+        val errorNumber = -123456L
+        val number1 = try {s1.toLong} catch {case t => errorNumber}
+        val number2 = try {s2.toLong} catch {case t => errorNumber}
+        if ((number1 == errorNumber) && (number2 == errorNumber)) {
+          s1.compare(s2)
+        } else {
+          number1.compareTo(number2)
+        }
+      }
+    }
+  }
+}
+
+case class StringToNumberFieldDetails(name0:String) extends FieldDetails(name0) {
+  override def comparator = StringToNumberWithErrorCheckingComparator
 }

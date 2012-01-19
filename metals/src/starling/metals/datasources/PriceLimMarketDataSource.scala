@@ -1,58 +1,27 @@
 package starling.metals.datasources
 
-import collection.immutable.List
 
 import starling.daterange._
 import starling.marketdata._
 import starling.utils.ImplicitConversions._
-import starling.utils.Pattern.Extractor
-import starling.db.{MarketDataStore, MarketDataEntry}
+import starling.db.MarketDataStore
 import starling.pivot.PivotQuantity
 import starling.databases._
 import starling.market._
 import starling.gui.api._
-import scalaz.Scalaz._
 import starling.scheduler.{ScheduledTask, ScheduledTime, TaskDescription}
-import starling.lim.{LIMService, LimNode, LIMConnection}
+import starling.lim.{LIMService, LimNode}
 import starling.services.EmailService
 import starling.curves.readers.VerifyMarketDataAvailable
-import com.lim.mimapi.RelType
-
+import java.lang.String
+import scalaz.Scalaz._
+import collection.immutable.{Map, List}
 
 object PriceLimMarketDataSource extends scalaz.Options {
   import LIMService.TopRelation.Trafigura._
 
-  val sources = List(
-    new PriceLimSource(new LMELIMRelation(Bloomberg.Metals.Lme, FuturesExchangeFactory.LME)),
-    new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Comex, FuturesExchangeFactory.COMEX)),
-    new PriceLimSource(new MonthlyLIMRelation(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE)))
-
-  class LMELIMRelation(val node: LimNode, override val exchange: FuturesExchange) extends LIMRelation {
-    private lazy val lmeMarkets = FuturesExchangeFactory.LME.markets.toMapWithKeys(_.commodity.limName.toLowerCase)
-
-    protected val extractor = Extractor.regex[Option[LimPrice]]("""TRAF\.LME\.(\w+)\.(\d+)\.(\d+)\.(\d+)""") {
-      case List(commodity, y, m, d) => some(LimPrice(lmeMarkets(commodity.toLowerCase), Day(y, m, d), exchange.closeTime))
-    }
-  }
-
-  class MonthlyLIMRelation(val node: LimNode, override val exchange: FuturesExchange, prefix: String,
-    override val relTypes: Set[RelType]) extends LIMRelation {
-
-    def this(node: LimNode, exchange: FuturesExchange) = this(node, exchange, "TRAF.", Set(RelType.CATEGORY))
-
-    val extractor = Extractor.regex[Option[LimPrice]](prefix + """%s\.([^_]+)_(\d\d\d\d\D)""" % exchange.name) {
-      case List(lim, deliveryMonth) =>
-
-      val optMarket = exchange.markets.find(_.limSymbol.map(_.name) == Some(lim))
-      val optMonth = ReutersDeliveryMonthCodes.parse(deliveryMonth)
-
-      (optMarket, optMonth) match {
-        case (Some(market), Some(month)) => Some(LimPrice(market, month, exchange.closeTime))
-        case (None, _) => debug("No Market with exchange: %s and LIM Symbol: %s" % (exchange.name, lim))
-        case (_, None) => debug("Cannot parse Reuters delivery month: " + deliveryMonth)
-      }
-    }
-  }
+  val sources = List(new LMEPriceLimSource,
+    new MonthlyPriceLimSource(Bloomberg.Futures.Shfe, FuturesExchangeFactory.SHFE))
 }
 
 case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service: LIMService, emailService: EmailService, template: Email)
@@ -69,7 +38,6 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
 
   override def availabilityTasks(marketDataStore: MarketDataStore) = List(
     task("LME Metals", limDaily(LME.calendar, 20 H 00), lme, marketDataStore),
-    task("COMEX Metals", limDaily(COMEX.calendar, 18 H 00), comex, marketDataStore),
     task("SHFE Metals", limDaily(SHFE.calendar, 16 H 02), shfe, marketDataStore)
   )
 
@@ -77,7 +45,7 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
 //    "WuXi Metals") with NullMarketDataEventSource
 //      tasks(daily(SFE, 16 H 30), availabilityBroadcaster.verifyPricesAvailable(exbxgMetals), verifyPricesValid(exbxgMetals))
 
-  private lazy val limMetalMarketsForExchanges@List(lme, comex, shfe) = sources.map(pricesSource => {
+  private lazy val limMetalMarketsForExchanges@List(lme, shfe) = sources.map(pricesSource => {
     pricesSource.exchange.markets.filter(_.limSymbol.isDefined).filter(isMetal).filter(correspondsToBloombergImport(pricesSource.node))
   } )
 
@@ -110,29 +78,6 @@ case class PriceLimMarketDataSource(bloombergImports: BloombergImports)(service:
         }
       } }
     }
-}
-
-class PriceLimSource(relation: LIMRelation) extends LimSource(List(Level.Close)) {
-  val (node, nodes, exchange) = (relation.node, List(relation.node), relation.exchange)
-  type Relation = LimPrice
-  def description = nodes.map(_.name + " " + levelDescription)
-
-  def relationsFrom(connection: LIMConnection) = connection.getAllRelChildren(List(relation.node), relation.relTypes)
-    .flatMap(childRelation => relation.parse(childRelation).optPair(childRelation))
-
-  def marketDataEntriesFrom(allPrices: List[Prices[LimPrice]]) = allPrices.groupBy(group _)
-    .map { case ((market, observationPeriod), prices) => MarketDataEntry(observationPeriod, PriceDataKey(market),
-        PriceData.create(prices.map(price => {
-          val limMultiplier = market.limSymbol match {
-            case Some(ls) => ls.multiplier
-            case None => 1.0
-          }
-          price.relation.period → (price.priceFor(Level.Close) * limMultiplier)
-        }), market.priceUOM))
-    }
-
-  private def group(prices: Prices[LimPrice]) =
-    prices.relation.market → prices.atTimeOfDay(prices.relation.observationTimeOfDay)
 }
 
 case class PriceDataEventSource(pricingGroup: PricingGroup, provider: MarketDataProvider[CommodityMarket, DateRange, PivotQuantity])

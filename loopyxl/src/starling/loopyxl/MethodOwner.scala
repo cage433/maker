@@ -1,30 +1,27 @@
 package starling.loopyxl
 
 import java.lang.reflect.Method
-import scala.collection.JavaConversions._
-import starling.utils.{VarLogger, Log}
+import starling.utils.Log
 import starling.utils.ImplicitConversions._
-
 import collection.immutable.List
 
 
-class MethodOwner(owner: AnyRef, log : VarLogger = Log) {
-  def dynamicMethods : List[DynamicMethod] = {
-    val methods = annotatedMethods.map(method => new DynamicMethod(method, owner));
+class MethodOwner(owner: AnyRef) {
+  def dynamicMethods: List[DynamicMethod] = {
+    val (valid, invalid) = annotatedMethods.map(new DynamicMethod(_, owner)).partition(_.isValid)
 
-    val unmarshallable = methods.toMapWithValues(_.unmarshallable).mapValues(_.distinct).filterValues(_.nonEmpty)
-    unmarshallable.foreach(mc => log.error("ExcelMethod is not valid: %s, because it cannot contain classes: %s"
-      % (mc._1.name, mc._2.map(_.getSimpleName).mkString(", "))))
+    invalid.foreach(logInvalid)
 
-    methods.filter(_.isValid)
+    valid
   }
 
-  private def annotatedMethods : List[Method] = owner.getClass.getMethods.filter(hasAnnotation(_)).toList
+  protected def logInvalid(method: DynamicMethod) {
+    Log.error("ExcelMethod is not valid: %s, because it cannot contain classes: %s" %
+      (method.name, method.unmarshallable.map(_.getSimpleName).mkString(", ")))
+  }
+
+  private def annotatedMethods: List[Method] = owner.getClass.getMethods.filter(hasAnnotation(_)).toList
   private def hasAnnotation(method: Method) = method.getAnnotation(classOf[ExcelMethod]) != null
-  private def onlyHasVarargsAtEnd(method: Method) = !method.getParameterTypes.init.exists(isSequence(_))
-  private def logInvalid(method : DynamicMethod) = log.error("ExcelMethod is not valid: " + method.name)
-  private def logInvalid(aClass : Class[_]) = log.error("ExcelMethod cannot contain class: " + aClass.getSimpleName)
-  private def isSequence(aClass: Class[_]) = classOf[Seq[_]].isAssignableFrom(aClass)
 }
 
 object MethodOwner {

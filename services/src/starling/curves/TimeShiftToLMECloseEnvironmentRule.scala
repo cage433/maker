@@ -17,7 +17,7 @@ class TimeShiftToLMECloseEnvironmentRule(referenceDataLookup: ReferenceDataLooku
   val label = EnvironmentRuleLabel("Time shift to " + observationTimeOfDay.name)
   val exchanges : Set[FuturesExchange] = Set(FuturesExchangeFactory.SHFE, FuturesExchangeFactory.LME)
   def createEnv(observationDay: DayAndTime, reader: MarketDataReader) = {
-    val pricesForLastClose = Market.futuresMarkets.filter(m => exchanges.contains(m.exchange)).flatMap { market => {
+    val pricesForLastClose = Market.futuresMarketsView.filter(m => exchanges.contains(m.exchange)).flatMap { market => {
       val closeDay = market.businessCalendar.thisOrPreviousBusinessDay(observationDay.day)
       try {
         val priceDataAtLastClose = reader.read(TimedMarketDataKey(closeDay.atTimeOfDay(market.closeTime), PriceDataKey(market))).asInstanceOf[PriceData]
