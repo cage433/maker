@@ -10,5 +10,5 @@ CREATE TABLE [dbo].[EDMLogisticsInventory](
 
 CREATE TABLE [dbo].[EDMQuotaFullyAllocated](
  [quotaID] [varchar](50) NOT NULL,
- [isAllocated] [bit] NOT NULL
+ [isAllocated] [varchar](MAX) NOT NULL
 )
