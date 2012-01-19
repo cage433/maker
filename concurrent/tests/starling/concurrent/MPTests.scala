@@ -4,7 +4,7 @@ import org.testng.Assert._
 import starling.concurrent.MP._
 import org.scalatest.testng.TestNGSuite
 import org.testng.annotations.{AfterTest, Test}
-import starling.local.Locals
+import starling.local.{Local, Locals}
 
 class MPTests extends TestNGSuite {
 
@@ -72,13 +72,14 @@ class MPTests extends TestNGSuite {
   @Test
   def testInheritingLocals {
     val list = List(1, 2, 3)
-    Locals.withLocals(Map.empty) {
-      Locals.setLocal("one", Some(1))
-      Locals.withLocal("two", 2) {
-        list.mpMap {
-          i => {
-            assertEquals(Locals.getLocal("one"), Some(1))
-            assertEquals(Locals.getLocal("two"), Some(2))
+    Locals.newStack {
+      Locals.withLocal("one", 1) {
+        Locals.withLocal("two", 2) {
+          list.mpMap {
+            i => {
+              assertEquals(Locals.getLocal("one"), Some(1))
+              assertEquals(Locals.getLocal("two"), Some(2))
+            }
           }
         }
       }

@@ -139,7 +139,7 @@ object SpreadStdDevSurfaceDataType extends MarketDataType {
     columnFields=List(deltaField.field)
   )
 
-  val keys = List(SpreadStdDevSurfaceDataKey(Market.NYMEX_WTI))
+  def keys = List(SpreadStdDevSurfaceDataKey(Market.NYMEX_WTI))
   type dataType = SpreadStdDevSurfaceData
   type keyType = SpreadStdDevSurfaceDataKey
 

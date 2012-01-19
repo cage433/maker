@@ -524,7 +524,7 @@ abstract class RichTradeStore(db: RichDB, tradeSystem: TradeSystem, closedDesks:
 
   def pivotInitialState(tradeableTypes: Set[TradeableType[_]]): DefaultPivotState
 
-  protected val instrumentFilteredDrillDown = {
+  protected lazy val instrumentFilteredDrillDown = {
     import starling.pivot.{
     Field => PivotField
     }
