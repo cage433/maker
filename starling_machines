@@ -1,0 +1,19 @@
+ttraflocorh182
+  2 cores, 32G
+  Intended as DR machine - currently has 4.1 integration and performance envs
+
+ttraflocorh183
+  2 cores, 32G
+  was planned for jenkins machine - currently unused
+  
+ttraflonrh306
+  8 cores, 32G 
+  Generic test server - can run 4 starlings
+
+ttraflonrh307
+  8 cores, 32G 
+  Production machine - has oil server
+
+dtraflonrh467
+  2 cores, 12G
+  Test server - currently used for Invoicing

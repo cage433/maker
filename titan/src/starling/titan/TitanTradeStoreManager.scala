@@ -14,15 +14,18 @@ import com.trafigura.edm.logistics.inventory.{LogisticsInventoryResponse, Cancel
 import scala.collection.mutable
 import com.trafigura.edm.trademgmt.trades.{CompletedTradeState, PhysicalTrade => EDMPhysicalTrade}
 import collection.immutable.{List, Map}
+import starling.db.{ResultSetRow, DB}
+import starling.instrument.utils.StarlingXStream
+import starling.utils.ImplicitConversions._
 
 
 
 case class TitanServiceCache(
   private val edmTradeServices: TitanTradeMgmtServices,
   private val logisticsServices: TitanLogisticsServices,
-  private val edmQuotaDetails: mutable.Set[TradeManagementQuotaDetails],
-  private val edmInventoryItems: mutable.Map[String, LogisticsInventory],
-  private val isQuotaFullyAllocated: mutable.Map[String, Boolean]
+  private val edmQuotaDetails: ExternalTitanData[TradeManagementQuotaDetails],
+  private val edmInventoryItems: ExternalTitanData[LogisticsInventory],
+  private val isQuotaFullyAllocated: ExternalTitanData[Boolean]
 
 ) extends Log with Startable {
   def externalServicesAreReady: Boolean = edmTradeServices.servicesReady && logisticsServices.servicesReady
@@ -30,18 +33,19 @@ case class TitanServiceCache(
   type InventoryID = String
 
   private val lock = new Object
-//  override def start = initialiseCaches
-//
+
   def rebuild{
     edmQuotaDetails.clear
-    edmQuotaDetails ++= edmTradeServices.getAllCompletedPhysicalTrades().flatMap{tr => TradeManagementQuotaDetails.buildListOfQuotaDetails(edmTradeServices, tr, "Get All")}
+    edmQuotaDetails ++= edmTradeServices.getAllCompletedPhysicalTrades().flatMap{
+      tr => TradeManagementQuotaDetails.buildListOfQuotaDetails(edmTradeServices, tr, "Get All").map{q => (q.quotaID -> q)}
+    }
 
     val allInventory: LogisticsInventoryResponse = logisticsServices.getAllInventory()
 
     edmInventoryItems.clear
     edmInventoryItems ++= allInventory.associatedInventory.filter(i => i.status != CancelledInventoryItemStatus).map{inv => inv.id -> LogisticsInventory(inv, "Get All")}
     isQuotaFullyAllocated.clear
-    isQuotaFullyAllocated ++= allInventory.associatedQuota.map(q => q.quotaTitanId.toString -> q.fullyAllocated)
+    isQuotaFullyAllocated ++= allInventory.associatedQuota.map(q => q.quotaTitanId.value -> q.fullyAllocated)
 
     quotaIDToInventory.clear
     edmInventoryItems.values.foreach(addInventoryToQuotaIDToInventoryMap)
@@ -65,9 +69,9 @@ case class TitanServiceCache(
   edmInventoryLeaves.foreach(addInventoryToQuotaIDToInventoryMap)
 
   private def edmInventoryLeaves : List[LogisticsInventory] = {
-    val allInventoryIds = edmInventoryItems.keySet
+    val allInventoryIds = edmInventoryItems.ids
     val parentIds = edmInventoryItems.values.flatMap{inv => inv.parentID}.toSet
-    allInventoryIds.filterNot(parentIds).map(edmInventoryItems).toList
+    allInventoryIds.filterNot(parentIds).map(edmInventoryItems.getOrDie).toList
   }
 
 
@@ -102,27 +106,27 @@ case class TitanServiceCache(
       var inventory: LogisticsInventory = LogisticsInventory(newInventory, eventID)
       edmInventoryItems.get(inventoryID).foreach(removeInvFromQuotaIDToInventoryMap)
       edmInventoryItems += (newInventory.id -> inventory)
-      isQuotaFullyAllocated ++= newQuotas.map(q => q.quotaTitanId.toString -> q.fullyAllocated)
+      isQuotaFullyAllocated ++= newQuotas.map(q => q.quotaTitanId.value.toString -> q.fullyAllocated)
       addInventoryToQuotaIDToInventoryMap(inventory)
     }
   }
 
   def removeTrade(titanTradeID : String) {
     lock.synchronized{
-      val quotaIDs = edmQuotaDetails.filter(_.titanTradeID != titanTradeID).map(_.quotaID)
+      edmQuotaDetails.retain{case (_, quota) => quota.titanTradeID != titanTradeID}
+      val quotaIDs = edmQuotaDetails.values.map(_.quotaID)
       quotaIDToInventory.retain{case (quotaID, _) => !quotaIDs.contains(quotaID)}
-      edmQuotaDetails.retain(_.titanTradeID != titanTradeID)
     }
   }
 
   def updateTrade(titanTradeID : String, eventID : String): List[Trade] = {
     lock.synchronized {
-      edmQuotaDetails.retain(_.titanTradeID != titanTradeID)
+      edmQuotaDetails.retain{case (_, quota) => quota.titanTradeID != titanTradeID}
       val newTrade = edmTradeServices.getTrade(TitanId(titanTradeID))
 
       assert(newTrade.state == CompletedTradeState, "Unexpected state for trade " + newTrade.state + ", expected " + CompletedTradeState)
       var quotaDetails = TradeManagementQuotaDetails.buildListOfQuotaDetails(edmTradeServices, newTrade, eventID)
-      edmQuotaDetails ++= quotaDetails
+      edmQuotaDetails ++= quotaDetails.map{q => (q.quotaID -> q)}
       quotaDetails.flatMap(buildTradesForQuota)
     }
   }
@@ -136,7 +140,7 @@ case class TitanServiceCache(
   }
 
   def buildAllTrades : List[Trade] = {
-    edmQuotaDetails.flatMap(buildTradesForQuota).toList
+    edmQuotaDetails.values.flatMap(buildTradesForQuota).toList
   }
 }
 

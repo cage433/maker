@@ -34,6 +34,7 @@ import java.util.Timer
 import starling.daterange.{Notifier, TimedNotifier, TimeOfDay}
 import starling.titan._
 import java.util.concurrent.{FutureTask, ScheduledExecutorService}
+import starling.richdb.{RichResultSetRowFactory, RichDB}
 
 class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Identitys {
   def start(context: BromptonContext) {
@@ -78,9 +79,9 @@ class MetalsBromptonActivator extends BromptonActivator with Log with scalaz.Ide
       val manager = TitanTradeStoreManager(
         TitanServiceCache(
           titanServices, logisticsServices,
-          new PersistentSet(props.QuotaDetailsCacheFile()),
-          new PersistentMap(props.LogisticsInventoryCacheFile()),
-          new PersistentMap(props.IsQuotaFullyAllocatedCacheFile())
+          new DBPersistedExternalTitanData[TradeManagementQuotaDetails](new RichDB(props.StarlingDatabase(), new RichResultSetRowFactory), "EDMQuotaDetails", "quotaID", "details"),
+          new DBPersistedExternalTitanData[LogisticsInventory](new RichDB(props.StarlingDatabase(), new RichResultSetRowFactory), "EDMLogisticsInventory", "inventoryID", "inventory"),
+          new DBPersistedExternalTitanData[Boolean](new RichDB(props.StarlingDatabase(), new RichResultSetRowFactory), "EDMQuotaFullyAllocated", "quotaID", "isAllocated")
         ),
         titanTradeStore,
         rabbitReadyFn

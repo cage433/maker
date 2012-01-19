@@ -36,7 +36,6 @@ tags
 .settings/org.eclipse.jdt.ui.prefs
 services/src/starling/Scratch.scala
 modulejarcache/*
-starling_*
 external_imports
 .idea
 build-time

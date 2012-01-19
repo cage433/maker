@@ -58,30 +58,6 @@ case class PersistentMap[A, B](file : File) extends scala.collection.mutable.Map
   }
 }
 
-case class PersistentSet[A](file : File) extends scala.collection.mutable.Set[A] with PersistentCollection{
-
-  def this (filename : String) = this(new File(filename))
-
-  private val lock = new Object
-  protected var collection = lock.synchronized{
-    readCollection.fold(_.asInstanceOf[scala.collection.mutable.Set[A]], scala.collection.mutable.Set[A]())
-  }
-
-  def iterator = collection.iterator
-
-  def contains(elem: A) = lock.synchronized{collection.contains(elem)}
 
 
-  def +=(elem: A) = lock.synchronized{
-    collection += elem
-    persist
-    null
-  }
-
-  def -=(elem: A) = lock.synchronized{
-    collection -= elem
-    persist
-    null
-  }
-}
 

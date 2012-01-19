@@ -15,26 +15,6 @@ import starling.titan.EDMConversions._
 import runtime.ScalaRunTime
 
 
-// represent logistics inventory values needed for pricing metals
-case class Inventory(item: InventoryItem) {
-
-  // if we've reached the receipted inventory status (or later status) we can use the assignment qty, otherwise assignment qty it's not yet valid
-  val receivedQuantity: Option[Quantity] = {
-    item.status match {
-      case ExpectedInventoryItemStatus => None
-      case SplitInventoryItemStatus | CancelledInventoryItemStatus =>
-        throw new Exception("Unexpected inventory status '" + item.status + "' for inventory item " + item.oid.contents)
-      case _ => Some(item.purchaseAssignment.quantity)
-    }
-  }
-
-  // take the receipted qty (if available) to reflect logistics receipt qty, otherwise if not yet received then use the inventory qty as best estimate
-  def purchaseAssignmentQuantity: Quantity = receivedQuantity.getOrElse(item.quantity)
-  def isAllocated = Option(item.salesAssignment).isDefined
-  def currentQuantity = item.quantity
-  def id = item.oid.contents.toString
-}
-
 
 class TitanSystemOfRecord(manager : TitanTradeStoreManager)
   extends SystemOfRecord with Log {

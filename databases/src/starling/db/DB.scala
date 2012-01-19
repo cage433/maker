@@ -414,6 +414,9 @@ class DBWriter protected[db](dbTrait: DBTrait[_ <: ResultSetRow], dataSource: Da
   }
 }
 
+object DBWriter{
+  def apply(db : DB) = new DBWriter(db, db.dataSource)
+}
 class DB(val dataSource: DataSource) extends DBTrait[ResultSetRow] {
   lazy val factory = new ResultSetRowFactory
 

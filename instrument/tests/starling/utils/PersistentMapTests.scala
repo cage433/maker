@@ -34,27 +34,3 @@ class PersistentMapTests extends TestNGSuite{
   }
 }
 
-class PersistentSetTests extends TestNGSuite{
-
-  @Test
-  def testUpdatesWorkAsExpected{
-    val file = File.createTempFile("PersistentSetTests", "")
-    try {
-      file.delete
-      val set = PersistentSet[String](file)
-      assertTrue(set.isEmpty)
-      assertFalse(file.exists)
-      set+= "foo"
-      assertTrue(set.contains("foo"))
-
-      set += "fred"
-      assertEquals(set.size, 2)
-      assertTrue(set.contains("fred"))
-
-      set -= ("fred")
-      assertEquals(set.size, 1)
-    } finally{
-      file.delete()
-    }
-  }
-}
