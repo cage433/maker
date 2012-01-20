@@ -1,6 +1,0 @@
-#!/bin/bash
-
-git clean -fd .ivy
-git co .ivy
-git status
-

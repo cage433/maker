@@ -1,1 +1,0 @@
-LoopyXL.xll is an Excel DNA file that has been renamed (so that it coincides with the .dna file)

@@ -1,3 +1,0 @@
-I've generated the key and it should last 50 years. If you ever need to do it again, this is the command you use:
-
-keytool -genkey -alias starling -keyalg RSA -dname "CN=starling" -keypass {root password} -storepass {root password} -validity 18250 -keystore cert.jks

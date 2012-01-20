@@ -1,3 +1,0 @@
-package starling.schemaevolution
-
-class Patch134_RemoveNeptuneMarketDataSet_NewSchema extends Patch133_DontStoreMarketDataAgainstTransientNames_NewSchema
