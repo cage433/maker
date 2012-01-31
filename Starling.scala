@@ -9,12 +9,10 @@ val props = Props(file("Maker.conf"))
 
 def project(name : String) = Project(
   name, 
-  new File(name),
-  List(new File(name, "src")),
-  List(new File(name, "tests")),
-  List(new File(name, "lib_managed"), new File(name, "lib"), new File(name, "maker-lib")),
+  libDirectories = List(new File(name, "lib_managed"), new File(name, "lib"), new File(name, "maker-lib")),
   props = props
 )
+
 val manager = project("manager")
 val utils = project("utils") dependsOn manager
 val osgirun = project("osgirun").copy(libDirs = List(new File("osgirun/lib_managed"), new File("osgirun/lib"), new File("osgirun/osgi_jars")))
@@ -55,3 +53,4 @@ val reportsImpl = project("reports.impl") dependsOn services
 val webservice = project("webservice") dependsOn (props, starlingApi)
 val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
 val launcher = project("launcher") dependsOn (startserver, booter)
+
