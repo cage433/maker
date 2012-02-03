@@ -7,9 +7,11 @@ import org.apache.log4j.Level._
 
 val props = Props(file("Maker.conf"))
 
-def project(name : String) = Project(
+def project(name : String) = new Project(
   name, 
-  libDirectories = List(new File(name, "lib_managed"), new File(name, "lib"), new File(name, "maker-lib")),
+  file(name),
+  libDirs = List(new File(name, "lib_managed"), new File(name, "lib"), new File(name, "maker-lib")),
+  resourceDirs = List(new File(name, "resources")),
   props = props
 )
 
