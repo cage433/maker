@@ -48,9 +48,9 @@ val dbx = project("dbx") dependsOn instrument
 val databases = project("databases") dependsOn (pivot, concurrent, starlingApi, dbx)
 val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases)
 val titan = project("titan") dependsOn (starlingApi, databases)
-val services = project("services") dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
+val services = project("services").copy(resourceDirs = List(new File("services", "resources"), new File("services", "test-resources"))) dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
 val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
-val metals = project("metals") dependsOn tradeImpl
+val metals = project("metals").copy(resourceDirs = List(new File("metals", "resources"), new File("metals", "test-resources"))) dependsOn tradeImpl
 val reportsImpl = project("reports.impl") dependsOn services
 val webservice = project("webservice") dependsOn (props, starlingApi)
 val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
