@@ -10,7 +10,7 @@ val props = Props(file("Maker.conf"))
 def project(name : String) = new Project(
   name, 
   file(name),
-  libDirs = List(new File(name, "lib_managed"), new File(name, "lib"), new File(name, "maker-lib")),
+  libDirs = List(new File(name, "lib_managed"), new File(name, "lib"), new File(name, "maker-lib"), new File(".maker/scala-lib")),
   resourceDirs = List(new File(name, "resources")),
   props = props
 )
