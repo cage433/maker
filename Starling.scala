@@ -11,7 +11,7 @@ def project(name : String) = new Project(
   name, 
   file(name),
   libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
-  resourceDirs = List(file(name, "resources")),
+  resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
   props = props
 )
 
