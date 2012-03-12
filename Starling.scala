@@ -65,11 +65,13 @@ def projectT(name : String) = {
     file(titanService),
     sourceDirs = List(file(titanService, "src/main/scala")),
     tstDirs = List(file(titanService, "src/test/scala")),
-    libDirs = List(file(titanService, "maker-lib"),
+    libDirs = List(file(titanService, "lib_managed"),
       file(titanService, "lib"),
       file(titanService, ".maker/scala-lib")),
-    resourceDirs = List(file(titanService, "configuration/src/main/resources")),
-    props = properties
+    managedLibDirName = "lib_managed",
+    resourceDirs = List(file(titanService, "src/main/resources")),
+    props = properties,
+    ivySettingsFile = file(titanService, "maker-ivysettings.xml")
   )
 }
 
