@@ -5,14 +5,14 @@ import maker.utils.FileUtils._
 import maker.utils.Log
 import org.apache.log4j.Level._
 
-val props = Props(file("Maker.conf"))
+val properties = Props(file("Maker.conf"))
 
 def project(name : String) = new Project(
   name, 
   file(name),
   libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
   resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
-  props = props
+  props = properties
 )
 
 val manager = project("manager")
@@ -58,6 +58,26 @@ val startserver = project("startserver") dependsOn (reportsImpl, metals, starlin
 val launcher = project("launcher") dependsOn (startserver, booter)
 
 
+def projectT(name : String) = {
+  val titanService = "../" + name + "/service"
+  new Project(
+    name, 
+    file(titanService),
+    sourceDirs = List(file(titanService, "src/main/scala")),
+    tstDirs = List(file(titanService, "src/test/scala")),
+    libDirs = List(file(titanService, "maker-lib"),
+      file(titanService, "lib"),
+      file(titanService, ".maker/scala-lib")),
+    resourceDirs = List(file(titanService, "configuration/src/main/resources")),
+    props = properties
+  )
+}
+
+val titanConfig = projectT("configuration")
+
+
+val titanLauncher = project("titan.launcher") dependsOn (launcher, titanConfig)
+
 import java.io._
 
 def writeToFile(fileName : String, text : String){
@@ -71,5 +91,4 @@ def writeClasspath{
   val cp = launcher.compilationClasspath
   writeToFile("launcher-classpath.sh", "export STARLING_CLASSPATH=" + cp)
 }
-
 
