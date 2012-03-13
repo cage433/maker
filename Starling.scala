@@ -76,9 +76,22 @@ def projectT(name : String) = {
 }
 
 val titanConfig = projectT("configuration")
+val titanMurdoch = projectT("murdoch")
+val titanTradeService = projectT("tradeservice")
+val titanPermission = projectT("permission")
+val titanReferenceData = projectT("referencedata")
+val titanLogistics = projectT("logistics")
 
 
-val titanLauncher = project("titan.launcher") dependsOn (launcher, titanConfig)
+val titanLauncher = 
+    project("titan.launcher").dependsOn(
+                launcher,
+                titanConfig,
+                titanMurdoch,
+                titanTradeService,
+                titanPermission,
+                titanReferenceData,
+                titanLogistics)
 
 import java.io._
 
