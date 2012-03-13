@@ -82,16 +82,18 @@ val titanPermission = projectT("permission")
 val titanReferenceData = projectT("referencedata")
 val titanLogistics = projectT("logistics")
 
-
-val titanLauncher = 
-    project("titan.launcher").dependsOn(
-                launcher,
+val titanComponents = Seq(
                 titanConfig,
                 titanMurdoch,
                 titanTradeService,
                 titanPermission,
                 titanReferenceData,
                 titanLogistics)
+
+val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
+
+val titanLauncher = project("titan.launcher").dependsOn(launcher, starlingTitanDeps)
+
 
 import java.io._
 
