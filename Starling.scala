@@ -71,7 +71,8 @@ def projectT(name : String) = {
     managedLibDirName = "lib_managed",
     resourceDirs = List(file(titanService, "src/main/resources")),
     props = properties,
-    ivySettingsFile = file(titanService, "maker-ivysettings.xml")
+    ivySettingsFile = file(titanService, "maker-ivysettings.xml"),
+    webAppDir = Some(file(titanService, "src/main/webapp"))
   )
 }
 
