@@ -107,18 +107,20 @@ def buildWithTitan = {
     case _ => None
   }
 }
-def deployWithTitanJboss = {
-  val deploy = System.getenv("TITAN_DEPLOY")
-  Log.info("Titan deploy = " + deploy)
+def deployWarsTo(deployDir : File) = {
+  Log.info("Titan deploy to: " + deployDir.getAbsolutePath)
   titanComponents.foreach{p => 
-    copyFileToDirectory(file(p.root, "package/" + p.name + ".war"), file(deploy))
+    copyFileToDirectory(file(p.root, "package/" + p.name + ".war"), deployDir)
   }
 }
+def deployToTitanJboss = deployWarsTo(file(System.getenv("TITAN_DEPLOY")))
+def deployToTitanJetty = deployWarsTo(file("titan.deploy/wars"))
 
 // build all of startling and titan dependencies for starling
 // compile and package the titan web apps
 // deploy them to local jboss
-def buildAndDeployWithTitan = buildWithTitan.map(_ => deployWithTitanJboss)
+def buildAndDeployWithTitanJboss = buildWithTitan.map(_ => deployToTitanJboss)
+def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
 import java.io._
 
