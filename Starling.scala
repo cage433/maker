@@ -4,6 +4,7 @@ import maker.Props
 import maker.utils.FileUtils._
 import maker.utils.Log
 import org.apache.log4j.Level._
+import org.apache.commons.io.FileUtils._
 
 val properties = Props(file("Maker.conf"))
 
@@ -58,6 +59,7 @@ val startserver = project("startserver") dependsOn (reportsImpl, metals, starlin
 val launcher = project("launcher") dependsOn (startserver, booter)
 
 
+// build a standard titan component (module) webapp  definition
 def projectT(name : String) = {
   val titanService = "../" + name + "/service"
   new Project(
@@ -84,17 +86,39 @@ val titanReferenceData = projectT("referencedata")
 val titanLogistics = projectT("logistics")
 
 val titanComponents = Seq(
-                titanConfig,
+//                titanConfig,
                 titanMurdoch,
-                titanTradeService,
-                titanPermission,
-                titanReferenceData,
-                titanLogistics)
+//                titanTradeService,
+//                titanPermission,
+                titanReferenceData)
+//                titanLogistics)
 
 val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
 
 val titanLauncher = project("titan.launcher").dependsOn(launcher, starlingTitanDeps)
 
+import maker.task.BuildResult
+def buildWithTitan = {
+  // should do below, but starling maker build needs fixing
+  //val r = titanLauncher.compile
+  val r : BuildResult = starlingTitanDeps.pack
+  r.res match {
+    case Right(_) => Some(r)
+    case _ => None
+  }
+}
+def deployWithTitanJboss = {
+  val deploy = System.getenv("TITAN_DEPLOY")
+  Log.info("Titan deploy = " + deploy)
+  titanComponents.foreach{p => 
+    copyFileToDirectory(file(p.root, "package/" + p.name + ".war"), file(deploy))
+  }
+}
+
+// build all of startling and titan dependencies for starling
+// compile and package the titan web apps
+// deploy them to local jboss
+def buildAndDeployWithTitan = buildWithTitan.map(_ => deployWithTitanJboss)
 
 import java.io._
 
