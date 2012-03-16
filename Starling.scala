@@ -90,8 +90,8 @@ val titanComponents = Seq(
                 titanMurdoch,
 //                titanTradeService,
 //                titanPermission,
-                titanReferenceData)
-//                titanLogistics)
+                titanReferenceData,
+                titanLogistics)
 
 val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
 
