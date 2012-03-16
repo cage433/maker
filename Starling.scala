@@ -88,7 +88,7 @@ val titanLogistics = projectT("logistics")
 val titanComponents = Seq(
 //                titanConfig,
                 titanMurdoch,
-//                titanTradeService,
+                titanTradeService,
 //                titanPermission,
                 titanReferenceData,
                 titanLogistics)
@@ -107,11 +107,12 @@ def buildWithTitan = {
     case _ => None
   }
 }
+def deployWar(project : Project, deployDir : File) {
+  copyFileToDirectory(file(project.root, "package/" + project.name + ".war"), deployDir)
+}
 def deployWarsTo(deployDir : File) = {
   Log.info("Titan deploy to: " + deployDir.getAbsolutePath)
-  titanComponents.foreach{p => 
-    copyFileToDirectory(file(p.root, "package/" + p.name + ".war"), deployDir)
-  }
+  titanComponents.foreach(p => deployWar(p, deployDir))
 }
 def deployToTitanJboss = deployWarsTo(file(System.getenv("TITAN_DEPLOY")))
 def deployToTitanJetty = deployWarsTo(file("titan.deploy/wars"))
