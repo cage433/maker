@@ -73,7 +73,7 @@ def projectT(name : String) = {
     managedLibDirName = "lib_managed",
     resourceDirs = List(file(titanService, "src/main/resources")),
     props = properties,
-    ivySettingsFile = file(titanService, "maker-ivysettings.xml"),
+    ivySettingsFile = file(titanService, "../../.maker/ivy/maker-ivysettings.xml"),
     webAppDir = Some(file(titanService, "src/main/webapp"))
   )
 }
@@ -107,15 +107,18 @@ def buildWithTitan = {
     case _ => None
   }
 }
+val jbossDeployDir = file(System.getenv("JBOSS_HOME") + "/server/trafigura/deploy")
+val jettyDeployDir = file("titan.deploy/wars")
 def deployWar(project : Project, deployDir : File) {
   copyFileToDirectory(file(project.root, "package/" + project.name + ".war"), deployDir)
 }
+def deployWarToJetty(project: Project) = deployWar(project, jettyDeployDir)
 def deployWarsTo(deployDir : File) = {
   Log.info("Titan deploy to: " + deployDir.getAbsolutePath)
   titanComponents.foreach(p => deployWar(p, deployDir))
 }
-def deployToTitanJboss = deployWarsTo(file(System.getenv("TITAN_DEPLOY")))
-def deployToTitanJetty = deployWarsTo(file("titan.deploy/wars"))
+def deployToTitanJboss = deployWarsTo(jbossDeployDir)
+def deployToTitanJetty = deployWarsTo(jettyDeployDir)
 
 // build all of startling and titan dependencies for starling
 // compile and package the titan web apps
