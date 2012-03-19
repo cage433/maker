@@ -69,6 +69,7 @@ def projectT(name : String) = {
     tstDirs = List(file(titanService, "src/test/scala")),
     libDirs = List(file(titanService, "lib_managed"),
       file(titanService, "lib"),
+      file(titanService, "../../.maker/lib"),
       file(titanService, ".maker/scala-lib")),
     managedLibDirName = "lib_managed",
     resourceDirs = List(file(titanService, "src/main/resources")),
