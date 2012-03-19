@@ -3,6 +3,7 @@ import java.io.File
 import maker.Props
 import maker.utils.FileUtils._
 import maker.utils.Log
+import maker.utils.Log._
 import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 
@@ -132,9 +133,9 @@ val commonLaunchArgs = Seq(
   "-XX:MaxPermSize=512m",
   "-Xss128k",
   "-Xms6000m",
-  "-Xmx6000m",
+  "-Xmx8000m",
   "-Dsun.awt.disablegrab=true",
-  "-XX:UseConcMarkSweepGC",
+  "-XX:+UseConcMarkSweepGC",
   "-verbose:gc",
   "-XX:+PrintGCTimeStamps",
   "-XX:+PrintGCDetails")
@@ -143,24 +144,24 @@ def runStarlingWithTitan = {
   titanLauncher.compile
   deployToTitanJetty
   titanLauncher.runMain(
-    "starling.launcher.DevLauncher",
+    "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
       "-Dtitan.webapp.server.logs=logs/" :: 
-    commonLaunchArgs.toList) : _*)
+    commonLaunchArgs.toList) : _*)()
 }
 
 def runDevLauncher = {
   launcher.compile
   launcher.runMain(
-    "starling.launcher.DevLauncher",
-    commonLaunchArgs : _*)
+    "starling.launcher.DevLauncher")(
+    commonLaunchArgs : _*)()
 }
 
 def runServer = {
   launcher.compile
   launcher.runMain(
-    "starling.startserver.Server",
-    commonLaunchArgs : _*)
+    "starling.startserver.Server")(
+    commonLaunchArgs : _*)()
 }
 
 import java.io._
