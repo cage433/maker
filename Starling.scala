@@ -127,39 +127,40 @@ def deployToTitanJetty = deployWarsTo(jettyDeployDir)
 def buildAndDeployWithTitanJboss = buildWithTitan.map(_ => deployToTitanJboss)
 def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
+val commonLaunchArgs = Seq(
+  "-server",
+  "-XX:MaxPermSize=512m",
+  "-Xss128k",
+  "-Xms6000m",
+  "-Xmx6000m",
+  "-Dsun.awt.disablegrab=true",
+  "-XX:UseConcMarkSweepGC",
+  "-verbose:gc",
+  "-XX:+PrintGCTimeStamps",
+  "-XX:+PrintGCDetails")
+
 def runStarlingWithTitan = {
   titanLauncher.compile
   deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher",
-    "-server",
-    "-XX:MaxPermSize=512m",
-    "-Xss128k",
-    "-Xms6000m",
-    "-Xmx6000m",
-    "-Dsun.awt.disablegrab=true",
-    "-XX:UseConcMarkSweepGC",
-    "-verbose:gc",
-    "-XX:+PrintGCTimeStamps",
-    "-XX:+PrintGCDetails",
-    "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
-    "-Dtitan.webapp.server.logs=logs/")
+    ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
+      "-Dtitan.webapp.server.logs=logs/" :: 
+    commonLaunchArgs.toList) : _*)
 }
 
 def runDevLauncher = {
   launcher.compile
   launcher.runMain(
     "starling.launcher.DevLauncher",
-    "-server",
-    "-XX:MaxPermSize=512m",
-    "-Xss128k",
-    "-Xms6000m",
-    "-Xmx6000m",
-    "-Dsun.awt.disablegrab=true",
-    "-XX:UseConcMarkSweepGC",
-    "-verbose:gc",
-    "-XX:+PrintGCTimeStamps",
-    "-XX:+PrintGCDetails")
+    commonLaunchArgs : _*)
+}
+
+def runServer = {
+  launcher.compile
+  launcher.runMain(
+    "starling.startserver.Server",
+    commonLaunchArgs : _*)
 }
 
 import java.io._
