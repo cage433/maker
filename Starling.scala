@@ -127,6 +127,25 @@ def deployToTitanJetty = deployWarsTo(jettyDeployDir)
 def buildAndDeployWithTitanJboss = buildWithTitan.map(_ => deployToTitanJboss)
 def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
+def runStarlingWithTitan = {
+  titanLauncher.compile
+  deployToTitanJetty
+  titanLauncher.runMain(
+    "starling.launcher.DevLauncher",
+    "-server",
+    "-XX:MaxPermSize=512m",
+    "-Xss128k",
+    "-Xms6000m",
+    "-Xmx6000m",
+    "-Dsun.awt.disablegrab=true",
+    "-XX:UseConcMarkSweepGC",
+    "-verbose:gc",
+    "-XX:+PrintGCTimeStamps",
+    "-XX:+PrintGCDetails",
+    "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
+    "-Dtitan.webapp.server.logs=logs/")
+}
+
 import java.io._
 
 def writeToFile(fileName : String, text : String){
