@@ -146,6 +146,22 @@ def runStarlingWithTitan = {
     "-Dtitan.webapp.server.logs=logs/")
 }
 
+def runDevLauncher = {
+  launcher.compile
+  launcher.runMain(
+    "starling.launcher.DevLauncher",
+    "-server",
+    "-XX:MaxPermSize=512m",
+    "-Xss128k",
+    "-Xms6000m",
+    "-Xmx6000m",
+    "-Dsun.awt.disablegrab=true",
+    "-XX:UseConcMarkSweepGC",
+    "-verbose:gc",
+    "-XX:+PrintGCTimeStamps",
+    "-XX:+PrintGCDetails")
+}
+
 import java.io._
 
 def writeToFile(fileName : String, text : String){
