@@ -58,18 +58,19 @@ val reportsImpl = project("reports.impl") dependsOn services
 
 val webservice = {
   val name = "webservice"
+  val libs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "lib-jboss"), file(name, "maker-lib"), file(".maker/scala-lib"))
+  val resources =  List(file(name, "resources"), file(name, "test-resources"))
   new Project(
     name,
     file(name),
-    libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "lib-jboss"), file(name, "maker-lib"), file(".maker/scala-lib")),
-    resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
+    libDirs = libs,
+    resourceDirs = resources,
     props = properties
   ) dependsOn (props, starlingApi)
 }
 
 val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
 val launcher = project("launcher") dependsOn (startserver, booter)
-
 
 // build a standard titan component (module) webapp  definition
 def projectT(name : String) = {
@@ -81,8 +82,8 @@ def projectT(name : String) = {
     tstDirs = List(file(titanService, "src/test/scala")),
     libDirs = List(file(titanService, "lib_managed"),
       file(titanService, "lib"),
-      file(titanService, "../../.maker/lib"),
       file(titanService, ".maker/scala-lib")),
+    providedDirs = List(file(titanService, "../../.maker/lib")),
     managedLibDirName = "lib_managed",
     resourceDirs = List(file(titanService, "src/main/resources")),
     props = properties,
@@ -112,8 +113,7 @@ val titanLauncher = project("titan.launcher").dependsOn(launcher, starlingTitanD
 
 import maker.task.BuildResult
 def buildWithTitan = {
-  // should do below, but starling maker build needs fixing
-  //val r = titanLauncher.compile
+  titanLauncher.compile
   val r : BuildResult = starlingTitanDeps.pack
   r.res match {
     case Right(_) => Some(r)
@@ -122,13 +122,13 @@ def buildWithTitan = {
 }
 val jbossDeployDir = file(System.getenv("JBOSS_HOME") + "/server/trafigura/deploy")
 val jettyDeployDir = file("titan.deploy/wars")
-def deployWar(project : Project, deployDir : File) {
+def deployWar(deployDir : File)(project : Project) {
   copyFileToDirectory(file(project.root, "package/" + project.name + ".war"), deployDir)
 }
-def deployWarToJetty(project: Project) = deployWar(project, jettyDeployDir)
+val deployWarToJetty  = deployWar(jettyDeployDir) _
 def deployWarsTo(deployDir : File) = {
   Log.info("Titan deploy to: " + deployDir.getAbsolutePath)
-  titanComponents.foreach(p => deployWar(p, deployDir))
+  titanComponents.foreach(deployWar(deployDir))
 }
 def deployToTitanJboss = deployWarsTo(jbossDeployDir)
 def deployToTitanJetty = deployWarsTo(jettyDeployDir)
@@ -141,10 +141,10 @@ def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
 val commonLaunchArgs = Seq(
   "-server",
-  "-XX:MaxPermSize=512m",
+  "-XX:MaxPermSize=764m",
   "-Xss128k",
   "-Xms6000m",
-  "-Xmx8000m",
+  "-Xmx10000m",
   "-Dsun.awt.disablegrab=true",
   "-XX:+UseConcMarkSweepGC",
   "-verbose:gc",
@@ -153,7 +153,7 @@ val commonLaunchArgs = Seq(
 
 def runStarlingWithTitan = {
   titanLauncher.compile
-//  deployToTitanJetty
+  deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
