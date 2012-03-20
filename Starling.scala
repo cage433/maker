@@ -55,7 +55,18 @@ val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn 
 val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 val metals = project("metals").copy(resourceDirs = List(new File("metals", "resources"), new File("metals", "test-resources"))) dependsOn tradeImpl
 val reportsImpl = project("reports.impl") dependsOn services
-val webservice = project("webservice") dependsOn (props, starlingApi)
+
+val webservice = {
+  val name = "webservice"
+  new Project(
+    name,
+    file(name),
+    libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "lib-jboss"), file(name, "maker-lib"), file(".maker/scala-lib")),
+    resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
+    props = properties
+  ) dependsOn (props, starlingApi)
+}
+
 val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
 val launcher = project("launcher") dependsOn (startserver, booter)
 
@@ -142,7 +153,7 @@ val commonLaunchArgs = Seq(
 
 def runStarlingWithTitan = {
   titanLauncher.compile
-  deployToTitanJetty
+//  deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
