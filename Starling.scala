@@ -151,15 +151,17 @@ val commonLaunchArgs = Seq(
   "-XX:+PrintGCTimeStamps",
   "-XX:+PrintGCDetails")
 
-def runStarlingWithTitan = {
+
+def runStarlingWithTitan(deployWars : Boolean = true) {
   titanLauncher.compile
-  deployToTitanJetty
+  if (deployWars) deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
       "-Dtitan.webapp.server.logs=logs/" :: 
     commonLaunchArgs.toList) : _*)()
 }
+//def runStarlingWithTitan { runStarlingWithTitan() }
 
 def runDevLauncher = {
   launcher.compile
