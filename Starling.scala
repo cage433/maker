@@ -141,10 +141,10 @@ def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
 val commonLaunchArgs = Seq(
   "-server",
-  "-XX:MaxPermSize=764m",
+  "-XX:MaxPermSize=1024m",
   "-Xss128k",
   "-Xms6000m",
-  "-Xmx10000m",
+  "-Xmx12000m",
   "-Dsun.awt.disablegrab=true",
   "-XX:+UseConcMarkSweepGC",
   "-verbose:gc",
