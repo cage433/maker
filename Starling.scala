@@ -72,6 +72,15 @@ val webservice = {
 val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
 val launcher = project("launcher") dependsOn (startserver, booter)
 
+lazy val titanBinDeps = {
+  val name = "titan.bindeps"
+  new Project(
+    name,
+    file(name),
+    managedLibDirName = "lib_managed",
+    ivySettingsFile = file(name, "maker-ivysettings.xml"))
+}
+
 // build a standard titan component (module) webapp  definition
 def projectT(name : String) = {
   val titanService = "../" + name + "/service"
@@ -107,6 +116,8 @@ val titanComponents = Seq(
                 titanReferenceData,
                 titanLogistics)
 
+val titanBinDepComponents = Seq("Configuration", "Permission")
+
 val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
 
 val titanLauncher = project("titan.launcher").dependsOn(launcher, starlingTitanDeps)
@@ -125,7 +136,8 @@ val jettyDeployDir = file("titan.deploy/wars")
 def deployWar(deployDir : File)(project : Project) {
   copyFileToDirectory(file(project.root, "package/" + project.name + ".war"), deployDir)
 }
-val deployWarToJetty  = deployWar(jettyDeployDir) _
+val deployWarToJetty = deployWar(jettyDeployDir) _
+val deployWarToJboss = deployWar(jbossDeployDir) _
 def deployWarsTo(deployDir : File) = {
   Log.info("Titan deploy to: " + deployDir.getAbsolutePath)
   titanComponents.foreach(deployWar(deployDir))
@@ -138,6 +150,16 @@ def deployToTitanJetty = deployWarsTo(jettyDeployDir)
 // deploy them to local jboss
 def buildAndDeployWithTitanJboss = buildWithTitan.map(_ => deployToTitanJboss)
 def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
+
+
+def deployTitanJbossWars {
+  titanBinDeps.update
+  val binDepsDir = titanBinDeps.managedLibDir
+  Log.info("Available bin deps: " + binDepsDir.listFiles.mkString(","))
+  val filesToCopyToJboss = titanBinDeps.managedLibDir.listFiles.filter(f => f.getName.endsWith(".war") && titanBinDepComponents.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
+  Log.info("copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
+  filesToCopyToJboss.foreach(f => copyFileToDirectory(f, jbossDeployDir))
+}
 
 val commonLaunchArgs = Seq(
   "-server",
