@@ -141,7 +141,8 @@ lazy val titanBinDepComponents = Seq("Configuration", "Permission", "referenceda
 
 lazy val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
 
-lazy val titanLauncher = project("titan.launcher").dependsOn(launcher, starlingTitanDeps)
+lazy val titanBuilder = project("titan.builder").dependsOn(launcher, starlingTitanDeps)
+lazy val titanLauncher = project("titan.launcher").dependsOn(launcher)
 
 import maker.task.BuildResult
 def buildWithTitan = {
@@ -199,7 +200,7 @@ lazy val commonLaunchArgs = List(
 
 
 def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
-  titanLauncher.compile
+  titanBuilder.compile
   if (deployWars) deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
