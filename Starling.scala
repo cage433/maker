@@ -1,20 +1,24 @@
-import maker.project.Project
+import java.util.Properties
 import java.io.File
+import org.apache.log4j.Level._
+import org.apache.commons.io.FileUtils._
+import maker.project.Project
 import maker.Props
 import maker.utils.FileUtils._
 import maker.utils.Log
 import maker.utils.Log._
-import org.apache.log4j.Level._
-import org.apache.commons.io.FileUtils._
+import maker.RichProperties._
 
-lazy val properties = Props(file("Maker.conf"))
+lazy val makerProps : Props = file("Maker.conf")
+lazy val unmanagedGlobalProperties : Properties = file("Starling.conf")
 
 def project(name : String) = new Project(
   name, 
   file(name),
   libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
   resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
-  props = properties
+  props = makerProps,
+  unmanagedProperties = unmanagedGlobalProperties
 )
 lazy val manager = project("manager")
 lazy val utils = project("utils") dependsOn manager
@@ -64,7 +68,7 @@ lazy val webservice = {
     file(name),
     libDirs = libs,
     resourceDirs = resources,
-    props = properties
+    props = makerProps
   ) dependsOn (props, starlingApi)
 }
 
@@ -116,12 +120,13 @@ def projectT(name : String) = {
     providedDirs = List(file(titanService, "../../.maker/lib")),
     managedLibDirName = "lib_managed",
     resourceDirs = List(file(titanService, "src/main/resources")),
-    props = properties,
+    props = makerProps,
     ivySettingsFile = file(titanService, "../../.maker/ivy/maker-ivysettings.xml"),
     webAppDir = Some(file(titanService, "src/main/webapp"))
   )
 }
 
+// titan components we can potentially build from sources
 lazy val titanConfig = projectT("configuration")
 lazy val titanMurdoch = projectT("murdoch")
 lazy val titanTradeService = projectT("tradeservice")
@@ -198,14 +203,14 @@ lazy val commonLaunchArgs = List(
     else Nil
   }
 
-
 def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
   titanBuilder.compile
   if (deployWars) deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
-      "-Dtitan.webapp.server.logs=logs/" :: 
+      "-Dtitan.webapp.server.logs=logs/" ::
+      "-Dstarling.titan.proxied.components=" + titanBinDepComponents.mkString(",") ::
     commonLaunchArgs.toList) : _*)()
 }
 def runStarlingWithTitan : Unit = runStarlingWithTitanDeploy()
