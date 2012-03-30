@@ -204,13 +204,15 @@ lazy val commonLaunchArgs = List(
   }
 
 def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
+  val titanComponentList = titanBinDepComponents.mkString(":")
+  println("***** Titan Components = " + titanComponentList)
   titanBuilder.compile
   if (deployWars) deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
       "-Dtitan.webapp.server.logs=logs/" ::
-      "-Dstarling.titan.proxied.components=" + titanBinDepComponents.mkString(",") ::
+      "-Dstarling.titan.proxied.components=" + titanComponentList ::
     commonLaunchArgs.toList) : _*)()
 }
 def runStarlingWithTitan : Unit = runStarlingWithTitanDeploy()
