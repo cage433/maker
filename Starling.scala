@@ -3,6 +3,8 @@ import java.io.File
 import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 import maker.project.Project
+import maker.project.TopLevelProject
+import maker.project.ProjectLib
 import maker.Props
 import maker.utils.FileUtils._
 import maker.utils.Log
@@ -53,7 +55,6 @@ lazy val dbx = project("dbx") dependsOn instrument
 lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingApi, dbx)
 lazy val titan = project("titan") dependsOn (starlingApi, databases)
 lazy val services = project("services").copy(resourceDirs = List(new File("services", "resources"), new File("services", "test-resources"))) dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
-lazy val services = project("services") dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
 lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
 lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 lazy val metals = project("metals").copy(resourceDirs = List(new File("metals", "resources"), new File("metals", "test-resources"))) dependsOn tradeImpl
@@ -75,6 +76,7 @@ lazy val webservice = {
 
 lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
 lazy val launcher = project("launcher") dependsOn (startserver, booter)
+lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
 
 /**
