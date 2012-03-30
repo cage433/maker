@@ -1,18 +1,20 @@
 import maker.project.Project
+import maker.project.TopLevelProject
+import maker.project.ProjectLib
 import java.io.File
 import maker.Props
 import maker.utils.FileUtils._
 import maker.utils.Log
 import org.apache.log4j.Level._
 
-val props = Props(file("Maker.conf"))
+val properties = Props(file("Maker.conf"))
 
 def project(name : String) = new Project(
   name, 
   file(name),
-  libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
+  libDirs = List(/*file(name, "lib_managed"), file(name, "lib"),*/ file(name, "maker-lib")/*, file(".maker/scala-lib")*/),
   resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
-  props = props
+  props = properties
 )
 
 val manager = project("manager")
@@ -48,7 +50,6 @@ val dbx = project("dbx") dependsOn instrument
 val databases = project("databases") dependsOn (pivot, concurrent, starlingApi, dbx)
 val titan = project("titan") dependsOn (starlingApi, databases)
 val services = project("services").copy(resourceDirs = List(new File("services", "resources"), new File("services", "test-resources"))) dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
-val services = project("services") dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
 val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
 val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 val metals = project("metals").copy(resourceDirs = List(new File("metals", "resources"), new File("metals", "test-resources"))) dependsOn tradeImpl
@@ -56,6 +57,7 @@ val reportsImpl = project("reports.impl") dependsOn services
 val webservice = project("webservice") dependsOn (props, starlingApi)
 val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
 val launcher = project("launcher") dependsOn (startserver, booter)
+val starling = new TopLevelProject("starling", List(launcher), properties, List(ProjectLib(manager.name, true)))
 
 
 import java.io._
