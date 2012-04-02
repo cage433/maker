@@ -13,6 +13,7 @@ import maker.RichProperties._
 
 lazy val makerProps : Props = file("Maker.conf")
 lazy val unmanagedGlobalProperties : Properties = file("Starling.conf")
+lazy val starlingProperties : Properties = file("props.conf")
 
 def project(name : String) = new Project(
   name, 
@@ -20,7 +21,7 @@ def project(name : String) = new Project(
   libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
   resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
   props = makerProps,
-  unmanagedProperties = unmanagedGlobalProperties
+  unmanagedProperties = starlingProperties
 )
 lazy val manager = project("manager")
 lazy val utils = project("utils") dependsOn manager
@@ -135,16 +136,30 @@ lazy val titanTradeService = projectT("tradeservice")
 lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata")
 lazy val titanLogistics = projectT("logistics")
+// todo... get ivy config and projects building
+lazy val titanInvoicing = projectT("invoicing")
+lazy val titanCostAndIncomes = projectT("constandincomes")
+lazy val titanMtmPnl = projectT("mtmpnl")
+lazy val titanReferenceDataNew = projectT("referencedatanew")
+lazy val titanMapping = projectT("mapping")
+lazy val titanSecuritisation = projectT("securitisation")
 
-lazy val titanComponents = Seq(
-//                titanConfig,      // not on master 
+// all titan components that can be built from sources
+lazy val allTitanComponents = Seq(
+//                titanConfig,      // not on master
                 titanMurdoch,
                 titanTradeService,
 //                titanPermission,  // not on master
                 titanReferenceData,
                 titanLogistics)
 
-lazy val titanBinDepComponents = Seq("Configuration", "Permission", "referencedatanew", "mapping")
+// list of components to take from binaries
+lazy val titanBinDepComponentList = starlingProperties.getProperty("TitanProxiedServices").split(":").toList.map(_.toLowerCase)
+
+// list of titan projects to build from sources 
+lazy val titanComponents = allTitanComponents.filterNot(p => titanBinDepComponentList.exists(c => p.name.contains(c)))
+
+//Seq("Configuration", "Permission", "referencedatanew", "mapping")
 
 lazy val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
 
@@ -182,9 +197,10 @@ def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
 def deployTitanJbossWars {
   titanBinDeps.update
-  val binDepsDir = titanBinDeps.managedLibDir
-  Log.info("Available bin deps: " + binDepsDir.listFiles.mkString(","))
-  val filesToCopyToJboss = titanBinDeps.managedLibDir.listFiles.filter(f => f.getName.endsWith(".war") && titanBinDepComponents.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
+  val titanBinDepsDir = titanBinDeps.managedLibDir
+  val availableBinDeps = titanBinDepsDir.listFiles.filter(f => f.getName.endsWith(".war"))
+  Log.info("Available bin deps: " + availableBinDeps.mkString(","))
+  val filesToCopyToJboss = availableBinDeps.filter(f => titanBinDepComponentList.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
   Log.info("copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
   filesToCopyToJboss.foreach(f => copyFileToDirectory(f, jbossDeployDir))
 }
@@ -206,15 +222,19 @@ lazy val commonLaunchArgs = List(
   }
 
 def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
-  val titanComponentList = titanBinDepComponents.mkString(":")
-  println("***** Titan Components = " + titanComponentList)
+  val titanProxiedComponents = titanBinDepComponentList.mkString(":")
+  val titanProxyHost = starlingProperties.getProperty("TitanProxiedServiceHost")
+  val titanProxyPort = starlingProperties.getProperty("TitanProxiedServicePort")
+  println("***** Titan Components = " + titanProxiedComponents)
   titanBuilder.compile
   if (deployWars) deployToTitanJetty
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
       "-Dtitan.webapp.server.logs=logs/" ::
-      "-Dstarling.titan.proxied.components=" + titanComponentList ::
+//      "-Dstarling.titan.proxied.components=" + titanProxiedComponents ::
+//      "-Dstarling.titan.proxied.service.host=" + titanProxyHost ::
+//      "-Dstarling.titan.proxied.service.port=" + titanProxyPort ::
     commonLaunchArgs.toList) : _*)()
 }
 def runStarlingWithTitan : Unit = runStarlingWithTitanDeploy()
