@@ -35,9 +35,9 @@ lazy val singleClasspathManager = project("singleclasspathmanager") dependsOn os
 lazy val pivot = project("pivot") dependsOn quantity
 lazy val daterange = project("daterange") dependsOn utils
 lazy val pivotUtils = project("pivot.utils") dependsOn (daterange, pivot)
-lazy val titanReturnTypes = project("titan.return.types") dependsOn (daterange, quantity)
+lazy val titanReturnTypes = project("titan.return.types") 
 lazy val maths = project("maths") dependsOn (daterange, quantity)
-lazy val starlingApi = project("starling.api") dependsOn titanReturnTypes
+lazy val starlingApi = project("starling.api") dependsOn(titanReturnTypes, utils)
 lazy val props = project("props") dependsOn utils
 lazy val auth = project("auth") dependsOn props
 lazy val bouncyrmi = project("bouncyrmi") dependsOn auth
@@ -72,7 +72,7 @@ lazy val webservice = {
     libDirs = libs,
     resourceDirs = resources,
     props = makerProps
-  ) dependsOn (props, starlingApi)
+  ) dependsOn (utils, manager, props, daterange, starlingApi, quantity, instrument)
 }
 
 
