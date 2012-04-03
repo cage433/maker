@@ -138,7 +138,7 @@ lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata")
 lazy val titanLogistics = projectT("logistics")
 // todo... get ivy config and projects building
-lazy val titanInvoicing = projectT("invoicing")
+lazy val titanInvoicing = { val p = projectT("invoicing"); p.copy(sourceDirs = file(p.root, "target/generated-sources/") :: p.sourceDirs) }
 lazy val titanCostAndIncomes = projectT("constandincomes")
 lazy val titanMtmPnl = projectT("mtmpnl")
 lazy val titanReferenceDataNew = projectT("referencedatanew")
@@ -152,8 +152,8 @@ lazy val allTitanComponents = Seq(
                 titanTradeService,
 //                titanPermission,  // not on master
                 titanReferenceData,
-                titanLogistics,
-                titanInvoicing)
+                titanLogistics)
+//                titanInvoicing)
 
 // list of components to take from binaries
 lazy val titanBinDepComponentList = starlingProperties.getProperty("TitanProxiedServices").split(":").toList.map(_.toLowerCase)
@@ -185,7 +185,7 @@ def deployWar(deployDir : File)(project : Project) {
 lazy val deployWarToJetty = deployWar(jettyDeployDir) _
 lazy val deployWarToJboss = deployWar(jbossDeployDir) _
 def deployWarsTo(deployDir : File) = {
-  Log.info("Titan deploy to: " + deployDir.getAbsolutePath)
+  println("Titan deploy to: " + deployDir.getAbsolutePath)
   titanComponents.foreach(deployWar(deployDir))
 }
 def deployToTitanJboss = deployWarsTo(jbossDeployDir)
@@ -201,9 +201,9 @@ def deployTitanJbossWars {
   titanBinDeps.update
   val titanBinDepsDir = titanBinDeps.managedLibDir
   val availableBinDeps = titanBinDepsDir.listFiles.filter(f => f.getName.endsWith(".war"))
-  Log.info("Available bin deps: " + availableBinDeps.mkString(","))
+  println("Available bin deps: " + availableBinDeps.mkString(","))
   val filesToCopyToJboss = availableBinDeps.filter(f => titanBinDepComponentList.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
-  Log.info("copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
+  println("copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
   filesToCopyToJboss.foreach(f => copyFileToDirectory(f, jbossDeployDir))
 }
 
@@ -234,9 +234,6 @@ def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
       "-Dtitan.webapp.server.logs=logs/" ::
-//      "-Dstarling.titan.proxied.components=" + titanProxiedComponents ::
-//      "-Dstarling.titan.proxied.service.host=" + titanProxyHost ::
-//      "-Dstarling.titan.proxied.service.port=" + titanProxyPort ::
     commonLaunchArgs.toList) : _*)()
 }
 def runStarlingWithTitan : Unit = runStarlingWithTitanDeploy()
@@ -327,7 +324,7 @@ case class ModelProject(name : String, root : File, modelFile : File, outputDir 
   def compile = {
     genModel match {
       case (0, _) => project.compile
-      case _ => Log.info("failed to generate model, aborting")
+      case _ => println("failed to generate model, aborting")
     }
   }
   def cleanModel = recursiveDelete(outputDir)
