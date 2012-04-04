@@ -137,8 +137,7 @@ lazy val titanTradeService = projectT("tradeservice")
 lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata")
 lazy val titanLogistics = projectT("logistics")
-// todo... get ivy config and projects building
-lazy val titanInvoicing = { val p = projectT("invoicing"); p.copy(sourceDirs = file(p.root, "target/generated-sources/") :: p.sourceDirs).dependsOn(starlingClient) }
+lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs(List("target/generated-sources/")).dependsOn(starlingClient)
 lazy val titanCostAndIncomes = projectT("constandincomes")
 lazy val titanMtmPnl = projectT("mtmpnl")
 lazy val titanReferenceDataNew = projectT("referencedatanew")
