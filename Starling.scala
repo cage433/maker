@@ -29,15 +29,16 @@ lazy val utils = project("utils") dependsOn manager
 lazy val osgirun = project("osgirun").copy(libDirs = List(new File("osgirun/lib_managed"), new File("osgirun/lib"), new File("osgirun/osgi_jars")))
 lazy val booter = project("booter")
 lazy val concurrent = project("concurrent") dependsOn utils
-lazy val quantity = project("quantity") dependsOn utils
+lazy val titanReturnTypes = project("titan.return.types")
+lazy val quantity = project("quantity") dependsOn(utils, titanReturnTypes)
 lazy val osgiManager = project("osgimanager") dependsOn utils
 lazy val singleClasspathManager = project("singleclasspathmanager") dependsOn osgiManager
 lazy val pivot = project("pivot") dependsOn quantity
-lazy val daterange = project("daterange") dependsOn utils
-lazy val pivotUtils = project("pivot.utils") dependsOn (daterange, pivot)
-lazy val titanReturnTypes = project("titan.return.types") dependsOn(daterange, quantity, utils)
+lazy val daterange = project("daterange") dependsOn(utils, titanReturnTypes)
+lazy val pivotUtils = project("pivot.utils") dependsOn(daterange, pivot)
+lazy val starlingDTOApi = project("starling.dto.api") dependsOn(titanReturnTypes, utils)
 lazy val maths = project("maths") dependsOn (daterange, quantity)
-lazy val starlingApi = project("starling.api") dependsOn(titanReturnTypes, utils)
+lazy val starlingApi = project("starling.api") dependsOn(starlingDTOApi, quantity, daterange)
 lazy val props = project("props") dependsOn utils
 lazy val auth = project("auth") dependsOn props
 lazy val bouncyrmi = project("bouncyrmi") dependsOn auth
@@ -52,9 +53,9 @@ lazy val reportsFacility = project("reports.facility") dependsOn guiapi
 lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(pivot, guiapi)
 lazy val tradeFacility = project("trade.facility") dependsOn guiapi
 lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
-lazy val starlingClient = project("starling.client") dependsOn (starlingApi, bouncyrmi)
+lazy val starlingClient = project("starling.client") dependsOn (starlingDTOApi, bouncyrmi)
 lazy val dbx = project("dbx") dependsOn instrument
-lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingApi, dbx)
+lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingDTOApi, dbx)
 lazy val titan = project("titan") dependsOn (starlingApi, databases)
 lazy val services = project("services").copy(resourceDirs = List(new File("services", "resources"), new File("services", "test-resources"))) dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
 lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
@@ -72,7 +73,7 @@ lazy val webservice = {
     libDirs = libs,
     resourceDirs = resources,
     props = makerProps
-  ) dependsOn (utils, manager, props, daterange, starlingApi, quantity, instrument)
+  ) dependsOn (utils, manager, props, daterange, starlingDTOApi, quantity, instrument)
 }
 
 
