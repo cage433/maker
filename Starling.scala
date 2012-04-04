@@ -35,7 +35,7 @@ lazy val singleClasspathManager = project("singleclasspathmanager") dependsOn os
 lazy val pivot = project("pivot") dependsOn quantity
 lazy val daterange = project("daterange") dependsOn utils
 lazy val pivotUtils = project("pivot.utils") dependsOn (daterange, pivot)
-lazy val titanReturnTypes = project("titan.return.types") 
+lazy val titanReturnTypes = project("titan.return.types") dependsOn(daterange, quantity, utils)
 lazy val maths = project("maths") dependsOn (daterange, quantity)
 lazy val starlingApi = project("starling.api") dependsOn(titanReturnTypes, utils)
 lazy val props = project("props") dependsOn utils
@@ -138,7 +138,7 @@ lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata")
 lazy val titanLogistics = projectT("logistics")
 // todo... get ivy config and projects building
-lazy val titanInvoicing = { val p = projectT("invoicing"); p.copy(sourceDirs = file(p.root, "target/generated-sources/") :: p.sourceDirs) }
+lazy val titanInvoicing = { val p = projectT("invoicing"); p.copy(sourceDirs = file(p.root, "target/generated-sources/") :: p.sourceDirs).dependsOn(starlingClient) }
 lazy val titanCostAndIncomes = projectT("constandincomes")
 lazy val titanMtmPnl = projectT("mtmpnl")
 lazy val titanReferenceDataNew = projectT("referencedatanew")
@@ -152,8 +152,8 @@ lazy val allTitanComponents = Seq(
                 titanTradeService,
 //                titanPermission,  // not on master
                 titanReferenceData,
-                titanLogistics)
-//                titanInvoicing)
+                titanLogistics,
+                titanInvoicing)
 
 // list of components to take from binaries
 lazy val titanBinDepComponentList = starlingProperties.getProperty("TitanProxiedServices").split(":").toList.map(_.toLowerCase)
