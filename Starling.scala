@@ -161,8 +161,6 @@ lazy val titanBinDepComponentList = starlingProperties.getProperty("TitanProxied
 // list of titan projects to build from sources 
 lazy val titanComponents = allTitanComponents.filterNot(p => titanBinDepComponentList.exists(c => p.name.contains(c)))
 
-//Seq("Configuration", "Permission", "referencedatanew", "mapping")
-
 lazy val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
 
 lazy val titanBuilder = project("titan.builder").dependsOn(launcher, starlingTitanDeps)
@@ -171,9 +169,8 @@ lazy val titanLauncher = project("titan.launcher").dependsOn(launcher)
 import maker.task.BuildResult
 def buildWithTitan = {
   titanLauncher.compile
-  lazy val r : BuildResult = starlingTitanDeps.pack
-  r.res match {
-    case Right(_) => Some(r)
+  starlingTitanDeps.pack.res match {
+    case r @ Right(_) => Some(r)
     case _ => None
   }
 }
@@ -185,8 +182,14 @@ def deployWar(deployDir : File)(project : Project) {
 lazy val deployWarToJetty = deployWar(jettyDeployDir) _
 lazy val deployWarToJboss = deployWar(jbossDeployDir) _
 def deployWarsTo(deployDir : File) = {
-  println("Titan deploy to: " + deployDir.getAbsolutePath)
-  titanComponents.foreach(deployWar(deployDir))
+  println("building and packaging: " + titanComponents.map(_.name).mkString(","))
+  val failures = titanComponents.map(p => p.pack.res).collect{ case e @ Left(_) => e }
+  failures match {
+    case Nil  =>
+      println("Titan deploy to: " + deployDir.getAbsolutePath)
+      titanComponents.foreach(deployWar(deployDir))
+    case r @ _ => println("failed to build "); r
+  }
 }
 def deployToTitanJboss = deployWarsTo(jbossDeployDir)
 def deployToTitanJetty = deployWarsTo(jettyDeployDir)
@@ -227,7 +230,7 @@ def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
   val titanProxiedComponents = titanBinDepComponentList.mkString(":")
   val titanProxyHost = starlingProperties.getProperty("TitanProxiedServiceHost")
   val titanProxyPort = starlingProperties.getProperty("TitanProxiedServicePort")
-  println("***** Titan Components = " + titanProxiedComponents)
+  println("***** Titan Proxied Components = " + titanProxiedComponents)
   titanBuilder.compile
   if (deployWars) deployToTitanJetty
   titanLauncher.runMain(
