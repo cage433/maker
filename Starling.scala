@@ -346,6 +346,6 @@ def mkModelProject(name : String) = {
                  file(root, "model.rb"),
                  file(root, "src"))          
 }
-val logisticsPublicModel = mkModelProject("logistics")
-val trademgmtPublicModel = mkModelProject("trademgmt")
+lazy val logisticsPublicModel = mkModelProject("logistics")
+lazy val trademgmtPublicModel = mkModelProject("trademgmt")
 
