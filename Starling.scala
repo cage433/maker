@@ -138,14 +138,14 @@ lazy val titanTradeService = projectT("tradeservice")
 lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata")
 lazy val titanLogistics = projectT("logistics")
-lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs(List("target/generated-sources/")).dependsOn(starlingClient)
-lazy val titanCostAndIncomes = projectT("constandincomes")
-lazy val titanMtmPnl = projectT("mtmpnl")
+lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs(List("target/generated-sources/")) dependsOn starlingClient
+lazy val titanCostsAndIncomes = projectT("costsandincomes").dependsOn(starlingClient, daterange, quantity, starlingDTOApi)
+lazy val titanMtmPnl = projectT("mtmpnl") dependsOn starlingClient
 lazy val titanReferenceDataNew = projectT("referencedatanew")
 lazy val titanMapping = projectT("mapping")
-lazy val titanSecuritisation = projectT("securitisation")
+lazy val titanSecuritisation = projectT("securitisation") dependsOn starlingClient
 
-// all titan components that can be built from sources
+// all titan components that can be built from sources as part of an integrated build
 lazy val allTitanComponents = Seq(
 //                titanConfig,      // not on master
                 titanMurdoch,
@@ -153,6 +153,8 @@ lazy val allTitanComponents = Seq(
 //                titanPermission,  // not on master
                 titanReferenceData,
                 titanLogistics,
+                titanCostsAndIncomes,
+//                mtmPnl,
                 titanInvoicing)
 
 // list of components to take from binaries
