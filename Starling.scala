@@ -154,7 +154,7 @@ lazy val allTitanComponents = Seq(
                 titanReferenceData,
                 titanLogistics,
                 titanCostsAndIncomes,
-//                mtmPnl,
+                titanMtmPnl,
                 titanInvoicing)
 
 // list of components to take from binaries
