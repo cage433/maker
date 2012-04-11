@@ -228,7 +228,7 @@ lazy val commonLaunchArgs = List(
     else Nil
   }
 
-def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
+def runStarlingWithTitanDeploy(deployWars : Boolean = true, debug : Boolean = false) {
   val titanProxiedComponents = titanBinDepComponentList.mkString(":")
   val titanProxyHost = starlingProperties.getProperty("TitanProxiedServiceHost")
   val titanProxyPort = starlingProperties.getProperty("TitanProxiedServicePort")
@@ -238,7 +238,8 @@ def runStarlingWithTitanDeploy(deployWars : Boolean = true) {
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
-      "-Dtitan.webapp.server.logs=logs/" ::
+      "-Dtitan.webapp.server.log=logs/titan-server.log" :: (if (debug) 
+      "-Xdebug" :: "-Xrunjdwp:transport=dt_socket,server=y,address=6666" :: Nil else Nil) :::
     commonLaunchArgs.toList) : _*)()
 }
 def runStarlingWithTitan : Unit = runStarlingWithTitanDeploy()
