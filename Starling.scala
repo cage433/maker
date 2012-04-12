@@ -11,6 +11,7 @@ import maker.utils.Log
 import maker.utils.Log._
 import maker.RichProperties._
 import maker.os.Command
+import maker.os.Command._
 
 lazy val makerProps : Props = file("Maker.conf")
 lazy val unmanagedGlobalProperties : Properties = file("Starling.conf")
@@ -349,6 +350,23 @@ def mkModelProject(name : String) = {
                  file(root, "model.rb"),
                  file(root, "src"))          
 }
+
 lazy val logisticsPublicModel = mkModelProject("logistics")
 lazy val trademgmtPublicModel = mkModelProject("trademgmt")
+
+
+def updateIvyFromPom(project : Project) = {
+  val antFileName = "antMakeIvy.xml"
+  val antFile = file("maker", antFileName)
+  val tmpFile = file(project.root, antFileName)
+  copyFile(antFile, tmpFile)
+  val args = List("ant", "-f", file(project.root, "antMakeIvy.xml").getAbsolutePath)
+  val cmd = Command(Some(project.root), args : _*)
+  val r = cmd.exec() match {
+    case (0, _) => println("Process completed")
+    case err @ (_, _) => println("Process failed: " + err)
+  }
+  tmpFile.delete
+  r
+}
 
