@@ -354,8 +354,7 @@ def mkModelProject(name : String) = {
 lazy val logisticsPublicModel = mkModelProject("logistics")
 lazy val trademgmtPublicModel = mkModelProject("trademgmt")
 
-
-def updateIvyFromPom(project : Project) = {
+def updateIvyFromProjectPom(project : Project) = {
   val antFileName = "antMakeIvy.xml"
   val antFile = file("maker", antFileName)
   val tmpFile = file(project.root, antFileName)
@@ -369,4 +368,13 @@ def updateIvyFromPom(project : Project) = {
   tmpFile.delete
   r
 }
+
+case class RichProject(project : Project) {
+  def updateIvyFromPom() = updateIvyFromProjectPom(project) 
+}
+object RichProject {
+  implicit def toRichProject(project : Project) : RichProject = new RichProject(project)
+}
+import RichProject._
+println("(Type helpTitan for a list of common titan commands)\n")
 
