@@ -84,7 +84,7 @@ lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, 
 
 
 /**
- * Start of Titan related build and deploy definitions (should probably go in a separate file)
+ * Start of Titan related build and deploy definitions (should probably go in a separate file or even a precompiled lib for speed)
  */
 def helpTitan() = {
   println("HelpTitan:")
@@ -103,6 +103,146 @@ def helpTitan() = {
   println("\t runStarlingWithTitanDeploy(false) - launch staring + titan in the repl with no jetty redeployment")
   println("")
 }
+
+/**
+ * define hub tooling model projects and build model sources and compile as maker modules
+ */
+val SCALA_BINDINGS_DIR = "scala-bindings"
+def buildSource(root : File, modelFile : File, outputDir : File) = {
+  lazy val buildUsingBinaryTooling = true
+  val scalaBindingsDir = file(root, SCALA_BINDINGS_DIR)
+  def latestRubyFileTime(path : File) = {
+    val files = findFilesWithExtension("rb", path)
+    if (files.isEmpty)
+      throw new Exception("No ruby files found")
+    files.map(_.lastModified).toList.sort(_>_).head
+  }
+  def earliestScalaFileTime(path : File) = {
+    findFilesWithExtension("scala", path).toList.map(_.lastModified).sort(_<_) match {
+      case Nil => None
+      case t :: _ => Some(t)
+    }
+  }
+  val toolingLauncher = if (buildUsingBinaryTooling == true) 
+    new File(root, "../../bindinggen.rb")
+  else 
+    new File(root, "/model/tooling/binding-generator/thubc.rb")
+
+  def generateModelMainSourceCmd() = Command(
+      "ruby",
+      toolingLauncher.getAbsolutePath,
+      "-o", outputDir.getAbsolutePath,
+      "-b", file(scalaBindingsDir, "scala-bindings.rb").getAbsolutePath, file(root, "model.rb").getAbsolutePath).exec()
+/*
+  lazy val nonModelSourcePath = new File(root, "src")
+  def copyNonModelSource = {
+    if (! (nonModelSourcePath.exists)) {
+      import IO._
+      val originalSourcePath = new File(titanModuleRoot, "/scala-model-with-persistence/src/")
+        copyDirectory(originalSourcePath, nonModelSourcePath)
+      val hibernateBean = new File (titanModuleRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
+        println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite)
+      if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
+    }
+    None
+  }
+*/
+
+  (latestRubyFileTime(root), earliestScalaFileTime(outputDir)) match {
+    case (t_ruby, Some(t_scala)) if t_ruby < t_scala =>
+      println("Generated code is up to date, nothing to do")
+    case _ =>
+      generateModelMainSourceCmd()
+  }
+}
+import maker.utils.GroupAndArtifact
+
+case class ModelProject(name : String, root : File, modelFile : File, outputDir : File, ga : Option[GroupAndArtifact] = None) {
+  val scalaBindingsDir = file(root, SCALA_BINDINGS_DIR)
+  val project = Project(
+      name,
+      root,
+      sourceDirs = List(outputDir),
+      ivyFileRel = SCALA_BINDINGS_DIR + "/maker-ivy.xml",
+      moduleIdentity = ga)
+
+  def genModel = buildSource(root, modelFile, outputDir)
+  def compile = {
+    genModel match {
+      case (0, _) => project.compile
+      case _ => println("failed to generate model, aborting")
+    }
+  }
+  def cleanModel = recursiveDelete(outputDir)
+  def cleanAll = cleanModel; clean
+
+  def clean = project.clean
+  def pack = project.pack
+}
+
+val modelRoot = file("../../mdl")
+val outDir = "src"
+def mkModelProject(name : String, ga : Option[GroupAndArtifact] = None) = {
+    val root = file(file(modelRoot, name), "public")
+    ModelProject(name,
+                 root,
+                 file(root, "model.rb"),
+                 file(root, "src"),
+                 ga)          
+}
+
+
+/**
+ * Titan model / bin-dep lib builds
+ */
+import maker.utils.GroupId._
+lazy val logisticsPublicModel = mkModelProject("logistics", Some("com.trafigura.titan" % "model-logistics-public-scala-bindings"))
+lazy val trademgmtPublicModel = mkModelProject("trademgmt", Some("com.trafigura.titan" % "model-trademgmt-public-scala-bindings"))
+
+def updateIvyFromProjectPom(project : Project) = {
+  val antFileName = "antMakeIvy.xml"
+  val antFile = file("maker", antFileName)
+  val tmpFile = file(project.root, antFileName)
+  copyFile(antFile, tmpFile)
+  val args = List("ant", "-f", file(project.root, "antMakeIvy.xml").getAbsolutePath)
+  val cmd = Command(Some(project.root), args : _*)
+  val r = cmd.exec() match {
+    case res @ (0, _) => println("Process completed"); res
+    case err @ (_, _) => println("Process failed: " + err); err
+  }
+  tmpFile.delete
+  r
+}
+
+def updateTitanSchema(project : Option[Project] = None) {
+  val envName = Option(unmanagedGlobalProperties.getProperty("titan.env.name")).getOrElse{
+    throw new Exception("Missing env name, property = titan.env.name")
+  }
+  val scriptDir = file("../../bin/")
+  val script = file(scriptDir, "deploy2db")
+println("script = " + script.getAbsolutePath + ", exists = " + script.exists)
+  println("updating %s for env %s".format(project.map(_.name).getOrElse("None"), envName))
+  val args = "../../bin/" + script.getName :: ("-e" + envName) :: project.toList.map(p => ("-c" + p.name))
+  Command(Some(file(".").getAbsoluteFile), args : _*).exec() match {
+    case res @ (0, _) => println("Process completed"); res
+    case err @ (_, _) => println("Process failed: " + err); err
+  }
+}
+def updateAllTitanSchemas() = updateTitanSchema()
+
+case class RichProject(project : Project) {
+  def updateIvyFromPom() = updateIvyFromProjectPom(project)
+  def updateSchema() = updateTitanSchema(Some(project))
+}
+object RichProject {
+  implicit def toRichProject(project : Project) : RichProject = new RichProject(project)
+}
+import RichProject._
+
+
+/**
+ * titan component builds and helper utils
+ */
 lazy val titanBinDeps = {
   lazy val name = "titan.bindeps"
   new Project(
@@ -135,10 +275,10 @@ def projectT(name : String) = {
 // titan components we can potentially build from sources
 lazy val titanConfig = projectT("configuration")
 lazy val titanMurdoch = projectT("murdoch")
-lazy val titanTradeService = projectT("tradeservice")
+lazy val titanTradeService = projectT("tradeservice") dependsOn trademgmtPublicModel.project
 lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata")
-lazy val titanLogistics = projectT("logistics")
+lazy val titanLogistics = projectT("logistics") // dependsOn titanlogisticsModel
 lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs(List("target/generated-sources/")) dependsOn starlingClient
 lazy val titanCostsAndIncomes = projectT("costsandincomes").dependsOn(starlingClient, daterange, quantity, starlingDTOApi)
 lazy val titanMtmPnl = projectT("mtmpnl") dependsOn starlingClient
@@ -273,125 +413,5 @@ def writeClasspath{
   writeToFile("launcher-classpath.sh", "export STARLING_CLASSPATH=" + cp)
 }
 
-/**
- * define hub tooling model projects and build model sources and compile as maker modules
- */
-val SCALA_BINDINGS_DIR = "scala-bindings"
-def buildSource(root : File, modelFile : File, outputDir : File) = {
-  lazy val buildUsingBinaryTooling = true
-  val scalaBindingsDir = file(root, SCALA_BINDINGS_DIR)
-  def latestRubyFileTime(path : File) = {
-    val files = findFilesWithExtension("rb", path)
-    if (files.isEmpty)
-      throw new Exception("No ruby files found")
-    files.map(_.lastModified).toList.sort(_>_).head
-  }
-  def earliestScalaFileTime(path : File) = {
-    findFilesWithExtension("scala", path).toList.map(_.lastModified).sort(_<_) match {
-      case Nil => None
-      case t :: _ => Some(t)
-    }
-  }
-  val toolingLauncher = if (buildUsingBinaryTooling == true) 
-    new File(root, "../../bindinggen.rb")
-  else 
-    new File(root, "/model/tooling/binding-generator/thubc.rb")
-
-  def generateModelMainSourceCmd() = Command(
-      "ruby",
-      toolingLauncher.getAbsolutePath,
-      "-o", outputDir.getAbsolutePath,
-      "-b", file(scalaBindingsDir, "scala-bindings.rb").getAbsolutePath, file(root, "model.rb").getAbsolutePath).exec()
-/*
-  lazy val nonModelSourcePath = new File(root, "src")
-  def copyNonModelSource = {
-    if (! (nonModelSourcePath.exists)) {
-      import IO._
-      val originalSourcePath = new File(titanModuleRoot, "/scala-model-with-persistence/src/")
-        copyDirectory(originalSourcePath, nonModelSourcePath)
-      val hibernateBean = new File (titanModuleRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
-        println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite)
-      if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
-    }
-    None
-  }
-*/
-
-  (latestRubyFileTime(root), earliestScalaFileTime(outputDir)) match {
-    case (t_ruby, Some(t_scala)) if t_ruby < t_scala =>
-      println("Generated code is up to date, nothing to do")
-    case _ =>
-      generateModelMainSourceCmd()
-  }
-}
-case class ModelProject(name : String, root : File, modelFile : File, outputDir : File) {
-  val scalaBindingsDir = file(root, SCALA_BINDINGS_DIR)
-  val project = Project(name, root, sourceDirs = List(outputDir), ivyFileRel = SCALA_BINDINGS_DIR + "/maker-ivy.xml")
-  def genModel = buildSource(root, modelFile, outputDir)
-  def compile = {
-    genModel match {
-      case (0, _) => project.compile
-      case _ => println("failed to generate model, aborting")
-    }
-  }
-  def cleanModel = recursiveDelete(outputDir)
-  def cleanAll = cleanModel; clean
-
-  def clean = project.clean
-  def pack = project.pack
-}
-
-val modelRoot = file("../../mdl")
-val outDir = "src"
-def mkModelProject(name : String) = {
-    val root = file(file(modelRoot, name), "public")
-    ModelProject(name,
-                 root,
-                 file(root, "model.rb"),
-                 file(root, "src"))          
-}
-
-lazy val logisticsPublicModel = mkModelProject("logistics")
-lazy val trademgmtPublicModel = mkModelProject("trademgmt")
-
-def updateIvyFromProjectPom(project : Project) = {
-  val antFileName = "antMakeIvy.xml"
-  val antFile = file("maker", antFileName)
-  val tmpFile = file(project.root, antFileName)
-  copyFile(antFile, tmpFile)
-  val args = List("ant", "-f", file(project.root, "antMakeIvy.xml").getAbsolutePath)
-  val cmd = Command(Some(project.root), args : _*)
-  val r = cmd.exec() match {
-    case res @ (0, _) => println("Process completed"); res
-    case err @ (_, _) => println("Process failed: " + err); err
-  }
-  tmpFile.delete
-  r
-}
-
-def updateTitanSchema(project : Option[Project] = None) {
-  val envName = Option(unmanagedGlobalProperties.getProperty("titan.env.name")).getOrElse{
-    throw new Exception("Missing env name, property = titan.env.name")
-  }
-  val scriptDir = file("../../bin/")
-  val script = file(scriptDir, "deploy2db")
-println("script = " + script.getAbsolutePath + ", exists = " + script.exists)
-  println("updating %s for env %s".format(project.map(_.name).getOrElse("None"), envName))
-  val args = "../../bin/" + script.getName :: ("-e" + envName) :: project.toList.map(p => ("-c" + p.name))
-  Command(Some(file(".").getAbsoluteFile), args : _*).exec() match {
-    case res @ (0, _) => println("Process completed"); res
-    case err @ (_, _) => println("Process failed: " + err); err
-  }
-}
-def updateAllTitanSchemas() = updateTitanSchema()
-
-case class RichProject(project : Project) {
-  def updateIvyFromPom() = updateIvyFromProjectPom(project)
-  def updateSchema() = updateTitanSchema(Some(project))
-}
-object RichProject {
-  implicit def toRichProject(project : Project) : RichProject = new RichProject(project)
-}
-import RichProject._
 println("(Type helpTitan for a list of common titan commands)\n")
 
