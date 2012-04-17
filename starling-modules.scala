@@ -61,7 +61,7 @@ lazy val webservice = {
     libDirs = libs,
     resourceDirs = resources,
     props = makerProps
-  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: trademgmtModelDeps : _*)
+  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (logisticsModelDeps ::: trademgmtModelDeps) : _*)
 }
 
 lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
