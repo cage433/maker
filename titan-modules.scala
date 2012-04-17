@@ -98,9 +98,11 @@ def deployWarsTo(deployDir : File) = {
 def deployToTitanJboss = deployWarsTo(jbossDeployDir)
 def deployToTitanJetty = deployWarsTo(jettyDeployDir)
 
-// build all of startling and titan dependencies for starling
-// compile and package the titan web apps
-// deploy them to local jboss
+/**
+ * build all of startling and titan dependencies for starling
+ * compile and package the titan web apps
+ * deploy them to local jboss
+ */
 def buildAndDeployWithTitanJboss = buildWithTitan.map(_ => deployToTitanJboss)
 def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
