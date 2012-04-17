@@ -137,6 +137,6 @@ import maker.utils.GroupId._
 lazy val trademgmtInternalModel = mkModelProjectEx("trademgmt", "internal", Some("com.trafigura.titan" % "model-trademgmt-internal-scala-bindings"))
 lazy val trademgmtPublicModel = mkModelProject("trademgmt", Some("com.trafigura.titan" % "model-trademgmt-public-scala-bindings"), List(trademgmtInternalModel.project))
 lazy val logisticsPublicModel = mkModelProject("logistics", Some("com.trafigura.titan" % "model-logistics-public-scala-bindings"))
-lazy val trademgmtModelDeps : List[Project] = List(trademgmtPublicModel).map(_.project)
-lazy val logisticsModelDeps : List[Project] = List(logisticsPublicModel).map(_.project)
+lazy val trademgmtModelDeps : List[Project] = Nil // List(trademgmtPublicModel).map(_.project)
+lazy val logisticsModelDeps : List[Project] = Nil // List(logisticsPublicModel).map(_.project)
 
