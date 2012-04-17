@@ -25,62 +25,6 @@ def project(name : String) = new Project(
   props = makerProps,
   unmanagedProperties = starlingProperties
 )
-lazy val manager = project("manager")
-lazy val utils = project("utils") dependsOn manager
-lazy val osgirun = project("osgirun").copy(libDirs = List(new File("osgirun/lib_managed"), new File("osgirun/lib"), new File("osgirun/osgi_jars")))
-lazy val booter = project("booter")
-lazy val concurrent = project("concurrent") dependsOn utils
-lazy val titanReturnTypes = project("titan.return.types")
-lazy val quantity = project("quantity") dependsOn(utils, titanReturnTypes)
-lazy val osgiManager = project("osgimanager") dependsOn utils
-lazy val singleClasspathManager = project("singleclasspathmanager") dependsOn osgiManager
-lazy val pivot = project("pivot") dependsOn quantity
-lazy val daterange = project("daterange") dependsOn(utils, titanReturnTypes)
-lazy val pivotUtils = project("pivot.utils") dependsOn(daterange, pivot)
-lazy val starlingDTOApi = project("starling.dto.api") dependsOn(titanReturnTypes, utils)
-lazy val maths = project("maths") dependsOn (daterange, quantity)
-lazy val starlingApi = project("starling.api") dependsOn(starlingDTOApi, quantity, daterange)
-lazy val props = project("props") dependsOn utils
-lazy val auth = project("auth") dependsOn props
-lazy val bouncyrmi = project("bouncyrmi") dependsOn auth
-lazy val loopyxl = project("loopyxl") dependsOn auth
-lazy val browserService = project("browser.service") dependsOn manager
-lazy val browser = project("browser") dependsOn browserService
-lazy val guiapi = project("gui.api") dependsOn (browserService, bouncyrmi, pivotUtils)
-lazy val fc2Facility = project("fc2.facility") dependsOn guiapi
-lazy val curves = project("curves") dependsOn (maths, guiapi)
-lazy val instrument = project("instrument") dependsOn (curves, titanReturnTypes)
-lazy val reportsFacility = project("reports.facility") dependsOn guiapi
-lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(pivot, guiapi)
-lazy val tradeFacility = project("trade.facility") dependsOn guiapi
-lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
-lazy val starlingClient = project("starling.client") dependsOn (starlingDTOApi, bouncyrmi)
-lazy val dbx = project("dbx") dependsOn instrument
-lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingDTOApi, dbx)
-lazy val titan = project("titan") dependsOn (starlingApi, databases)
-lazy val services = project("services").copy(resourceDirs = List(new File("services", "resources"), new File("services", "test-resources"))) dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
-lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
-lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
-lazy val metals = project("metals").copy(resourceDirs = List(new File("metals", "resources"), new File("metals", "test-resources"))) dependsOn tradeImpl
-lazy val reportsImpl = project("reports.impl") dependsOn services
-
-lazy val webservice = {
-  lazy val name = "webservice"
-  lazy val libs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "lib-jboss"), file(name, "maker-lib"), file(".maker/scala-lib"))
-  lazy val resources =  List(file(name, "resources"), file(name, "test-resources"))
-  new Project(
-    name,
-    file(name),
-    libDirs = libs,
-    resourceDirs = resources,
-    props = makerProps
-  ) dependsOn (utils, manager, props, daterange, starlingDTOApi, quantity, instrument)
-}
-
-
-lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
-lazy val launcher = project("launcher") dependsOn (startserver, booter)
-lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
 
 /**
@@ -157,14 +101,19 @@ def buildSource(root : File, modelFile : File, outputDir : File) = {
 }
 import maker.utils.GroupAndArtifact
 
-case class ModelProject(name : String, root : File, modelFile : File, outputDir : File, ga : Option[GroupAndArtifact] = None) {
+case class ModelProject(name : String,
+                        root : File,
+                        modelFile : File,
+                        outputDir : File,
+                        ga : Option[GroupAndArtifact] = None,
+                        depends : List[Project] = Nil) {
   val scalaBindingsDir = file(root, SCALA_BINDINGS_DIR)
   val project = Project(
       name,
       root,
       sourceDirs = List(outputDir),
       ivyFileRel = SCALA_BINDINGS_DIR + "/maker-ivy.xml",
-      moduleIdentity = ga)
+      moduleIdentity = ga).dependsOn(depends : _*)
 
   def genModel = buildSource(root, modelFile, outputDir)
   def compile = {
@@ -182,22 +131,85 @@ case class ModelProject(name : String, root : File, modelFile : File, outputDir 
 
 val modelRoot = file("../../mdl")
 val outDir = "src"
-def mkModelProject(name : String, ga : Option[GroupAndArtifact] = None) = {
-    val root = file(file(modelRoot, name), "public")
+def mkModelProjectEx(name : String, subdir : String = "public", ga : Option[GroupAndArtifact] = None, depends : List[Project] = Nil) : ModelProject = {
+    val root = file(file(modelRoot, name), subdir)
     ModelProject(name,
                  root,
                  file(root, "model.rb"),
                  file(root, "src"),
-                 ga)          
+                 ga,
+                 depends)          
 }
+def mkModelProject(name : String, ga : Option[GroupAndArtifact] = None, depends : List[Project] = Nil) : ModelProject = 
+      mkModelProjectEx(name, "public", ga, depends)
 
 
 /**
  * Titan model / bin-dep lib builds
  */
 import maker.utils.GroupId._
+lazy val trademgmtInternalModel = mkModelProjectEx("trademgmt", "internal", Some("com.trafigura.titan" % "model-trademgmt-internal-scala-bindings"))
+lazy val trademgmtPublicModel = mkModelProject("trademgmt", Some("com.trafigura.titan" % "model-trademgmt-public-scala-bindings"), List(trademgmtInternalModel.project))
 lazy val logisticsPublicModel = mkModelProject("logistics", Some("com.trafigura.titan" % "model-logistics-public-scala-bindings"))
-lazy val trademgmtPublicModel = mkModelProject("trademgmt", Some("com.trafigura.titan" % "model-trademgmt-public-scala-bindings"))
+lazy val trademgmtModelDeps : List[Project] = Nil // List(trademgmtPublicModel).map(_.project)
+lazy val logisticsModelDeps : List[Project] = Nil // List(logisticsPublicModel).map(_.project)
+
+lazy val manager = project("manager")
+lazy val utils = project("utils") dependsOn manager
+lazy val osgirun = project("osgirun").copy(libDirs = List(new File("osgirun/lib_managed"), new File("osgirun/lib"), new File("osgirun/osgi_jars")))
+lazy val booter = project("booter")
+lazy val concurrent = project("concurrent") dependsOn utils
+lazy val titanReturnTypes = project("titan.return.types")
+lazy val quantity = project("quantity") dependsOn(utils, titanReturnTypes)
+lazy val osgiManager = project("osgimanager") dependsOn utils
+lazy val singleClasspathManager = project("singleclasspathmanager") dependsOn osgiManager
+lazy val pivot = project("pivot") dependsOn quantity
+lazy val daterange = project("daterange") dependsOn(utils, titanReturnTypes)
+lazy val pivotUtils = project("pivot.utils") dependsOn(daterange, pivot)
+lazy val starlingDTOApi = project("starling.dto.api") dependsOn(titanReturnTypes :: utils :: trademgmtModelDeps : _*)
+lazy val maths = project("maths") dependsOn (daterange, quantity)
+//lazy val starlingApi = project("starling.api") dependsOn(starlingDTOApi, quantity, daterange)
+lazy val props = project("props") dependsOn utils
+lazy val auth = project("auth") dependsOn props
+lazy val bouncyrmi = project("bouncyrmi") dependsOn auth
+lazy val loopyxl = project("loopyxl") dependsOn auth
+lazy val browserService = project("browser.service") dependsOn manager
+lazy val browser = project("browser") dependsOn browserService
+lazy val guiapi = project("gui.api") dependsOn (browserService, bouncyrmi, pivotUtils)
+lazy val fc2Facility = project("fc2.facility") dependsOn guiapi
+lazy val curves = project("curves") dependsOn (maths, guiapi)
+lazy val instrument = project("instrument") dependsOn (curves, titanReturnTypes)
+lazy val reportsFacility = project("reports.facility") dependsOn guiapi
+lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(pivot, guiapi)
+lazy val tradeFacility = project("trade.facility") dependsOn guiapi
+lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
+lazy val starlingClient = project("starling.client") dependsOn (starlingDTOApi, bouncyrmi)
+lazy val dbx = project("dbx") dependsOn instrument
+lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingDTOApi, dbx)
+lazy val titan = project("titan") dependsOn databases
+lazy val services = project("services").copy(resourceDirs = List(new File("services", "resources"), new File("services", "test-resources"))) dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
+lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
+lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
+lazy val metals = project("metals").copy(resourceDirs = List(new File("metals", "resources"), new File("metals", "test-resources"))) dependsOn tradeImpl
+lazy val reportsImpl = project("reports.impl") dependsOn services
+
+
+lazy val webservice = {
+  lazy val name = "webservice"
+  lazy val libs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "lib-jboss"), file(name, "maker-lib"), file(".maker/scala-lib"))
+  lazy val resources =  List(file(name, "resources"), file(name, "test-resources"))
+  new Project(
+    name,
+    file(name),
+    libDirs = libs,
+    resourceDirs = resources,
+    props = makerProps
+  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: trademgmtModelDeps : _*)
+}
+
+lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
+lazy val launcher = project("launcher") dependsOn (startserver, booter)
+lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
 def updateIvyFromProjectPom(project : Project) = {
   val antFileName = "antMakeIvy.xml"
@@ -239,7 +251,6 @@ object RichProject {
 }
 import RichProject._
 
-
 /**
  * titan component builds and helper utils
  */
@@ -274,14 +285,14 @@ def projectT(name : String) = {
 
 // titan components we can potentially build from sources
 lazy val titanConfig = projectT("configuration")
-lazy val titanMurdoch = projectT("murdoch")
-lazy val titanTradeService = projectT("tradeservice") dependsOn trademgmtPublicModel.project
+lazy val titanMurdoch = projectT("murdoch").dependsOn(trademgmtModelDeps : _*)
+lazy val titanTradeService = projectT("tradeservice") dependsOn(trademgmtModelDeps : _*)
 lazy val titanPermission = projectT("permission")
-lazy val titanReferenceData = projectT("referencedata")
-lazy val titanLogistics = projectT("logistics") // dependsOn titanlogisticsModel
-lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs(List("target/generated-sources/")) dependsOn starlingClient
-lazy val titanCostsAndIncomes = projectT("costsandincomes").dependsOn(starlingClient, daterange, quantity, starlingDTOApi)
-lazy val titanMtmPnl = projectT("mtmpnl") dependsOn starlingClient
+lazy val titanReferenceData = projectT("referencedata") dependsOn(trademgmtModelDeps : _*)
+lazy val titanLogistics = projectT("logistics").dependsOn(logisticsModelDeps ::: trademgmtModelDeps : _*)
+lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs(List("target/generated-sources/")).dependsOn(starlingClient :: trademgmtModelDeps : _*)
+lazy val titanCostsAndIncomes = projectT("costsandincomes").dependsOn(starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
+lazy val titanMtmPnl = projectT("mtmpnl").dependsOn(starlingClient :: trademgmtModelDeps : _*)
 lazy val titanReferenceDataNew = projectT("referencedatanew")
 lazy val titanMapping = projectT("mapping")
 lazy val titanSecuritisation = projectT("securitisation") dependsOn starlingClient
@@ -289,9 +300,9 @@ lazy val titanSecuritisation = projectT("securitisation") dependsOn starlingClie
 // all titan components that can be built from sources as part of an integrated build
 lazy val allTitanComponents = Seq(
 //                titanConfig,      // not on master
+//                titanPermission,  // not on master
                 titanMurdoch,
                 titanTradeService,
-//                titanPermission,  // not on master
                 titanReferenceData,
                 titanLogistics,
                 titanCostsAndIncomes,
@@ -398,6 +409,7 @@ def runServer = {
     "starling.startserver.Server")(
     commonLaunchArgs : _*)()
 }
+
 
 import java.io._
 
