@@ -1,4 +1,4 @@
-println("\n ** Loading Starling build..\n")
+println("\n ** Loading master build..\n")
 
 import java.util.Properties
 import java.io.File
@@ -19,4 +19,5 @@ import maker.os.Command._
 :load maker/utils.scala
 :load maker/titan-model.scala
 :load maker/starling-modules.scala
+:load maker/titan-modules.scala
 
