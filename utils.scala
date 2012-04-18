@@ -1,4 +1,4 @@
-println("\n ** Loading common build definitions...\n")
+println("\n ** Loading build utils...\n")
 
 
 def updateIvyFromProjectPom(project : Project) = {
