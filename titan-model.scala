@@ -133,7 +133,6 @@ def mkModelProject(name : String, ga : Option[GroupAndArtifact] = None, depends 
 /**
  * Titan model / bin-dep lib builds
  */
-import maker.utils.GroupId._
 lazy val trademgmtInternalModel = mkModelProjectEx("trademgmt", "internal", Some("com.trafigura.titan" % "model-trademgmt-internal-scala-bindings"))
 lazy val trademgmtPublicModel = mkModelProject("trademgmt", Some("com.trafigura.titan" % "model-trademgmt-public-scala-bindings"), List(trademgmtInternalModel.project))
 lazy val logisticsPublicModel = mkModelProject("logistics", Some("com.trafigura.titan" % "model-logistics-public-scala-bindings"))
