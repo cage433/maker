@@ -14,6 +14,8 @@ import maker.utils.Log._
 import maker.RichProperties._
 import maker.os.Command
 import maker.os.Command._
+import maker.utils.ModuleId._
+import maker.task.BuildResult
 
 :load maker/common.scala
 :load maker/utils.scala

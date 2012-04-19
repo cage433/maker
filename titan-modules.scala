@@ -70,7 +70,6 @@ lazy val starlingTitanDeps = project("titanComponents") dependsOn (titanComponen
 lazy val titanBuilder = project("titan.builder").dependsOn(launcher, starlingTitanDeps)
 lazy val titanLauncher = project("titan.launcher").dependsOn(launcher)
 
-import maker.task.BuildResult
 def buildWithTitan = {
   titanLauncher.compile
   starlingTitanDeps.pack.res match {
@@ -87,7 +86,7 @@ lazy val deployWarToJetty = deployWar(jettyDeployDir) _
 lazy val deployWarToJboss = deployWar(jbossDeployDir) _
 def deployWarsTo(deployDir : File) = {
   println("building and packaging: " + titanComponents.map(_.name).mkString(","))
-  val failures = titanComponents.map(p => p.pack.res).collect{ case e @ Left(_) => e }
+  val failures = titanComponents.map(p => p.packOnly.res).collect{ case e @ Left(_) => e }
   failures match {
     case Nil  =>
       println("Titan deploy to: " + deployDir.getAbsolutePath)
