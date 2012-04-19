@@ -33,6 +33,12 @@ def projectT(name : String) = {
   )
 }
 
+// for inverted (regular JavaSE) combined classpath,
+// pull some common stuff out of packages wars (inner classpath) into the outer (parent classpath) environment
+lazy val additionalLibraryExclusions = List(
+  "" % ""
+)
+
 // titan components we can potentially build from sources
 lazy val titanConfig = projectT("configuration")
 lazy val titanMurdoch = projectT("murdoch").dependsOn(trademgmtModelDeps : _*)
@@ -67,6 +73,8 @@ lazy val titanComponents = allTitanComponents.filterNot(p => titanBinDepComponen
 
 lazy val starlingTitanDeps = project("titanComponents") dependsOn (titanComponents : _*)
 
+// builder and launcher are split up for the purposes of separating run time scope from compile time,
+// when we get to add scopes to maker properly these two projects can be combined
 lazy val titanBuilder = project("titan.builder").dependsOn(launcher, starlingTitanDeps)
 lazy val titanLauncher = project("titan.launcher").dependsOn(launcher)
 
@@ -111,7 +119,7 @@ def deployTitanJbossWars {
   val availableBinDeps = titanBinDepsDir.listFiles.filter(f => f.getName.endsWith(".war"))
   println("Available bin deps: " + availableBinDeps.mkString(","))
   val filesToCopyToJboss = availableBinDeps.filter(f => titanBinDepComponentList.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
-  println("copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
+  println("Copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
   filesToCopyToJboss.foreach(f => copyFileToDirectory(f, jbossDeployDir))
 }
 

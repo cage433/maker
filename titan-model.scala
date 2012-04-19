@@ -77,7 +77,6 @@ def buildSource(root : File, modelFile : File, outputDir : File) = {
   }
 }
 
-import maker.utils.GroupAndArtifact
 
 /**
  * this was going to wrap a project to provide building of sources, but alas this is tightly coupled to maven so 
