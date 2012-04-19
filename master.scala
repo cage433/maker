@@ -15,6 +15,7 @@ import maker.RichProperties._
 import maker.os.Command
 import maker.os.Command._
 import maker.utils.ModuleId._
+import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
 
 :load maker/common.scala
