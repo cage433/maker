@@ -7,15 +7,15 @@ lazy val starlingProperties : Properties = file("props.conf")
 def project(name : String) = new Project(
   name, 
   file(name),
-  libDirs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
-  resourceDirs = List(file(name, "resources"), file(name, "test-resources")),
+  libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)), //  file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
+  resourceDirs = List("resources", "test-resources").map(file(name, _)),
   props = makerProps,
   unmanagedProperties = starlingProperties
 )
 
 lazy val manager = project("manager")
 lazy val utils = project("utils") dependsOn manager
-lazy val osgirun = project("osgirun").copy(libDirs = List(new File("osgirun/lib_managed"), new File("osgirun/lib"), new File("osgirun/osgi_jars")))
+lazy val osgirun = project("osgirun").copy(libDirs = List(file("osgirun/lib_managed"), file("osgirun/lib"), file("osgirun/osgi_jars")))
 lazy val booter = project("booter")
 lazy val concurrent = project("concurrent") dependsOn utils
 lazy val titanReturnTypes = project("titan.return.types")
@@ -45,15 +45,19 @@ lazy val starlingClient = project("starling.client") dependsOn (starlingDTOApi, 
 lazy val dbx = project("dbx") dependsOn instrument
 lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingDTOApi, dbx)
 lazy val titan = project("titan") dependsOn databases
-lazy val services = project("services").copy(resourceDirs = List(new File("services", "resources"), new File("services", "test-resources"))) dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
+lazy val services = project("services").withResourceDirs("resources", "test-resources") dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
 lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
 lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
-lazy val metals = project("metals").copy(resourceDirs = List(new File("metals", "resources"), new File("metals", "test-resources"))) dependsOn tradeImpl
+lazy val oil = project("oil") dependsOn services
+lazy val metals = project("metals").withResourceDirs("resources", "test-resources") dependsOn tradeImpl
 lazy val reportsImpl = project("reports.impl") dependsOn services
+
+val hostTitanComponents = true
+val titanEnvAppServerLibs : List[File] = if (hostTitanComponents) file("webservice", "lib-jboss") :: Nil else Nil
 
 lazy val webservice = {
   lazy val name = "webservice"
-  lazy val libs = List(file(name, "lib_managed"), file(name, "lib"), file(name, "lib-jboss"), file(name, "maker-lib"), file(".maker/scala-lib"))
+  lazy val libs = file(".maker/scala-lib") :: List("lib_managed", "lib", "maker-lib").map(file(name, _)) ::: titanEnvAppServerLibs
   lazy val resources =  List(file(name, "resources"), file(name, "test-resources"))
   new Project(
     name,
@@ -61,10 +65,10 @@ lazy val webservice = {
     libDirs = libs,
     resourceDirs = resources,
     props = makerProps
-  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (logisticsModelDeps ::: trademgmtModelDeps) : _*)
+  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil) : _*)
 }
 
-lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, starlingClient, webservice, rabbitEventViewerService)
+lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService)
 lazy val launcher = project("launcher") dependsOn (startserver, booter)
 lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 

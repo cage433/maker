@@ -66,6 +66,7 @@ lazy val titanMtmPnl = projectT("mtmpnl").dependsOn(starlingClient :: trademgmtM
 lazy val titanReferenceDataNew = projectT("referencedatanew")
 lazy val titanMapping = projectT("mapping")
 lazy val titanSecuritisation = projectT("securitisation") dependsOn starlingClient
+lazy val titanFinance= projectT("finance") dependsOn starlingClient
 
 // all titan components that can be built from sources as part of an integrated build
 lazy val allTitanComponents = Seq(
@@ -77,7 +78,9 @@ lazy val allTitanComponents = Seq(
                 titanLogistics,
                 titanCostsAndIncomes,
                 titanMtmPnl,
-                titanInvoicing)
+                titanInvoicing
+//                titanFinance      // this builds ok but is excluded until the runtime env is sorted out
+)
 
 // list of components to take from binaries
 lazy val titanBinDepComponentList = starlingProperties.getProperty("TitanProxiedServices").split(":").toList.map(_.toLowerCase)
