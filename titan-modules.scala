@@ -13,7 +13,25 @@ lazy val titanBinDeps = {
     ivySettingsFile = file(name, "maker-ivysettings.xml"))
 }
 
-// build a standard titan component (module) webapp  definition
+// for inverted (regular JavaSE) combined classpath,
+// pull some common stuff out of packages wars (inner classpath) into the outer (parent classpath) environment
+lazy val additionalTitanLibraryExclusions = List(
+  "commons-httpclient" % "commons-httpclient",
+  "org.apache.httpcomponents" % "httpcore",
+  "org.jboss.resteasy" % "resteasy-jaxrs",
+  "com.oracle" % "ojdbc6",
+  "org.jboss.resteasy" % "jaxrs-api",
+  "org.slf4j" % "slf4j-api",
+  "xml-apis" % "xml-apis"
+)
+
+// as above but to exclude from the packaging explicitly, by name
+lazy val classpathProvidedLibs = additionalTitanLibraryExclusions.map(_.artifactId.id)
+
+//println("Exlcuding additional libs:\n" + classpathProvidedLibs.mkString("\n"))
+
+// build a standard titan component (module) webapp  definition,
+//   but with classpath inversion considerations...
 def projectT(name : String) = {
   lazy val titanService = "../" + name + "/service"
   new Project(
@@ -24,20 +42,16 @@ def projectT(name : String) = {
     libDirs = List(file(titanService, "lib_managed"),
       file(titanService, "lib"),
       file(titanService, ".maker/scala-lib")),
-    providedDirs = List(file(titanService, "../../.maker/lib")),
+//    providedLibDirs = List(file(titanService, "../../.maker/lib")),
     managedLibDirName = "lib_managed",
     resourceDirs = List(file(titanService, "src/main/resources")),
     props = makerProps,
     ivySettingsFile = file(titanService, "../../.maker/ivy/maker-ivysettings.xml"),
-    webAppDir = Some(file(titanService, "src/main/webapp"))
+    webAppDir = Some(file(titanService, "src/main/webapp")),
+    additionalExcludedLibs = additionalTitanLibraryExclusions,
+    providedLibs = classpathProvidedLibs
   )
 }
-
-// for inverted (regular JavaSE) combined classpath,
-// pull some common stuff out of packages wars (inner classpath) into the outer (parent classpath) environment
-lazy val additionalLibraryExclusions = List(
-  "" % ""
-)
 
 // titan components we can potentially build from sources
 lazy val titanConfig = projectT("configuration")
@@ -46,7 +60,7 @@ lazy val titanTradeService = projectT("tradeservice") dependsOn(trademgmtModelDe
 lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata") dependsOn(trademgmtModelDeps : _*)
 lazy val titanLogistics = projectT("logistics").dependsOn(logisticsModelDeps ::: trademgmtModelDeps : _*)
-lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs("target/generated-sources/").dependsOn(starlingClient :: trademgmtModelDeps : _*)
+lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs("target/generated-sources/").setAdditionalExcludedLibs().withProvidedLibs(classpathProvidedLibs : _*).dependsOn(starlingClient :: trademgmtModelDeps : _*)
 lazy val titanCostsAndIncomes = projectT("costsandincomes").dependsOn(starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
 lazy val titanMtmPnl = projectT("mtmpnl").dependsOn(starlingClient :: trademgmtModelDeps : _*)
 lazy val titanReferenceDataNew = projectT("referencedatanew")
