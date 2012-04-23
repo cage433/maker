@@ -77,8 +77,8 @@ lazy val allTitanComponents = Seq(
                 titanReferenceData,
                 titanLogistics,
                 titanCostsAndIncomes,
-                titanMtmPnl,
-                titanInvoicing
+                titanMtmPnl
+//                titanInvoicing
 //                titanFinance      // this builds ok but is excluded until the runtime env is sorted out
 )
 
