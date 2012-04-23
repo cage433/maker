@@ -83,7 +83,8 @@ lazy val allTitanComponents = Seq(
 )
 
 // list of components to take from binaries
-lazy val titanBinDepComponentList = starlingProperties.getProperty("TitanProxiedServices").split(":").toList.map(_.toLowerCase)
+
+lazy val titanBinDepComponentList : List[String] = Option(starlingProperties.getProperty("TitanProxiedServices")).map(_.split(":").toList.map(_.toLowerCase)).getOrElse(Nil)
 
 // list of titan projects to build from sources 
 lazy val titanComponents = allTitanComponents.filterNot(p => titanBinDepComponentList.exists(c => p.name.contains(c)))
