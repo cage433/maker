@@ -12,7 +12,7 @@ titanBuilder.update
 * it's quite static so we could check it into Git, or 
 *   unwind the actual command line from maven and call that directly
 */
-titanInvoicing.mvn("compile", "-PWebService")
+//titanInvoicing.mvn("compile", "-PWebService")
 
 val r = titanBuilder.compile
 
