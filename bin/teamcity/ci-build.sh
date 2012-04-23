@@ -1,7 +1,10 @@
 #!/bin/bash
 
-echo "Running teamcity.sh"
+echo "Running ci-build.sh"
 echo "------------------------------------------------------"
+echo $JAVA_HOME
+echo $SCALA_HOME
+echo
 echo "pwd `pwd`"
 echo "date: `date`"
 java -version
