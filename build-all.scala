@@ -4,20 +4,20 @@ println("\n ** Loading build-all...\n")
 
 import maker.task.TaskFailed
 
-titanBuilder.clean
-titanBuilder.update
+//titanBuilder.clean
+//titanBuilder.update
 
 /**
  * invoicing generate some code on the fly
 * it's quite static so we could check it into Git, or 
 *   unwind the actual command line from maven and call that directly
 */
-titanInvoicing.mvn("compile", "-PWebService")
+//titanInvoicing.mvn("compile", "-PWebService")
 
 val r = titanBuilder.compile
 
 r.res match {
-  case Right(r) => {
+  case Right(result) => {
     println("Build OK")
     r.stats.foreach(println)
     println(r)
