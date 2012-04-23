@@ -1,0 +1,33 @@
+<ivysettings>
+  <property name="group_id" value="com.google.code.maker" />
+  <property name="scala_version" value="2.9.1" />
+  <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
+  <settings>
+    <settings name="default" transitive="false"/>
+  </settings>
+  <settings defaultResolver="default"/>
+  <!-- not sure how to get params from maker into this yet... 
+  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="${maker.ivy.publish.username}" passwd="${maker.ivy.publish.password}" />
+ -->
+  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="LouisB" passwd="x" />
+
+  <resolvers>
+    <filesystem name="maker-local" m2compatible="true">
+      <artifact pattern="${ivy.local.default.root}/maker-local/[module]/[revision]/[artifact]-[revision].[ext]" />
+    </filesystem>
+    <url name="maker-oss-snapshot" m2compatible="true" > <!-- Sonatype OSS Snapshots -->
+      <!-- <artifact pattern="https://oss.sonatype.org/content/repositories/snapshots/com/google/code/maker/maker-test/[revision]/[artifact]/[artifact]-[revision].[ext]" /> -->
+      <artifact pattern="https://oss.sonatype.org/content/repositories/snapshots/[organisation]/test/[revision]/[artifact]/[artifact]-[revision].[ext]" />
+    </url>
+    <url name="maker-oss-staging" m2compatible="true"> <!-- Sonatype OSS Staging -->
+      <artifact pattern="https://oss.sonatype.org/service/local/staging/deploy/maven2/maker-test/[artifact]/[revision]/[artifact]/pom.xml]" />
+    </url>
+    <ibiblio name="central" m2compatible="true"/>
+    <ibiblio name="akka" m2compatible="true" root="http://repo.akka.io/repository/"/>
+    <chain name="default" returnFirst="true">
+      <resolver ref="central"/>
+      <resolver ref="akka"/>
+    </chain>
+  </resolvers>
+</ivysettings>
+
