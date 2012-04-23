@@ -2,10 +2,10 @@
 
 echo "Running ci-build.sh"
 echo "------------------------------------------------------"
-echo $JAVA_HOME
-echo $SCALA_HOME
+echo "JAVA_HOME: $JAVA_HOME"
+echo "SCALA_HOME: $SCALA_HOME"
 echo
-echo "pwd `pwd`"
+echo "pwd: `pwd`"
 echo "date: `date`"
 java -version
 echo "uname: `uname -a`"
@@ -17,6 +17,7 @@ free -m
 echo "------------------------------------------------------"
 echo
 echo "##teamcity[progressStart 'compile']"
-echo "version = $1"
+echo "version: $1"
 
 ./maker/dist/bin/maker.sh -p maker/build-all.scala
+
