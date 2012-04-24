@@ -151,6 +151,7 @@ def runStarlingWithTitanDeploy(deployWars : Boolean = true, debug : Boolean = fa
   titanLauncher.runMain(
     "starling.launcher.DevLauncher")(
     ( "-Djavax.xml.parsers.DocumentBuilderFactory=com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl" ::
+      "-Dstarling.titan.enabled=true" ::
       "-Dtitan.webapp.server.log=logs/titan-server.log" :: (if (debug) 
       "-Xdebug" :: "-Xrunjdwp:transport=dt_socket,server=y,address=6666" :: Nil else Nil) :::
     commonLaunchArgs.toList) : _*)()
