@@ -19,5 +19,5 @@ echo
 echo "##teamcity[progressStart 'compile']"
 echo "version: $1"
 
-./maker/dist/bin/maker.sh -p maker/build-all.scala
+./maker/dist/bin/maker.sh -p maker/build-all.scala | tee ci-build.log
 
