@@ -287,28 +287,30 @@ set_jrebel_options() {
 
 
 # restore stty settings (echo in particular)
-function restoreSttySettings() {
-  stty $saved_stty
-  saved_stty=""
-}
+#function restoreSttySettings() {
+#  stty $saved_stty
+#  saved_stty=""
+#}
 
-function onExit() {
-  if [[ "$saved_stty" != "" ]]; then
-    restoreSttySettings
-  fi
-  exit $scala_exit_status
-}
+#function onExit() {
+#  if [[ "$saved_stty" != "" ]]; then
+#    restoreSttySettings
+#  fi
+#  exit $scala_exit_status
+#}
 
 # to reenable echo if we are interrupted before completing.
 trap onExit INT
 
 # save terminal settings
-saved_stty=$(stty -g 2>/dev/null)
+#saved_stty=$(stty -g 2>/dev/null)
+
 # clear on error so we don't later try to restore them
-if [[ ! $? ]]; then  
-  saved_stty=""
-fi
+#if [[ ! $? ]]; then  
+#  saved_stty=""
+#fi
 
 scala_exit_status=127
 main $*
 onExit
+
