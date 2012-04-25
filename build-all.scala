@@ -25,6 +25,7 @@ r.res match {
   }
   case Left(TaskFailed(_, reason)) => {
     println("Build Failed, reason: " + reason)
+    println("Exiting with -1")
     System.exit(-1)
   }
 }
