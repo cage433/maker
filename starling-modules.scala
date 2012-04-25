@@ -7,7 +7,7 @@ lazy val starlingProperties : Properties = file("props.conf")
 def project(name : String) = new Project(
   name, 
   file(name),
-  libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)), //  file(name, "lib_managed"), file(name, "lib"), file(name, "maker-lib"), file(".maker/scala-lib")),
+  libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)),
   resourceDirs = List("resources", "test-resources").map(file(name, _)),
   props = makerProps,
   unmanagedProperties = starlingProperties
@@ -72,10 +72,10 @@ lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oi
 lazy val launcher = project("launcher") dependsOn (startserver, booter)
 lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
-def runDevLauncher = {
+def runLauncher = {
   launcher.compile
   launcher.runMain(
-    "starling.launcher.DevLauncher")(
+    "starling.launcher.Launcher")(
     commonLaunchArgs : _*)()
 }
 
