@@ -300,7 +300,7 @@ set_jrebel_options() {
 #}
 
 # to reenable echo if we are interrupted before completing.
-trap onExit INT
+#trap onExit INT
 
 # save terminal settings
 #saved_stty=$(stty -g 2>/dev/null)
@@ -312,5 +312,5 @@ trap onExit INT
 
 scala_exit_status=127
 main $*
-onExit
+#onExit
 
