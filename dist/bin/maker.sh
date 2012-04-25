@@ -57,7 +57,7 @@ main() {
     # TODO - move scala jars from bootclasspath to classpath once permgen fix available
     CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/"
 #    echo "CLASSPATH = $CLASSPATH"
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dscala.usejavacp=true scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE | tee maker-session.log
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dscala.usejavacp=true scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
     scala_exit_status=$?
   fi
 }
@@ -287,30 +287,31 @@ set_jrebel_options() {
 
 
 # restore stty settings (echo in particular)
-#function restoreSttySettings() {
-#  stty $saved_stty
-#  saved_stty=""
-#}
+function restoreSttySettings() {
+  stty $saved_stty
+  saved_stty=""
+}
 
-#function onExit() {
-#  if [[ "$saved_stty" != "" ]]; then
-#    restoreSttySettings
-#  fi
-#  exit $scala_exit_status
-#}
+function onExit() {
+  if [[ "$saved_stty" != "" ]]; then
+    restoreSttySettings
+  fi
+  echo "returning exit status: " $scala_exit_status
+  exit $scala_exit_status
+}
 
 # to reenable echo if we are interrupted before completing.
-#trap onExit INT
+trap onExit INT
 
 # save terminal settings
 #saved_stty=$(stty -g 2>/dev/null)
 
 # clear on error so we don't later try to restore them
-#if [[ ! $? ]]; then  
-#  saved_stty=""
-#fi
+if [[ ! $? ]]; then  
+  saved_stty=""
+fi
 
 scala_exit_status=127
 main $*
-#onExit
+onExit
 
