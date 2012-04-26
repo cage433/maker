@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# This script is designed to be run from the root of a project. 
-# i.e.
-# $ cd <project-root-dir>
-# $ <maker-root-dir>/bin/maker.sh
-# 
+# This script can be invoked using a relative path from the cwd, the path to
+#   the project file will then also be relative to the cwd
+#
+# Simple usage:
+#   ./a/b/c/maker/bin/maker.sh [-y] [-b] -p ./a/b/myproj/myprojbuild.scala
+#
 # This project may or may not be maker itself. To avoid further confusion, the
 # following convention is used to distinguish maker and project variables.
 #
@@ -35,6 +36,7 @@ mkdir -p .maker
 
 main() {
   process_options $*
+  saveStty
   check_setup_sane || exit -1
 
   if [ $MAKER_IVY_UPDATE ] || [ ! -e $MAKER_OWN_LIB_DIR ];
@@ -188,7 +190,8 @@ process_options() {
       -b | --boostrap ) MAKER_BOOTSTRAP=true; shift;;
       -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
       -i | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
-      -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;; 
+      -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;;
+      -ntty | --no-tty-restore ) MAKER_NO_TTY_RESTORE=true; shift 1;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
       --ivy-proxy-host ) MAKER_IVY_PROXY_HOST=$2; shift 2;;
       --ivy-proxy-port ) MAKER_IVY_PROXY_PORT=$2; shift 2;;
@@ -228,7 +231,9 @@ cat << EOF
       Sets the maker classpath to maker/classes:utils/classes etc rather than 
       maker.jar. Allows work on maker and another project to be done simultaneously.
     -nr, --no-repl
-      skip repl launch (just performs bootstrapping/building)
+      skip repl launch (just performs bootstrapping/building and returns)
+    -ntty, --no-tty-restore
+      skip save and restore tty (for integration with automation such as TeamCity reporting)
     --mem-permgen-space <space in MB>
       default is 1/10th of heap space
     --ivy-proxy-host <host>
@@ -304,7 +309,14 @@ function onExit() {
 trap onExit INT
 
 # save terminal settings
-#saved_stty=$(stty -g 2>/dev/null)
+function saveStty() {
+  if [ -z $MAKER_NO_TTY_RESTORE ]; then
+    #echo "saving current tty for restore on exit"
+    saved_stty=$(stty -g 2>/dev/null)
+  else
+    echo "skipping tty save/restore"
+  fi
+}
 
 # clear on error so we don't later try to restore them
 if [[ ! $? ]]; then  
