@@ -23,7 +23,11 @@ val buildResult = for {
  *   unwind the actual command line from maven and call that directly
  */
 //  _ <- titanInvoicing.mvn("compile", "-PWebService")  // currently problematic on teamcity agent
-  r <- titanBuilder.compile
+  _ <- titanBuilder.compile
+  _ <- titanMurdoch.testOnly
+  _ <- titanReferenceData.testOnly
+  _ <- titanTradeService.testOnly
+  r <- titanLogistics.testOnly
 } yield r
 
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
