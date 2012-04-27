@@ -22,13 +22,34 @@ lazy val additionalTitanLibraryExclusions = List(
   "com.oracle" % "ojdbc6",
   "org.jboss.resteasy" % "jaxrs-api",
   "org.slf4j" % "slf4j-api",
-  "xml-apis" % "xml-apis"
+  "xml-apis" % "xml-apis",
+  "org.scalatest" % "scalatest_2.8.1" // less than ideal but titan common libs refer to scala 2.8.1 version of scalatest which can case a runtime class cast exception when running tests. Luckily it has a crossed artifact id so it can be eliminated specifically
 )
 
 // as above but to exclude from the packaging explicitly, by name
 lazy val classpathProvidedLibs = additionalTitanLibraryExclusions.map(_.artifactId.id)
 
-//println("Exlcuding additional libs:\n" + classpathProvidedLibs.mkString("\n"))
+// shared cost and incomes lib that contains some common and test classes necessary to run c&i module unit tests
+lazy val titanCostsAndIncomesLib = {
+  val root = file("../../lib/costsandincomes/internal")
+  new Project(
+    "costsandincomes", 
+    root,
+    sourceDirs = List(file(root, "src/main/scala")),
+    tstDirs = List(file(root, "src/test/scala")),
+    libDirs = List(file(root, "lib_managed"),
+      file(root, "lib"),
+      file(root, ".maker/scala-lib")),
+    managedLibDirName = "lib_managed",
+    resourceDirs = List(file(root, "src/main/resources")),
+    props = makerProps,
+    ivySettingsFile = file(root, "../../../services/.maker/ivy/maker-ivysettings.xml"),
+    moduleIdentity = Some("com.trafigura.titan.shared-libs" % "costsandincomes-internal"),
+    additionalLibs = List("com.oracle" % "ojdbc6" % "11.2.0.1.0"),
+    additionalExcludedLibs = additionalTitanLibraryExclusions.filterNot(_.groupId.id == "com.oracle"), // dependency on oracle lib here is test scope only, redo once we support proper scoping/configs
+    providedLibs = classpathProvidedLibs
+  ) dependsOn (starlingDTOApi, daterange, quantity)
+}
 
 // build a standard titan component (module) webapp  definition,
 //   but with classpath inversion considerations...
@@ -61,8 +82,8 @@ lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata") dependsOn(trademgmtModelDeps : _*)
 lazy val titanLogistics = projectT("logistics").dependsOn(logisticsModelDeps ::: trademgmtModelDeps : _*)
 lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs("target/generated-sources/").setAdditionalExcludedLibs().withProvidedLibs(classpathProvidedLibs : _*).dependsOn(starlingClient :: trademgmtModelDeps : _*)
-lazy val titanCostsAndIncomes = projectT("costsandincomes").dependsOn(starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
-lazy val titanMtmPnl = projectT("mtmpnl").dependsOn(starlingClient :: trademgmtModelDeps : _*)
+lazy val titanCostsAndIncomes = projectT("costsandincomes")/*.withAdditionalTestDirs("../../../lib/costsandincomes/internal/src/test/scala").withAdditionalLibs("com.trafigura.titan.shared-libs" % "costsandincomes-internal" % "2.7.2")*/.dependsOn(titanCostsAndIncomesLib :: starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
+lazy val titanMtmPnl = projectT("mtmpnl").dependsOn(titanCostsAndIncomesLib :: starlingClient :: trademgmtModelDeps : _*)
 lazy val titanReferenceDataNew = projectT("referencedatanew")
 lazy val titanMapping = projectT("mapping")
 lazy val titanSecuritisation = projectT("securitisation") dependsOn starlingClient
