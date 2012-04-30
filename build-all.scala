@@ -8,6 +8,12 @@ import maker.task.ProjectAndTask
 import maker.task.Task
 import maker.task.tasks._
 
+val versionNo = {
+  val v = Option(System.getProperty("version.number"))
+  val ver = v.getOrElse("1.0-SNAPSHOT")
+  println("Version specified: " + v + ", version selected: " + ver)
+  ver
+}
 def mkBuildResult(project : Project, task : Task) =
   BuildResult(Right("OK (faked)"), Set(), ProjectAndTask(project, task))
 
@@ -39,7 +45,8 @@ val buildResult = for {
   _ <- titanMurdoch.testOnly
   _ <- titanReferenceData.testOnly
   _ <- titanTradeService.testOnly
-  r <- titanLogistics.testOnly
+  _ <- titanLogistics.testOnly
+  r <- starling publish
 } yield r
 
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
