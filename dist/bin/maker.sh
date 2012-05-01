@@ -330,4 +330,3 @@ fi
 scala_exit_status=127
 main $*
 onExit
-
