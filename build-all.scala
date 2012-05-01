@@ -1,5 +1,14 @@
 println("\n ** Loading build-all...\n")
 
+val versionNo = {
+  //println("sys properties:")
+  //System.getProperties.list(System.out)
+  val v = Option(System.getProperty("version.number"))
+  val ver = v.getOrElse("1.0-SNAPSHOT")
+  println("\nVersion specified: " + v + ", version selected: " + ver + "\n")
+  ver
+}
+
 :load maker/master.scala
 
 import maker.task.TaskFailed
@@ -8,12 +17,6 @@ import maker.task.ProjectAndTask
 import maker.task.Task
 import maker.task.tasks._
 
-val versionNo = {
-  val v = Option(System.getProperty("version.number"))
-  val ver = v.getOrElse("1.0-SNAPSHOT")
-  println("Version specified: " + v + ", version selected: " + ver)
-  ver
-}
 def mkBuildResult(project : Project, task : Task) =
   BuildResult(Right("OK (faked)"), Set(), ProjectAndTask(project, task))
 
@@ -34,10 +37,12 @@ val buildResult = for {
  *   unwind the actual command line from maven and call that directly
  */
 //  _ <- titanInvoicing.mvn("compile", "-PWebService")  // currently problematic on teamcity agent
+  
   _ <- titanBuilder.compile
 
 // titan unit tests / classpath and deps needs more work before it's fully integrated with a single build
 // so for now setup the titan components so the unit tests can be run, then run them explicitly
+
   _ <- {
          titanComponents.foreach(_.updateOnly("default", "test"))
          mkBuildResult(starlingTitanDeps, UpdateTask)
@@ -46,7 +51,8 @@ val buildResult = for {
   _ <- titanReferenceData.testOnly
   _ <- titanTradeService.testOnly
   _ <- titanLogistics.testOnly
-  r <- starling publish
+
+  r <- starling publish(version = versionNo)
 } yield r
 
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
