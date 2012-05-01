@@ -59,7 +59,8 @@ main() {
     # TODO - move scala jars from bootclasspath to classpath once permgen fix available
     CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/"
 #    echo "CLASSPATH = $CLASSPATH"
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dscala.usejavacp=true scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+#    echo "Args = $MAKER_ARGS"
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
     scala_exit_status=$?
   fi
 }
@@ -192,6 +193,7 @@ process_options() {
       -i | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;;
       -ntty | --no-tty-restore ) MAKER_NO_TTY_RESTORE=true; shift 1;;
+      -args | --additional-args ) MAKER_ARGS=$2; shift 2;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
       --ivy-proxy-host ) MAKER_IVY_PROXY_HOST=$2; shift 2;;
       --ivy-proxy-port ) MAKER_IVY_PROXY_PORT=$2; shift 2;;
@@ -234,6 +236,8 @@ cat << EOF
       skip repl launch (just performs bootstrapping/building and returns)
     -ntty, --no-tty-restore
       skip save and restore tty (for integration with automation such as TeamCity reporting)
+    --args, --additional-args
+      additional arguments to pass to JVM process directly
     --mem-permgen-space <space in MB>
       default is 1/10th of heap space
     --ivy-proxy-host <host>
