@@ -86,8 +86,7 @@ def runServer = {
     commonLaunchArgs : _*)()
 }
 
-def writeClasspath{
+def writeClasspath {
   val cp = launcher.compilationClasspath
   writeToFile(file("launcher-classpath.sh"), "export STARLING_CLASSPATH=" + cp)
 }
-
