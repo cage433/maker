@@ -94,7 +94,7 @@ case class ModelProject(name : String,
       name,
       root,
       sourceDirs = List(outputDir),
-      ivyFileRel = SCALA_BINDINGS_DIR + "/maker-ivy.xml",
+      ivyFileRel = SCALA_BINDINGS_DIR + "/ivy.xml",
       moduleIdentity = ga).dependsOn(depends : _*)
 
   def genModel = buildSource(root, modelFile, outputDir)
