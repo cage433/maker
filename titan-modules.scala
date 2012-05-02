@@ -10,8 +10,6 @@ lazy val titanBinDeps = {
     name,
     file(name),
     managedLibDirName = "lib_managed"
-//    ivySettingsFile = file(name, "maker-ivysettings.xml")
-//    ivyFileRel = "maker-ivy.xml"
   )
 }
 
@@ -46,7 +44,6 @@ lazy val titanCostsAndIncomesLib = {
     resourceDirs = List(file(root, "src/main/resources")),
     props = makerProps,
     ivySettingsFile = file(root, "../../../services/.maker/ivy/ivysettings.xml"),
-//ivyFileRel = "maker-ivy.xml",
     moduleIdentity = Some("com.trafigura.titan.shared-libs" % "costsandincomes-internal"),
     additionalLibs = List("com.oracle" % "ojdbc6" % "11.2.0.1.0"),
     additionalExcludedLibs = additionalTitanLibraryExclusions.filterNot(_.groupId.id == "com.oracle"), // dependency on oracle lib here is test scope only, redo once we support proper scoping/configs
@@ -71,7 +68,6 @@ def projectT(name : String) = {
     resourceDirs = List(file(titanService, "src/main/resources")),
     props = makerProps,
     ivySettingsFile = file(titanService, "../../.maker/ivy/ivysettings.xml"),
-//ivyFileRel = "maker-ivy.xml",
     webAppDir = Some(file(titanService, "src/main/webapp")),
     additionalExcludedLibs = additionalTitanLibraryExclusions,
     providedLibs = classpathProvidedLibs
