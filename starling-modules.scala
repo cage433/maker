@@ -11,6 +11,8 @@ def project(name : String) = new Project(
   resourceDirs = List("resources", "test-resources").map(file(name, _)),
   props = makerProps,
   unmanagedProperties = starlingProperties
+//  ivySettingsFile = file("maker-ivysettings.xml"),
+//  ivyFileRel = "maker-ivy.xml"
 )
 
 lazy val manager = project("manager")
@@ -65,6 +67,8 @@ lazy val webservice = {
     libDirs = libs,
     resourceDirs = resources,
     props = makerProps
+//   ivySettingsFile = file("maker-ivysettings.xml"),
+//   ivyFileRel = "maker-ivy.xml"
   ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil) : _*)
 }
 
