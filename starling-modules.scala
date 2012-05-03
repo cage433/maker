@@ -5,6 +5,7 @@ println("\n ** Loading Starling build...\n")
 
 lazy val makerProps : Props = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
+starlingProperties.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 
 val targetDirName = "target-maker"
 def defaultStarlingLayout(root : File) = ProjectLayout.maker(root, Some(file(root, targetDirName)))
@@ -39,7 +40,7 @@ lazy val browserService = project("browser.service") dependsOn manager
 lazy val browser = project("browser") dependsOn browserService
 lazy val guiapi = project("gui.api") dependsOn (browserService, bouncyrmi, pivotUtils)
 lazy val fc2Facility = project("fc2.facility") dependsOn guiapi
-lazy val curves = project("curves") dependsOn (maths, guiapi)
+lazy val curves = project("curves") dependsOn (maths, daterange, quantity, guiapi)
 lazy val instrument = project("instrument") dependsOn (curves, starlingDTOApi)
 lazy val reportsFacility = project("reports.facility") dependsOn guiapi
 lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(pivot, guiapi)
