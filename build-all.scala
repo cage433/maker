@@ -20,6 +20,8 @@ import maker.task.tasks._
 def mkBuildResult(project : Project, task : Task) =
   BuildResult(Right("OK (faked)"), Set(), ProjectAndTask(project, task))
 
+println("finished loading definitions, starling build...")
+
 val buildResult = for {
   _ <- titanBuilder.clean
   _ <- { 
