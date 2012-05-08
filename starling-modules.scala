@@ -4,14 +4,19 @@ println("\n ** Loading Starling build...\n")
 lazy val makerProps : Props = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
 
-def project(name : String) = new Project(
-  name, 
-  file(name),
-  libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)),
-  resourceDirs = List("resources", "test-resources").map(file(name, _)),
-  props = makerProps,
-  unmanagedProperties = starlingProperties
-)
+def project(name : String) = {
+  val root = file(name)
+  new Project(
+    name, 
+    root,
+    sourceDirs = file(root, "src") :: Nil,
+    tstDirs = file(root, "test") :: Nil,
+    libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)),
+    resourceDirs = List("resources", "test-resources").map(file(name, _)),
+    props = makerProps,
+    unmanagedProperties = starlingProperties
+  )
+}
 
 lazy val manager = project("manager")
 lazy val utils = project("utils") dependsOn manager
@@ -59,9 +64,12 @@ lazy val webservice = {
   lazy val name = "webservice"
   lazy val libs = file(".maker/scala-lib") :: List("lib_managed", "lib", "maker-lib").map(file(name, _)) ::: titanEnvAppServerLibs
   lazy val resources =  List(file(name, "resources"), file(name, "test-resources"))
+  val root = file(name)
   new Project(
     name,
-    file(name),
+    root,
+    sourceDirs = file(root, "src") :: Nil,
+    tstDirs = file(root, "test") :: Nil,
     libDirs = libs,
     resourceDirs = resources,
     props = makerProps
