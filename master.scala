@@ -24,3 +24,5 @@ import maker.task.BuildResult
 :load maker/starling-modules.scala
 :load maker/titan-modules.scala
 
+repl.setPrompt("master>")
+

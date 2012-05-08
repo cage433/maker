@@ -2,6 +2,9 @@ println("\n ** Loading common definitions...\n")
 
 //val scalaVersion = ScalaVersion("2.9.1")
 
+:power
+repl.setPrompt("maker>")
+
 lazy val unmanagedGlobalProperties : Properties = file("developer.conf")
 
 val verboseGC = false

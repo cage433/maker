@@ -1,6 +1,8 @@
 println("\n ** Loading Starling build...\n")
 
 
+repl.setPrompt("starling-maker>")
+
 lazy val makerProps : Props = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
 
