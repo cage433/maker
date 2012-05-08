@@ -1,11 +1,10 @@
 println("\n ** Loading build utils...\n")
 
 
-def runCmd(cmd : Command) : Either[(Int, String), String] =
+def runCmd(cmd : Command) : Either[Int, String] =
   cmd.exec() match {
-    case res @ (0, msg) => println("Process completed"); Right(msg)
-    case err @ (_, _) => println("Process failed: " + err); Left(err)
-    case _ => throw new Exception("Unhandled command result")
+    case 0 => println("Process completed"); Right("OK")
+    case errNo => println("Process failed"); Left(errNo)
   }
 
 def runMavenCmd(cwd : File, args : String*) =
@@ -18,10 +17,7 @@ def updateIvyFromProjectPom(project : Project) = {
   copyFile(antFile, tmpFile)
   val args = List("ant", "-f", file(project.root, "antMakeIvy.xml").getAbsolutePath)
   val cmd = Command(Some(project.root), args : _*)
-  val r = cmd.exec() match {
-    case res @ (0, _) => println("Process completed"); res
-    case err @ (_, _) => println("Process failed: " + err); err
-  }
+  val r = runCmd(cmd)
   tmpFile.delete
   r
 }
@@ -35,10 +31,8 @@ def updateTitanSchema(project : Option[Project] = None) {
 println("script = " + script.getAbsolutePath + ", exists = " + script.exists)
   println("updating %s for env %s".format(project.map(_.name).getOrElse("None"), envName))
   val args = "../../bin/" + script.getName :: ("-e" + envName) :: project.toList.map(p => ("-c" + p.name))
-  Command(Some(file(".").getAbsoluteFile), args : _*).exec() match {
-    case res @ (0, _) => println("Process completed"); res
-    case err @ (_, _) => println("Process failed: " + err); err
-  }
+  val cmd = Command(Some(file(".").getAbsoluteFile), args : _*)
+  runCmd(cmd)
 }
 def updateAllTitanSchemas() = updateTitanSchema()
 
