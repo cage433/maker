@@ -12,8 +12,8 @@ import maker.utils.FileUtils._
 import maker.utils.Log
 import maker.utils.Log._
 import maker.RichProperties._
-import maker.os.Command
-import maker.os.Command._
+import maker.utils.os.Command
+import maker.utils.os.Command._
 import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
