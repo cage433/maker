@@ -1,6 +1,18 @@
 println("\n ** Loading build utils...\n")
 
 
+def getProperty(name : String) : Option[String] = {
+  val v = System.getProperty(name)
+  if (v == null || v.trim.size == 0) None else Some(v.trim)
+}
+
+def getPropertyOrDefault(name : String, default : String) = {
+  val p = getProperty(name)
+  val v = p.getOrElse(default)
+  println("Property name: '" + name + "' value was: '" + p + "', selected value: '" + v + "'")
+  v
+}
+
 def runCmd(cmd : Command) : Either[Int, String] =
   cmd.exec() match {
     case 0 => println("Process completed"); Right("OK")

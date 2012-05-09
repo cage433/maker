@@ -1,20 +1,11 @@
 println("\n ** Loading build-all...\n")
 
-def getProperty(name : String) : Option[String] = {
-  val v = System.getProperty(name)
-  if (v == null || v.trim.size == 0) None else Some(v.trim)
-}
-def getPropertyOrDefault(name : String, default : String) = {
-  val p = getProperty(name)
-  val v = p.getOrElse(default)
-  println("Property name: '" + name + "' value was: '" + p + "', selected value: '" + v + "'")
-  v
-}
+
+:load maker/master.scala
+
 val buildType = getPropertyOrDefault("build.type", "starling")
 val versionNo = getProperty("version.number")
 val publishingResolverName = getPropertyOrDefault("publishing.root", "maker-test")
-
-:load maker/master.scala
 
 import maker.task.TaskFailed
 import maker.task.BuildResult
