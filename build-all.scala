@@ -5,7 +5,7 @@ println("\n ** Loading build-all...\n")
 
 val buildType = getPropertyOrDefault("build.type", "starling")
 val versionNo = getProperty("version.number")
-val publishingResolverName = getPropertyOrDefault("publishing.root", "maker-test")
+val publishingResolverName = getPropertyOrDefault("publishing.root", "starling-snapshot")
 
 import maker.task.TaskFailed
 import maker.task.BuildResult
@@ -58,7 +58,7 @@ val buildResults = for {
 val results = versionNo match {
   case Some(ver) if (buildType == "starling") ⇒ {
     println("publishing starling as version " + ver + "...")
-    buildResults.flatMap(b ⇒ starling.publish(version = ver))
+    buildResults.flatMap(b ⇒ starling.publish(resolver = publishingResolverName, version = ver))
   }
   case None ⇒ buildResults
 }
