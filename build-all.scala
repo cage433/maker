@@ -1,13 +1,18 @@
 println("\n ** Loading build-all...\n")
 
-val versionNo = {
-  //println("sys properties:")
-  //System.getProperties.list(System.out)
-  val v = Option(System.getProperty("version.number"))
-  val ver = v.getOrElse("1.0-SNAPSHOT")
-  println("\nVersion specified: " + v + ", version selected: " + ver + "\n")
-  ver
+def getProperty(name : String) : Option[String] = {
+  val v = System.getProperty(name)
+  if (v == null || v.trim.size == 0) None else Some(v.trim)
 }
+def getPropertyOrDefault(name : String, default : String) = {
+  val p = getProperty(name)
+  val v = p.getOrElse(default)
+  println("Property name: '" + name + "' value was: '" + p + "', selected value: '" + v + "'")
+  v
+}
+val buildType = getPropertyOrDefault("build.type", "starling")
+val versionNo = getProperty("version.number")
+val publishingResolverName = getPropertyOrDefault("publishing.root", "maker-test")
 
 :load maker/master.scala
 
@@ -22,7 +27,7 @@ def mkBuildResult(project : Project, task : Task) =
 
 println("finished loading definitions, starling build...")
 
-val buildResult = for {
+val buildResults = for {
   _ <- titanBuilder.clean
   _ <- { 
           titanBuilder.update
@@ -52,16 +57,26 @@ val buildResult = for {
   _ <- titanMurdoch.testOnly
   _ <- titanReferenceData.testOnly
   _ <- titanTradeService.testOnly
-  _ <- titanLogistics.testOnly
+  r <- titanLogistics.testOnly
 
-  r <- starling publish(version = versionNo)
+  // publish from maker, but only if this is a starling build and a version number was supplied!
+//  r <- starling publish(version = versionNo.get) if (versionNo.isDefined && buildType == "starling")
 } yield r
 
+// only publish if we've a version number
+val results = versionNo match {
+  case Some(ver) if (buildType == "starling") ⇒ {
+    println("publishing starling as version " + ver + "...")
+    buildResults.flatMap(b ⇒ starling.publish(version = ver))
+  }
+  case None ⇒ buildResults
+}
+
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
-buildResult.res match {
+results.res match {
   case Right(result) => {
     println("Build OK")
-    buildResult.stats.foreach(println)
+    buildResults.stats.foreach(println)
     println(result)
     System.exit(0)
   }
