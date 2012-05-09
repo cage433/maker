@@ -197,7 +197,7 @@ process_options() {
       -i | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;;
       -ntty | --no-tty-restore ) MAKER_NO_TTY_RESTORE=true; shift 1;;
-      -args | --additional-args ) MAKER_ARGS=$2; shift 2;;
+      -args | --additional-args ) shift 1; MAKER_ARGS=$*; break;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
       --ivy-proxy-host ) MAKER_IVY_PROXY_HOST=$2; shift 2;;
       --ivy-proxy-port ) MAKER_IVY_PROXY_PORT=$2; shift 2;;
@@ -241,7 +241,7 @@ cat << EOF
     -ntty, --no-tty-restore
       skip save and restore tty (for integration with automation such as TeamCity reporting)
     --args, --additional-args
-      additional arguments to pass to JVM process directly
+      additional variable length argument list to pass to JVM process directly. Must come at the end of the arguments
     --mem-permgen-space <space in MB>
       default is 1/10th of heap space
     --ivy-proxy-host <host>

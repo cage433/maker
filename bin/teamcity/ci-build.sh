@@ -17,7 +17,13 @@ free -m
 echo "------------------------------------------------------"
 echo
 echo "##teamcity[progressStart 'compile']"
-echo "version: $1"
+echo "Script args: $*"
+echo "version.number      : $1"
+echo "build.type          : $2"
+echo "publishing.resolver : $3"
 
-./maker/dist/bin/maker.sh -ntty -args "-Dversion.number=$1" -p maker/build-all.scala | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+ARGS="-Dversion.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3"
+echo "maker jvm args : $ARGS"
+
+./maker/dist/bin/maker.sh -ntty -p maker/build-all.scala -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
