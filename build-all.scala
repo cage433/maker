@@ -48,6 +48,7 @@ val buildResults = for {
   _ <- titanMurdoch.testOnly
   _ <- titanReferenceData.testOnly
   _ <- titanTradeService.testOnly
+  _ <- titanInvoicing.testOnly
   r <- titanLogistics.testOnly
 
   // publish from maker, but only if this is a starling build and a version number was supplied!
