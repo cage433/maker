@@ -45,11 +45,11 @@ val buildResults = for {
          titanComponents.foreach(_.updateOnly("default", "test"))
          mkBuildResult(starlingTitanDeps, UpdateTask)
   }
-  _ <- titanMurdoch.testOnly
-  _ <- titanReferenceData.testOnly
-  _ <- titanTradeService.testOnly
-  r <- titanInvoicing.testOnly
-//  r <- titanLogistics.testOnly
+  _ <- { println("testing murdoch"); titanMurdoch.testOnly }
+  _ <- { println("testing reference data"); titanReferenceData.testOnly }
+  _ <- { println("testing trade service"); titanTradeService.testOnly }
+  _ <- { println("testing invoicing"); titanInvoicing.testOnly }
+  r <- { println("testing logistics"); titanLogistics.testOnly }
 
   // publish from maker, but only if this is a starling build and a version number was supplied!
 //  r <- starling publish(version = versionNo.get) if (versionNo.isDefined && buildType == "starling")
