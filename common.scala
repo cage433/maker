@@ -2,10 +2,6 @@ println("\n ** Loading common definitions...\n")
 
 //val scalaVersion = ScalaVersion("2.9.1")
 
-// makes the repl slow :(
-//:power
-//repl.setPrompt("maker>")
-
 lazy val unmanagedGlobalProperties : Properties = file("developer.conf")
 
 val verboseGC = false
