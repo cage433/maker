@@ -12,7 +12,7 @@ def project(name : String) = {
     name, 
     root,
     sourceDirs = file(root, "src") :: Nil,
-    tstDirs = file(root, "test") :: Nil,
+    tstDirs = file(root, "tests") :: Nil,
     libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)),
     resourceDirs = List("resources", "test-resources").map(file(name, _)),
     props = makerProps,
@@ -49,10 +49,11 @@ lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(piv
 lazy val tradeFacility = project("trade.facility") dependsOn guiapi
 lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
 lazy val starlingClient = project("starling.client") dependsOn (starlingDTOApi, bouncyrmi)
-lazy val dbx = project("dbx") dependsOn instrument
-lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingDTOApi, dbx)
+lazy val dbx = project("dbx") dependsOn (utils, props)
+lazy val schemaevolution = project("schemaevolution") dependsOn (dbx, utils)
+lazy val databases = project("databases") dependsOn (pivot, concurrent, starlingDTOApi, dbx, instrument)
 lazy val titan = project("titan") dependsOn databases
-lazy val services = project("services").withResourceDirs("resources", "test-resources") dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes)
+lazy val services = project("services").withResourceDirs("resources", "test-resources") dependsOn (curves, concurrent, loopyxl, titan, gui, titanReturnTypes, schemaevolution)
 lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
 lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 lazy val oil = project("oil") dependsOn services
