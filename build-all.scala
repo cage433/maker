@@ -36,7 +36,7 @@ val buildResults = for {
  */
 //  _ <- titanInvoicing.mvn("compile", "-PWebService")  // currently problematic on teamcity agent
   
-  _ <- titanBuilder.compile
+  _ <- { println("compiling titanBuilder"); titanBuilder.compile }
 
 // titan unit tests / classpath and deps needs more work before it's fully integrated with a single build
 // so for now setup the titan components so the unit tests can be run, then run them explicitly
@@ -48,8 +48,8 @@ val buildResults = for {
   _ <- titanMurdoch.testOnly
   _ <- titanReferenceData.testOnly
   _ <- titanTradeService.testOnly
-  _ <- titanInvoicing.testOnly
-  r <- titanLogistics.testOnly
+  r <- titanInvoicing.testOnly
+//  r <- titanLogistics.testOnly
 
   // publish from maker, but only if this is a starling build and a version number was supplied!
 //  r <- starling publish(version = versionNo.get) if (versionNo.isDefined && buildType == "starling")
