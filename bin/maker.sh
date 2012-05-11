@@ -60,7 +60,14 @@ main() {
     CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/"
 #    echo "CLASSPATH = $CLASSPATH"
 #    echo "Args = $MAKER_ARGS"
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+
+    if [ ! -z $MAKER_CMD ];
+    then
+      CMDS="-e $MAKER_CMD"
+      echo "setting cmd as $CMDS"
+    fi
+
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
     scala_exit_status=$?
   fi
 }
@@ -189,6 +196,7 @@ process_options() {
     case "${1-""}" in
       -h | --help ) display_usage; exit 0;;
       -p | --project-file ) MAKER_PROJECT_FILE=$2; shift 2;;
+      -c | --cmd ) MAKER_CMD=$2; shift 2;;
       -j | --use-jrebel ) set_jrebel_options; shift;;
       -m | --mem-heap-space ) MAKER_HEAP_SPACE=$2; shift 2;;
       -y | --do-ivy-update ) MAKER_IVY_UPDATE=true; shift;;
@@ -220,6 +228,8 @@ cat << EOF
   options
     -h, --help
     -p, --project-file <project-file>
+    -c, --cmd
+      run command directly then quit
     -j, --use-jrebel (requires JREBEL_HOME to be set)
     -m, --mem-heap-space <heap space in MB> 
       default is one quarter of available RAM
