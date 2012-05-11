@@ -5,7 +5,7 @@ println("\n ** Loading build-all...\n")
 
 val buildType = getPropertyOrDefault("build.type", "starling")
 val versionNo = getProperty("version.number")
-val publishingResolverName = getPropertyOrDefault("publishing.root", "starling-snapshot")
+val publishingResolverName = getPropertyOrDefault("publishing.resolver", "starling-snapshot")
 
 import maker.task.TaskFailed
 import maker.task.BuildResult
