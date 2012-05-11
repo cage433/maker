@@ -14,7 +14,7 @@ def project(name : String) = {
     sourceDirs = file(root, "src") :: Nil,
     tstDirs = file(root, "tests") :: Nil,
     libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)),
-    resourceDirs = List("resources", "test-resources").map(file(name, _)),
+    resDirs = List("resources", "test-resources").map(file(name, _)),
     props = makerProps,
     unmanagedProperties = starlingProperties
   )
@@ -74,7 +74,7 @@ lazy val webservice = {
     sourceDirs = file(root, "src") :: Nil,
     tstDirs = file(root, "test") :: Nil,
     libDirs = libs,
-    resourceDirs = resources,
+    resDirs = resources,
     props = makerProps
   ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil) : _*)
 }
