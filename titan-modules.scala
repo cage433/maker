@@ -54,6 +54,7 @@ lazy val titanCostsAndIncomesLib = {
 // build a standard titan component (module) webapp  definition,
 //   but with classpath inversion considerations...
 def projectT(name : String) = {
+  val extraLibs = List("org.scalatest" % "scalatest_2.9.1" % "1.7.1")
   lazy val titanService = "../" + name + "/service"
   new Project(
     name, 
@@ -69,6 +70,7 @@ def projectT(name : String) = {
     props = makerProps,
     ivySettingsFile = file(titanService, "../../.maker/ivy/ivysettings.xml"),
     webAppDir = Some(file(titanService, "src/main/webapp")),
+    additionalLibs = extraLibs,
     additionalExcludedLibs = additionalTitanLibraryExclusions,
     providedLibs = classpathProvidedLibs
   )
