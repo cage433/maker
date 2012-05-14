@@ -21,7 +21,7 @@ lazy val additionalTitanLibraryExclusions = List(
   "org.jboss.resteasy" % "resteasy-jaxrs",
   "com.oracle" % "ojdbc6",
   "org.jboss.resteasy" % "jaxrs-api",
-  "org.slf4j" % "slf4j-api",
+//  "org.slf4j" % "slf4j-api",
   "xml-apis" % "xml-apis",
   "org.scalatest" % "scalatest_2.8.1" // less than ideal but titan common libs refer to scala 2.8.1 version of scalatest which can case a runtime class cast exception when running tests. Luckily it has a crossed artifact id so it can be eliminated specifically
 )
@@ -47,14 +47,19 @@ lazy val titanCostsAndIncomesLib = {
     moduleIdentity = Some("com.trafigura.titan.shared-libs" % "costsandincomes-internal"),
     additionalLibs = List("com.oracle" % "ojdbc6" % "11.2.0.1.0"),
     additionalExcludedLibs = additionalTitanLibraryExclusions.filterNot(_.groupId.id == "com.oracle"), // dependency on oracle lib here is test scope only, redo once we support proper scoping/configs
-    providedLibs = classpathProvidedLibs
+    providedLibs = "slf4j-api" :: classpathProvidedLibs
   ) dependsOn (starlingDTOApi, daterange, quantity)
 }
 
 // build a standard titan component (module) webapp  definition,
 //   but with classpath inversion considerations...
 def projectT(name : String) = {
-  val extraLibs = List("org.scalatest" % "scalatest_2.9.1" % "1.7.1")
+  val extraLibs = List(
+    "org.scalatest" % "scalatest_2.9.1" % "1.7.1",
+//    "org.slf4j" % "slf4j-log4j12" % "1.6.1",
+//    "org.slf4j" % "slf4j-api" % "1.6.1",
+    "log4j" % "log4j" % "1.2.16")
+
   lazy val titanService = "../" + name + "/service"
   new Project(
     name, 
