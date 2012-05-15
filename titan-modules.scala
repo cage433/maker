@@ -159,8 +159,8 @@ def deployToTitanJetty = deployWarsTo(jettyDeployDir)
 def buildAndDeployWithTitanJboss = buildWithTitan.map(_ => deployToTitanJboss)
 def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
-def deployTitanJbossWars {
-  titanBinDeps.update
+def deployTitanJbossWarsWithUpdate(update : Boolean = true) {
+  if (update) titanBinDeps.update
   val titanBinDepsDir = titanBinDeps.managedLibDir
   val availableBinDeps = titanBinDepsDir.listFiles.filter(f => f.getName.endsWith(".war"))
   println("Available bin deps: " + availableBinDeps.mkString(","))
@@ -168,7 +168,7 @@ def deployTitanJbossWars {
   println("Copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
   filesToCopyToJboss.foreach(f => copyFileToDirectory(f, jbossDeployDir))
 }
-
+def deployTitanJbossWars : Unit = deployTitanJbossWarsWithUpdate()
 def runStarlingWithTitanDeploy(deployWars : Boolean = true, debug : Boolean = false) {
   val titanProxiedComponents = titanBinDepComponentList.mkString(":")
   val titanProxyHost = starlingProperties.getProperty("TitanProxiedServiceHost")
