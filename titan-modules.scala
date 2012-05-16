@@ -4,6 +4,8 @@ println("\n ** Loading Titan Modules Build...\n")
 /**
  * titan component builds and helper utils
  */
+
+// this the representation of titan (wars) from binaries using ivy
 lazy val titanBinDeps = {
   lazy val name = "titan.bindeps"
   new Project(

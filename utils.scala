@@ -40,7 +40,7 @@ def updateTitanSchema(project : Option[Project] = None) {
   }
   val scriptDir = file("../../bin/")
   val script = file(scriptDir, "deploy2db")
-println("script = " + script.getAbsolutePath + ", exists = " + script.exists)
+  println("script = " + script.getAbsolutePath + ", exists = " + script.exists)
   println("updating %s for env %s".format(project.map(_.name).getOrElse("None"), envName))
   val args = "../../bin/" + script.getName :: ("-e" + envName) :: project.toList.map(p => ("-c" + p.name))
   val cmd = Command(Some(file(".").getAbsoluteFile), args : _*)
@@ -58,6 +58,7 @@ case class RichProject(project : Project) {
   def mvnCompile = runMavenCmd(project.root, "compile")
   def mvnInstall = runMavenCmd(project.root, "install")
   def mvn(cmd : String, args : String*) = runMavenCmd(project.root, (cmd :: args.toList) : _*)
+  def rich = this
 }
 object RichProject {
   implicit def toRichProject(project : Project) : RichProject = new RichProject(project)
