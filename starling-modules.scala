@@ -23,6 +23,7 @@ def project(name : String) = {
 lazy val manager = project("manager")
 lazy val utils = project("utils") dependsOn manager
 lazy val osgirun = project("osgirun").copy(libDirs = List(file("osgirun/lib_managed"), file("osgirun/lib"), file("osgirun/osgi_jars")))
+lazy val starlingDTOApi = project("starling.dto.api") dependsOn(utils :: trademgmtModelDeps : _*)
 lazy val booter = project("booter")
 lazy val quantity = project("quantity") dependsOn(utils, starlingDTOApi)
 lazy val osgiManager = project("osgimanager") dependsOn utils
@@ -30,7 +31,6 @@ lazy val singleClasspathManager = project("singleclasspathmanager") dependsOn os
 lazy val pivot = project("pivot") dependsOn quantity
 lazy val daterange = project("daterange") dependsOn(utils, starlingDTOApi)
 lazy val pivotUtils = project("pivot.utils") dependsOn(daterange, pivot)
-lazy val starlingDTOApi = project("starling.dto.api") dependsOn(utils :: trademgmtModelDeps : _*)
 lazy val maths = project("maths") dependsOn (daterange, quantity)
 lazy val props = project("props") dependsOn utils
 lazy val auth = project("auth") dependsOn props
