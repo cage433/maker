@@ -162,12 +162,32 @@ def buildAndDeployWithTitanJboss = buildWithTitan.map(_ => deployToTitanJboss)
 def buildAndDeployWithTitanJetty = buildWithTitan.map(_ => deployToTitanJetty)
 
 def deployTitanJbossWarsWithUpdate(update : Boolean = true) {
-  if (update) titanBinDeps.update
+  if (!jbossDeployDir.exists) {
+    println("jboss deploy dir does not exist, please check JBOSS_HOME")
+    return
+  }
+  if (update) {
+    println("updating binary dependencies...")
+    titanBinDeps.update
+  }
   val titanBinDepsDir = titanBinDeps.managedLibDir
-  val availableBinDeps = titanBinDepsDir.listFiles.filter(f => f.getName.endsWith(".war"))
-  println("Available bin deps: " + availableBinDeps.mkString(","))
+  val availableBinDeps = titanBinDepsDir.listFiles.toList.filter(f => f.getName.endsWith(".war"))
+  println("available bin deps:\n " + availableBinDeps.mkString("\n"))
   val filesToCopyToJboss = availableBinDeps.filter(f => titanBinDepComponentList.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
-  println("Copying files to " + jbossDeployDir.getAbsolutePath + ", " + filesToCopyToJboss.mkString(","))
+
+  def baseName(name : String) = name.split('.')(0).split('-')(0)
+  def names(files : List[File]) : List[(File,  String)] = files.filter(_.getName.endsWith(".war")).map(f ⇒ (f, baseName(f.getName)))
+
+  val updatedNames = names(filesToCopyToJboss)
+  //println("names: \n " + updatedNames.mkString("\n"))
+  
+  val warsToRemove = names(jbossDeployDir.listFiles.toList).filter(n ⇒  updatedNames.exists(x ⇒ x._2 == n._2))
+  println("to remove : \n " + warsToRemove.mkString("\n"))
+  
+  val removedWars = warsToRemove.map(f ⇒ (f, f._1.delete))
+  println("removed:\n " + removedWars.mkString("\n"))
+
+  println("copying: \n" + filesToCopyToJboss.mkString("\n") + "\n to: " + jbossDeployDir.getAbsolutePath)
   filesToCopyToJboss.foreach(f => copyFileToDirectory(f, jbossDeployDir))
 }
 def deployTitanJbossWars : Unit = deployTitanJbossWarsWithUpdate()
