@@ -27,7 +27,7 @@ run_command "git checkout maker-master" || exit -1
 run_command "git pull" || exit -1
 
 run_command "git merge $BRANCH_NAME" || exit -1
-run_command "git push origin maker-master"
+run_command "git push origin maker-master" || exit -1
 
 # now rebase [maker-]master back into all the streams
 run_command "git checkout starling-maker" || exit -1
@@ -58,5 +58,5 @@ run_command "git push origin costsandincomes-maker" || exit -1
 
 run_command "git checkout $BRANCH_NAME" || exit -1
 
-echo "done"
+echo "done promoting $BRANCH_NAME into (maker)-master and rebasing into sibling stream branches"
 
