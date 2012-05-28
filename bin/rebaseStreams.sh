@@ -1,7 +1,14 @@
 #!/bin/bash
 
-# promotes named branch into master and then rebases
+# promotes named staging branch into master and then rebases
 # all sibling streams from the updated master
+
+if [ $# -lt 1 ]
+then
+   echo "Usage : $0 <branch_name>"
+   echo "e.g. : $0 starling-maker"
+   exit 0
+fi
 
 BRANCH_NAME="$1"
 echo "branch name = $BRANCH_NAME"
