@@ -88,6 +88,13 @@ def runLauncher = {
     commonLaunchArgs : _*)()
 }
 
+def runDevLauncher = {
+  launcher.compile
+  launcher.runMain(
+    "starling.launcher.DevLauncher")(
+    commonLaunchArgs : _*)()
+}
+
 def runServer = {
   launcher.compile
   launcher.runMain(
