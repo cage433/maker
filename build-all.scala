@@ -16,6 +16,14 @@ import maker.task.tasks._
 def mkBuildResult(project : Project, task : Task) =
   BuildResult(Right("OK (faked)"), Set(), ProjectAndTask(project, task))
 
+def doDocs() = {
+  if (buildType == "starling") {
+    println("generating documentation")
+    starlingDTOApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
+  }
+  else BuildResult(Right("Ok - skipped"), Set(), starlingDTOApi.mkTask(DocTask))
+}
+
 println("finished loading definitions, starling build...")
 
 val buildResults = for {
@@ -28,6 +36,7 @@ val buildResults = for {
           mkBuildResult(titanBuilder, UpdateTask)
   }
   _ <- launcher.test
+  _ <- doDocs() //starlingDtoApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
 
 /**
  * invoicing generate some API code on the fly
