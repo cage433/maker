@@ -6,7 +6,9 @@ lazy val unmanagedGlobalProperties : Properties = file("developer.conf")
 
 val verboseGC = false
 
-lazy val commonLaunchArgs = List(
+def targetDirFile(name : String) : Option[File] = Some(file(name, "target-maker"))
+
+  lazy val commonLaunchArgs = List(
   "-server",
   "-XX:MaxPermSize=1024m",
   "-Xss128k",

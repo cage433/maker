@@ -43,7 +43,8 @@ lazy val titanCostsAndIncomesLib = {
       file(root, "lib"),
       file(root, ".maker/scala-lib")),
     managedLibDirName = "lib_managed",
-//    resourceDirs = List(file(root, "src/main/resources")),
+//    resDirs = List(file(root, "src/main/resources")),
+    targetDir = targetDirFile(name), // for now, until we drop sbt so it doesn't clash!
     props = makerProps,
     ivySettingsFile = file(root, "../../../services/.maker/ivy/ivysettings.xml"),
     moduleIdentity = Some("com.trafigura.titan.shared-libs" % "costsandincomes-internal"),
@@ -73,7 +74,8 @@ def projectT(name : String) = {
       file(titanService, ".maker/scala-lib")),
 //    providedLibDirs = List(file(titanService, "../../.maker/lib")),
     managedLibDirName = "lib_managed",
-//    resourceDirs = List(file(titanService, "src/main/resources")),
+//    resDirs = List(file(titanService, "src/main/resources")),
+    targetDir = targetDirFile(name), // for now, until we drop sbt so it doesn't clash!
     props = makerProps,
     ivySettingsFile = file(titanService, "../../.maker/ivy/ivysettings.xml"),
     webAppDir = Some(file(titanService, "src/main/webapp")),

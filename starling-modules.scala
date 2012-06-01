@@ -13,8 +13,9 @@ def project(name : String) = {
     root,
     sourceDirs = file(root, "src") :: Nil,
     tstDirs = file(root, "tests") :: Nil,
-    libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(name, _)),
-    resDirs = List("resources", "test-resources").map(file(name, _)),
+    libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(root, _)),
+    resDirs = List("resources", "test-resources").map(file(root, _)),
+    targetDir = targetDirFile(name), // for now, until we drop sbt so it doesn't clash!
     props = makerProps,
     unmanagedProperties = starlingProperties
   )
@@ -73,6 +74,7 @@ lazy val webservice = {
     tstDirs = file(root, "test") :: Nil,
     libDirs = libs,
     resDirs = resources,
+    targetDir = targetDirFile(name), // for now, until we drop sbt so it doesn't clash!
     props = makerProps
   ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil) : _*)
 }
@@ -81,26 +83,14 @@ lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oi
 lazy val launcher = project("launcher") dependsOn (startserver, booter)
 lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
-def runLauncher = {
+def stdRunner(className : String) = {
   launcher.compile
-  launcher.runMain(
-    "starling.launcher.Launcher")(
-    commonLaunchArgs : _*)()
+  launcher.runMain(className)(commonLaunchArgs : _*)()
 }
 
-def runDevLauncher = {
-  launcher.compile
-  launcher.runMain(
-    "starling.launcher.DevLauncher")(
-    commonLaunchArgs : _*)()
-}
-
-def runServer = {
-  launcher.compile
-  launcher.runMain(
-    "starling.startserver.Server")(
-    commonLaunchArgs : _*)()
-}
+def runLauncher = stdRunner("starling.launcher.Launcher")
+def runDevLauncher = stdRunner("starling.launcher.DevLauncher")
+def runServer = stdRunner("starling.startserver.Server")
 
 def writeClasspath {
   val cp = launcher.compilationClasspath
