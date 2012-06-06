@@ -17,6 +17,9 @@ import maker.utils.os.Command._
 import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
+import maker.task.TaskFailed
+import maker.task.TaskSucceeded
+import maker.task.DependencyTree
 
 :load maker/common.scala
 :load maker/utils.scala
