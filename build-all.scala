@@ -13,18 +13,42 @@ import maker.task.ProjectAndTask
 import maker.task.Task
 import maker.task.tasks._
 
-def mkBuildResult(project : Project, task : Task) =
-  BuildResult(Right("OK (faked)"), Set(), ProjectAndTask(project, task))
-
+def mkBuildResult(project : Project, task : Task) = {
+  val pt = ProjectAndTask(project, task)
+  BuildResult(TaskSucceeded(pt), DependencyTree[maker.task.ProjectAndTask](Map[maker.task.ProjectAndTask,Set[maker.task.ProjectAndTask]]()) , pt)
+}
 def doDocs() = {
   if (buildType == "starling") {
     println("generating documentation")
     starlingDTOApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
   }
-  else BuildResult(Right("Ok - skipped"), Set(), starlingDTOApi.mkTask(DocTask))
+  else
+    mkBuildResult(starlingDTOApi, DocTask)
 }
 
 println("finished loading definitions, starling build...")
+
+/*
+object Progn{
+  def apply(closures : List[() => BuildResult] : BuildResult = {
+    var result : BuildResult = null
+    def recurse(closures : List[() => BuildResult]) : BuildResult = {
+      closures match {
+        case Nil => result
+        case first::rest => {
+          result = first()
+          if (result.succeeded)
+            recurse(rest)
+          else
+            result
+
+        }
+      }
+    }
+    recurse(closures)
+  }
+}
+*/
 
 val buildResults = for {
   _ <- titanBuilder.clean
@@ -32,7 +56,6 @@ val buildResults = for {
           titanBuilder.update
           // less than ideal, but ivy update is currently unreliable - so return a fake success always ultil the issue is sorted... 
           // (this is ok-ish because the local  cache is cummulative so even if first run fails it's usually ok by second or third pass
-          BuildResult(Right("OK, checking disabled as Nexus is unreliable at the moment"), Set(), ProjectAndTask(titanBuilder, UpdateTask))
           mkBuildResult(titanBuilder, UpdateTask)
   }
   _ <- launcher.test
@@ -74,14 +97,14 @@ val results = versionNo match {
 }
 
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
-results.res match {
-  case Right(result) => {
+results.result match {
+  case TaskSucceeded(pt) => {
     println("Build OK")
     buildResults.stats.foreach(println)
-    println(result)
+    //println(result)
     System.exit(0)
   }
-  case Left(TaskFailed(_, reason)) => {
+  case TaskFailed(_, reason) => {
     println("Build Failed, reason: " + reason)
     println("Exiting with -1")
     System.exit(-1)
