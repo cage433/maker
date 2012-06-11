@@ -130,10 +130,8 @@ lazy val titanLauncher = project("titan.launcher").dependsOn(launcher)
 
 def buildWithTitan = {
   titanLauncher.compile
-  starlingTitanDeps.pack.result match {
-    case r @ TaskSucceeded(_) => Some(r)
-    case _ => None
-  }
+  val r = starlingTitanDeps.pack
+  if (r.succeeded) Some(r) else None
 }
 lazy val jbossDeployDir = file(System.getenv("JBOSS_HOME") + "/server/trafigura/deploy")
 lazy val jettyDeployDir = file("titan.deploy/wars")
@@ -147,7 +145,7 @@ lazy val deployWarToJetty = deployWar(jettyDeployDir) _
 lazy val deployWarToJboss = deployWar(jbossDeployDir) _
 def deployWarsTo(deployDir : File) = {
   println("building and packaging: " + titanComponents.map(_.name).mkString(","))
-  val failures = titanComponents.map(p => p.packOnly.result).collect{ case e @ TaskFailed(_, _) => e }
+  val failures = titanComponents.map(p => p.packOnly).filter(_.succeeded != true) //collect{ case e @ TaskFailed(_, _) => e }
   failures match {
     case Nil  =>
       println("Titan deploy to: " + deployDir.getAbsolutePath)
