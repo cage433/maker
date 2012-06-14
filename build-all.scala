@@ -68,7 +68,7 @@ val buildResults = for {
  *   unwind the actual command line from maven and call that directly
  */
 //  _ <- titanInvoicing.mvn("compile", "-PWebService")  // currently problematic on teamcity agent
-  
+
   _ <- { println("compiling titanBuilder"); titanBuilder.compile }
 
 // titan unit tests / classpath and deps needs more work before it's fully integrated with a single build
@@ -98,15 +98,15 @@ val results = versionNo match {
 }
 
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
-results.result match {
-  case TaskSucceeded(pt) => {
+if (results.succeeded) {
     println("Build OK")
-    buildResults.stats.foreach(println)
+//    buildResults.stats.foreach(println)
     //println(result)
     System.exit(0)
   }
-  case TaskFailed(_, reason) => {
-    println("Build Failed, reason: " + reason)
+  else {
+    println("Build Failed, reason: " + results.collect{ case TaskFailed(project, task, sw, roundNo, reasonForFailure) => reasonForFailure }.mkString("\n"))
+      exception : Option[Throwable] = None) })
     println("Exiting with -1")
     System.exit(-1)
   }
