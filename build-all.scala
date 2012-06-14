@@ -12,10 +12,11 @@ import maker.task.BuildResult
 import maker.task.ProjectAndTask
 import maker.task.Task
 import maker.task.tasks._
+import maker.utils._
 
 def mkBuildResult(project : Project, task : Task) = {
   val pt = ProjectAndTask(project, task)
-  BuildResult(TaskSucceeded(pt), DependencyTree[maker.task.ProjectAndTask](Map[maker.task.ProjectAndTask,Set[maker.task.ProjectAndTask]]()) , pt)
+  BuildResult(List(TaskSucceeded(project, task, new Stopwatch)), DependencyTree[maker.task.ProjectAndTask](Map[maker.task.ProjectAndTask,Set[maker.task.ProjectAndTask]]()) , pt)
 }
 def doDocs() = {
   if (buildType == "starling") {
