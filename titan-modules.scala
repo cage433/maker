@@ -51,7 +51,7 @@ lazy val titanCostsAndIncomesLib = {
     additionalLibs = List("com.oracle" % "ojdbc6" % "11.2.0.1.0"),
     additionalExcludedLibs = additionalTitanLibraryExclusions.filterNot(_.groupId.id == "com.oracle"), // dependency on oracle lib here is test scope only, redo once we support proper scoping/configs
     providedLibs = "slf4j-api" :: classpathProvidedLibs
-  ) dependsOn (starlingDTOApi, daterange, quantity)
+  ) dependsOn (starlingClient, /* starlingDTOApi, */ daterange, quantity)
 }
 
 // build a standard titan component (module) webapp  definition,
@@ -93,7 +93,7 @@ lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata") dependsOn(trademgmtModelDeps : _*)
 lazy val titanLogistics = projectT("logistics").dependsOn(logisticsModelDeps ::: trademgmtModelDeps : _*)
 lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs("target/generated-sources/").setAdditionalExcludedLibs().withProvidedLibs(classpathProvidedLibs : _*).dependsOn(starlingClient :: trademgmtModelDeps : _*)
-lazy val titanCostsAndIncomes = projectT("costsandincomes")/*.withAdditionalTestDirs("../../../lib/costsandincomes/internal/src/test/scala").withAdditionalLibs("com.trafigura.titan.shared-libs" % "costsandincomes-internal" % "2.7.2")*/.dependsOn(/* titanCostsAndIncomesLib :: */ starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
+lazy val titanCostsAndIncomes = projectT("costsandincomes")/*.withAdditionalTestDirs("../../../lib/costsandincomes/internal/src/test/scala").withAdditionalLibs("com.trafigura.titan.shared-libs" % "costsandincomes-internal" % "2.7.2")*/.dependsOn(titanCostsAndIncomesLib :: starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
 lazy val titanMtmPnl = projectT("mtmpnl").dependsOn(/* titanCostsAndIncomesLib :: */ starlingClient :: trademgmtModelDeps : _*)
 lazy val titanReferenceDataNew = projectT("referencedatanew")
 lazy val titanMapping = projectT("mapping")
