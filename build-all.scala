@@ -105,8 +105,7 @@ if (results.succeeded) {
     System.exit(0)
   }
   else {
-    println("Build Failed, reason: " + results.collect{ case TaskFailed(project, task, sw, roundNo, reasonForFailure) => reasonForFailure }.mkString("\n"))
-      exception : Option[Throwable] = None) })
+    println("Build Failed, reason: \n" + results.result)
     println("Exiting with -1")
     System.exit(-1)
   }
