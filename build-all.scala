@@ -18,10 +18,10 @@ def mkBuildResult(project : Project, task : Task) = {
   val pt = ProjectAndTask(project, task)
   BuildResult(List(TaskSucceeded(project, task, new Stopwatch)), DependencyTree[maker.task.ProjectAndTask](Map[maker.task.ProjectAndTask,Set[maker.task.ProjectAndTask]]()) , pt)
 }
-def doDocs() = {
+def doDocs(br : BuildResult) = {
   if (buildType == "starling") {
     println("generating documentation")
-    starlingDTOApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
+    br.flatMap(_ => starlingDTOApi.docOnly(true)) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
   }
   else
     mkBuildResult(starlingDTOApi, DocTask)
@@ -59,8 +59,8 @@ val buildResults = for {
           // (this is ok-ish because the local  cache is cummulative so even if first run fails it's usually ok by second or third pass
           mkBuildResult(titanBuilder, UpdateTask)
   }
-  _ <- launcher.test
-  _ <- doDocs() //starlingDtoApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
+  i1 <- launcher.test
+  _ <- doDocs(i1) //starlingDtoApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
 
 /**
  * invoicing generate some API code on the fly
@@ -90,24 +90,24 @@ val buildResults = for {
 
 // only publish if we've a version number
 val results = versionNo match {
-  case Some(ver) if (buildType == "starling") ⇒ {
+  case Some(ver) if (buildType == "starling") => {
     println("publishing starling as version " + ver + "...")
-    buildResults.flatMap(b ⇒ starling.publish(resolver = publishingResolverName, version = ver))
+    buildResults.flatMap(b => starling.publish(resolver = publishingResolverName, version = ver))
   }
-  case None ⇒ buildResults
+  case None => buildResults
 }
+
+println("here, result = " + results)
 
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
 if (results.succeeded) {
-    println("Build OK")
-//    buildResults.stats.foreach(println)
-    //println(result)
-    System.exit(0)
-  }
-  else {
-    println("Build Failed, reason: \n" + results.result)
-    println("Exiting with -1")
-    System.exit(-1)
-  }
+  println("Build OK:\n" + buildResults.result)
+  println("task times : \n" + buildResults.taskCompletedTimes.map(t => (t._1, "took: " + t._2)).mkString("\n"))
+  System.exit(0)
+}
+else {
+  println("Build Failed, reason: \n" + results.result)
+  println("Exiting with -1")
+  System.exit(-1)
 }
 
