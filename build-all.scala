@@ -97,12 +97,11 @@ val results = versionNo match {
   case None => buildResults
 }
 
-println("here, result = " + results)
-
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
 if (results.succeeded) {
   println("Build OK:\n" + buildResults.result)
-  println("task times : \n" + buildResults.taskCompletedTimes.map(t => (t._1, "took: " + t._2)).mkString("\n"))
+  // following line of timed results doesn't work reliably, some task results don't have an keys snapshot for task completed, bug in maker?
+  // println("task times : \n" + buildResults.taskCompletedTimes.map(t => (t._1, "took: " + t._2)).mkString("\n"))
   System.exit(0)
 }
 else {
