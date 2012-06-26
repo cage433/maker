@@ -67,7 +67,7 @@ main() {
       echo "setting cmd as $CMDS"
     fi
 
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
     scala_exit_status=$?
   fi
 }
@@ -76,7 +76,7 @@ maker_internal_classpath(){
   if [ $MAKER_DEVELOPER_MODE ];
   then
     for module in utils plugin maker; do
-      cp="$cp:$MAKER_OWN_ROOT_DIR/$module/target-maker/classes:$MAKER_OWN_ROOT_DIR/$module/target-maker/test-classes/"
+      cp="$cp:$MAKER_OWN_ROOT_DIR/$module/target/classes:$MAKER_OWN_ROOT_DIR/$module/target/test-classes/"
     done
   else
     cp=$MAKER_OWN_ROOT_DIR/maker.jar
@@ -317,6 +317,7 @@ function restoreSttySettings() {
 
 function onExit() {
   if [[ "$saved_stty" != "" ]]; then
+    echo "restoring tty"
     restoreSttySettings
   fi
   echo "returning exit status: " $scala_exit_status
@@ -329,7 +330,7 @@ trap onExit INT
 # save terminal settings
 function saveStty() {
   if [ -z $MAKER_NO_TTY_RESTORE ]; then
-    #echo "saving current tty for restore on exit"
+    echo "saving current tty for restore on exit"
     saved_stty=$(stty -g 2>/dev/null)
   else
     echo "skipping tty save/restore"

@@ -7,14 +7,15 @@ lazy val makerProps : Props = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
 
 val targetDirName = "target-maker"
+def defaultStarlingLayout(root : File) = ProjectLayout.maker(root, Some(file(root, targetDirName)))
 
 def project(name : String) = {
   val root = file(name)
   new Project(
     root,
-    name, 
-    props = makerProps,
-    layout = ProjectLayout.maker(root).copy(targetDir = file(root, targetDirName))
+    name,
+    layout = defaultStarlingLayout(root),
+    props = makerProps
   )
 }
 
@@ -44,7 +45,7 @@ lazy val reportsFacility = project("reports.facility") dependsOn guiapi
 lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(pivot, guiapi)
 lazy val tradeFacility = project("trade.facility") dependsOn guiapi
 lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
-lazy val starlingClient = project("starling.client").withModuleId("starling-client" % "starling-client_2.9.1") dependsOn (starlingDTOApi, bouncyrmi)
+lazy val starlingClient = project("starling.client") /* withModuleId("starling-client" % "starling-client_2.9.1") */ dependsOn (starlingDTOApi, bouncyrmi)
 lazy val dbx = project("dbx") dependsOn (utils, props)
 lazy val schemaevolution = project("schemaevolution") dependsOn (dbx)
 lazy val databases = project("databases") dependsOn (pivot, utils, starlingDTOApi, dbx, instrument)
@@ -64,11 +65,11 @@ lazy val webservice = {
   val root = file(name)
   val libs = file(".maker/scala-lib") :: List("lib_managed", "lib", "maker-lib").map(file(root, _)) ::: titanEnvAppServerLibs
   val resources =  List(file(name, "resources"), file(name, "test-resources"))
-  val newLayout = ProjectLayout.maker(root).copy(targetDir = file(root, targetDirName)).withLibDirs(libs : _*)
+  val newLayout = defaultStarlingLayout(root).withLibDirs(libs : _*)
   new Project(
     root,
     name,
-    layout = ProjectLayout.maker(root).copy(targetDir = file(root, targetDirName)),
+    layout = newLayout,
     props = makerProps
   ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil) : _*)
 }
