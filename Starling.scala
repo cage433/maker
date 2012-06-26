@@ -4,7 +4,7 @@ import java.util.Properties
 import java.io.File
 import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
-import maker.project.Project
+import maker.project._
 import maker.project.TopLevelProject
 import maker.project.ProjectLib
 import maker.Props
