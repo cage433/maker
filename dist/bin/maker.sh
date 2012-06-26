@@ -76,7 +76,7 @@ maker_internal_classpath(){
   if [ $MAKER_DEVELOPER_MODE ];
   then
     for module in utils plugin maker; do
-      cp="$cp:$MAKER_OWN_ROOT_DIR/$module/classes:$MAKER_OWN_ROOT_DIR/$module/test-classes/"
+      cp="$cp:$MAKER_OWN_ROOT_DIR/$module/target-maker/classes:$MAKER_OWN_ROOT_DIR/$module/target-maker/test-classes/"
     done
   else
     cp=$MAKER_OWN_ROOT_DIR/maker.jar
@@ -169,13 +169,13 @@ bootstrap() {
   mkdir $MAKER_OWN_CLASS_OUTPUT_DIR
   rm -f $MAKER_OWN_JAR
   for module in utils plugin maker; do
-    for src_dir in src tests; do
+    for src_dir in src ; do
       SRC_FILES="$SRC_FILES $(find $MAKER_OWN_ROOT_DIR/$module/$src_dir -name '*.scala' | xargs)"
     done
   done
 
   echo "Compiling"
-  $SCALA_HOME/bin/fsc -classpath $(external_jars) -d $MAKER_OWN_CLASS_OUTPUT_DIR $SRC_FILES | tee $MAKER_OWN_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+  $SCALA_HOME/bin/scalac -classpath $(external_jars) -d $MAKER_OWN_CLASS_OUTPUT_DIR $SRC_FILES | tee $MAKER_OWN_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
   echo "Building jar"
   run_command "$JAVA_HOME/bin/jar cf $MAKER_OWN_JAR -C $MAKER_OWN_CLASS_OUTPUT_DIR . -C $MAKER_OWN_RESOURCES_DIR ." || exit -1
   if [ ! -e $MAKER_OWN_ROOT_DIR/maker.jar ];

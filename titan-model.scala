@@ -91,10 +91,9 @@ case class ModelProject(name : String,
                         depends : List[Project] = Nil) {
   val scalaBindingsDir = file(root, SCALA_BINDINGS_DIR)
   val project = Project(
-      name,
       root,
-      sourceDirs = List(outputDir),
-      ivyFileRel = SCALA_BINDINGS_DIR + "/ivy.xml",
+      name,
+      layout = ProjectLayout.maven(root).withSourceDirs(outputDir),
       moduleIdentity = ga).dependsOn(depends : _*)
 
   def genModel = buildSource(root, modelFile, outputDir)

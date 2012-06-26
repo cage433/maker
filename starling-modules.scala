@@ -6,24 +6,21 @@ println("\n ** Loading Starling build...\n")
 lazy val makerProps : Props = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
 
+val targetDirName = "target-maker"
+
 def project(name : String) = {
   val root = file(name)
   new Project(
-    name, 
     root,
-    sourceDirs = file(root, "src") :: Nil,
-    tstDirs = file(root, "tests") :: Nil,
-    libDirs = List("lib_managed", "lib", "maker-lib", "scala-lib").map(file(root, _)),
-    resDirs = List("resources", "test-resources").map(file(root, _)),
-    targetDir = targetDirFile(name), // for now, until we drop sbt so it doesn't clash!
+    name, 
     props = makerProps,
-    unmanagedProperties = starlingProperties
+    layout = ProjectLayout.maker(root).copy(targetDir = file(root, targetDirName))
   )
 }
 
 lazy val manager = project("manager")
 lazy val utils = project("utils") dependsOn manager
-lazy val osgirun = project("osgirun").copy(libDirs = List(file("osgirun/lib_managed"), file("osgirun/lib"), file("osgirun/osgi_jars")))
+lazy val osgirun = { val p = project("osgirun"); p.copy(layout = p.layout.withLibDirs(file("osgirun/lib"), file("osgirun/osgi_jars"))) }
 lazy val starlingDTOApi = project("starling.dto.api") dependsOn(utils :: trademgmtModelDeps : _*)
 lazy val booter = project("booter")
 lazy val quantity = project("quantity") dependsOn(utils, starlingDTOApi)
@@ -56,25 +53,22 @@ lazy val services = project("services") dependsOn (curves, utils, loopyxl, titan
 lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
 lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 lazy val oil = project("oil") dependsOn services
-lazy val metals = project("metals").withResourceDirs("resources", "test-resources") dependsOn tradeImpl
+lazy val metals = project("metals") dependsOn tradeImpl
 lazy val reportsImpl = project("reports.impl") dependsOn services
 
 val hostTitanComponents = true
 val titanEnvAppServerLibs : List[File] = if (hostTitanComponents) file("webservice", "lib-jboss") :: Nil else Nil
 
 lazy val webservice = {
-  lazy val name = "webservice"
-  lazy val libs = file(".maker/scala-lib") :: List("lib_managed", "lib", "maker-lib").map(file(name, _)) ::: titanEnvAppServerLibs
-  lazy val resources =  List(file(name, "resources"), file(name, "test-resources"))
+  val name = "webservice"
   val root = file(name)
+  val libs = file(".maker/scala-lib") :: List("lib_managed", "lib", "maker-lib").map(file(root, _)) ::: titanEnvAppServerLibs
+  val resources =  List(file(name, "resources"), file(name, "test-resources"))
+  val newLayout = ProjectLayout.maker(root).copy(targetDir = file(root, targetDirName)).withLibDirs(libs : _*)
   new Project(
-    name,
     root,
-    sourceDirs = file(root, "src") :: Nil,
-    tstDirs = file(root, "test") :: Nil,
-    libDirs = libs,
-    resDirs = resources,
-    targetDir = targetDirFile(name), // for now, until we drop sbt so it doesn't clash!
+    name,
+    layout = ProjectLayout.maker(root).copy(targetDir = file(root, targetDirName)),
     props = makerProps
   ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil) : _*)
 }
@@ -93,6 +87,6 @@ def runDevLauncher = stdRunner("starling.launcher.DevLauncher")
 def runServer = stdRunner("starling.startserver.Server")
 
 def writeClasspath {
-  val cp = launcher.compilationClasspath
+  val cp = launcher.compilationClasspath(SourceCompile)
   writeToFile(file("launcher-classpath.sh"), "export STARLING_CLASSPATH=" + cp)
 }
