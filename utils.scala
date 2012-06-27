@@ -66,7 +66,7 @@ object RichProject {
 import RichProject._
 
 def writeClasspath(p : Project) {
-  val cp = p.compilationClasspath
+  val cp = p.compilationClasspath(SourceCompile)
   writeToFile(file("p.name"), "export CLASSPATH=" + cp)
 }
 
