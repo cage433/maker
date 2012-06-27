@@ -25,11 +25,11 @@ lazy val additionalTitanLibraryExclusions = List(
   "org.jboss.resteasy" % "jaxrs-api",
 //  "org.slf4j" % "slf4j-api",
   "xml-apis" % "xml-apis",
-  "org.scalatest" % "scalatest_2.8.1" // less than ideal but titan common libs refer to scala 2.8.1 version of scalatest which can case a runtime class cast exception when running tests. Luckily it has a crossed artifact id so it can be eliminated specifically
+  "org.scalatest" % "scalatest_2.8.1" // less than ideal but titan common libs refer to scala 2.8.1 version of scalatest which can cause a runtime class cast exception when running tests. Luckily it has a crossed artifact id so it can be eliminated specifically
 )
 
 // as above but to exclude from the packaging explicitly, by name
-lazy val classpathProvidedLibs = additionalTitanLibraryExclusions.map(_.artifactId.id)
+lazy val classpathProvidedLibs = additionalTitanLibraryExclusions.map(_.artifactId.id) + "starling.client_2.9.1" 
 
 // shared cost and incomes lib that contains some common and test classes necessary to run c&i module unit tests
 lazy val titanCostsAndIncomesLib = {
