@@ -78,16 +78,17 @@ lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oi
 lazy val launcher = project("launcher") dependsOn (startserver, booter)
 lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
-def stdRunner(className : String) = {
-  launcher.compile
-  launcher.runMain(className)(commonLaunchArgs : _*)()
+def stdRunner(proj : Project)(className : String) = {
+  proj.compile
+  proj.runMain(className)(commonLaunchArgs : _*)()
 }
-
-def runLauncher = stdRunner("starling.launcher.Launcher")
-def runDevLauncher = stdRunner("starling.launcher.DevLauncher")
-def runServer = stdRunner("starling.startserver.Server")
+val launcherRunner = stdRunner(launcher) _
+def runLauncher = launcherRunner("starling.launcher.Launcher")
+def runDevLauncher = launcherRunner("starling.launcher.DevLauncher")
+def runServer = launcherRunner("starling.startserver.Server")
 
 def writeClasspath {
   val cp = launcher.compilationClasspath(SourceCompile)
   writeToFile(file("launcher-classpath.sh"), "export STARLING_CLASSPATH=" + cp)
 }
+
