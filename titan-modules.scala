@@ -46,7 +46,7 @@ lazy val titanCostsAndIncomesLib = {
 
 // build a standard titan component (module) webapp  definition,
 //   but with classpath inversion considerations...
-def projectT(name : String) = {
+def projectT(name : String) : Project = {
   val extraLibs = List(
     "org.scalatest" % "scalatest_2.9.1" % "1.7.1",
 //    "org.slf4j" % "slf4j-log4j12" % "1.6.1",
@@ -95,7 +95,16 @@ lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata") dependsOn(trademgmtModelDeps : _*)
 lazy val titanLogistics = projectT("logistics").dependsOn(logisticsModelDeps ::: trademgmtModelDeps : _*)
 
-lazy val titanInvoicing = projectT("invoicing").copy(layout = layout.withAdditionalSourceDirs("target/generated-sources/"), ivyAdjustments = ivyAdjustments.copy(additionalExcludedLibs = List(), providedLibNames = classpathProvidedLibs)) dependsOn(starlingClient :: trademgmtModelDeps : _*)
+lazy val titanInvoicing = { 
+  val p = projectT("invoicing")
+  val p2 = p.withAdditionalSourceDirs(file(p.root, "target/generated-sources/"))
+  p2.copy(
+//    layout = p.layout.withAdditionalSourceDirs(file(p.root, "target/generated-sources/")),
+    ivyAdjustments = p2.ivyAdjustments.copy(
+      additionalExcludedLibs = List(),
+      providedLibNames = classpathProvidedLibs)
+  ).dependsOn(starlingClient :: trademgmtModelDeps : _*)
+}
 //.withAdditionalSourceDirs("target/generated-sources/").setAdditionalExcludedLibs().withProvidedLibs(classpathProvidedLibs : _*).dependsOn(starlingClient :: trademgmtModelDeps : _*)
 
 lazy val titanCostsAndIncomes = projectT("costsandincomes")/*.withAdditionalTestDirs("../../../lib/costsandincomes/internal/src/test/scala").withAdditionalLibs("com.trafigura.titan.shared-libs" % "costsandincomes-internal" % "2.7.2")*/.dependsOn(titanCostsAndIncomesLib :: starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
@@ -179,7 +188,7 @@ def deployTitanJbossWarsWithUpdate(update : Boolean = true) {
     println("updating binary dependencies...")
     titanBinDeps.update
   }
-  val titanBinDepsDir = titanBinDeps.managedLibDir
+  val titanBinDepsDir = titanBinDeps.layout.managedLibDir
   val availableBinDeps = titanBinDepsDir.listFiles.toList.filter(f => f.getName.endsWith(".war"))
   println("available bin deps:\n " + availableBinDeps.mkString("\n"))
   val filesToCopyToJboss = availableBinDeps.filter(f => titanBinDepComponentList.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
