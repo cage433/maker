@@ -31,6 +31,7 @@ set -e
 #MAKER_BOOTSTRAP=true 
 MAKER_OWN_LIB_DIR=$MAKER_OWN_ROOT_DIR/.maker/lib
 MAKER_PROJECT_SCALA_LIB_DIR=.maker/scala-lib
+MAKER_IVY_SETTINGS_FILE=ivysettings.xml
 
 mkdir -p .maker
 
@@ -210,7 +211,8 @@ process_options() {
       --ivy-proxy-host ) MAKER_IVY_PROXY_HOST=$2; shift 2;;
       --ivy-proxy-port ) MAKER_IVY_PROXY_PORT=$2; shift 2;;
       --ivy-non-proxy-hosts ) MAKER_IVY_NON_PROXY_HOSTS=$2; shift 2;; 
-      --ivy-jar ) MAKER_IVY_JAR=$2; shift 2;; 
+      --ivy-jar ) MAKER_IVY_JAR=$2; shift 2;;
+      --ivy-settings-file ) MAKER_IVY_SETTINGS_FILE=$2; shift 2;;
       -- ) shift; break;;
       *  ) break;;
     esac
@@ -258,7 +260,9 @@ cat << EOF
     --ivy-proxy-port <port>
     --ivy-non-proxy-hosts <host,host,...>
     --ivy-jar <file>        
-      defaults to /usr/share/java/ivy.jar
+        defaults to /usr/share/java/ivy.jar
+    --ivy-settings-file <file>
+        override the default ivysettings.xml file
 
 EOF
 }
@@ -285,7 +289,7 @@ ivy_command(){
     command="$command -Dhttp.nonProxyHosts=$MAKER_IVY_NON_PROXY_HOSTS"
   fi
   command="$command -jar $MAKER_IVY_JAR -ivy $ivy_file"
-  command="$command -settings $MAKER_OWN_ROOT_DIR/maker-ivysettings.xml "
+  command="$command -settings $MAKER_OWN_ROOT_DIR/$MAKER_IVY_SETTINGS_FILE "
   command="$command -retrieve $lib_dir/[artifact]-[revision](-[classifier]).[ext] "
   echo $command
 }
@@ -293,7 +297,7 @@ ivy_command(){
 
 ivy_update() {
   echo "Updating ivy"
-  MAKER_IVY_FILE="$MAKER_OWN_ROOT_DIR/utils/maker-ivy.xml"
+  MAKER_IVY_FILE="$MAKER_OWN_ROOT_DIR/utils/ivy.xml"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types jar -sync"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types bundle"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types source "
