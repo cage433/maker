@@ -23,3 +23,7 @@ import maker.task.BuildResult
 :load maker/titan-model.scala
 :load maker/starling-modules.scala
 
+import starling._
+
+println("\nStarling build loaded\n\nNote: for convenience the 'starling' project is in the root scope, clean, test etc will act on that unless a project is specified (e.g. utils.clean...)\n")
+
