@@ -57,5 +57,7 @@ val results = versionNo match {
   case None => buildResults
 }
 
-def handleExit(results)
+handleExit(results)
+
+println("build complete")
 
