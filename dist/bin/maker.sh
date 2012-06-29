@@ -32,6 +32,7 @@ set -e
 MAKER_OWN_LIB_DIR=$MAKER_OWN_ROOT_DIR/.maker/lib
 MAKER_PROJECT_SCALA_LIB_DIR=.maker/scala-lib
 MAKER_IVY_SETTINGS_FILE=ivysettings.xml
+MAKER_COMPILED_PROJ_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/.maker/proj
 
 mkdir -p .maker
 
@@ -68,8 +69,29 @@ main() {
       echo "setting cmd as $CMDS"
     fi
 
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
-    scala_exit_status=$?
+    # pre-compile the project definition file and add to the classpath
+    if [ ! -z $COMPILE_PROJECT ];
+    then
+      # are we already up to date?
+      if test $MAKER_COMPILED_PROJ_OUTPUT_DIR -nt $MAKER_PROJECT_FILE ; then
+        echo "Skipping project compilation, already up to date"
+      else
+        echo "Compiling project definition $MAKER_PROJECT_FILE"
+        if [ -e $MAKER_COMPILED_PROJ_OUTPUT_DIR ]; then
+          rm -rf $MAKER_COMPILED_PROJ_OUTPUT_DIR 
+        fi
+        mkdir $MAKER_COMPILED_PROJ_OUTPUT_DIR
+	# compile the maker project file
+        $SCALA_HOME/bin/scalac -classpath "$(external_jars):$CLASSPATH" -d $MAKER_COMPILED_PROJ_OUTPUT_DIR $MAKER_PROJECT_FILE | tee $MAKER_OWN_ROOT_DIR/proj-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+      fi
+      # launcher maker with the compiled project file on the classpath...
+      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath "$CLASSPATH:$MAKER_COMPILED_PROJ_OUTPUT_DIR" $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+      scala_exit_status=$?
+    else
+      # launcher maker in the repl, with the project definition file interpreted using the -i option on scala
+      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+      scala_exit_status=$?
+    fi
   fi
 }
 
@@ -213,6 +235,7 @@ process_options() {
       --ivy-non-proxy-hosts ) MAKER_IVY_NON_PROXY_HOSTS=$2; shift 2;; 
       --ivy-jar ) MAKER_IVY_JAR=$2; shift 2;;
       --ivy-settings-file ) MAKER_IVY_SETTINGS_FILE=$2; shift 2;;
+      -cpl | --compile-project ) COMPILE_PROJECT=true; shift 1;;
       -- ) shift; break;;
       *  ) break;;
     esac
@@ -260,10 +283,11 @@ cat << EOF
     --ivy-proxy-port <port>
     --ivy-non-proxy-hosts <host,host,...>
     --ivy-jar <file>        
-        defaults to /usr/share/java/ivy.jar
+      defaults to /usr/share/java/ivy.jar
     --ivy-settings-file <file>
-        override the default ivysettings.xml file
-
+      override the default ivysettings.xml file
+    --compile-project
+      compile project file before loading
 EOF
 }
 

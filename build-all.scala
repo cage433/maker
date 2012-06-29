@@ -75,7 +75,7 @@ val buildResults = for {
 // so for now setup the titan components so the unit tests can be run, then run them explicitly
 
   _ <- {
-         titanComponents.foreach(_.updateOnly("default", "test"))
+         titanComponents.foreach(_.updateOnly(false, "default", "test"))
          mkBuildResult(starlingTitanDeps, UpdateTask)
   }
   _ <- { println("testing murdoch"); titanMurdoch.testOnly }

@@ -4,10 +4,11 @@ echo "Running ci-build.sh"
 echo "------------------------------------------------------"
 echo "JAVA_HOME: $JAVA_HOME"
 echo "SCALA_HOME: $SCALA_HOME"
+java -version
+scala -version
 echo
 echo "pwd: `pwd`"
 echo "date: `date`"
-java -version
 echo "uname: `uname -a`"
 echo "whoami: `whoami`"
 echo "CPUs"
