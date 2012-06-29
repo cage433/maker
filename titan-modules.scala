@@ -6,14 +6,7 @@ println("\n ** Loading Titan Modules Build...\n")
  */
 
 // this the representation of titan (wars) from binaries using ivy
-lazy val titanBinDeps = {
-  lazy val name = "titan.bindeps"
-  new Project(
-    name,
-    file(name),
-    managedLibDirName = "lib_managed"
-  )
-}
+lazy val titanBinDeps = Project(file("titan.bindeps"))
 
 // for inverted (regular JavaSE) combined classpath,
 // pull some common stuff out of packages wars (inner classpath) into the outer (parent classpath) environment
@@ -29,34 +22,31 @@ lazy val additionalTitanLibraryExclusions = List(
 )
 
 // as above but to exclude from the packaging explicitly, by name
-lazy val classpathProvidedLibs = additionalTitanLibraryExclusions.map(_.artifactId.id) + "starling.client_2.9.1" 
+lazy val classpathProvidedLibs : List[String] = "starling.client_2.9.1" :: additionalTitanLibraryExclusions.map(_.artifactId.id)
+lazy val titanIvysettings = "../../../services/.maker/ivy/ivysettings.xml"
 
 // shared cost and incomes lib that contains some common and test classes necessary to run c&i module unit tests
 lazy val titanCostsAndIncomesLib = {
   val root = file("../../lib/costsandincomes/internal")
   new Project(
-    "costsandincomes", 
     root,
-    sourceDirs = List(file(root, "src/main/scala")),
-    tstDirs = List(file(root, "src/test/scala")),
-    libDirs = List(file(root, "lib_managed"),
-      file(root, "lib"),
-      file(root, ".maker/scala-lib")),
-    managedLibDirName = "lib_managed",
-//    resDirs = List(file(root, "src/main/resources")),
-    targetDir = targetDirFile(name), // for now, until we drop sbt so it doesn't clash!
+    "costsandincomes", 
+    layout = ProjectLayout.maven(root, Some(file(root, targetDirName))).copy(
+      ivySettingsFile = file(root, "../../../services/.maker/ivy/ivysettings.xml")
+    ),
     props = makerProps,
-    ivySettingsFile = file(root, "../../../services/.maker/ivy/ivysettings.xml"),
     moduleIdentity = Some("com.trafigura.titan.shared-libs" % "costsandincomes-internal"),
-    additionalLibs = List("com.oracle" % "ojdbc6" % "11.2.0.1.0"),
-    additionalExcludedLibs = additionalTitanLibraryExclusions.filterNot(_.groupId.id == "com.oracle"), // dependency on oracle lib here is test scope only, redo once we support proper scoping/configs
-    providedLibs = "slf4j-api" :: classpathProvidedLibs
+    ivyAdjustments = IvyDependencyAdjustments(
+      additionalLibs = List("com.oracle" % "ojdbc6" % "11.2.0.1.0"),
+      additionalExcludedLibs = additionalTitanLibraryExclusions.filterNot(_.groupId.id == "com.oracle"), // dependency on oracle lib here is test scope only, redo once we support proper scoping/configs
+      providedLibNames = "slf4j-api" :: classpathProvidedLibs
+    )
   ) dependsOn (starlingClient, /* starlingDTOApi, */ daterange, quantity)
 }
 
 // build a standard titan component (module) webapp  definition,
 //   but with classpath inversion considerations...
-def projectT(name : String) = {
+def projectT(name : String) : Project = {
   val extraLibs = List(
     "org.scalatest" % "scalatest_2.9.1" % "1.7.1",
 //    "org.slf4j" % "slf4j-log4j12" % "1.6.1",
@@ -64,9 +54,22 @@ def projectT(name : String) = {
     "log4j" % "log4j" % "1.2.16")
 
   lazy val titanService = "../" + name + "/service"
+  val root = file(titanService)
   new Project(
+    root,
     name, 
-    file(titanService),
+    layout = ProjectLayout.maven(root, Some(file(root, targetDirName))).copy(
+      ivySettingsFile = file(root, titanIvysettings)
+    ),
+    props = makerProps,
+    ivyAdjustments = IvyDependencyAdjustments(
+      additionalLibs = extraLibs,
+      additionalExcludedLibs = additionalTitanLibraryExclusions,
+      providedLibNames = classpathProvidedLibs
+    ),
+    webAppDir = Some(file(root, "src/main/webapp"))
+  )
+    /*
     sourceDirs = List(file(titanService, "src/main/scala")),
     tstDirs = List(file(titanService, "src/test/scala")),
     libDirs = List(file(titanService, "lib_managed"),
@@ -81,8 +84,7 @@ def projectT(name : String) = {
     webAppDir = Some(file(titanService, "src/main/webapp")),
     additionalLibs = extraLibs,
     additionalExcludedLibs = additionalTitanLibraryExclusions,
-    providedLibs = classpathProvidedLibs
-  )
+    providedLibs = classpathProvidedLibs */
 }
 
 // titan components we can potentially build from sources
@@ -92,8 +94,21 @@ lazy val titanTradeService = projectT("tradeservice") dependsOn(trademgmtModelDe
 lazy val titanPermission = projectT("permission")
 lazy val titanReferenceData = projectT("referencedata") dependsOn(trademgmtModelDeps : _*)
 lazy val titanLogistics = projectT("logistics").dependsOn(logisticsModelDeps ::: trademgmtModelDeps : _*)
-lazy val titanInvoicing = projectT("invoicing").withAdditionalSourceDirs("target/generated-sources/").setAdditionalExcludedLibs().withProvidedLibs(classpathProvidedLibs : _*).dependsOn(starlingClient :: trademgmtModelDeps : _*)
+
+lazy val titanInvoicing = { 
+  val p = projectT("invoicing")
+  val p2 = p.withAdditionalSourceDirs(file(p.root, "target/generated-sources/"))
+  p2.copy(
+//    layout = p.layout.withAdditionalSourceDirs(file(p.root, "target/generated-sources/")),
+    ivyAdjustments = p2.ivyAdjustments.copy(
+      additionalExcludedLibs = List(),
+      providedLibNames = classpathProvidedLibs)
+  ).dependsOn(starlingClient :: trademgmtModelDeps : _*)
+}
+//.withAdditionalSourceDirs("target/generated-sources/").setAdditionalExcludedLibs().withProvidedLibs(classpathProvidedLibs : _*).dependsOn(starlingClient :: trademgmtModelDeps : _*)
+
 lazy val titanCostsAndIncomes = projectT("costsandincomes")/*.withAdditionalTestDirs("../../../lib/costsandincomes/internal/src/test/scala").withAdditionalLibs("com.trafigura.titan.shared-libs" % "costsandincomes-internal" % "2.7.2")*/.dependsOn(titanCostsAndIncomesLib :: starlingClient :: daterange :: quantity :: starlingDTOApi :: trademgmtModelDeps : _*)
+
 lazy val titanMtmPnl = projectT("mtmpnl").dependsOn(/* titanCostsAndIncomesLib :: */ starlingClient :: trademgmtModelDeps : _*)
 lazy val titanReferenceDataNew = projectT("referencedatanew")
 lazy val titanMapping = projectT("mapping")
@@ -173,7 +188,7 @@ def deployTitanJbossWarsWithUpdate(update : Boolean = true) {
     println("updating binary dependencies...")
     titanBinDeps.update
   }
-  val titanBinDepsDir = titanBinDeps.managedLibDir
+  val titanBinDepsDir = titanBinDeps.layout.managedLibDir
   val availableBinDeps = titanBinDepsDir.listFiles.toList.filter(f => f.getName.endsWith(".war"))
   println("available bin deps:\n " + availableBinDeps.mkString("\n"))
   val filesToCopyToJboss = availableBinDeps.filter(f => titanBinDepComponentList.exists(c => f.getName.toLowerCase.contains(c.toLowerCase)))
