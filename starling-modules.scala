@@ -64,30 +64,31 @@ lazy val webservice = {
   val name = "webservice"
   val root = file(name)
   val libs = file(".maker/scala-lib") :: List("lib_managed", "lib", "maker-lib").map(file(root, _)) ::: titanEnvAppServerLibs
-  val resources =  List(file(name, "resources"), file(name, "test-resources"))
+  val additionalModuleDeps = if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil
   val newLayout = defaultStarlingLayout(root).withLibDirs(libs : _*)
   new Project(
     root,
     name,
     layout = newLayout,
     props = makerProps
-  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: (if (hostTitanComponents) logisticsModelDeps ::: trademgmtModelDeps else Nil) : _*)
+  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: additionalModuleDeps : _*)
 }
 
+// below are some utils for running starling from maker
 lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService)
 lazy val launcher = project("launcher") dependsOn (startserver, booter)
 lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
-def stdRunner(className : String) = {
-  launcher.compile
-  launcher.runMain(className)(commonLaunchArgs : _*)()
+def stdRunner(proj : Project)(className : String) = {
+  proj.compile
+  proj.runMain(className)(commonLaunchArgs : _*)()
 }
+val launcherRunner = stdRunner(launcher) _
+def runLauncher = launcherRunner("starling.launcher.Launcher")
+def runDevLauncher = launcherRunner("starling.launcher.DevLauncher")
+def runServer = launcherRunner("starling.startserver.Server")
 
-def runLauncher = stdRunner("starling.launcher.Launcher")
-def runDevLauncher = stdRunner("starling.launcher.DevLauncher")
-def runServer = stdRunner("starling.startserver.Server")
-
-def writeClasspath {
+def writeStarlingClasspath {
   val cp = launcher.compilationClasspath(SourceCompile)
   writeToFile(file("launcher-classpath.sh"), "export STARLING_CLASSPATH=" + cp)
 }
