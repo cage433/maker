@@ -85,11 +85,11 @@ main() {
         $SCALA_HOME/bin/scalac -classpath "$(external_jars):$CLASSPATH" -d $MAKER_COMPILED_PROJ_OUTPUT_DIR $MAKER_PROJECT_FILE | tee $MAKER_OWN_ROOT_DIR/proj-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
       fi
       # launcher maker with the compiled project file on the classpath...
-      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath "$CLASSPATH:$MAKER_COMPILED_PROJ_OUTPUT_DIR" $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath "$CLASSPATH:$MAKER_COMPILED_PROJ_OUTPUT_DIR" $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dmaker.process.hierarchy="repl" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
       scala_exit_status=$?
     else
       # launcher maker in the repl, with the project definition file interpreted using the -i option on scala
-      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
       scala_exit_status=$?
     fi
   fi
