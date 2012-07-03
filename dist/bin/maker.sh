@@ -187,20 +187,29 @@ bootstrap() {
   MAKER_OWN_CLASS_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/out
   MAKER_OWN_RESOURCES_DIR=$MAKER_OWN_ROOT_DIR/utils/resources
   MAKER_OWN_JAR=$MAKER_OWN_ROOT_DIR/maker.jar
+  MAKER_OWN_SCALATEST_REPORTER_JAR=$MAKER_OWN_ROOT_DIR/maker-scalatest-reporter.jar
 
   rm -rf $MAKER_OWN_CLASS_OUTPUT_DIR
   mkdir $MAKER_OWN_CLASS_OUTPUT_DIR
   rm -f $MAKER_OWN_JAR
+  rm -f $MAKER_OWN_SCALATEST_REPORTER_JAR
+
+  # First build jar with just test reporter
+  SRC_FILES="$(find $MAKER_OWN_ROOT_DIR/scalatest/src -name '*.scala' | xargs)"
+  echo "Compiling test reporter"
+  $SCALA_HOME/bin/scalac -classpath $(external_jars) -d $MAKER_OWN_CLASS_OUTPUT_DIR $SRC_FILES | tee $MAKER_OWN_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+  echo "Building test reporter jar"
+  run_command "$JAVA_HOME/bin/jar cf $MAKER_OWN_SCALATEST_REPORTER_JAR -C $MAKER_OWN_CLASS_OUTPUT_DIR . " || exit -1
+
   for module in utils plugin maker; do
-    for src_dir in src ; do
-      SRC_FILES="$SRC_FILES $(find $MAKER_OWN_ROOT_DIR/$module/$src_dir -name '*.scala' | xargs)"
-    done
+    SRC_FILES="$SRC_FILES $(find $MAKER_OWN_ROOT_DIR/$module/src -name '*.scala' | xargs)"
   done
 
   echo "Compiling"
   $SCALA_HOME/bin/scalac -classpath $(external_jars) -d $MAKER_OWN_CLASS_OUTPUT_DIR $SRC_FILES | tee $MAKER_OWN_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
   echo "Building jar"
   run_command "$JAVA_HOME/bin/jar cf $MAKER_OWN_JAR -C $MAKER_OWN_CLASS_OUTPUT_DIR . -C $MAKER_OWN_RESOURCES_DIR ." || exit -1
+
   if [ ! -e $MAKER_OWN_ROOT_DIR/maker.jar ];
   then
 	  echo "Maker jar failed to be created"
