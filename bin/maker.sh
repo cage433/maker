@@ -69,29 +69,34 @@ main() {
       echo "setting cmd as $CMDS"
     fi
 
-    # pre-compile the project definition file and add to the classpath
-    if [ ! -z $COMPILE_PROJECT ];
+    # check for -c compiled input dir, if provided pre-compile the project definition file and add to the classpath
+    if [ ! -z $MAKER_COMPILED_PROJ_INPUT_DIR ];
     then
+      MAKER_COMPILED_PROJ_INPUT_FILES=`ls $MAKER_COMPILED_PROJ_INPUT_DIR/*.scala | xargs`
+      #echo "debug: Project compilation requested for files in $MAKER_COMPILED_PROJ_INPUT_DIR - found $MAKER_COMPILED_PROJ_INPUT_FILES"
+
       # are we already up to date?
-      if test $MAKER_COMPILED_PROJ_OUTPUT_DIR -nt $MAKER_PROJECT_FILE ; then
+      if test $MAKER_COMPILED_PROJ_OUTPUT_DIR -nt $MAKER_COMPILED_PROJ_INPUT_DIR ; then
         echo "Skipping project compilation, already up to date"
       else
-        echo "Compiling project definition $MAKER_PROJECT_FILE"
+        echo "Compiling project definitions from $MAKER_COMPILED_PROJ_INPUT_DIR directory, containing files: $MAKER_COMPILED_PROJ_INPUT_FILES ..."
         if [ -e $MAKER_COMPILED_PROJ_OUTPUT_DIR ]; then
           rm -rf $MAKER_COMPILED_PROJ_OUTPUT_DIR 
         fi
         mkdir $MAKER_COMPILED_PROJ_OUTPUT_DIR
-	# compile the maker project file
-        $SCALA_HOME/bin/scalac -classpath "$(external_jars):$CLASSPATH" -d $MAKER_COMPILED_PROJ_OUTPUT_DIR $MAKER_PROJECT_FILE | tee $MAKER_OWN_ROOT_DIR/proj-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+
+	    # compile the maker project files in the -c specified input dir
+	    echo "compiling to $MAKER_COMPILED_PROJ_OUTPUT_DIR"
+        $SCALA_HOME/bin/scalac -classpath "$(external_jars):$CLASSPATH" -d $MAKER_COMPILED_PROJ_OUTPUT_DIR $MAKER_COMPILED_PROJ_INPUT_FILES | tee $MAKER_OWN_ROOT_DIR/proj-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
       fi
-      # launcher maker with the compiled project file on the classpath...
-      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath "$CLASSPATH:$MAKER_COMPILED_PROJ_OUTPUT_DIR" $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dmaker.process.hierarchy="repl" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
-      scala_exit_status=$?
-    else
-      # launcher maker in the repl, with the project definition file interpreted using the -i option on scala
-      $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
-      scala_exit_status=$?
+
+      # append in compiled project classes to the classpath
+      CLASSPATH="$CLASSPATH:$MAKER_COMPILED_PROJ_OUTPUT_DIR"
     fi
+
+    # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+    scala_exit_status=$?
   fi
 }
 
@@ -227,14 +232,15 @@ process_options() {
   while true; do
     case "${1-""}" in
       -h | --help ) display_usage; exit 0;;
-      -p | --project-file ) MAKER_PROJECT_FILE=$2; shift 2;;
-      -c | --cmd ) MAKER_CMD=$2; shift 2;;
+      -p | -i | --project-file ) MAKER_PROJECT_FILE=$2; shift 2;;
+      -c | --compile-project ) MAKER_COMPILED_PROJ_INPUT_DIR=$2; shift 2;;
+      -e | --exec-cmd ) MAKER_CMD=$2; shift 2;;
       -j | --use-jrebel ) set_jrebel_options; shift;;
       -m | --mem-heap-space ) MAKER_HEAP_SPACE=$2; shift 2;;
       -y | --do-ivy-update ) MAKER_IVY_UPDATE=true; shift;;
       -b | --boostrap ) MAKER_BOOTSTRAP=true; shift;;
       -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
-      -i | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
+      -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;;
       -ntty | --no-tty-restore ) MAKER_NO_TTY_RESTORE=true; shift 1;;
       -args | --additional-args ) shift 1; MAKER_ARGS=$*; break;;
@@ -244,7 +250,6 @@ process_options() {
       --ivy-non-proxy-hosts ) MAKER_IVY_NON_PROXY_HOSTS=$2; shift 2;; 
       --ivy-jar ) MAKER_IVY_JAR=$2; shift 2;;
       --ivy-settings-file ) MAKER_IVY_SETTINGS_FILE=$2; shift 2;;
-      -cpl | --compile-project ) COMPILE_PROJECT=true; shift 1;;
       -- ) shift; break;;
       *  ) break;;
     esac
@@ -261,9 +266,11 @@ cat << EOF
 
   options
     -h, --help
-    -p, --project-file <project-file>
-    -c, --cmd
+    -p, -i, --include-project-file <project-file script> a scala script to load into the repl
+    -e, --exec-cmd
       run command directly then quit
+    -c, --compile-project
+      compile project file before loading
     -j, --use-jrebel (requires JREBEL_HOME to be set)
     -m, --mem-heap-space <heap space in MB> 
       default is one quarter of available RAM
@@ -276,8 +283,8 @@ cat << EOF
       download is automatic if this directory does not exist
     -x, --allow-remote-debugging
       runs a remote JVM
-    -i, --developer-mode
-      For maker developers.
+    -z, --developer-mode
+      For maker development
       Sets the maker classpath to maker/classes:utils/classes etc rather than 
       maker.jar. Allows work on maker and another project to be done simultaneously.
     -nr, --no-repl
@@ -295,8 +302,7 @@ cat << EOF
       defaults to /usr/share/java/ivy.jar
     --ivy-settings-file <file>
       override the default ivysettings.xml file
-    --compile-project
-      compile project file before loading
+
 EOF
 }
 
