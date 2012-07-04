@@ -25,11 +25,11 @@ lazy val utils = project("utils") dependsOn manager
 lazy val osgirun = { val p = project("osgirun"); p.copy(layout = p.layout.withLibDirs(file("osgirun/lib"), file("osgirun/osgi_jars"))) }
 lazy val starlingDTOApi = project("starling.dto.api") dependsOn(utils :: trademgmtModelDeps : _*)
 lazy val booter = project("booter")
-lazy val quantity = project("quantity") dependsOn(utils, starlingDTOApi)
+lazy val quantity = project("quantity") dependsOn(starlingDTOApi)
 lazy val osgiManager = project("osgimanager") dependsOn utils
 lazy val singleClasspathManager = project("singleclasspathmanager") dependsOn osgiManager
 lazy val pivot = project("pivot") dependsOn quantity
-lazy val daterange = project("daterange") dependsOn(utils, starlingDTOApi)
+lazy val daterange = project("daterange") dependsOn(starlingDTOApi)
 lazy val pivotUtils = project("pivot.utils") dependsOn(daterange, pivot)
 lazy val maths = project("maths") dependsOn (daterange, quantity)
 lazy val props = project("props") dependsOn utils
@@ -40,19 +40,19 @@ lazy val browserService = project("browser.service") dependsOn manager
 lazy val browser = project("browser") dependsOn browserService
 lazy val guiapi = project("gui.api") dependsOn (browserService, bouncyrmi, pivotUtils)
 lazy val fc2Facility = project("fc2.facility") dependsOn guiapi
-lazy val curves = project("curves") dependsOn (maths, daterange, quantity, guiapi)
-lazy val instrument = project("instrument") dependsOn (curves, starlingDTOApi)
+lazy val curves = project("curves") dependsOn (maths, guiapi)
+lazy val instrument = project("instrument") dependsOn curves
 lazy val reportsFacility = project("reports.facility") dependsOn guiapi
-lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(pivot, guiapi)
+lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn guiapi
 lazy val tradeFacility = project("trade.facility") dependsOn guiapi
 lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
 lazy val starlingClient = project("starling.client") /* withModuleId("starling-client" % "starling-client_2.9.1") */ dependsOn (starlingDTOApi, bouncyrmi)
-lazy val dbx = project("dbx") dependsOn (utils, props)
+lazy val dbx = project("dbx") dependsOn (props)
 lazy val schemaevolution = project("schemaevolution") dependsOn (dbx)
-lazy val databases = project("databases") dependsOn (pivot, utils, starlingDTOApi, dbx, instrument)
+lazy val databases = project("databases") dependsOn (dbx, instrument)
 lazy val titan = project("titan") dependsOn databases
-lazy val services = project("services") dependsOn (curves, utils, loopyxl, titan, starlingDTOApi, schemaevolution, fc2Facility, reportsFacility)
-lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
+lazy val services = project("services") dependsOn (loopyxl, titan, schemaevolution, fc2Facility, reportsFacility)
+lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, services)
 lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 lazy val oil = project("oil") dependsOn services
 lazy val metals = project("metals") dependsOn tradeImpl
@@ -72,7 +72,7 @@ lazy val webservice = {
     name,
     layout = newLayout,
     props = makerProps
-  ) dependsOn (utils :: manager :: props :: daterange :: starlingDTOApi :: quantity :: instrument :: additionalModuleDeps : _*)
+  ) dependsOn (instrument :: additionalModuleDeps : _*)
 }
 
 // below are some utils for running starling from maker
