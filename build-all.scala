@@ -75,7 +75,7 @@ val buildResults = for {
 // so for now setup the titan components so the unit tests can be run, then run them explicitly
 
   _ <- {
-         titanComponents.foreach(_.updateOnly("default", "test"))
+         titanComponents.foreach(_.updateOnly(false, "default", "test"))
          mkBuildResult(starlingTitanDeps, UpdateTask)
   }
   _ <- { println("testing murdoch"); titanMurdoch.testOnly }
@@ -98,15 +98,17 @@ val results = versionNo match {
 }
 
 // handle the build result to output a litle detail to console and return appropriate error codes for caller (i.e. for teamcity reporting etc)
-if (results.succeeded) {
-  println("Build OK:\n" + buildResults.result)
-  // following line of timed results doesn't work reliably, some task results don't have an keys snapshot for task completed, bug in maker?
-  // println("task times : \n" + buildResults.taskCompletedTimes.map(t => (t._1, "took: " + t._2)).mkString("\n"))
-  System.exit(0)
-}
-else {
-  println("Build Failed, reason: \n" + results.result)
-  println("Exiting with -1")
-  System.exit(-1)
+{
+  if (results.succeeded) {
+    println("Build OK:\n" + buildResults.result)
+    // following line of timed results doesn't work reliably, some task results don't have an keys snapshot for task completed, bug in maker?
+    // println("task times : \n" + buildResults.taskCompletedTimes.map(t => (t._1, "took: " + t._2)).mkString("\n"))
+    System.exit(0)
+  }
+  else {
+    println("Build Failed, reason: \n" + results.result)
+    println("Exiting with -1")
+    System.exit(-1)
+  }
 }
 

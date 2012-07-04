@@ -5,6 +5,7 @@ println("\n ** Loading Starling build...\n")
 
 lazy val makerProps : Props = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
+starlingProperties.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 
 val targetDirName = "target-maker"
 def defaultStarlingLayout(root : File) = ProjectLayout.maker(root, Some(file(root, targetDirName)))
@@ -39,7 +40,7 @@ lazy val browserService = project("browser.service") dependsOn manager
 lazy val browser = project("browser") dependsOn browserService
 lazy val guiapi = project("gui.api") dependsOn (browserService, bouncyrmi, pivotUtils)
 lazy val fc2Facility = project("fc2.facility") dependsOn guiapi
-lazy val curves = project("curves") dependsOn (maths, guiapi)
+lazy val curves = project("curves") dependsOn (maths, daterange, quantity, guiapi)
 lazy val instrument = project("instrument") dependsOn (curves, starlingDTOApi)
 lazy val reportsFacility = project("reports.facility") dependsOn guiapi
 lazy val rabbitEventViewerApi = project("rabbit.event.viewer.api") dependsOn(pivot, guiapi)
@@ -50,7 +51,7 @@ lazy val dbx = project("dbx") dependsOn (utils, props)
 lazy val databases = project("databases") dependsOn (pivot, utils, starlingDTOApi, dbx, instrument)
 lazy val schemaevolution = project("schemaevolution") dependsOn (dbx, databases)
 lazy val titan = project("titan") dependsOn databases
-lazy val services = project("services") dependsOn (curves, utils, loopyxl, titan, gui, starlingDTOApi, schemaevolution)
+lazy val services = project("services") dependsOn (curves, utils, loopyxl, titan, starlingDTOApi, schemaevolution, fc2Facility, reportsFacility)
 lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, databases, services)
 lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 lazy val oil = project("oil") dependsOn services
@@ -78,8 +79,8 @@ lazy val webservice = {
 }
 
 // below are some utils for running starling from maker
-lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService)
-lazy val launcher = project("launcher") dependsOn (startserver, booter)
+lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
+lazy val launcher = project("launcher") dependsOn (startserver, booter, gui)
 lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)))
 
 def stdRunner(proj : Project)(className : String) = {

@@ -32,6 +32,7 @@ set -e
 MAKER_OWN_LIB_DIR=$MAKER_OWN_ROOT_DIR/.maker/lib
 MAKER_PROJECT_SCALA_LIB_DIR=.maker/scala-lib
 MAKER_IVY_SETTINGS_FILE=ivysettings.xml
+MAKER_COMPILED_PROJ_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/.maker/proj
 
 mkdir -p .maker
 
@@ -68,7 +69,33 @@ main() {
       echo "setting cmd as $CMDS"
     fi
 
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+    # check for -c compiled input dir, if provided pre-compile the project definition file and add to the classpath
+    if [ ! -z $MAKER_COMPILED_PROJ_INPUT_DIR ];
+    then
+      MAKER_COMPILED_PROJ_INPUT_FILES=`ls $MAKER_COMPILED_PROJ_INPUT_DIR/*.scala | xargs`
+      #echo "debug: Project compilation requested for files in $MAKER_COMPILED_PROJ_INPUT_DIR - found $MAKER_COMPILED_PROJ_INPUT_FILES"
+
+      # are we already up to date?
+      if test $MAKER_COMPILED_PROJ_OUTPUT_DIR -nt $MAKER_COMPILED_PROJ_INPUT_DIR ; then
+        echo "Skipping project compilation, already up to date"
+      else
+        echo "Compiling project definitions from $MAKER_COMPILED_PROJ_INPUT_DIR directory, containing files: $MAKER_COMPILED_PROJ_INPUT_FILES ..."
+        if [ -e $MAKER_COMPILED_PROJ_OUTPUT_DIR ]; then
+          rm -rf $MAKER_COMPILED_PROJ_OUTPUT_DIR 
+        fi
+        mkdir $MAKER_COMPILED_PROJ_OUTPUT_DIR
+
+	    # compile the maker project files in the -c specified input dir
+	    echo "compiling to $MAKER_COMPILED_PROJ_OUTPUT_DIR"
+        $SCALA_HOME/bin/scalac -classpath "$(external_jars):$CLASSPATH" -d $MAKER_COMPILED_PROJ_OUTPUT_DIR $MAKER_COMPILED_PROJ_INPUT_FILES | tee $MAKER_OWN_ROOT_DIR/proj-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+      fi
+
+      # append in compiled project classes to the classpath
+      CLASSPATH="$CLASSPATH:$MAKER_COMPILED_PROJ_OUTPUT_DIR"
+    fi
+
+    # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
     scala_exit_status=$?
   fi
 }
@@ -165,20 +192,29 @@ bootstrap() {
   MAKER_OWN_CLASS_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/out
   MAKER_OWN_RESOURCES_DIR=$MAKER_OWN_ROOT_DIR/utils/resources
   MAKER_OWN_JAR=$MAKER_OWN_ROOT_DIR/maker.jar
+  MAKER_OWN_SCALATEST_REPORTER_JAR=$MAKER_OWN_ROOT_DIR/maker-scalatest-reporter.jar
 
   rm -rf $MAKER_OWN_CLASS_OUTPUT_DIR
   mkdir $MAKER_OWN_CLASS_OUTPUT_DIR
   rm -f $MAKER_OWN_JAR
+  rm -f $MAKER_OWN_SCALATEST_REPORTER_JAR
+
+  # First build jar with just test reporter
+  SRC_FILES="$(find $MAKER_OWN_ROOT_DIR/scalatest/src -name '*.scala' | xargs)"
+  echo "Compiling test reporter"
+  $SCALA_HOME/bin/scalac -classpath $(external_jars) -d $MAKER_OWN_CLASS_OUTPUT_DIR $SRC_FILES | tee $MAKER_OWN_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+  echo "Building test reporter jar"
+  run_command "$JAVA_HOME/bin/jar cf $MAKER_OWN_SCALATEST_REPORTER_JAR -C $MAKER_OWN_CLASS_OUTPUT_DIR . " || exit -1
+
   for module in utils plugin maker; do
-    for src_dir in src ; do
-      SRC_FILES="$SRC_FILES $(find $MAKER_OWN_ROOT_DIR/$module/$src_dir -name '*.scala' | xargs)"
-    done
+    SRC_FILES="$SRC_FILES $(find $MAKER_OWN_ROOT_DIR/$module/src -name '*.scala' | xargs)"
   done
 
   echo "Compiling"
   $SCALA_HOME/bin/scalac -classpath $(external_jars) -d $MAKER_OWN_CLASS_OUTPUT_DIR $SRC_FILES | tee $MAKER_OWN_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
   echo "Building jar"
   run_command "$JAVA_HOME/bin/jar cf $MAKER_OWN_JAR -C $MAKER_OWN_CLASS_OUTPUT_DIR . -C $MAKER_OWN_RESOURCES_DIR ." || exit -1
+
   if [ ! -e $MAKER_OWN_ROOT_DIR/maker.jar ];
   then
 	  echo "Maker jar failed to be created"
@@ -196,14 +232,15 @@ process_options() {
   while true; do
     case "${1-""}" in
       -h | --help ) display_usage; exit 0;;
-      -p | --project-file ) MAKER_PROJECT_FILE=$2; shift 2;;
-      -c | --cmd ) MAKER_CMD=$2; shift 2;;
+      -p | -i | --project-file ) MAKER_PROJECT_FILE=$2; shift 2;;
+      -c | --compile-project ) MAKER_COMPILED_PROJ_INPUT_DIR=$2; shift 2;;
+      -e | --exec-cmd ) MAKER_CMD=$2; shift 2;;
       -j | --use-jrebel ) set_jrebel_options; shift;;
       -m | --mem-heap-space ) MAKER_HEAP_SPACE=$2; shift 2;;
       -y | --do-ivy-update ) MAKER_IVY_UPDATE=true; shift;;
       -b | --boostrap ) MAKER_BOOTSTRAP=true; shift;;
       -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
-      -i | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
+      -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;;
       -ntty | --no-tty-restore ) MAKER_NO_TTY_RESTORE=true; shift 1;;
       -args | --additional-args ) shift 1; MAKER_ARGS=$*; break;;
@@ -229,9 +266,11 @@ cat << EOF
 
   options
     -h, --help
-    -p, --project-file <project-file>
-    -c, --cmd
+    -p, -i, --include-project-file <project-file script> a scala script to load into the repl
+    -e, --exec-cmd
       run command directly then quit
+    -c, --compile-project
+      compile project file before loading
     -j, --use-jrebel (requires JREBEL_HOME to be set)
     -m, --mem-heap-space <heap space in MB> 
       default is one quarter of available RAM
@@ -244,8 +283,8 @@ cat << EOF
       download is automatic if this directory does not exist
     -x, --allow-remote-debugging
       runs a remote JVM
-    -i, --developer-mode
-      For maker developers.
+    -z, --developer-mode
+      For maker development
       Sets the maker classpath to maker/classes:utils/classes etc rather than 
       maker.jar. Allows work on maker and another project to be done simultaneously.
     -nr, --no-repl
@@ -260,9 +299,9 @@ cat << EOF
     --ivy-proxy-port <port>
     --ivy-non-proxy-hosts <host,host,...>
     --ivy-jar <file>        
-        defaults to /usr/share/java/ivy.jar
+      defaults to /usr/share/java/ivy.jar
     --ivy-settings-file <file>
-        override the default ivysettings.xml file
+      override the default ivysettings.xml file
 
 EOF
 }
