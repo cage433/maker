@@ -56,7 +56,7 @@ lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") depen
 lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
 lazy val oil = project("oil") dependsOn services
 lazy val metals = project("metals") dependsOn tradeImpl
-lazy val pnlreconcile = project("pnlreconcile") dependsOn(services)
+lazy val pnlreconcile = project("pnlreconcile") dependsOn(services, gui, tradeFacility)
 lazy val reportsImpl = project("reports.impl") dependsOn (services, pnlreconcile)
 
 
