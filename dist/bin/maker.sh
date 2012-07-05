@@ -41,14 +41,20 @@ main() {
   saveStty
   check_setup_sane || exit -1
 
+
   if [ $MAKER_IVY_UPDATE ] || [ ! -e $MAKER_OWN_LIB_DIR ];
   then
+    
+    # here for now as we don't want to write out these files all the time when you're working from binaries,
+    # but this should all get tidied up when the ability to run a binary distrib bootstraped from the script alone is in place
+    write_ivy_files
+
     ivy_update
   else
     echo "Omitting ivy update as $MAKER_OWN_LIB_DIR exists"
   fi
   
-  if [ $MAKER_BOOTSTRAP ] || [ ! -e $MAKER_OWN_ROOT_DIR/maker.jar ];
+  if [ $MAKER_BOOTSTRAP ] || [ ! -e $MAKER_OWN_ROOT_DIR/maker.jar ] || [ ! -e $MAKER_OWN_ROOT_DIR/maker-scalatest-reporter.jar ] ;
   then
     bootstrap || exit -1
   else
@@ -127,6 +133,8 @@ check_setup_sane(){
     echo "JAVA_HOME not defined"
     exit -1
   fi
+
+  fetch_ivy
 
   MAKER_IVY_JAR=${MAKER_IVY_JAR-${MAKER_OWN_ROOT_DIR}/libs/ivy-2.2.0.jar}
   if [ ! -e $MAKER_IVY_JAR ];
@@ -249,6 +257,7 @@ process_options() {
       --ivy-proxy-port ) MAKER_IVY_PROXY_PORT=$2; shift 2;;
       --ivy-non-proxy-hosts ) MAKER_IVY_NON_PROXY_HOSTS=$2; shift 2;; 
       --ivy-jar ) MAKER_IVY_JAR=$2; shift 2;;
+      --ivy-url ) MAKER_IVY_URL=$2; shift 2;;
       --ivy-settings-file ) MAKER_IVY_SETTINGS_FILE=$2; shift 2;;
       -- ) shift; break;;
       *  ) break;;
@@ -298,7 +307,8 @@ cat << EOF
     --ivy-proxy-host <host>
     --ivy-proxy-port <port>
     --ivy-non-proxy-hosts <host,host,...>
-    --ivy-jar <file>        
+    --ivy-jar <file>
+    --ivy-url <url>        
       defaults to /usr/share/java/ivy.jar
     --ivy-settings-file <file>
       override the default ivysettings.xml file
@@ -335,11 +345,26 @@ ivy_command(){
 
 
 ivy_update() {
-  echo "Updating ivy"
+  echo "Updating dependencies (using Ivy)"
   MAKER_IVY_FILE="$MAKER_OWN_ROOT_DIR/utils/ivy.xml"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types jar -sync"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types bundle"
-  run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types source "
+  run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types source"
+}
+
+fetch_ivy() {
+  if [ -z $MAKER_IVY_URL ]; then
+    MAKER_IVY_URL="http://repo1.maven.org/maven2/org/apache/ivy/ivy/2.2.0/ivy-2.2.0.jar"
+  fi
+  if [ ! -f ${MAKER_OWN_ROOT_DIR}/libs/ivy-2.2.0.jar ]; then
+    if [ ! -z $MAKER_IVY_PROXY_HOST ]; then
+      CURL_PROXY_ARGS="-x http://$MAKER_IVY_PROXY_HOST:$MAKER_IVY_PROXY_PORT"
+    fi
+    echo "downloading Ivy 2.2 jar from $MAKER_IVY_URL - $CURL_PROXY_ARGS"
+    curl $CURL_PROXY_ARRGS -O $MAKER_IVY_URL
+    mkdir -p ${MAKER_OWN_ROOT_DIR}/libs
+    mv ivy-2.2.0.jar ${MAKER_OWN_ROOT_DIR}/libs/
+  fi
 }
 
 set_jrebel_options() {
@@ -384,6 +409,99 @@ function saveStty() {
 if [[ ! $? ]]; then  
   saved_stty=""
 fi
+
+#write out the embedded ivy files for Maker to bootstrap its dependencies via Ivy
+function write_ivy_files() {
+
+ivy_file='<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="${group_id}" module="utils" revision="${maker.module.version}" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+    <conf name="compile" transitive="false"/>
+    <conf name="test" transitive="false"/>
+  </configurations>
+
+  <publications>
+    <artifact name="utils" type="pom"/>
+    <artifact name="utils" type="jar" ext="jar" conf="default" />
+    <artifact name="utils-sources" type="jar" ext="jar" conf="default" />
+    <artifact name="utils-docs" type="jar" ext="jar" conf="default" />
+  </publications>
+
+  <dependencies defaultconfmapping="*->default,sources">
+    <dependency org="log4j" name="log4j" rev="1.2.16" />
+    <dependency org="commons-io" name="commons-io" rev="2.1"/>
+    <dependency org="commons-codec" name="commons-codec" rev="1.6"/>
+    <dependency org="org.apache.commons" name="commons-lang3" rev="3.1"/>
+    <dependency org="com.typesafe.akka" name="akka-actor" rev="2.0"/>
+    <dependency org="com.typesafe.akka" name="akka-remote" rev="2.0"/>
+    <dependency org="com.typesafe.akka" name="akka-kernel" rev="2.0"/>
+    <dependency org="org.scala-tools.testing" name="scalacheck_2.9.1" rev="1.9"/>
+    <dependency org="org.scalatest" name="scalatest_2.9.1" rev="1.8"/>
+    <dependency org="org.scalaz" name="scalaz-core_2.9.1" rev="6.0.4"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="1.6.1"/>
+    <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.6.1" />
+    <dependency org="org.apache.ant" name="ant" rev="1.8.2"/>
+    <dependency org="io.netty" name="netty" rev="3.4.2.Final"/>
+    <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.1"/>
+    <dependency org="net.debasishg" name="sjson_2.9.1" rev="0.15"/>
+    <dependency org="voldemort.store.compress"  name="h2-lzf" rev="1.0"/>
+    <dependency org="org.eclipse.jetty" name="jetty-server" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-util" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-security" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-http" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-io" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${jetty_version}" />
+    <dependency org="org.eclipse.jetty" name="jetty-jsp" rev="${jetty_version}" />
+
+    <dependency org="org.mortbay.jetty" name="jsp-2.1-glassfish" rev="2.1.v20100127" />
+    <dependency org="javax.servlet" name="servlet-api" rev="2.5" />
+    <dependency org="org.apache.tomcat" name="jsp-api" rev="6.0.20" />
+    <dependency org="org.mockito" name="mockito-all" rev="1.8.2" />
+  </dependencies>
+</ivy-module>'
+
+
+ivy_settings='<ivysettings>
+  <property name="group_id" value="com.google.code.maker" />
+  <property name="scala_version" value="2.9.1" />
+  <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
+  <property name="jetty_version" value="7.6.3.v20120416" />
+  <settings>
+    <settings name="default" transitive="false"/>
+  </settings>
+  <settings defaultResolver="default"/>
+  <!-- not sure how to get params from maker into this yet... 
+  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="${maker.ivy.publish.username}" passwd="${maker.ivy.publish.password}" />
+ -->
+  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="LouisB" passwd="x" />
+
+  <resolvers>
+    <filesystem name="maker-local" m2compatible="true">
+      <artifact pattern="${ivy.local.default.root}/maker-local/[module]/[revision]/[artifact]-[revision].[ext]" />
+    </filesystem>
+    <url name="maker-oss-snapshot" m2compatible="true" > <!-- Sonatype OSS Snapshots -->
+      <!-- <artifact pattern="https://oss.sonatype.org/content/repositories/snapshots/com/google/code/maker/maker-test/[revision]/[artifact]/[artifact]-[revision].[ext]" /> -->
+      <artifact pattern="https://oss.sonatype.org/content/repositories/snapshots/[organisation]/test/[revision]/[artifact]/[artifact]-[revision].[ext]" />
+    </url>
+    <url name="maker-oss-staging" m2compatible="true"> <!-- Sonatype OSS Staging -->
+      <artifact pattern="https://oss.sonatype.org/service/local/staging/deploy/maven2/maker-test/[artifact]/[revision]/[artifact]/pom.xml]" />
+    </url>
+    <ibiblio name="central" m2compatible="true"/>
+    <ibiblio name="akka" m2compatible="true" root="http://repo.akka.io/repository/"/>
+    <chain name="default" returnFirst="true">
+      <resolver ref="central"/>
+      <resolver ref="akka"/>
+    </chain>
+  </resolvers>
+</ivysettings>'
+
+  echo $ivy_file > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml
+  echo $ivy_settings > ${MAKER_OWN_ROOT_DIR}/ivysettings.xml
+}
 
 scala_exit_status=127
 main $*
