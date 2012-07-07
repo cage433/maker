@@ -92,7 +92,7 @@ main() {
       #echo "debug: Project compilation requested for files in $MAKER_COMPILED_PROJ_INPUT_DIR - found $MAKER_COMPILED_PROJ_INPUT_FILES"
 
       # are we already up to date?
-      if test $MAKER_COMPILED_PROJ_OUTPUT_DIR -nt $MAKER_COMPILED_PROJ_INPUT_DIR ; then
+      if test -e $MAKER_COMPILED_PROJ_OUTPUT_DIR  && test $MAKER_COMPILED_PROJ_OUTPUT_DIR -nt $MAKER_COMPILED_PROJ_INPUT_DIR  ; then
         echo "Skipping project compilation, already up to date"
       else
         echo "Compiling project definitions from $MAKER_COMPILED_PROJ_INPUT_DIR directory, containing files: $MAKER_COMPILED_PROJ_INPUT_FILES ..."
