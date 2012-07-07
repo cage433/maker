@@ -18,12 +18,20 @@ import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
 
-:load maker/common.scala
-:load maker/utils.scala
-:load maker/titan-model.scala
-:load maker/starling-modules.scala
+//:load maker/common.scala
+import Common._
 
-import starling._
+//:load maker/utils.scala
+import Utils._
+
+// titan model is a bit of a mess, so model build stubbed out for now
+//:load maker/titan-model.scala
+import TitanModel._
+
+//:load maker/starling-modules.scala
+import Starling._
+
+import Starling.starling._
 
 println("\nStarling build loaded\n\nNote: for convenience the 'starling' project is in the root scope, clean, test etc will act on that unless a project is specified (e.g. utils.clean...)\n")
 
