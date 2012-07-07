@@ -1,12 +1,14 @@
+import maker.project._
+
+object TitanModel {
+
 println("\n ** Loading Titan Model build...\n")
 
-
+/*
 lazy val makerProps : Props = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
 
-/**
- * Start of Titan related build and deploy definitions (should probably go in a separate file or even a precompiled lib for speed)
- */
+// Start of Titan related build and deploy definitions (should probably go in a separate file or even a precompiled lib for speed)
 def helpTitan() = {
   println("HelpTitan:")
   println("")
@@ -25,9 +27,7 @@ def helpTitan() = {
   println("")
 }
 
-/**
- * define hub tooling model projects and build model sources and compile as maker modules
- */
+// define hub tooling model projects and build model sources and compile as maker modules
 val SCALA_BINDINGS_DIR = "scala-bindings"
 def buildSource(root : File, modelFile : File, outputDir : File) = {
   lazy val buildUsingBinaryTooling = true
@@ -54,20 +54,20 @@ def buildSource(root : File, modelFile : File, outputDir : File) = {
       toolingLauncher.getAbsolutePath,
       "-o", outputDir.getAbsolutePath,
       "-b", file(scalaBindingsDir, "scala-bindings.rb").getAbsolutePath, file(root, "model.rb").getAbsolutePath).exec()
-/*
-  lazy val nonModelSourcePath = new File(root, "src")
-  def copyNonModelSource = {
-    if (! (nonModelSourcePath.exists)) {
-      import IO._
-      val originalSourcePath = new File(titanModuleRoot, "/scala-model-with-persistence/src/")
-        copyDirectory(originalSourcePath, nonModelSourcePath)
-      val hibernateBean = new File (titanModuleRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
-        println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite)
-      if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
-    }
-    None
-  }
-*/
+
+//  lazy val nonModelSourcePath = new File(root, "src")
+//  def copyNonModelSource = {
+//    if (! (nonModelSourcePath.exists)) {
+//      import IO._
+//      val originalSourcePath = new File(titanModuleRoot, "/scala-model-with-persistence/src/")
+//        copyDirectory(originalSourcePath, nonModelSourcePath)
+//      val hibernateBean = new File (titanModuleRoot, "/src/main/scala/com/trafigura/refinedmetals/persistence/CustomAnnotationSessionFactoryBean.scala")
+//        println("***** DEBUG ***** path " + hibernateBean.getAbsolutePath + ", " + hibernateBean.exists + ", " + hibernateBean.canWrite)
+//      if (hibernateBean.exists && hibernateBean.canWrite) hibernateBean.delete()
+//    }
+//    None
+//  }
+
 
   (latestRubyFileTime(root), earliestScalaFileTime(outputDir)) match {
     case (t_ruby, Some(t_scala)) if t_ruby < t_scala =>
@@ -78,11 +78,10 @@ def buildSource(root : File, modelFile : File, outputDir : File) = {
 }
 
 
-/**
- * this was going to wrap a project to provide building of sources, but alas this is tightly coupled to maven so 
- *    for now we just use pre-generated source (from maven or whatever means) and compile as normal.
-   TBD whether to make this generate the source or possibly the model gen will be obsolete by then anyway...
- */
+//
+// this was going to wrap a project to provide building of sources, but alas this is tightly coupled to maven so 
+//    for now we just use pre-generated source (from maven or whatever means) and compile as normal.
+// TBD whether to make this generate the source or possibly the model gen will be obsolete by then anyway...
 case class ModelProject(name : String,
                         root : File,
                         modelFile : File,
@@ -98,12 +97,12 @@ case class ModelProject(name : String,
 
   def genModel = buildSource(root, modelFile, outputDir)
   def compile = {
-    /*
-    genModel match {
-      case (0, _) => project.compile
-      case _ => println("failed to generate model, aborting")
-    }
-    */
+
+//    genModel match {
+//      case (0, _) => project.compile
+//      case _ => println("failed to generate model, aborting")
+//    }
+
     project.compile
   }
   def cleanModel = recursiveDelete(outputDir)
@@ -128,12 +127,13 @@ def mkModelProject(name : String, ga : Option[GroupAndArtifact] = None, depends 
       mkModelProjectEx(name, "public", ga, depends)
 
 
-    ///**
- * Titan model / bin-dep lib builds
- */
+// Titan model / bin-dep lib builds
 lazy val trademgmtInternalModel = mkModelProjectEx("trademgmt", "internal", Some("com.trafigura.titan" % "model-trademgmt-internal-scala-bindings"))
 lazy val trademgmtPublicModel = mkModelProject("trademgmt", Some("com.trafigura.titan" % "model-trademgmt-public-scala-bindings"), List(trademgmtInternalModel.project))
 lazy val logisticsPublicModel = mkModelProject("logistics", Some("com.trafigura.titan" % "model-logistics-public-scala-bindings"))
+*/
+
 lazy val trademgmtModelDeps : List[Project] = Nil // List(trademgmtPublicModel).map(_.project)
 lazy val logisticsModelDeps : List[Project] = Nil // List(logisticsPublicModel).map(_.project)
+}
 

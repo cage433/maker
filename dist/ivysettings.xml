@@ -1,7 +1,9 @@
+<!-- Auto-generated from Maker script -->
 <ivysettings>
   <property name="group_id" value="com.google.code.maker" />
   <property name="scala_version" value="2.9.1" />
   <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
+  <property name="jetty_version" value="7.6.3.v20120416" />
   <settings>
     <settings name="default" transitive="false"/>
   </settings>
@@ -9,7 +11,7 @@
   <!-- not sure how to get params from maker into this yet... 
   <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="${maker.ivy.publish.username}" passwd="${maker.ivy.publish.password}" />
  -->
-  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="LouisB" passwd="x" />
+  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="LouisB" passwd="x"/>
 
   <resolvers>
     <filesystem name="maker-local" m2compatible="true">
@@ -23,11 +25,10 @@
       <artifact pattern="https://oss.sonatype.org/service/local/staging/deploy/maven2/maker-test/[artifact]/[revision]/[artifact]/pom.xml]" />
     </url>
     <ibiblio name="central" m2compatible="true"/>
-    <ibiblio name="akka" m2compatible="true" root="http://repo.akka.io/repository/"/>
+    <ibiblio name="maker" m2compatible="true" root="https://oss.sonatype.org/content/repositories/snapshots/" />
     <chain name="default" returnFirst="true">
       <resolver ref="central"/>
-      <resolver ref="akka"/>
+      <resolver ref="maker-oss-snapshot"/>
     </chain>
   </resolvers>
 </ivysettings>
-
