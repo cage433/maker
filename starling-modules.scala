@@ -3,7 +3,7 @@ println("\n ** Loading Starling build (script)...\n")
 
 //repl.setPrompt("starling-maker>")
 
-lazy val makerProps : Props = file("Maker.conf")
+lazy val makerProps : ProjectProps = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
 starlingProperties.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 

@@ -1,7 +1,7 @@
 println("\n ** Loading Titan Model build...\n")
 
 
-lazy val makerProps : Props = file("Maker.conf")
+lazy val makerProps : ProjectProps = file("Maker.conf")
 lazy val starlingProperties : Properties = file("props.conf")
 
 /**

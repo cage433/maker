@@ -85,6 +85,8 @@ object Utils {
   object RichProject {
     implicit def toRichProject(project : Project) : RichProject = new RichProject(project)
   }
+
+
   import RichProject._
 
   def writeClasspath(p : Project) {

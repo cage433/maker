@@ -17,6 +17,7 @@ import maker.utils.os.Command._
 import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
+import maker.ProjectProps
 
 //:load maker/common.scala
 import Common._
