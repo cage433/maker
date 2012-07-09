@@ -481,6 +481,7 @@ cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
     <dependency org="javax.servlet" name="servlet-api" rev="2.5" />
     <dependency org="org.apache.tomcat" name="jsp-api" rev="6.0.20" />
     <dependency org="org.mockito" name="mockito-all" rev="1.8.2" />
+    <dependency org="org.apache.ivy" name="ivy" rev="2.2.0" />
   </dependencies>
 </ivy-module>
 IVY_FILE
