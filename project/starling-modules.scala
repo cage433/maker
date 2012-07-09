@@ -112,7 +112,8 @@ object Starling {
       ".maker",
       "target",
       "test-output",
-      "test-suites"
+      "test-suites",
+      "maker/dist"
     ))
 
   def stdRunner(proj : Project)(className : String) = {
