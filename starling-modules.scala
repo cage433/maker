@@ -1,11 +1,8 @@
 println("\n ** Loading Starling build...\n")
 
 
-//repl.setPrompt("starling-maker>")
 
-lazy val makerProps : Props = file("Maker.conf")
-lazy val starlingProperties : Properties = file("props.conf")
-starlingProperties.setProperty("log4j.configuration", "utils/resources/log4j.properties")
+//starlingProperties.setProperty("log4j.configuration", "utils/resources/log4j.properties")
 
 val targetDirName = "target-maker"
 def defaultStarlingLayout(root : File) = ProjectLayout.maker(root, Some(file(root, targetDirName)))
@@ -15,8 +12,7 @@ def project(name : String) = {
   new Project(
     root,
     name,
-    layout = defaultStarlingLayout(root),
-    props = makerProps
+    layout = defaultStarlingLayout(root)
   )
 }
 
@@ -70,16 +66,15 @@ lazy val webservice = {
   new Project(
     root,
     name,
-    layout = newLayout,
-    props = makerProps
+    layout = newLayout
   ) dependsOn (instrument :: additionalModuleDeps : _*)
 }
 
 // below are some utils for running starling from maker
 lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
 lazy val launcher = project("launcher") dependsOn (startserver, booter, gui)
-lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)),
-  List(
+lazy val starling = new TopLevelProject("starling", List(launcher), scalaSwingLibraryProjects = List(ProjectLib(manager.name, true)),
+  topLevelExcludedFolders = List(
     "logs",
     "osgi-gui-cache",
     "osgi-server-cache",
