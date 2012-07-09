@@ -1,34 +1,25 @@
 println("\n ** Loading Starling build (script)  ...\n")
 
-import java.util.Properties
 import java.io.File
 import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 import maker.project._
-import maker.project.TopLevelProject
-import maker.project.ProjectLib
-import maker.Props
-import maker.Props._
 import maker.utils.FileUtils._
 import maker.utils.Log
 import maker.utils.Log._
-import maker.utils.os.Command
-import maker.utils.os.Command._
-import maker.utils.ModuleId._
-import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
-import maker.ProjectProps
+import maker.Maker._
 
-//:load maker/common.scala
+//:load maker/project/common.scala
 import Common._
 
-//:load maker/utils.scala
+//:load maker/project/utils.scala
 import Utils._
 
-//:load maker/titan-model.scala
+//:load maker/project/titan-model.scala
 import TitanModel._
 
-//:load maker/starling-modules.scala
+//:load maker/project/starling-modules.scala
 import Starling._
 
 import Starling.starling._
