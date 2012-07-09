@@ -8,10 +8,10 @@ import maker.project._
 import maker.project.TopLevelProject
 import maker.project.ProjectLib
 import maker.Props
+import maker.Props._
 import maker.utils.FileUtils._
 import maker.utils.Log
 import maker.utils.Log._
-import maker.RichProperties._
 import maker.utils.os.Command
 import maker.utils.os.Command._
 import maker.utils.ModuleId._
