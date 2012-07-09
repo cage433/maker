@@ -6,7 +6,7 @@ import maker.RichProperties._
 
 object Common {
 
-  println("\n ** Loading common definitions...\n")
+  println("\n ** Loading (compiled) common definitions...\n")
 
   //val scalaVersion = ScalaVersion("2.9.1")
 

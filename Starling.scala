@@ -1,4 +1,4 @@
-println("\n ** Loading Starling build..\n")
+println("\n ** Loading Starling build (script)  ...\n")
 
 import java.util.Properties
 import java.io.File
@@ -24,7 +24,6 @@ import Common._
 //:load maker/utils.scala
 import Utils._
 
-// titan model is a bit of a mess, so model build stubbed out for now
 //:load maker/titan-model.scala
 import TitanModel._
 

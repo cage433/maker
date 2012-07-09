@@ -1,4 +1,4 @@
-println("\n ** Loading Starling build...\n")
+println("\n ** Loading Starling build (script)...\n")
 
 
 //repl.setPrompt("starling-maker>")
