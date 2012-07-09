@@ -1,4 +1,7 @@
+import Common._
+import Utils._
 import Starling._
+import maker.Maker._
 
 // nb: these are not really tests ATM, just a main method that does some testing...
 println("starling Bookmark tests...")
