@@ -31,11 +31,11 @@ MAKER_PROJECT_FILE=$4
 
 if [ -z "$MAKER_PROJECT_FILE" ];
 then
-  echo "here"
   MAKER_PROJECT_FILE="maker/build-all.scala"
+  echo "defaulting build file to $MAKER_PROJECT_FILE"
 fi
 
 echo "project file = $MAKER_PROJECT_FILE"
 
-./maker/dist/bin/maker.sh -ntty -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+./maker/dist/bin/maker.sh -ntty -c "maker/project/" -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
