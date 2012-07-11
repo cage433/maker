@@ -16,5 +16,5 @@ val br = for {
 
 println("Bookmark tests have completed")
 
-handleExit(r)
+handleExit(br)
 
