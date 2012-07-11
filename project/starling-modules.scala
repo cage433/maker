@@ -73,7 +73,7 @@ object Starling {
   lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
   lazy val starlingClient = project("starling.client") /* withModuleId("starling-client" % "starling-client_2.9.1") */ dependsOn (starlingDTOApi, bouncyrmi)
   lazy val dbx = project("dbx") dependsOn (props)
-  lazy val schemaevolution = project("schemaevolution") dependsOn (dbx, databases)
+  lazy val schemaevolution = project("schemaevolution") dependsOn (databases)
   lazy val databases = project("databases") dependsOn (dbx, instrument)
   lazy val titan = project("titan") dependsOn databases
   lazy val services = project("services") dependsOn (loopyxl, titan, schemaevolution, fc2Facility, reportsFacility)
@@ -82,7 +82,7 @@ object Starling {
   lazy val oil = project("oil") dependsOn services
   lazy val metals = project("metals") dependsOn tradeImpl
   lazy val pnlreconcile = project("pnlreconcile") dependsOn (services, gui)
-  lazy val reportsImpl = project("reports.impl") dependsOn (services, pnlreconcile)
+  lazy val reportsImpl = project("reports.impl") dependsOn (pnlreconcile)
 
   val hostTitanComponents = true
   val titanEnvAppServerLibs : List[File] = if (hostTitanComponents) file("webservice", "lib-jboss") :: Nil else Nil
@@ -102,8 +102,8 @@ object Starling {
   }
 
   // below are some utils for running starling from maker
-  lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
-  lazy val launcher = project("launcher") dependsOn (startserver, booter, gui)
+  lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService)
+  lazy val launcher = project("launcher") dependsOn (startserver, booter)
   lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)),
     List(
       "logs",
