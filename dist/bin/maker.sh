@@ -285,13 +285,13 @@ cat << EOF
 
   options
     -h, --help
-    -r, --revision
+    -r, --revision <version> Maker binary version number
       download binary revision and boot
     -p, -i, --include-project-file <project-file script> a scala script to load into the repl
     -e, --exec-cmd
       run command directly then quit
-    -c, --compile-project
-      compile project file before loading
+    -c, --compile-project <directory> a directory containing Scala file(s) for a compiled project definition
+      compile Scala in directory before loading Maker in REPL
     -j, --use-jrebel (requires JREBEL_HOME to be set)
     -m, --mem-heap-space <heap space in MB> 
       default is one quarter of available RAM
@@ -462,7 +462,7 @@ cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
     <dependency org="org.slf4j" name="slf4j-api" rev="1.6.1"/>
     <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.6.1" />
     <dependency org="org.apache.ant" name="ant" rev="1.8.2"/>
-    <dependency org="io.netty" name="netty" rev="3.4.2.Final"/>
+    <dependency org="io.netty" name="netty" rev="3.5.2.Final"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.1"/>
     <dependency org="net.debasishg" name="sjson_2.9.1" rev="0.15"/>
     <dependency org="voldemort.store.compress"  name="h2-lzf" rev="1.0"/>
