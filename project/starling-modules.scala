@@ -127,7 +127,8 @@ object Starling {
   def runServer = launcherRunner("starling.startserver.Server")
 
   def writeStarlingClasspath {
-    val cp = launcher.compilationClasspath(SourceCompile)
-    writeToFile(file("launcher-classpath.sh"), "export STARLING_CLASSPATH=" + cp)
+    val cp = launcher.classpathDirectoriesAndJars(SourceCompile).filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
+    val classpathString = cp.map(_.relativeTo(file("."))).map(_.getPath).toList.sortWith(_<_).mkString(":")
+    writeToFile(file("launcher-classpath.sh"), "export STARLING_CLASSPATH=" + classpathString)
   }
 }
