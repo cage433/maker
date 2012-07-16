@@ -9,6 +9,7 @@ import maker.utils.Log
 import maker.utils.Log._
 import maker.task.BuildResult
 import maker.Maker._
+import maker.MakerProps._
 
 //:load maker/project/common.scala
 import Common._
