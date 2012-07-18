@@ -55,16 +55,13 @@ println("finished loading definitions, starling build...")
 
 val buildResults = for {
   _ <- starling.clean
-  _ <- { 
-          starling.update
-          // less than ideal, but ivy update is currently unreliable - so return a fake success always ultil the issue is sorted... 
-          // (this is ok-ish because the local  cache is cummulative so even if first run fails it's usually ok by second or third pass
-          mkBuildResult(starling, UpdateTask)
-  }
+  _ <- starling.update
   i1 <- launcher.test
   r <- doDocs(i1) //starlingDtoApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
 
 } yield r
+
+writeStarlingClasspath
 
 // only publish if we've a version number
 val results = versionNo match {
