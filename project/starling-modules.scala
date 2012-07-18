@@ -84,7 +84,7 @@ object Starling {
   lazy val pnlreconcile = project("pnlreconcile") dependsOn (services, tradeFacility)
   lazy val reportsImpl = project("reports.impl") dependsOn (pnlreconcile)
 
-  val hostTitanComponents = true
+  val hostTitanComponents = false
   val titanEnvAppServerLibs : List[File] = if (hostTitanComponents) file("webservice", "lib-jboss") :: Nil else Nil
 
   lazy val webservice = {
@@ -126,9 +126,9 @@ object Starling {
   def runDevLauncher = launcherRunner("starling.launcher.DevLauncher")
   def runServer = launcherRunner("starling.startserver.Server")
 
-  def writeStarlingClasspath {
+  def writeStarlingClasspath() {
     val cp = launcher.classpathDirectoriesAndJars(SourceCompile).filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
-    val classpathString = cp.map(_.relativeTo(file("."))).map(_.getPath).toList.sortWith(_<_).mkString(":")
-    writeToFile(file("launcher-classpath.sh"), "export STARLING_CLASSPATH=" + classpathString)
+    val classpathString = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar:" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
+    writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
 }
