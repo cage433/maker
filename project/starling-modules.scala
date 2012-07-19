@@ -104,7 +104,7 @@ object Starling {
   // below are some utils for running starling from maker
   lazy val startserver = project("startserver") dependsOn (reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
   lazy val launcher = project("launcher") dependsOn (startserver, booter, gui)
-  lazy val starling = new TopLevelProject("starling", List(launcher), makerProps, List(ProjectLib(manager.name, true)),
+  lazy val starling = new TopLevelProject("starling", List(launcher), makerProps,
     List(
       "logs",
       "osgi-gui-cache",
