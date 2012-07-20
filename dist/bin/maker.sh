@@ -34,7 +34,7 @@ MAKER_PROJECT_SCALA_LIB_DIR=.maker/scala-lib
 MAKER_IVY_SETTINGS_FILE=ivysettings.xml
 MAKER_COMPILED_PROJ_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/.maker/proj
 MAKER_OWN_SCALATEST_REPORTER_JAR=$MAKER_OWN_ROOT_DIR/maker-scalatest-reporter.jar
-MAKER_OWN_SCALATEST_REPORTER_SOURCE=$MAKER_OWN_ROOT_DIR/scalatest/src/maker/scalatest/MakerTestReporter.scala
+MAKER_OWN_SCALATEST_REPORTER_SOURCE=$MAKER_OWN_ROOT_DIR/test-reporter/src/maker/scalatest/MakerTestReporter.scala
 
 mkdir -p .maker
 
@@ -82,6 +82,7 @@ main() {
     if [ ! -z $MAKER_CMD ];
     then
       CMDS="-e $MAKER_CMD"
+      RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
       echo "setting cmd as $CMDS"
     fi
 
@@ -111,8 +112,7 @@ main() {
     fi
 
     # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
-    scala_exit_status=$?
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
   fi
 }
 
@@ -405,15 +405,13 @@ function restoreSttySettings() {
 
 function onExit() {
   if [[ "$saved_stty" != "" ]]; then
-    echo "restoring tty"
     restoreSttySettings
   fi
-  echo "returning exit status: " $scala_exit_status
   exit $scala_exit_status
 }
 
 # to reenable echo if we are interrupted before completing.
-trap onExit INT
+trap onExit INT SIGTERM EXIT
 
 # save terminal settings
 function saveStty() {
@@ -433,6 +431,7 @@ fi
 function write_ivy_files() {
 
 mkdir -p ${MAKER_OWN_ROOT_DIR}/utils/
+mkdir -p ${MAKER_OWN_ROOT_DIR}/test-reporter/
 
 cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
 <!-- Auto-generated from Maker script -->
@@ -457,7 +456,7 @@ cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
     <dependency org="commons-codec" name="commons-codec" rev="1.6"/>
     <dependency org="org.apache.commons" name="commons-lang3" rev="3.1"/>
     <dependency org="org.scala-tools.testing" name="scalacheck_2.9.1" rev="1.9"/>
-    <dependency org="org.scalatest" name="scalatest_2.9.1" rev="1.8"/>
+    <dependency org="org.scalatest" name="scalatest_2.9.1" rev="${scalatest_version}"/>
     <dependency org="org.scalaz" name="scalaz-core_2.9.1" rev="6.0.4"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="1.6.1"/>
     <dependency org="org.slf4j" name="slf4j-log4j12" rev="1.6.1" />
@@ -465,7 +464,6 @@ cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
     <dependency org="io.netty" name="netty" rev="3.5.2.Final"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.1"/>
     <dependency org="net.debasishg" name="sjson_2.9.1" rev="0.15"/>
-    <dependency org="voldemort.store.compress"  name="h2-lzf" rev="1.0"/>
     <dependency org="org.eclipse.jetty" name="jetty-server" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${jetty_version}" />
@@ -486,6 +484,29 @@ cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
 </ivy-module>
 IVY_FILE
 
+cat > ${MAKER_OWN_ROOT_DIR}/test-reporter/ivy.xml<<'TEST_REPORTER_IVY_FILE'
+<!-- Auto-generated from Maker script -->
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="${group_id}" module="test-reporter" revision="${maker.module.version}" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+    <conf name="compile" transitive="false"/>
+    <conf name="test" transitive="false"/>
+  </configurations>
+
+  <publications>
+    <artifact name="test-reporter" type="pom"/>
+    <artifact name="test-reporter" type="jar" ext="jar" conf="default" />
+    <artifact name="test-reporter-sources" type="jar" ext="jar" conf="default" />
+    <artifact name="test-reporter-docs" type="jar" ext="jar" conf="default" />
+  </publications>
+
+  <dependencies defaultconfmapping="*->default,sources">
+    <dependency org="org.scalatest" name="scalatest_2.9.1" rev="${scalatest_version}"/>
+  </dependencies>
+</ivy-module>
+TEST_REPORTER_IVY_FILE
+
 cat > ${MAKER_OWN_ROOT_DIR}/maker-ivy.xml <<'MAKER_IVY_FILE'
 <!-- Auto-generated from Maker script -->
 <ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
@@ -497,6 +518,7 @@ cat > ${MAKER_OWN_ROOT_DIR}/maker-ivy.xml <<'MAKER_IVY_FILE'
     <dependency org="com.google.code.maker" name="maker" rev="${maker_binary_version}" />
     <dependency org="com.google.code.maker" name="plugin" rev="${maker_binary_version}" />
     <dependency org="com.google.code.maker" name="utils" rev="${maker_binary_version}" />
+    <dependency org="com.google.code.maker" name="test-reporter" rev="${maker_binary_version}" />
   </dependencies>
 </ivy-module>
 MAKER_IVY_FILE
@@ -506,6 +528,7 @@ cat > ${MAKER_OWN_ROOT_DIR}/ivysettings.xml <<'IVY_SETTINGS'
 <ivysettings>
   <property name="group_id" value="com.google.code.maker" />
   <property name="scala_version" value="2.9.1" />
+  <property name="scalatest_version" value="1.8" />
   <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
   <property name="jetty_version" value="7.6.3.v20120416" />
   <settings>
