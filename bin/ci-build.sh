@@ -39,6 +39,8 @@ echo "project file = $MAKER_PROJECT_FILE"
 
 ./maker/dist/bin/maker.sh -ntty -c "maker/project/" -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
-if [ $2 == "starling" ]; then
-  ./bin/create_artifact.sh $1 $3 -eq 0 || exit 3
+if [ "$2" == "starling" ] && [ "$1" != "" ]; then
+  echo "creating and publishing binary deploy artefacts..."
+  ./bin/create_artifact.sh $1 $3 || exit 3
 fi
+
