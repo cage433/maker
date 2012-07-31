@@ -8,9 +8,12 @@ import maker.Maker._
 // nb: these are not really tests ATM, just a main method that does some testing...
 println("starling blotter tests...")
 
-val br = launcher.runMain("starling.test.InstrumentUploadTest")(commonLaunchArgs : _*)()
+val br = for {
+  c <- starling.clean
+  u <- starling.update
+  b <- launcher.runMain("starling.test.InstrumentUploadTest")(commonLaunchArgs : _*)()
+} yield b
 
 println("Blotter tests have completed")
 
 handleExit(br)
-
