@@ -63,7 +63,7 @@ object Starling {
   lazy val loopyxl = project("loopyxl") dependsOn auth
   lazy val browserService = project("browser.service") dependsOn manager
   lazy val browser = project("browser") dependsOn browserService
-  lazy val guiapi = project("gui.api") dependsOn (browserService, bouncyrmi, pivotUtils)
+  lazy val guiapi = project("gui.api") dependsOn (browserService, bouncyrmi, pivotUtils, auth)
   lazy val fc2Facility = project("fc2.facility") dependsOn guiapi
   lazy val curves = project("curves") dependsOn (maths, guiapi)
   lazy val instrument = project("instrument") dependsOn curves
