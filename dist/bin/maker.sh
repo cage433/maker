@@ -27,8 +27,6 @@ MAKER_PROJECT_ROOT_DIR=`pwd`
 
 set -e
 
-#MAKER_IVY_UPDATE=true
-#MAKER_BOOTSTRAP=true 
 MAKER_OWN_LIB_DIR=$MAKER_OWN_ROOT_DIR/.maker/lib
 MAKER_PROJECT_SCALA_LIB_DIR=.maker/scala-lib
 MAKER_IVY_SETTINGS_FILE=ivysettings.xml
@@ -36,13 +34,17 @@ MAKER_COMPILED_PROJ_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/.maker/proj
 MAKER_OWN_SCALATEST_REPORTER_JAR=$MAKER_OWN_ROOT_DIR/maker-scalatest-reporter.jar
 MAKER_OWN_SCALATEST_REPORTER_SOURCE=$MAKER_OWN_ROOT_DIR/test-reporter/src/maker/scalatest/MakerTestReporter.scala
 
-mkdir -p .maker/proj
+debug(){
+  msg=$1
+  if [ -n "$MAKER_DEBUG"]; then
+    echo $msg
+  fi
+}
 
 main() {
   process_options $*
   saveStty
   check_setup_sane || exit -1
-
   write_ivy_files
 
   if [ $MAKER_IVY_UPDATE ] || [ ! -e $MAKER_OWN_LIB_DIR ];
@@ -73,7 +75,7 @@ main() {
 
   if [ -z $MAKER_SKIP_LAUNCH ];
   then
-    JAVA_OPTS="-Xmx$(($MAKER_HEAP_SPACE))m -XX:MaxPermSize=$(($MAKER_PERM_GEN_SPACE))m $JREBEL_OPTS $MAKER_DEBUG_PARAMETERS -XX:+HeapDumpOnOutOfMemoryError "
+    JAVA_OPTS=$JAVA_OPTS" -Xmx$(($MAKER_HEAP_SPACE))m -XX:MaxPermSize=$(($MAKER_PERM_GEN_SPACE))m $JREBEL_OPTS $MAKER_DEBUG_PARAMETERS -XX:+HeapDumpOnOutOfMemoryError "
     # TODO - move scala jars from bootclasspath to classpath once permgen fix available
     CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/"
 #    echo "CLASSPATH = $CLASSPATH"
@@ -132,6 +134,7 @@ maker_internal_classpath(){
 }
 
 check_setup_sane(){
+  debug "Checking sanity"
   if [ -z $SCALA_HOME ];
   then
     echo "SCALA_HOME not defined"
@@ -145,6 +148,7 @@ check_setup_sane(){
   fi
 
   fetch_ivy
+  echo "done fetching ivy"
 
   MAKER_IVY_JAR=${MAKER_IVY_JAR-${MAKER_OWN_ROOT_DIR}/libs/ivy-2.2.0.jar}
   if [ ! -e $MAKER_IVY_JAR ];
@@ -245,13 +249,15 @@ bootstrap() {
 }
 
 process_options() {
+  debug "Processing options"
 
   while true; do
     case "${1-""}" in
       -h | --help ) display_usage; exit 0;;
       -r | --revision ) MAKER_BINARY_VERSION=$2; shift 2;;
       -p | -i | --project-file ) MAKER_PROJECT_FILE=$2; shift 2;;
-      -c | --compile-project ) MAKER_COMPILED_PROJ_INPUT_DIR=$2; shift 2;;
+      -c | --project-input-dir ) MAKER_COMPILED_PROJ_INPUT_DIR=$2; shift 2;;
+      -d | --clean-project-class-files) rm -rf $MAKER_COMPILED_PROJ_OUTPUT_DIR; shift 1;;
       -e | --exec-cmd ) MAKER_CMD=$2; shift 2;;
       -j | --use-jrebel ) set_jrebel_options; shift;;
       -m | --mem-heap-space ) MAKER_HEAP_SPACE=$2; shift 2;;
@@ -260,7 +266,7 @@ process_options() {
       -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;;
-      -ntty | --no-tty-restore ) MAKER_NO_TTY_RESTORE=true; shift 1;;
+      -ntty | --no-tty-restore ) echo; echo "DEPRECATED OPTION '-ntty', THIS CAN BE REMOVED"; echo; shift 1;;
       -args | --additional-args ) shift 1; MAKER_ARGS=$*; break;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
       --ivy-proxy-host ) MAKER_IVY_PROXY_HOST=$2; shift 2;;
@@ -288,10 +294,12 @@ cat << EOF
     -r, --revision <version> Maker binary version number
       download binary revision and boot
     -p, -i, --include-project-file <project-file script> a scala script to load into the repl
+    -c, --project-input-dir <directory> a directory containing Scala file(s) for a compiled project definition
+      compile Scala in directory before loading Maker in REPL
+    -d | --clean-project-class-files) 
+      clean any compiled project scala files
     -e, --exec-cmd
       run command directly then quit
-    -c, --compile-project <directory> a directory containing Scala file(s) for a compiled project definition
-      compile Scala in directory before loading Maker in REPL
     -j, --use-jrebel (requires JREBEL_HOME to be set)
     -m, --mem-heap-space <heap space in MB> 
       default is one quarter of available RAM
@@ -299,9 +307,6 @@ cat << EOF
       update will always be done if <maker-dir>/.maker/lib doesn't exist
     -b, --boostrap 
       builds maker.jar from scratch
-    -d, --download-project-scala-lib 
-      downloads scala compiler and library to <project-dir>/.maker/scala-lib
-      download is automatic if this directory does not exist
     -x, --allow-remote-debugging
       runs a remote JVM
     -z, --developer-mode
@@ -310,8 +315,6 @@ cat << EOF
       maker.jar. Allows work on maker and another project to be done simultaneously.
     -nr, --no-repl
       skip repl launch (just performs bootstrapping/building and returns)
-    -ntty, --no-tty-restore
-      skip save and restore tty (for integration with automation such as TeamCity reporting)
     --args, --additional-args
       additional variable length argument list to pass to JVM process directly. Must come at the end of the arguments
     --mem-permgen-space <space in MB>
@@ -357,7 +360,7 @@ ivy_command(){
 
 
 ivy_update() {
-  echo "Updating dependencies (using Ivy)"
+  debug "Updating dependencies (using Ivy)"
   MAKER_IVY_FILE="$MAKER_OWN_ROOT_DIR/utils/ivy.xml"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types jar -sync"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types bundle"
@@ -365,7 +368,7 @@ ivy_update() {
 }
 
 maker_ivy_binary_retrieve() {
-  echo "Fetching maker binary dependencies (using Ivy) for version ${MAKER_BINARY_VERSION}"
+  debug "Fetching maker binary dependencies (using Ivy) for version ${MAKER_BINARY_VERSION}"
   MAKER_IVY_FILE="$MAKER_OWN_ROOT_DIR/maker-ivy.xml"
   run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types jar"
   #run_command "$(ivy_command $MAKER_IVY_FILE $MAKER_OWN_LIB_DIR) -types bundle"
@@ -373,6 +376,7 @@ maker_ivy_binary_retrieve() {
 }
 
 fetch_ivy() {
+  debug "Fetching ivy"
   if [ -z $MAKER_IVY_URL ]; then
     MAKER_IVY_URL="http://repo1.maven.org/maven2/org/apache/ivy/ivy/2.2.0/ivy-2.2.0.jar"
   fi
@@ -380,7 +384,7 @@ fetch_ivy() {
     if [ ! -z $MAKER_IVY_PROXY_HOST ]; then
       CURL_PROXY_ARGS="-x http://$MAKER_IVY_PROXY_HOST:$MAKER_IVY_PROXY_PORT"
     fi
-    echo "downloading Ivy 2.2 jar from $MAKER_IVY_URL - $CURL_PROXY_ARGS"
+    debug "downloading Ivy 2.2 jar from $MAKER_IVY_URL - $CURL_PROXY_ARGS"
     curl $CURL_PROXY_ARRGS -O $MAKER_IVY_URL
     mkdir -p ${MAKER_OWN_ROOT_DIR}/libs
     mv ivy-2.2.0.jar ${MAKER_OWN_ROOT_DIR}/libs/
@@ -396,16 +400,15 @@ set_jrebel_options() {
   JREBEL_OPTS=" -javaagent:$JREBEL_HOME/jrebel.jar -noverify"
 }
 
-
 # restore stty settings (echo in particular)
-function restoreSttySettings() {
-  stty $saved_stty
-  saved_stty=""
-}
-
 function onExit() {
   if [[ "$saved_stty" != "" ]]; then
-    restoreSttySettings
+    stty $saved_stty
+    saved_stty=""
+  #else
+    # I think we always want these on, regardless of whether
+    # we are called interactively
+    #stty "echo icanon"
   fi
   exit $scala_exit_status
 }
@@ -415,10 +418,11 @@ trap onExit INT SIGTERM EXIT
 
 # save terminal settings
 function saveStty() {
-  if [ -z $MAKER_NO_TTY_RESTORE ]; then
+  debug "Saving stty"
+  if [ -n "$PS1" ]; then
     saved_stty=$(stty -g 2>/dev/null)
   else
-    echo "skipping tty save/restore"
+    saved_stty=""
   fi
 }
 
@@ -429,11 +433,12 @@ fi
 
 #write out the embedded ivy files for Maker to bootstrap its dependencies via Ivy
 function write_ivy_files() {
+  debug "Writing ivy files"
 
-mkdir -p ${MAKER_OWN_ROOT_DIR}/utils/
-mkdir -p ${MAKER_OWN_ROOT_DIR}/test-reporter/
+  mkdir -p ${MAKER_OWN_ROOT_DIR}/utils/
+  mkdir -p ${MAKER_OWN_ROOT_DIR}/test-reporter/
 
-cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
+  cat > ${MAKER_OWN_ROOT_DIR}/utils/ivy.xml<<'IVY_FILE'
 <!-- Auto-generated from Maker script -->
 <ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
   <info organisation="${group_id}" module="utils" revision="${maker.module.version}" />
@@ -524,7 +529,8 @@ cat > ${MAKER_OWN_ROOT_DIR}/maker-ivy.xml <<'MAKER_IVY_FILE'
 </ivy-module>
 MAKER_IVY_FILE
 
-cat > ${MAKER_OWN_ROOT_DIR}/ivysettings.xml <<'IVY_SETTINGS'
+if [ ! -e $MAKER_IVY_SETTINGS_FILE ]; then
+  cat > $MAKER_IVY_SETTINGS_FILE <<'IVY_SETTINGS'
 <!-- Auto-generated from Maker script -->
 <ivysettings>
   <property name="group_id" value="com.google.code.maker" />
@@ -562,7 +568,7 @@ cat > ${MAKER_OWN_ROOT_DIR}/ivysettings.xml <<'IVY_SETTINGS'
   </resolvers>
 </ivysettings>
 IVY_SETTINGS
-
+fi
 }
 
 scala_exit_status=127
