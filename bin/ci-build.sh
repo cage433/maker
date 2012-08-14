@@ -37,13 +37,16 @@ fi
 
 echo "project file = $MAKER_PROJECT_FILE"
 
-echo "LAUNCHING MAKER"
 export MAKER_DEBUG=true
 echo ./maker/dist/bin/maker.sh -ntty -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS 
 ./maker/dist/bin/maker.sh -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+
 
 if [ "$2" == "starling" ] && [ "$1" != "" ]; then
   echo "creating and publishing binary deploy artefacts..."
   ./bin/create_artifact.sh $1 $3 || exit 3
 fi
+
+# remove some of the artifacts created, in particular maker ones
+git clean -f -d || exit 4
 
