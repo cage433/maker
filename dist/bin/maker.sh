@@ -36,7 +36,7 @@ MAKER_OWN_SCALATEST_REPORTER_SOURCE=$MAKER_OWN_ROOT_DIR/test-reporter/src/maker/
 
 debug(){
   msg=$1
-  if [ -n "$MAKER_DEBUG"]; then
+  if [ -n "$MAKER_DEBUG" ]; then
     echo $msg
   fi
 }
