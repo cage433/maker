@@ -419,19 +419,12 @@ trap onExit INT SIGTERM EXIT
 # save terminal settings
 function saveStty() {
   debug "Saving stty"
-  fd=0   # stdin
-  # Test taken from http://tldp.org/LDP/abs/html/intandnonint.html
-  if [[ -t "$fd" || -p /dev/stdin ]]; then
+  if tty -s; then
     saved_stty=$(stty -g 2>/dev/null)
   else
     saved_stty=""
   fi
 }
-
-# clear on error so we don't later try to restore them
-#if [[ ! $? ]]; then  
-#  saved_stty=""
-#fi
 
 #write out the embedded ivy files for Maker to bootstrap its dependencies via Ivy
 function write_ivy_files() {
