@@ -114,7 +114,7 @@ main() {
     fi
 
     # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
+    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $REMAINING_ARGS $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
   fi
 }
 
@@ -419,9 +419,7 @@ trap onExit INT SIGTERM EXIT
 # save terminal settings
 function saveStty() {
   debug "Saving stty"
-  fd=0   # stdin
-  # Test taken from http://tldp.org/LDP/abs/html/intandnonint.html
-  if [[ -t "$fd" || -p /dev/stdin ]]; then
+  if [ -n "$PS1" ]; then
     saved_stty=$(stty -g 2>/dev/null)
   else
     saved_stty=""
@@ -429,9 +427,9 @@ function saveStty() {
 }
 
 # clear on error so we don't later try to restore them
-#if [[ ! $? ]]; then  
-#  saved_stty=""
-#fi
+if [[ ! $? ]]; then  
+  saved_stty=""
+fi
 
 #write out the embedded ivy files for Maker to bootstrap its dependencies via Ivy
 function write_ivy_files() {
