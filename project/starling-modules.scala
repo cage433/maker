@@ -71,9 +71,9 @@ object Starling {
   lazy val gui = project("gui") dependsOn (fc2Facility, tradeFacility, reportsFacility, browser, rabbitEventViewerApi, singleClasspathManager)
   lazy val starlingClient = project("starling.client") /* withModuleId("starling-client" % "starling-client_2.9.1") */ dependsOn (starlingDTOApi, bouncyrmi)
   lazy val dbx = project("dbx") dependsOn (props)
-  lazy val schemaevolution = project("schemaevolution") dependsOn (databases)
   lazy val databases = project("databases") dependsOn (dbx, instrument)
-  lazy val titan = project("titan") dependsOn databases
+  lazy val schemaevolution = project("schemaevolution") dependsOn (databases)
+  lazy val titan = project("titan") dependsOn (auth, databases)
   lazy val services = project("services") dependsOn (loopyxl, titan, schemaevolution, fc2Facility, reportsFacility)
   lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, services)
   lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
