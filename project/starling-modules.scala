@@ -73,7 +73,7 @@ object Starling {
   lazy val dbx = project("dbx") dependsOn (props)
   lazy val databases = project("databases") dependsOn (dbx, instrument)
   lazy val schemaevolution = project("schemaevolution") dependsOn (databases)
-  lazy val titan = project("titan") dependsOn (auth, databases)
+  lazy val titan = project("titan") dependsOn (databases)
   lazy val services = project("services") dependsOn (loopyxl, titan, schemaevolution, fc2Facility, reportsFacility)
   lazy val rabbitEventViewerService = project("rabbit.event.viewer.service") dependsOn (rabbitEventViewerApi, services)
   lazy val tradeImpl = project("trade.impl") dependsOn (services, tradeFacility)
@@ -111,8 +111,10 @@ object Starling {
       ".maker",
       "target",
       "test-output",
-      "test-suites",
-      "maker/dist"
+      "maker/dist",
+      "component-tests",
+      "refined-service",
+      "refinedtestclient"
     ))
 
   def stdRunner(proj : Project)(className : String) = {
