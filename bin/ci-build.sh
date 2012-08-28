@@ -15,6 +15,9 @@ echo "CPUs"
 grep processor /proc/cpuinfo
 echo "Memory"
 free -m
+echo "PATH: $PATH"
+echo "MAVEN_HOME: $MAVEN_HOME"
+echo "MAVEN_OPTS: $MAVEN_OPTS"
 echo "------------------------------------------------------"
 echo
 echo "##teamcity[progressStart 'compile']"
