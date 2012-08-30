@@ -29,20 +29,18 @@ import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 
 
-// :load maker/Starling.scala
 println("loading ci_starling_only build file (script)...")
 
 val buildType = getPropertyOrDefault("build.type", "starling")
 val versionNo = getProperty("version.number")
 val publishingResolverName = getPropertyOrDefault("publishing.resolver", "starling-snapshot")
 
-//maker.Maker.debug
-
-def mkBuildResult(project : Project, task : Task) = {
+def mkBuildResult(project : Project, task : Task) : BuildResult = {
   val pt = ProjectAndTask(project, task)
   BuildResult(List(TaskSucceeded(project, task, new Stopwatch)), DependencyTree[maker.task.ProjectAndTask](Map[maker.task.ProjectAndTask,Set[maker.task.ProjectAndTask]]()) , pt)
 }
-def doDocs(br : BuildResult) = {
+
+def doDocs(br : BuildResult) : BuildResult = {
   if (buildType == "starling") {
     println("generating documentation")
     br.flatMap(_ => starlingDTOApi.docOnly(true)) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
@@ -53,24 +51,26 @@ def doDocs(br : BuildResult) = {
 
 println("finished loading definitions, starling build...")
 
-val buildResults = for {
+val buildResults : BuildResult = for {
   _ <- starling.clean
   _ <- starling.update
   i1 <- launcher.test
   r <- doDocs(i1) //starlingDtoApi.docOnly(true) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
-
 } yield r
 
 writeStarlingClasspath
 
-// only publish if we've a version number
-val results = versionNo match {
+// only publish starling binary artefacts if we've a version number and the build.type = "starling"
+val results : BuildResult = versionNo match {
   case Some(ver) if (buildType == "starling") => {
     println("publishing starling as version " + ver + "...")
     buildResults.flatMap(b => starling.publish(resolver = publishingResolverName, version = ver))
   }
-  case None => buildResults
-}
+  case _ => {
+    println("skipping publishing, need a version number and build.type to be starling for starling publishing to work")
+    buildResults
+  }
+} 
 
 println("build complete")
 handleExit(results)
