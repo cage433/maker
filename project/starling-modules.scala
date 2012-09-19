@@ -96,7 +96,7 @@ object Starling {
       name,
       layout = newLayout,
       props = makerProps
-    ) dependsOn (instrument :: additionalModuleDeps : _*)
+    ) dependsOn (services :: additionalModuleDeps : _*)
   }
 
   // below are some utils for running starling from maker
