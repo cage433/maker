@@ -28,6 +28,7 @@ MAKER_PROJECT_ROOT_DIR=`pwd`
 set -e
 
 MAKER_OWN_LIB_DIR=$MAKER_OWN_ROOT_DIR/.maker/lib
+MAKER_PROJECT_SCALA_LIB_DIR=.maker/scala-lib
 MAKER_IVY_SETTINGS_FILE=ivysettings.xml
 MAKER_COMPILED_PROJ_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/.maker/proj
 MAKER_OWN_SCALATEST_REPORTER_JAR=$MAKER_OWN_ROOT_DIR/maker-scalatest-reporter.jar
@@ -113,7 +114,6 @@ main() {
     fi
 
     # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
-    debug "$JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS" 
     $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
   fi
 }
@@ -451,7 +451,6 @@ function write_ivy_files() {
   </publications>
 
   <dependencies defaultconfmapping="*->default,sources">
-    <dependency org="org.scala-lang" name="scala-compiler" rev="2.9.1"/>
     <dependency org="log4j" name="log4j" rev="1.2.16" />
     <dependency org="commons-io" name="commons-io" rev="2.1"/>
     <dependency org="commons-codec" name="commons-codec" rev="1.6"/>
@@ -476,7 +475,7 @@ function write_ivy_files() {
     <dependency org="org.eclipse.jetty" name="jetty-xml" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-jsp" rev="${jetty_version}" />
-    <dependency org="redis.clients" name="jedis" rev="2.0.0" />
+
     <dependency org="org.mortbay.jetty" name="jsp-2.1-glassfish" rev="2.1.v20100127" />
     <dependency org="javax.servlet" name="servlet-api" rev="2.5" />
     <dependency org="org.apache.tomcat" name="jsp-api" rev="6.0.20" />
