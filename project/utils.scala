@@ -4,12 +4,9 @@ import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.project.TopLevelProject
-import maker.project.ProjectLib
 import maker.Props
 import maker.utils.FileUtils._
-import maker.utils.Log
-import maker.utils.Log._
-import maker.RichProperties._
+import maker.utils.MakerLog
 import maker.utils.os.Command
 import maker.utils.os.Command._
 import maker.utils.ModuleId._
@@ -42,7 +39,7 @@ object Utils {
     }
 
   def runMavenCmd(cwd : File, args : String*) =
-    runCmd(Command(Some(cwd), ("mvn" :: args.toList) : _*))
+    runCmd(Command(MakerLog(), Some(cwd), ("mvn" :: args.toList) : _*))
 
   def updateIvyFromProjectPom(project : Project) = {
     val antFileName = "antMakeIvy.xml"
@@ -50,7 +47,7 @@ object Utils {
     val tmpFile = file(project.root, antFileName)
     copyFile(antFile, tmpFile)
     val args = List("ant", "-f", file(project.root, "antMakeIvy.xml").getAbsolutePath)
-    val cmd = Command(Some(project.root), args : _*)
+    val cmd = Command(MakerLog(), Some(project.root), args : _*)
     val r = runCmd(cmd)
     tmpFile.delete
     r
@@ -65,7 +62,7 @@ object Utils {
     println("script = " + script.getAbsolutePath + ", exists = " + script.exists)
     println("updating %s for env %s".format(project.map(_.name).getOrElse("None"), envName))
     val args = "../../bin/" + script.getName :: ("-e" + envName) :: project.toList.map(p => ("-c" + p.name))
-    val cmd = Command(Some(file(".").getAbsoluteFile), args : _*)
+    val cmd = Command(MakerLog(), Some(file(".").getAbsoluteFile), args : _*)
     runCmd(cmd)
   }
   def updateAllTitanSchemas() = updateTitanSchema()
@@ -90,7 +87,7 @@ object Utils {
   import RichProject._
 
   def writeClasspath(p : Project) {
-    val cp = p.compilationClasspath(SourceCompile)
+    val cp = p.compilationClasspath(SourceCompilePhase)
     writeToFile(file("p.name"), "export CLASSPATH=" + cp)
   }
 
