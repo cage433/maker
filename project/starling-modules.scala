@@ -1,21 +1,17 @@
-import _root_.maker.ProjectProps
 import java.util.Properties
 import java.io.File
 import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.project.TopLevelProject
-import maker.project.ProjectLib
 import maker.Props
 import maker.utils.FileUtils._
-import maker.utils.Log
-import maker.utils.Log._
-import maker.RichProperties._
 import maker.utils.os.Command
 import maker.utils.os.Command._
 import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
+import maker.MakerProps
 
 import Common._
 import Utils._
@@ -27,8 +23,8 @@ object Starling {
 
   //repl.setPrompt("starling-maker>")
 
-  lazy val makerProps : ProjectProps = file("Maker.conf")
-  lazy val starlingProperties : Properties = file("props.conf")
+  lazy val makerProps : MakerProps = MakerProps(file("Maker.conf"))
+  lazy val starlingProperties : Properties = Props.fileToJavaProperties(file("props.conf"))
 
   val targetDirName = "target-maker"
   def defaultStarlingLayout(root : File) = ProjectLayout.maker(root, Some(file(root, targetDirName)))
@@ -127,7 +123,7 @@ object Starling {
   def runServer = launcherRunner("starling.startserver.Server")
 
   def writeStarlingClasspath() {
-    val cp = launcher.classpathDirectoriesAndJars(SourceCompile).filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
+    val cp = launcher.classpathDirectoriesAndJars(SourceCompilePhase).filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
     val classpathString = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar:" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
     writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
