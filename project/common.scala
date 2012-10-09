@@ -2,7 +2,7 @@ import java.util.Properties
 import java.io.File
 import maker.utils.FileUtils._
 import maker.Props
-//import maker.RichProperties._
+import maker.RichProperties._
 
 object Common {
 
@@ -10,7 +10,7 @@ object Common {
 
   //val scalaVersion = ScalaVersion("2.9.1")
 
-  lazy val unmanagedGlobalProperties : Properties = Props.fileToJavaProperties(file("developer.conf"))
+  lazy val unmanagedGlobalProperties : Properties = file("developer.conf")
 
   val verboseGC = false
 
