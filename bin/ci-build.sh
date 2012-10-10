@@ -50,6 +50,6 @@ if [ "$2" == "starling" ] && [ "$1" != "" ]; then
   ./bin/create_artifact.sh $1 $3 || exit 3
 fi
 
-# remove some of the artifacts created, in particular maker ones
+## remove some of the artifacts created, in particular maker ones
 git clean -f -d || exit 4
 

@@ -4,15 +4,12 @@ import Starling._
 
 import maker.task.TaskFailed
 import maker.task.TaskSucceeded
-import maker.task.DependencyTree
+import maker.task.Dependency
 import maker.project._
 import maker.project.TopLevelProject
-import maker.project.ProjectLib
 import maker.Props
 import maker.utils.FileUtils._
-import maker.utils.Log
-import maker.utils.Log._
-import maker.RichProperties._
+import maker.utils.MakerLog
 import maker.utils.os.Command
 import maker.utils.os.Command._
 import maker.utils.ModuleId._
@@ -25,7 +22,6 @@ import maker.utils._
 
 import java.util.Properties
 import java.io.File
-import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 
 
@@ -37,16 +33,16 @@ val publishingResolverName = getPropertyOrDefault("publishing.resolver", "starli
 
 def mkBuildResult(project : Project, task : Task) : BuildResult = {
   val pt = ProjectAndTask(project, task)
-  BuildResult(List(TaskSucceeded(project, task, new Stopwatch)), DependencyTree[maker.task.ProjectAndTask](Map[maker.task.ProjectAndTask,Set[maker.task.ProjectAndTask]]()) , pt)
+  BuildResult(List(TaskSucceeded(project, task, new Stopwatch)), Dependency.Graph.empty , pt)
 }
 
 def doDocs(br : BuildResult) : BuildResult = {
   if (buildType == "starling") {
     println("generating documentation")
-    br.flatMap(_ => starlingDTOApi.docOnly(true)) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
+    br.flatMap(_ => starlingDTOApi.docOnly) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
   }
   else
-    mkBuildResult(starlingDTOApi, DocTask)
+    mkBuildResult(starlingDTOApi, DocTask())
 }
 
 println("finished loading definitions, starling build...")
@@ -63,8 +59,8 @@ writeStarlingClasspath
 // only publish starling binary artefacts if we've a version number and the build.type = "starling"
 val results : BuildResult = versionNo match {
   case Some(ver) if (buildType == "starling") => {
-    println("publishing starling as version " + ver + "...")
-    buildResults.flatMap(b => starling.publish(resolver = publishingResolverName, version = ver))
+    println("publishing starling as version " + ver + " to " + publishingResolverName)
+    buildResults.flatMap(b => starling.Publish(resolver = publishingResolverName, version = ver)())
   }
   case _ => {
     println("skipping publishing, need a version number and build.type to be starling for starling publishing to work")

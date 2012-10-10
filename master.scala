@@ -7,12 +7,9 @@ import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.project.Project
 import maker.project.TopLevelProject
-import maker.project.ProjectLib
 import maker.Props
 import maker.utils.FileUtils._
-import maker.utils.Log
-import maker.utils.Log._
-import maker.RichProperties._
+import maker.utils.MakerLog
 import maker.utils.os.Command
 import maker.utils.os.Command._
 import maker.utils.ModuleId._
@@ -20,7 +17,6 @@ import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
 import maker.task.TaskFailed
 import maker.task.TaskSucceeded
-import maker.task.DependencyTree
 
 :load maker/common.scala
 :load maker/utils.scala
