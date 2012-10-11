@@ -56,7 +56,7 @@ object Starling {
   lazy val pivotUtils = project("pivot.utils") dependsOn(daterange, pivot)
   lazy val maths = project("maths") dependsOn (daterange, quantity)
   lazy val props = project("props") dependsOn utils
-  lazy val auth = project("auth") dependsOn props
+  lazy val auth = project("auth") dependsOn utils
   lazy val bouncyrmi = project("bouncyrmi") dependsOn auth
   lazy val loopyxl = project("loopyxl") dependsOn auth
   lazy val browserService = project("browser.service") dependsOn manager
