@@ -2,7 +2,6 @@ println("\n ** Loading master build..\n")
 
 import java.util.Properties
 import java.io.File
-import org.apache.log4j.Level._
 import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.project.Project
