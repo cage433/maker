@@ -34,8 +34,8 @@ MAKER_PROJECT_FILE=$4
 
 if [ -z "$MAKER_PROJECT_FILE" ];
 then
-  MAKER_PROJECT_FILE="maker/build-all.scala"
-  echo "defaulting build file to $MAKER_PROJECT_FILE"
+  echo "Project file must be specified"
+  exit -1
 fi
 
 echo "project file = $MAKER_PROJECT_FILE"
