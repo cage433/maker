@@ -1,6 +1,6 @@
 println("\n ** Loading Starling build (script)  ...\n")
 
-import java.io.File; import org.apache.log4j.Level._; import org.apache.commons.io.FileUtils._
+import java.io.File; import org.apache.commons.io.FileUtils._
 import maker.project._;import maker.utils.FileUtils._;import maker.task.BuildResult;import maker.Maker._;import maker.MakerProps._
 import Common._;import Utils._;import TitanModel._;import Starling._;import Starling.starling._;
 
