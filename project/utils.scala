@@ -3,7 +3,6 @@ import java.io.File
 import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.project.TopLevelProject
-import maker.Props
 import maker.utils.FileUtils._
 import maker.utils.MakerLog
 import maker.utils.os.Command
@@ -52,27 +51,12 @@ object Utils {
     r
   }
 
-  def updateTitanSchema(project : Option[Project] = None) {
-    val envName = Option(unmanagedGlobalProperties.getProperty("titan.env.name")).getOrElse{
-      throw new Exception("Missing env name, property = titan.env.name")
-    }
-    val scriptDir = file("../../bin/")
-    val script = file(scriptDir, "deploy2db")
-    println("script = " + script.getAbsolutePath + ", exists = " + script.exists)
-    println("updating %s for env %s".format(project.map(_.name).getOrElse("None"), envName))
-    val args = "../../bin/" + script.getName :: ("-e" + envName) :: project.toList.map(p => ("-c" + p.name))
-    val cmd = Command(MakerLog(), Some(file(".").getAbsoluteFile), args : _*)
-    runCmd(cmd)
-  }
-  def updateAllTitanSchemas() = updateTitanSchema()
-
   /**
    * litle bit of pimping of a standard Maker project,
    *  add in some Titan / maven related utils and integration
    */
   case class RichProject(project : Project) {
     def updateIvyFromPom = updateIvyFromProjectPom(project)
-    def updateSchema = updateTitanSchema(Some(project))
     def mvnCompile = runMavenCmd(project.root, "compile")
     def mvnInstall = runMavenCmd(project.root, "install")
     def mvn(cmd : String, args : String*) = runMavenCmd(project.root, (cmd :: args.toList) : _*)

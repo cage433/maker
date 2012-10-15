@@ -7,7 +7,6 @@ import maker.task.TaskSucceeded
 import maker.task.Dependency
 import maker.project._
 import maker.project.TopLevelProject
-import maker.Props
 import maker.utils.FileUtils._
 import maker.utils.MakerLog
 import maker.utils.os.Command
