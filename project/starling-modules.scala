@@ -2,6 +2,7 @@ import java.util.Properties
 import java.io.File
 import org.apache.commons.io.FileUtils._
 import maker.project._
+import maker.project.extras.TmuxMessaging
 import maker.project.TopLevelProject
 import maker.utils.FileUtils._
 import maker.utils.os.Command
@@ -35,7 +36,7 @@ object Starling {
       upstreamProjects = upstreamProjects,
       upstreamTestProjects = upstreamTestProjects,
       props = makerProps
-    )
+    ) with TmuxMessaging
   }
   def project(name : String, upstreamProjects : Project*) : Project = project(name, upstreamProjects.toList, Nil)
 
@@ -113,7 +114,7 @@ object Starling {
       "component-tests",
       "refined-service",
       "refinedtestclient"
-    ))
+    )) with TmuxMessaging
 
   def stdRunner(proj : Project)(className : String) = {
     proj.compile
