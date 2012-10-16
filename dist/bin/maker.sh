@@ -94,18 +94,31 @@ main() {
       #echo "debug: Project compilation requested for files in $MAKER_COMPILED_PROJ_INPUT_DIR - found $MAKER_COMPILED_PROJ_INPUT_FILES"
 
       # are we already up to date?
-      if test -e $MAKER_COMPILED_PROJ_OUTPUT_DIR  && test $MAKER_COMPILED_PROJ_OUTPUT_DIR -nt $MAKER_COMPILED_PROJ_INPUT_DIR  ; then
+      # look for any sources newer than all compiled sources, if so we need to recompile!
+      for class in `find $MAKER_COMPILED_PROJ_OUTPUT_DIR`; do
+        if [ "$(find $MAKER_COMPILED_PROJ_INPUT_DIR -anewer $class)" != "" ]; then
+          RECOMPILE_PROJECT=true
+        fi
+      done
+
+      if [ -e $MAKER_COMPILED_PROJ_OUTPUT_DIR ] && [ ! -e $MAKER_COMPILED_PROJ_OUTPUT_DIR-TMP ] && [ -z $RECOMPILE_PROJECT ]; then
         echo "Skipping project compilation, already up to date"
       else
         echo "Compiling project definitions from $MAKER_COMPILED_PROJ_INPUT_DIR directory, containing files: $MAKER_COMPILED_PROJ_INPUT_FILES ..."
         if [ -e $MAKER_COMPILED_PROJ_OUTPUT_DIR ]; then
-          rm -rf $MAKER_COMPILED_PROJ_OUTPUT_DIR 
+          rm -rf $MAKER_COMPILED_PROJ_OUTPUT_DIR
         fi
-        mkdir $MAKER_COMPILED_PROJ_OUTPUT_DIR
+        if [ -e $MAKER_COMPILED_PROJ_OUTPUT_DIR-TMP ]; then
+          rm -rf $MAKER_COMPILED_PROJ_OUTPUT_DIR-TMP
+        fi
+        mkdir $MAKER_COMPILED_PROJ_OUTPUT_DIR-TMP
 
 	    # compile the maker project files in the -c specified input dir
 	    echo "compiling to $MAKER_COMPILED_PROJ_OUTPUT_DIR"
-        $SCALA_HOME/bin/scalac -classpath "$(external_jars):$CLASSPATH" -d $MAKER_COMPILED_PROJ_OUTPUT_DIR $MAKER_COMPILED_PROJ_INPUT_FILES | tee $MAKER_OWN_ROOT_DIR/proj-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+        $SCALA_HOME/bin/scalac -classpath "$(external_jars):$CLASSPATH" -d $MAKER_COMPILED_PROJ_OUTPUT_DIR-TMP $MAKER_COMPILED_PROJ_INPUT_FILES | tee $MAKER_OWN_ROOT_DIR/proj-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+
+        # if we got here then we're looking all ok to start using this compiled project
+        mv $MAKER_COMPILED_PROJ_OUTPUT_DIR-TMP/ $MAKER_COMPILED_PROJ_OUTPUT_DIR/
       fi
 
       # append in compiled project classes to the classpath
