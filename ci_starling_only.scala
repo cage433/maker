@@ -27,8 +27,23 @@ import org.apache.commons.io.FileUtils._
 println("loading ci_starling_only build file (script)...")
 
 val buildType = getPropertyOrDefault("build.type", "starling")
-val versionNo = getProperty("version.number")
+val buildNo = getProperty("build.number")
 val publishingResolverName = getPropertyOrDefault("publishing.resolver", "starling-snapshot")
+
+try {
+  (getProperty("git.commit"), getProperty("jenkins.job"), buildNo) match {
+    case (Some(commit), Some(jobName), Some(v)) => {
+      new redis.clients.jedis.Jedis("jenkins-starling").hset(commit, jobName, v)
+      println(commit + " assigned to build " + jobName + " " + v)
+    }
+    case _ => println("Need build number, jenkins job and git commit to populate redis lookup. Skipping")
+  }
+} catch {
+  case e:Exception => {
+    println("Redis publish build update failed, but continuing...")
+    e.printStackTrace()
+  }
+}
 
 def mkBuildResult(project : Project, task : Task) : BuildResult = {
   val pt = ProjectAndTask(project, task)
@@ -56,16 +71,17 @@ val buildResults : BuildResult = for {
 writeStarlingClasspath
 
 // only publish starling binary artefacts if we've a version number and the build.type = "starling"
-val results : BuildResult = versionNo match {
-  case Some(ver) if (buildType == "starling") => {
+val results : BuildResult = buildNo match {
+  case Some(ver) if (buildType == "starling" && publishingResolverName == "starling-release") => {
     println("publishing starling as version " + ver + " to " + publishingResolverName)
+    services.runMain("starling.services.WriteGitInfo")()()
     buildResults.flatMap(b => starling.Publish(resolver = publishingResolverName, version = ver)())
   }
   case _ => {
     println("skipping publishing, need a version number and build.type to be starling for starling publishing to work")
     buildResults
   }
-} 
+}
 
 println("build complete")
 handleExit(results)
