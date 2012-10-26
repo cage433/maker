@@ -27,7 +27,7 @@ object Starling {
   val targetDirName = "target-maker"
   def defaultStarlingLayout(root : File) = ProjectLayout.maker(root, Some(file(root, targetDirName)))
 
-  def project(name : String, upstreamProjects : List[Project], upstreamTestProjects : List[Project]) : Project = {
+  def project(name : String, upstreamProjects : List[Project], upstreamTestProjects : List[Project]) : Project with MoreSugar = {
     val root = file(name)
     new Project(
       root,
@@ -36,8 +36,17 @@ object Starling {
       upstreamProjects = upstreamProjects,
       upstreamTestProjects = upstreamTestProjects,
       props = makerProps
-    ) with TmuxMessaging
+    ) with TmuxMessaging with MoreSugar
   }
+
+  trait MoreSugar{
+    self : Project ⇒
+      def tcc = testCompileContinuously
+      def stfe {
+        props.ShowFailingTestException := ! props.ShowFailingTestException()
+      }
+  }
+
   def project(name : String, upstreamProjects : Project*) : Project = project(name, upstreamProjects.toList, Nil)
 
   lazy val manager = project("manager")
@@ -114,7 +123,7 @@ object Starling {
       "component-tests",
       "refined-service",
       "refinedtestclient"
-    )) with TmuxMessaging
+    )) with TmuxMessaging with MoreSugar
 
   def stdRunner(proj : Project)(className : String) = {
     proj.compile
