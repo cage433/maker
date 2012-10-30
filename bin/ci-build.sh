@@ -31,7 +31,10 @@ echo "git.commit              : $GIT_COMMIT"
 echo "jenkins.job             : $JOB_NAME"
 echo "maker project file name : $4"
 
-ARGS="-Dbuild.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3 -Dgit.commit=$GIT_COMMIT -Djenkins.job=$JOB_NAME"
+ARGS="-Dtrademanagement_v2_version=1.15.3793 -Dmodel_logistics_public_scala_bindings_version=4.4.3 -Dmodel_pricingmgmt_public_scala_bindings_version=1.11.000"
+TITAN_VERSION_ARGS="-Dtrademanagement_v2_version=1.15.3793 -Dmodel_logistics_public_scala_bindings_version=4.4.3 -Dmodel_pricingmgmt_public_scala_bindings_version=1.11.000"
+
+ARGS="-Dbuild.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3 -Dgit.commit=$GIT_COMMIT -Djenkins.job=$JOB_NAME -args " $TITAN_VERSION_ARGS
 echo "maker jvm args : $ARGS"
 
 MAKER_PROJECT_FILE=$4
