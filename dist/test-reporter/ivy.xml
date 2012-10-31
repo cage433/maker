@@ -1,0 +1,20 @@
+<!-- Auto-generated from Maker script -->
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="${group_id}" module="test-reporter" revision="${maker.module.version}" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+    <conf name="compile" transitive="false"/>
+    <conf name="test" transitive="false"/>
+  </configurations>
+
+  <publications>
+    <artifact name="test-reporter" type="pom"/>
+    <artifact name="test-reporter" type="jar" ext="jar" conf="default" />
+    <artifact name="test-reporter-sources" type="jar" ext="jar" conf="default" />
+    <artifact name="test-reporter-docs" type="jar" ext="jar" conf="default" />
+  </publications>
+
+  <dependencies defaultconfmapping="*->default,sources">
+    <dependency org="org.scalatest" name="scalatest_2.9.1" rev="${scalatest_version}"/>
+  </dependencies>
+</ivy-module>
