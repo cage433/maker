@@ -42,10 +42,10 @@ object Utils {
   def updateIvyFromProjectPom(project : Project) = {
     val antFileName = "antMakeIvy.xml"
     val antFile = file("maker", antFileName)
-    val tmpFile = file(project.root, antFileName)
+    val tmpFile = file(project.rootAbsoluteFile, antFileName)
     copyFile(antFile, tmpFile)
-    val args = List("ant", "-f", file(project.root, "antMakeIvy.xml").getAbsolutePath)
-    val cmd = Command(MakerLog(), Some(project.root), args : _*)
+    val args = List("ant", "-f", file(project.rootAbsoluteFile, "antMakeIvy.xml").getAbsolutePath)
+    val cmd = Command(MakerLog(), Some(project.rootAbsoluteFile), args : _*)
     val r = runCmd(cmd)
     tmpFile.delete
     r
@@ -57,9 +57,9 @@ object Utils {
    */
   case class RichProject(project : Project) {
     def updateIvyFromPom = updateIvyFromProjectPom(project)
-    def mvnCompile = runMavenCmd(project.root, "compile")
-    def mvnInstall = runMavenCmd(project.root, "install")
-    def mvn(cmd : String, args : String*) = runMavenCmd(project.root, (cmd :: args.toList) : _*)
+    def mvnCompile = runMavenCmd(project.rootAbsoluteFile, "compile")
+    def mvnInstall = runMavenCmd(project.rootAbsoluteFile, "install")
+    def mvn(cmd : String, args : String*) = runMavenCmd(project.rootAbsoluteFile, (cmd :: args.toList) : _*)
     def rich = this
   }
   object RichProject {
