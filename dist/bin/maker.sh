@@ -78,7 +78,7 @@ main() {
     # TODO - move scala jars from bootclasspath to classpath once permgen fix available
     CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/"
 #    echo "CLASSPATH = $CLASSPATH"
-#    echo "Args = $MAKER_ARGS"
+    echo "Args = $MAKER_ARGS"
 
     if [ ! -z $MAKER_CMD ];
     then
