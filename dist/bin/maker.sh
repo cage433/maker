@@ -74,7 +74,7 @@ main() {
 
   if [ -z $MAKER_SKIP_LAUNCH ];
   then
-    JAVA_OPTS=$JAVA_OPTS" -Xmx$(($MAKER_HEAP_SPACE))m -XX:MaxPermSize=$(($MAKER_PERM_GEN_SPACE))m $JREBEL_OPTS $MAKER_DEBUG_PARAMETERS -XX:+HeapDumpOnOutOfMemoryError "
+    JAVA_OPTS=" -Xmx$(($MAKER_HEAP_SPACE))m -XX:MaxPermSize=$(($MAKER_PERM_GEN_SPACE))m $JREBEL_OPTS $MAKER_DEBUG_PARAMETERS -XX:+HeapDumpOnOutOfMemoryError "$JAVA_OPTS" "
     # TODO - move scala jars from bootclasspath to classpath once permgen fix available
     CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/"
 #    echo "CLASSPATH = $CLASSPATH"
@@ -126,8 +126,8 @@ main() {
     fi
 
     # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
-    debug "$JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=logback.xml -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS" 
-    $JAVA_HOME/bin/java -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH $JAVA_OPTS -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=logback.xml -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
+    debug "$JAVA_HOME/bin/java $JAVA_OPTS -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=logback.xml -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS "
+    $JAVA_HOME/bin/java $JAVA_OPTS -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=logback.xml -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
   fi
 }
 
@@ -489,6 +489,7 @@ function write_ivy_files() {
     <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-jsp" rev="${jetty_version}" />
     <dependency org="redis.clients" name="jedis" rev="2.0.0" />
+    <dependency org="commons-pool" name="commons-pool" rev="1.5.5" />
     <dependency org="org.mortbay.jetty" name="jsp-2.1-glassfish" rev="2.1.v20100127" />
     <dependency org="javax.servlet" name="servlet-api" rev="2.5" />
     <dependency org="org.apache.tomcat" name="jsp-api" rev="6.0.20" />
