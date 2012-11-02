@@ -83,10 +83,10 @@ object Starling {
   lazy val services = project("services", List(loopyxl, titan, schemaevolution, fc2Facility, reportsFacility), List(utils, quantity, curves, daterange, instrument))
   lazy val rabbitEventViewerService = project("rabbit.event.viewer.service", rabbitEventViewerApi, services)
   lazy val tradeImpl = project("trade.impl", services, tradeFacility)
-  lazy val oil = project("oil",  services)
-  lazy val metals = project("metals",  List(tradeImpl), List(utils, daterange, curves))
   lazy val pnlreconcile = project("pnlreconcile", List(services, tradeFacility), List(utils, curves, daterange))
   lazy val reportsImpl = project("reports.impl", List(pnlreconcile), List(utils, quantity, curves, daterange))
+  lazy val metals = project("metals",  List(tradeImpl, reportsImpl), List(utils, daterange, curves))
+  lazy val oil = project("oil",  services, reportsImpl)
 
   val hostTitanComponents = false
   val titanEnvAppServerLibs : List[File] = if (hostTitanComponents) file("webservice", "lib-jboss") :: Nil else Nil
