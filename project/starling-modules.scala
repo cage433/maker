@@ -139,4 +139,13 @@ object Starling {
     val classpathString = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar:" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
     writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
+
+  def publishLocalStarlingDeps(version : String) = {
+    starlingClient.update
+    quantity.update
+    daterange.update
+    starlingClient.Publish("local-m2-publish", version).execute
+    quantity.Publish("local-m2-publish", version).execute
+    daterange.Publish("local-m2-publish", version).execute
+  }
 }
