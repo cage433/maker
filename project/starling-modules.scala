@@ -19,20 +19,16 @@ object Starling {
 
   println("\n ** Loading (compiled) Starling build...\n")
 
-  //repl.setPrompt("starling-maker>")
-
   lazy val makerProps : MakerProps = MakerProps(file("Maker.conf"))
   lazy val starlingProperties : Map[String, String] = MakerProps.propsFileToMap(file("props.conf"))
 
   val targetDirName = "target-maker"
-  def defaultStarlingLayout(root : File) = ProjectLayout.maker(root, Some(file(root, targetDirName)))
 
   def project(name : String, upstreamProjects : List[Project], upstreamTestProjects : List[Project]) : Project with MoreSugar = {
     val root = file(name)
     new Project(
       root,
-      name,
-      layout = defaultStarlingLayout(root),
+      layout = new MakerProjectLayout(root),
       upstreamProjects = upstreamProjects,
       upstreamTestProjects = upstreamTestProjects,
       props = makerProps
@@ -51,7 +47,13 @@ object Starling {
 
   lazy val manager = project("manager")
   lazy val utils = project("utils",  manager)
-  lazy val osgirun = { val p = project("osgirun"); p.copy(layout = p.layout.withLibDirs(file("osgirun/lib"), file("osgirun/osgi_jars"))) }
+  lazy val osgirun = new Project(
+    file("osgirun"),
+    layout = new MakerProjectLayout(file("osgirun")){
+      override def unmanagedLibDirs = Set(file("osgirun/lib"), file("osgirun/osgi_jars"))
+    },
+    props = makerProps
+  )
   lazy val starlingDTOApi = project("starling.dto.api", utils)
   lazy val booter = project("booter")
   lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
@@ -88,24 +90,8 @@ object Starling {
   lazy val metals = project("metals",  List(tradeImpl, reportsImpl), List(utils, daterange, curves))
   lazy val oil = project("oil",  services, reportsImpl)
 
-  val hostTitanComponents = false
-  val titanEnvAppServerLibs : List[File] = if (hostTitanComponents) file("webservice", "lib-jboss") :: Nil else Nil
 
-  lazy val webservice = {
-    val name = "webservice"
-    val root = file(name)
-    val libs = file(".maker/scala-lib") :: List("lib_managed", "lib", "maker-lib").map(file(root, _)) ::: titanEnvAppServerLibs
-    val additionalModuleDeps = Nil
-    val newLayout = defaultStarlingLayout(root).withLibDirs(libs : _*)
-    new Project(
-      root,
-      name,
-      layout = newLayout,
-      props = makerProps,  
-      upstreamProjects = (services :: additionalModuleDeps.toList),
-      upstreamTestProjects = List(utils)
-    )
-  }
+  lazy val webservice = project("webservice", List(services), List(utils))
 
   // below are some utils for running starling from maker
   lazy val startserver = project("startserver", reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)

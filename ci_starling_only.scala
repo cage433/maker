@@ -14,7 +14,6 @@ import maker.utils.os.Command._
 import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
-import maker.task.ProjectAndTask
 import maker.task.Task
 import maker.task.tasks._
 import maker.utils._
@@ -45,18 +44,15 @@ try {
   }
 }
 
-def mkBuildResult(project : Project, task : Task) : BuildResult = {
-  val pt = ProjectAndTask(project, task)
-  BuildResult(List(TaskSucceeded(project, task, new Stopwatch)), Dependency.Graph.empty , pt)
-}
-
 def doDocs(br : BuildResult) : BuildResult = {
   if (buildType == "starling") {
     println("generating documentation")
-    br.flatMap(_ => starlingDTOApi.docOnly) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
+    br.flatMap(_ => starlingDTOApi.doc) // build an aggregated doc of the starling api, unfortunately can't build whole docs as arg list is too big!
   }
-  else
-    mkBuildResult(starlingDTOApi, DocTask())
+  else {
+    println("not generating documentation")
+    br
+  }
 }
 
 println("finished loading definitions, starling build...")
@@ -75,7 +71,7 @@ val results : BuildResult = buildNo match {
   case Some(ver) if (buildType == "starling" && publishingResolverName == "starling-release") => {
     println("publishing starling as version " + ver + " to " + publishingResolverName)
     services.runMain("starling.services.WriteGitInfo")()()
-    buildResults.flatMap(b => starling.Publish(resolver = publishingResolverName, version = ver)())
+    buildResults.flatMap(b => starling.Publish(resolver = publishingResolverName, version = ver).execute)
   }
   case _ => {
     println("skipping publishing, need a version number and build.type to be starling for starling publishing to work")
