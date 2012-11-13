@@ -59,8 +59,8 @@ object Starling {
   lazy val props = project("props",  utils)
   lazy val auth = project("auth",  utils)
   lazy val bouncyrmi = project("bouncyrmi", auth)
-  lazy val loopyxl = project("loopyxl",  loopyxlJava)
-  lazy val loopyxlJava = project("loopyxl-java", auth)
+  lazy val loopyxl = project("loopyxl", auth, loopyxlJava)
+  lazy val loopyxlJava = project("loopyxl-java")
   lazy val browserService = project("browser.service",  manager)
   lazy val browser = project("browser",  browserService)
   lazy val guiapi = project("gui.api", browserService, bouncyrmi, pivotUtils)
@@ -83,7 +83,6 @@ object Starling {
   lazy val reportsImpl = project("reports.impl", List(pnlreconcile), List(utils, quantity, curves, daterange))
   lazy val metals = project("metals",  List(tradeImpl, reportsImpl), List(utils, daterange, curves))
   lazy val oil = project("oil", reportsImpl)
-
 
   lazy val webservice = project("webservice", List(services), List(utils))
 
