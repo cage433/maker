@@ -95,7 +95,7 @@ object Starling {
   lazy val webservice = project("webservice", List(services), List(utils))
 
   // below are some utils for running starling from maker
-  lazy val startserver = project("startserver", reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
+  lazy val startserver = project("startserver", metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
   lazy val launcher = project("launcher", List(startserver, booter, gui), List(curves))
   lazy val starling = new TopLevelProject("starling", List(launcher), makerProps,
     List(
