@@ -47,13 +47,6 @@ object Starling {
 
   lazy val manager = project("manager")
   lazy val utils = project("utils",  manager)
-  lazy val osgirun = new Project(
-    file("osgirun"),
-    layout = new MakerProjectLayout(file("osgirun")){
-      override def unmanagedLibDirs = Set(file("osgirun/lib"), file("osgirun/osgi_jars"))
-    },
-    props = makerProps
-  )
   lazy val starlingDTOApi = project("starling.dto.api", utils)
   lazy val booter = project("booter")
   lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
@@ -66,7 +59,8 @@ object Starling {
   lazy val props = project("props",  utils)
   lazy val auth = project("auth",  utils)
   lazy val bouncyrmi = project("bouncyrmi", auth)
-  lazy val loopyxl = project("loopyxl",  auth)
+  lazy val loopyxl = project("loopyxl", auth, loopyxlJava)
+  lazy val loopyxlJava = project("loopyxl-java")
   lazy val browserService = project("browser.service",  manager)
   lazy val browser = project("browser",  browserService)
   lazy val guiapi = project("gui.api", browserService, bouncyrmi, pivotUtils)
@@ -88,13 +82,12 @@ object Starling {
   lazy val pnlreconcile = project("pnlreconcile", List(services, tradeFacility), List(utils, curves, daterange))
   lazy val reportsImpl = project("reports.impl", List(pnlreconcile), List(utils, quantity, curves, daterange))
   lazy val metals = project("metals",  List(tradeImpl, reportsImpl), List(utils, daterange, curves))
-  lazy val oil = project("oil",  services, reportsImpl)
-
+  lazy val oil = project("oil", reportsImpl)
 
   lazy val webservice = project("webservice", List(services), List(utils))
 
   // below are some utils for running starling from maker
-  lazy val startserver = project("startserver", reportsImpl, metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
+  lazy val startserver = project("startserver", metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
   lazy val launcher = project("launcher", List(startserver, booter, gui), List(curves))
   lazy val starling = new TopLevelProject("starling", List(launcher), makerProps,
     List(
