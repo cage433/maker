@@ -47,13 +47,6 @@ object Starling {
 
   lazy val manager = project("manager")
   lazy val utils = project("utils",  manager)
-  lazy val osgirun = new Project(
-    file("osgirun"),
-    layout = new MakerProjectLayout(file("osgirun")){
-      override def unmanagedLibDirs = Set(file("osgirun/lib"), file("osgirun/osgi_jars"))
-    },
-    props = makerProps
-  )
   lazy val starlingDTOApi = project("starling.dto.api", utils)
   lazy val booter = project("booter")
   lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
