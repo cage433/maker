@@ -46,9 +46,13 @@ ${ivy.pom.header}
     <testSourceDirectory>test/</testSourceDirectory>
     <plugins>
       <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.1.0</version>
+<!--      <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
-        <version>2.15.0</version>
+        <version>2.15.0</version> -->
         <executions>
           <execution>
             <goals>
