@@ -35,8 +35,7 @@ ARGS="-Dbuild.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3 -Dgit.commit=$G
 echo "maker jvm args : $ARGS"
 
 MAKER_PROJECT_FILE=$4
-MEM_HEAP_SPACE=$5
-MEM_HEAP_SPACE_OPT=""
+HEAP_MEM_ALLOCATED=$5
 
 if [ -z "$MAKER_PROJECT_FILE" ];
 then
@@ -44,18 +43,18 @@ then
   exit -1
 fi
 
-if [ -z "$MEM_HEAP_SPACE" ]; then
-   echo "Using default mem heap space settings"
+if [ -z "$HEAP_MEM_ALLOCATED" ];then
+   echo "Using default heap mem setting."
 else
-   echo "Using heap mem = $MEM_HEAP_SPACE MB"
-   MEM_HEAP_SPACE_OPT="-m $MEM_HEAP_SPACE"
+   echo "Using heap mem = $HEAP_MEM_ALLOCATED MB"
+   HEAP_MEM_ALLOCATED=" -m $HEAP_MEM_ALLOCATED"
 fi
 
 echo "project file = $MAKER_PROJECT_FILE"
 
 export MAKER_DEBUG=true
-echo ./maker/dist/bin/maker.sh -ntty $MEM_HEAP_SPACE_OPT -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS
-./maker/dist/bin/maker.sh -c "maker/project/" -y -d -m $MEM_HEAP_SPACE_OPT -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+echo ./maker/dist/bin/maker.sh -ntty $HEAP_MEM_ALLOCATED -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS
+./maker/dist/bin/maker.sh -c "maker/project/" -y -d $HEAP_MEM_ALLOCATED -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
 
 if [ "$2" == "starling" ] && [ "$3" == "starling-release" ]; then
