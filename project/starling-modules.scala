@@ -28,6 +28,7 @@ object Starling {
     val root = file(name)
     new Project(
       root,
+      name,
       layout = new MakerProjectLayout(root),
       upstreamProjects = upstreamProjects,
       upstreamTestProjects = upstreamTestProjects,
