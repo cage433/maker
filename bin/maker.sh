@@ -135,7 +135,7 @@ maker_internal_classpath(){
   if [ $MAKER_DEVELOPER_MODE ];
   then
     for module in utils plugin maker; do
-      cp="$cp:$MAKER_OWN_ROOT_DIR/$module/target/classes:$MAKER_OWN_ROOT_DIR/$module/target/test-classes/:$MAKER_OWN_SCALATEST_REPORTER_JAR"
+      cp="$cp:$MAKER_OWN_ROOT_DIR/$module/target-maker/classes:$MAKER_OWN_ROOT_DIR/$module/target-maker/test-classes/:$MAKER_OWN_SCALATEST_REPORTER_JAR"
     done
   else
     cp="$MAKER_OWN_ROOT_DIR/maker.jar:$MAKER_OWN_SCALATEST_REPORTER_JAR"
@@ -163,7 +163,7 @@ check_setup_sane(){
   fetch_ivy
   echo "done fetching ivy"
 
-  MAKER_IVY_JAR=${MAKER_IVY_JAR-${MAKER_OWN_ROOT_DIR}/libs/ivy-2.2.0.jar}
+  MAKER_IVY_JAR=${MAKER_IVY_JAR-${MAKER_OWN_ROOT_DIR}/libs/ivy-2.3.0-rc2.jar}
   if [ ! -e $MAKER_IVY_JAR ];
   then
     echo "Ivy jar not found"
@@ -391,16 +391,16 @@ maker_ivy_binary_retrieve() {
 fetch_ivy() {
   debug "Fetching ivy"
   if [ -z $MAKER_IVY_URL ]; then
-    MAKER_IVY_URL="http://repo1.maven.org/maven2/org/apache/ivy/ivy/2.2.0/ivy-2.2.0.jar"
+    MAKER_IVY_URL="http://repo1.maven.org/maven2/org/apache/ivy/ivy/2.3.0-rc2/ivy-2.3.0-rc2.jar"
   fi
-  if [ ! -f ${MAKER_OWN_ROOT_DIR}/libs/ivy-2.2.0.jar ]; then
+  if [ ! -f ${MAKER_OWN_ROOT_DIR}/libs/ivy-2.3.0-rc2.jar ]; then
     if [ ! -z $MAKER_IVY_PROXY_HOST ]; then
       CURL_PROXY_ARGS="-x http://$MAKER_IVY_PROXY_HOST:$MAKER_IVY_PROXY_PORT"
     fi
-    debug "downloading Ivy 2.2 jar from $MAKER_IVY_URL - $CURL_PROXY_ARGS"
+    debug "downloading Ivy jar from $MAKER_IVY_URL - $CURL_PROXY_ARGS"
     curl $CURL_PROXY_ARRGS -O $MAKER_IVY_URL
     mkdir -p ${MAKER_OWN_ROOT_DIR}/libs
-    mv ivy-2.2.0.jar ${MAKER_OWN_ROOT_DIR}/libs/
+    mv ivy-2.3.0-rc2.jar ${MAKER_OWN_ROOT_DIR}/libs/
   fi
 }
 
@@ -463,8 +463,9 @@ function write_ivy_files() {
     <artifact name="utils-docs" type="jar" ext="jar" conf="default" />
   </publications>
 
-  <dependencies defaultconfmapping="*->default,sources">
-    <dependency org="org.scala-lang" name="scala-compiler" rev="2.9.1"/>
+  <dependencies defaultconfmapping="*->default">
+    <dependency org="org.scala-lang" name="scala-compiler" rev="${scala_version}" />
+    <dependency org="org.scala-lang" name="scala-library" rev="${scala_version}" />
     <dependency org="commons-io" name="commons-io" rev="2.1"/>
     <dependency org="commons-codec" name="commons-codec" rev="1.6"/>
     <dependency org="org.apache.commons" name="commons-lang3" rev="3.1"/>
@@ -477,7 +478,7 @@ function write_ivy_files() {
     <dependency org="org.apache.ant" name="ant" rev="1.8.2"/>
     <dependency org="io.netty" name="netty" rev="3.4.2.Final"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.1"/>
-    <dependency org="net.debasishg" name="sjson_2.9.1" rev="0.15"/>
+    <dependency org="net.debasishg" name="sjson_2.9.1" rev="0.17"/>
     <dependency org="org.eclipse.jetty" name="jetty-server" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${jetty_version}" />
@@ -494,7 +495,7 @@ function write_ivy_files() {
     <dependency org="javax.servlet" name="servlet-api" rev="2.5" />
     <dependency org="org.apache.tomcat" name="jsp-api" rev="6.0.20" />
     <dependency org="org.mockito" name="mockito-all" rev="1.8.2" />
-    <dependency org="org.apache.ivy" name="ivy" rev="2.2.0" />
+    <dependency org="org.apache.ivy" name="ivy" rev="2.3.0-rc2" />
   </dependencies>
 </ivy-module>
 IVY_FILE
@@ -568,7 +569,7 @@ if [ ! -e $MAKER_IVY_SETTINGS_FILE ]; then
     <url name="maker-oss-staging" m2compatible="true"> <!-- Sonatype OSS Staging -->
       <artifact pattern="https://oss.sonatype.org/service/local/staging/deploy/maven2/maker-test/[artifact]/[revision]/[artifact]/pom.xml]" />
     </url>
-    <ibiblio name="central" m2compatible="true"/>
+    <ibiblio name="central" m2compatible="true" checksums="" />
     <ibiblio name="maker" m2compatible="true" root="https://oss.sonatype.org/content/repositories/snapshots/" />
     <chain name="default" returnFirst="true">
       <resolver ref="central"/>
