@@ -41,6 +41,13 @@ ${ivy.pom.header}
     ${maker.developers}
   </developers>
 
+  <parent>
+    <groupId>starling</groupId>
+    <artifactId>starling</artifactId>
+    <version>${ivy.pom.version}</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
   <build>
     <sourceDirectory>src/</sourceDirectory>
     <testSourceDirectory>test/</testSourceDirectory>
