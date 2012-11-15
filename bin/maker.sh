@@ -478,7 +478,7 @@ function write_ivy_files() {
     <dependency org="org.apache.ant" name="ant" rev="1.8.2"/>
     <dependency org="io.netty" name="netty" rev="3.4.2.Final"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.1"/>
-    <dependency org="net.debasishg" name="sjson_2.9.1" rev="0.15"/>
+    <dependency org="net.debasishg" name="sjson_2.9.1" rev="0.17"/>
     <dependency org="org.eclipse.jetty" name="jetty-server" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${jetty_version}" />
