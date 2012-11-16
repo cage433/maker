@@ -47,7 +47,14 @@ ${ivy.pom.header}
     <version>${ivy.pom.version}</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-
+ 
+  <pluginRepositories>
+    <pluginRepository>
+      <id>titan</id>
+      <url>http://nexus.global.trafigura.com:8081/nexus/content/groups/titan</url>
+    </pluginRepository>
+  </pluginRepositories>
+ 
   <build>
     <sourceDirectory>src/</sourceDirectory>
     <testSourceDirectory>test/</testSourceDirectory>
