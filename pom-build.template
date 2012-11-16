@@ -57,8 +57,13 @@ ${ivy.pom.header}
  
   <build>
     <sourceDirectory>src/</sourceDirectory>
-    <testSourceDirectory>test/</testSourceDirectory>
-    <plugins>
+    <testSourceDirectory>tests/</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>resources/</directory>
+      </resource>
+   </resources>
+   <plugins>
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
