@@ -11,7 +11,7 @@ println("starling blotter tests...")
 val br = for {
   c <- starling.clean
   u <- starling.update
-  b <- launcher.runMain("starling.test.regression.RealTimeRegressionTests")(commonLaunchArgs : _*)()
+  b <- launcher.runMain("starling.test.regression.RealTimeRegressionTests")(lightweightLaunchArgs : _*)()
 } yield b
 
 println("Blotter tests have completed")
