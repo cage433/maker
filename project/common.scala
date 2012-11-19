@@ -25,4 +25,19 @@ object Common {
         "-XX:+PrintGCDetails")
       else Nil
     }
+
+  lazy val lightweightLaunchArgs = List(
+    "-server",
+    "-XX:MaxPermSize=1024m",
+    "-Xss128k",
+    "-Xms2000m",
+    "-Xmx4000m",
+    "-Dsun.awt.disablegrab=true",
+    "-XX:+UseConcMarkSweepGC") ::: {
+      if (verboseGC) List(
+        "-verbose:gc",
+        "-XX:+PrintGCTimeStamps",
+        "-XX:+PrintGCDetails")
+      else Nil
+    }
 }
