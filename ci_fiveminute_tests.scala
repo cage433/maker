@@ -10,7 +10,7 @@ val br = for {
   c <- starling.clean
   u <- starling.update
   t <- launcher.testCompile
-  b <- launcher.runMain("starling.slowtests.FiveMinuteTests")(commonLaunchArgs : _*)()
+  b <- launcher.runMain("starling.slowtests.FiveMinuteTests")(lightweightLaunchArgs : _*)()
 } yield b
 
 println("Five minute tests have completed")
