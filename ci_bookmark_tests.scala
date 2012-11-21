@@ -11,7 +11,7 @@ println("starling Bookmark tests...")
 val br = for {
   c <- starling.clean
   u <- starling.update
-  b <- launcher.runMain("starling.bookmarkedtests.BookmarkTests")(commonLaunchArgs : _*)()
+  b <- launcher.runMain("starling.bookmarkedtests.BookmarkTests")(lightweightLaunchArgs : _*)()
 } yield b
 
 println("Bookmark tests have completed")
