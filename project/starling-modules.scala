@@ -24,8 +24,10 @@ object Starling {
 
   val targetDirName = "target-maker"
 
-  val titanExclusions = "org.testng" % "testng" :: "org.slf4j" % "jcl-over-slf4j" :: Nil
-  val dependencyAdjustments = IvyDependencyAdjustments(Nil, titanExclusions, Nil)
+  // the following libraries conflict with those in titan poms and break things, they are excluded from the
+  // starling build as we provide our own definition of them
+  val titanGlobalExclusions = "org.testng" % "testng" :: "org.slf4j" % "jcl-over-slf4j" :: Nil
+  val globalDependencyAdjustments = DependencyAdjustments(Nil, titanGlobalExclusions, Nil)
 
   def project(name : String, upstreamProjects : List[Project], upstreamTestProjects : List[Project]) : Project with MoreSugar = {
     val root = file(name)
@@ -36,7 +38,7 @@ object Starling {
       upstreamProjects = upstreamProjects,
       upstreamTestProjects = upstreamTestProjects,
       props = makerProps,
-      ivyAdjustments = dependencyAdjustments
+      dependencyAdjustments = globalDependencyAdjustments
     ) with TmuxMessaging with MoreSugar
   }
 
