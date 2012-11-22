@@ -24,6 +24,9 @@ object Starling {
 
   val targetDirName = "target-maker"
 
+  val titanExclusions = "org.testng" % "testng" :: "org.slf4j" % "jcl-over-slf4j" :: Nil
+  val dependencyAdjustments = IvyDependencyAdjustments(Nil, titanExclusions, Nil)
+
   def project(name : String, upstreamProjects : List[Project], upstreamTestProjects : List[Project]) : Project with MoreSugar = {
     val root = file(name)
     new Project(
@@ -32,7 +35,8 @@ object Starling {
       layout = new MakerProjectLayout(root),
       upstreamProjects = upstreamProjects,
       upstreamTestProjects = upstreamTestProjects,
-      props = makerProps
+      props = makerProps,
+      ivyAdjustments = dependencyAdjustments
     ) with TmuxMessaging with MoreSugar
   }
 
