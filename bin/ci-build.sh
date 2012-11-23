@@ -31,8 +31,10 @@ echo "git.commit              : $GIT_COMMIT"
 echo "jenkins.job             : $JOB_NAME"
 echo "maker project file name : $4"
 
-ARGS="-Dtrademanagement_v2_version=1.15.3793 -Dmodel_logistics_public_scala_bindings_version=4.4.3 -Dmodel_pricingmgmt_public_scala_bindings_version=1.11.000"
-TITAN_VERSION_ARGS="-Dtrademanagement_v2_version=1.15.3793 -Dmodel_logistics_public_scala_bindings_version=4.4.3 -Dmodel_pricingmgmt_public_scala_bindings_version=1.11.000"
+# eventually this will go, as it will be replaced by the branch based ci build (once ready and fast enough!), not arbrary published artifact versions
+TITAN_BIN_VER=7.0.0.421
+TITAN_VERSION_ARGS="-Dtitan_binary_version=$TITAN_BIN_VER"
+# -Dtrademanagement_v2_version=$TITAN_BIN_VER -Dmodel_logistics_public_scala_bindings_version=$TITAN_BIN_VER -Dmodel_pricingmgmt_public_scala_bindings_version=$TITAN_BIN_VER"
 
 ARGS="-Dbuild.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3 -Dgit.commit=$GIT_COMMIT -Djenkins.job=$JOB_NAME -args " $TITAN_VERSION_ARGS
 echo "maker jvm args : $ARGS"
