@@ -64,7 +64,7 @@ object Starling {
   lazy val pivotUtils = project("pivot.utils", daterange, pivot)
   lazy val maths = project("maths", List(daterange, quantity), List(utils, quantity, daterange))
   lazy val props = project("props",  utils)
-  lazy val auth = project("auth",  utils)
+  lazy val auth = project("auth",  daterange, utils)
   lazy val bouncyrmi = project("bouncyrmi", auth)
   lazy val loopyxl = project("loopyxl", auth, loopyxlJava)
   lazy val loopyxlJava = project("loopyxl-java")
