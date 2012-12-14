@@ -78,7 +78,7 @@ main() {
     # TODO - move scala jars from bootclasspath to classpath once permgen fix available
     CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/"
 #    echo "CLASSPATH = $CLASSPATH"
-    echo "Args = $MAKER_ARGS"
+#    echo "Args = $MAKER_ARGS"
 
     if [ ! -z $MAKER_CMD ];
     then
@@ -126,8 +126,7 @@ main() {
     fi
 
     # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
-    debug "$JAVA_HOME/bin/java $JAVA_OPTS -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=logback.xml -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS "
-    $JAVA_HOME/bin/java $JAVA_OPTS -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=$MAKER_OWN_ROOT_DIR/logback.xml -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
+    $JAVA_HOME/bin/java $JAVA_OPTS -Xbootclasspath/a:$(scala_jars) -classpath $CLASSPATH -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=logback.xml -Dmaker.process.hierarchy="repl" $RUNNING_EXEC_MODE -Dmaker.level="0" -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
   fi
 }
 
