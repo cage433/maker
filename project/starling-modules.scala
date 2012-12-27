@@ -126,6 +126,12 @@ object Starling {
     writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
 
+  def writeStarlingClasspathWithTests() {
+    val cp = launcher.classpathDirectoriesAndJars(TestCompilePhase).filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
+    val classpathString = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar:" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
+    writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
+  }
+
   def publishLocalStarlingDeps(version : String) = {
     starlingClient.update
     quantity.update
