@@ -82,19 +82,19 @@ object Starling {
   lazy val dbx = project("dbx", props)
   lazy val databases = project("databases", List(dbx, instrument), List(utils, curves, daterange))
   lazy val schemaevolution = project("schemaevolution", databases)
-  lazy val titan = project("titan", List(databases), List(utils, quantity, curves, daterange))
-  lazy val services = project("services", List(loopyxl, titan, schemaevolution, fc2Facility, reportsFacility), List(utils, quantity, curves, daterange, instrument))
-  lazy val rabbitEventViewerService = project("rabbit.event.viewer.service", rabbitEventViewerApi, services)
+  lazy val titan = project("titan", List(reportsImpl), List(utils, instrument, quantity, curves, daterange, reportsImpl))
+  lazy val services = project("services", List(loopyxl, schemaevolution, fc2Facility, reportsFacility), List(utils, quantity, curves, daterange, instrument))
+  lazy val rabbitEventViewerService = project("rabbit.event.viewer.service", rabbitEventViewerApi, titan)
   lazy val tradeImpl = project("trade.impl", services, tradeFacility)
   lazy val pnlreconcile = project("pnlreconcile", List(services, tradeFacility), List(utils, curves, daterange))
   lazy val reportsImpl = project("reports.impl", List(pnlreconcile), List(utils, quantity, curves, daterange))
-  lazy val metals = project("metals",  List(tradeImpl, reportsImpl), List(utils, daterange, curves))
+  //lazy val metals = project("metals",  List(tradeImpl, reportsImpl), List(utils, daterange, curves))
   lazy val oil = project("oil", reportsImpl)
 
-  lazy val webservice = project("webservice", List(services), List(utils))
+  lazy val webservice = project("webservice", List(titan), List(utils))
 
   // below are some utils for running starling from maker
-  lazy val startserver = project("startserver", metals, oil, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
+  lazy val startserver = project("startserver", oil, tradeImpl, starlingClient, webservice, rabbitEventViewerService, singleClasspathManager)
   lazy val launcher = project("launcher", List(startserver, booter, gui), List(curves))
   lazy val starling = new TopLevelProject("starling", List(launcher), makerProps,
     List(
