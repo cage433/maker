@@ -50,7 +50,7 @@ echo "project file = $MAKER_PROJECT_FILE"
 
 export MAKER_DEBUG=true
 echo ./maker/dist/bin/maker.sh -ntty -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS
-./maker/dist/bin/maker.sh -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+./maker/dist/bin/maker.sh -d -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
 
 if [ "$2" == "starling" ] && [ "$3" == "starling-release" ]; then
