@@ -3,6 +3,7 @@
 #Runs a java main supplied as the only argument and records the cpu & gc time
 
 MAIN_CLASS=$1
+shift
 bin/maker -y -e "update;clean;testCompile;writeStarlingClasspathWithTests"
 #bin/maker -e "testCompile;writeStarlingClasspathWithTests"
 COMPILE_WORKED=$?
@@ -22,10 +23,10 @@ if [ $COMPILE_WORKED -eq 0 ]; then
    -XX:+PrintGCDetails \
    -Dsun.awt.disablegrab=true \
    -Dlogback.configurationFile=./logback.xml \
-   starling.utils.RunMainWithStats $MAIN_CLASS
+   starling.utils.RunMainWithStats $MAIN_CLASS $@
 
    MAIN_WORKED=$?
-   if [ $COMPILE_WORKED -eq 1 ]; then
+   if [ MAIN_WORKED -eq 1 ]; then
      echo "failed"
    fi
 
@@ -39,6 +40,7 @@ if [ $COMPILE_WORKED -eq 0 ]; then
    exit $MAIN_WORKED
  else
    echo "compile failed"
+   exit 1
  fi
 
 
