@@ -81,9 +81,9 @@ object Starling {
   lazy val starlingClient = project("starling.client", bouncyrmi)
   lazy val dbx = project("dbx", props)
   lazy val databases = project("databases", List(dbx, instrument), List(utils, curves, daterange))
-  lazy val schemaevolution = project("schemaevolution", dbx) // Please do not change this dependency without asking
+  lazy val schemaevolution = project("schemaevolution", databases)
   lazy val titan = project("titan", List(reportsImpl), List(utils, instrument, quantity, curves, daterange, reportsImpl))
-  lazy val services = project("services", List(loopyxl, databases, schemaevolution, fc2Facility, reportsFacility), List(utils, quantity, curves, daterange, instrument))
+  lazy val services = project("services", List(loopyxl, schemaevolution, fc2Facility, reportsFacility), List(utils, quantity, curves, daterange, instrument))
   lazy val eventViewerService = project("event.viewer.service", eventViewerApi, titan)
   lazy val tradeImpl = project("trade.impl", services, tradeFacility)
   lazy val pnlreconcile = project("pnlreconcile", List(services, tradeFacility), List(utils, curves, daterange))
