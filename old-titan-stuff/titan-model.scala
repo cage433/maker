@@ -37,7 +37,7 @@ object TitanModel {
     def latestRubyFileTime(path : File) = {
       val files = findFilesWithExtension("rb", path)
       if (files.isEmpty)
-        throw new RuntimeException("No ruby files found")
+        throw new Exception("No ruby files found")
       files.map(_.lastModified).toList.sort(_>_).head
     }
     def earliestScalaFileTime(path : File) = {
