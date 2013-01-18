@@ -153,7 +153,7 @@ lazy val jettyDeployDir = file("titan.deploy/wars")
 def deployWar(deployDir : File)(project : Project) {
   project.webAppDir match {
     case Some(_) => copyFileToDirectory(project.outputArtifact, deployDir)
-    case _ => throw new Exception("can't deploy a war from a non webapp project!")
+    case _ => throw new RuntimeException("can't deploy a war from a non webapp project!")
   }
 }
 lazy val deployWarToJetty = deployWar(jettyDeployDir) _
