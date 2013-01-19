@@ -32,6 +32,7 @@ MAKER_IVY_SETTINGS_FILE=ivysettings.xml
 MAKER_COMPILED_PROJ_OUTPUT_DIR=$MAKER_OWN_ROOT_DIR/.maker/proj
 MAKER_OWN_SCALATEST_REPORTER_JAR=$MAKER_OWN_ROOT_DIR/maker-scalatest-reporter.jar
 MAKER_OWN_SCALATEST_REPORTER_SOURCE=$MAKER_OWN_ROOT_DIR/test-reporter/src/maker/scalatest/MakerTestReporter.scala
+MAKER_OWN_JAR=$MAKER_OWN_ROOT_DIR/maker.jar 
 
 debug(){
   msg=$1
@@ -59,11 +60,11 @@ main() {
     ivy_update
     maker_ivy_binary_retrieve
   else
-    if [[ ! -z $MAKER_BOOTSTRAP ]] || [[ ! -e $MAKER_OWN_ROOT_DIR/maker.jar ]] ;
+    if [[ ! -z $MAKER_BOOTSTRAP ]] || [[ ! -e $MAKER_OWN_JAR ]] ;
     then
       bootstrap || exit -1
     else
-      echo "Omitting bootstrap as $MAKER_OWN_ROOT_DIR/maker.jar exists"
+      echo "Omitting bootstrap as $MAKER_OWN_JAR exists"
     fi
 
     if test $MAKER_OWN_SCALATEST_REPORTER_SOURCE -nt $MAKER_OWN_SCALATEST_REPORTER_JAR;
@@ -137,7 +138,7 @@ maker_internal_classpath(){
       cp="$cp:$MAKER_OWN_ROOT_DIR/$module/target-maker/classes:$MAKER_OWN_ROOT_DIR/$module/target-maker/test-classes/:$MAKER_OWN_SCALATEST_REPORTER_JAR"
     done
   else
-    cp="$MAKER_OWN_ROOT_DIR/maker.jar:$MAKER_OWN_SCALATEST_REPORTER_JAR"
+    cp="$MAKER_OWN_JAR:$MAKER_OWN_SCALATEST_REPORTER_JAR"
   fi
   for module in utils plugin maker; do
     cp="$cp:$MAKER_OWN_ROOT_DIR/$module/resources/"
@@ -236,7 +237,6 @@ bootstrap() {
   pushd $MAKER_OWN_ROOT_DIR  # Shouldn't be necessary to change dir, but get weird compilation errors otherwise
   TEMP_OUTPUT_DIR=`mktemp -d maker-tmp-XXXXXXXXXX`
   MAKER_OWN_RESOURCES_DIR=$MAKER_OWN_ROOT_DIR/utils/resources
-  MAKER_OWN_JAR=$MAKER_OWN_ROOT_DIR/maker.jar
 
   rm -f $MAKER_OWN_JAR
 
@@ -248,7 +248,7 @@ bootstrap() {
   $SCALA_HOME/bin/scalac -classpath $(external_jars) -d $TEMP_OUTPUT_DIR $SRC_FILES 2>&1 | tee $MAKER_OWN_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
   run_command "$JAVA_HOME/bin/jar cf $MAKER_OWN_JAR -C $TEMP_OUTPUT_DIR . -C $MAKER_OWN_RESOURCES_DIR ." || exit -1
 
-  if [ ! -e $MAKER_OWN_ROOT_DIR/maker.jar ];
+  if [ ! -e $MAKER_OWN_JAR ];
   then
 	  echo "Maker jar failed to be created"
 	  exit -1
@@ -276,6 +276,7 @@ process_options() {
       -y | --do-ivy-update ) MAKER_IVY_UPDATE=true; shift;;
       -b | --boostrap ) MAKER_BOOTSTRAP=true; shift;;
       -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
+      -w | --maker-jar ) MAKER_OWN_JAR=$2; shift 2;;
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -nr | --no-repl ) MAKER_SKIP_LAUNCH=true; shift 1;;
       -ntty | --no-tty-restore ) echo; echo "DEPRECATED OPTION '-ntty', THIS CAN BE REMOVED"; echo; shift 1;;
