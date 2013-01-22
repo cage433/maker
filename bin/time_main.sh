@@ -26,7 +26,7 @@ if [ $COMPILE_WORKED -eq 0 ]; then
    starling.utils.RunMainWithStats $MAIN_CLASS $@
 
    MAIN_WORKED=$?
-   if [ MAIN_WORKED -eq 1 ]; then
+   if [ $MAIN_WORKED -eq 1 ]; then
      echo "failed"
    fi
 
