@@ -10,6 +10,7 @@ import Common._;
 import Utils._;
 import Starling._;
 import Starling.starling._;
+System.setProperty("scala.usejavacp", "false")
 
 println("\nStarling build loaded\n\nNote: for convenience the 'starling' project is in the root scope, clean, test etc will act on that unless a project is specified (e.g. utils.clean...)\n")
 
