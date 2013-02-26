@@ -59,7 +59,7 @@ object Starling {
   lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
   lazy val osgiManager = project("osgimanager",  utils)
   lazy val singleClasspathManager = project("singleclasspathmanager",  osgiManager)
-  lazy val pivot = project("pivot",  quantity)
+  lazy val pivot = project("pivot", List(quantity), List(utils))
   lazy val daterange = project("daterange", starlingDTOApi)
   lazy val pivotUtils = project("pivot.utils", daterange, pivot)
   lazy val maths = project("maths", List(daterange, quantity), List(utils, quantity, daterange))
