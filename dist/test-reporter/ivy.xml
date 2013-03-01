@@ -15,6 +15,6 @@
   </publications>
 
   <dependencies defaultconfmapping="*->default,sources">
-    <dependency org="org.scalatest" name="scalatest_${scala_version}" rev="${scalatest_version}"/>
+    <dependency org="org.scalatest" name="scalatest_2.9.1" rev="${scalatest_version}"/>
   </dependencies>
 </ivy-module>
