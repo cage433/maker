@@ -1,9 +1,9 @@
-<!-- Auto-generated from Maker script -->
+<!-- Normally auto-generated from Maker script, however this wasn't as
+     we need to add the traf internal repo -->
 <ivysettings>
   <property name="group_id" value="com.google.code.maker" />
   <property name="maker.module.version" value="0.01" />
   <property name="scala_version" value="2.9.1" />
-  <property name="sbt_version" value="0.12.1" />
   <property name="scalatest_version" value="1.8" />
   <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
   <property name="jetty_version" value="7.6.3.v20120416" />
@@ -27,9 +27,11 @@
     <url name="maker-oss-staging" m2compatible="true"> <!-- Sonatype OSS Staging -->
       <artifact pattern="https://oss.sonatype.org/service/local/staging/deploy/maven2/maker-test/[artifact]/[revision]/[artifact]/pom.xml]" />
     </url>
-    <ibiblio name="central" m2compatible="true" checksums="" />
-    <ibiblio name="maker" m2compatible="true" root="https://oss.sonatype.org/content/repositories/snapshots/" />
+    <ibiblio name="central" m2compatible="true"/>
+    <ibiblio name="maker" m2compatible="true" root="https://oss.sonatype.org/content/repositories/snapshots/" /> 
+    <ibiblio name="Non-Trafigura Public Repositories" root="http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/" m2compatible="true"/>
     <chain name="default" returnFirst="true">
+      <resolver ref="Non-Trafigura Public Repositories"/>
       <resolver ref="central"/>
       <resolver ref="maker-oss-snapshot"/>
     </chain>
