@@ -35,6 +35,9 @@ echo "maker project file name : $4"
 TITAN_BIN_VER=`bin/temp_maker_titan_bin_version.sh`
 TITAN_VERSION_ARGS="-Dtitan_binary_version=$TITAN_BIN_VER"
 
+MAKER_IVY_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-additional-resources/org/apache/ivy/ivy/2.3.0-rc2/ivy-2.3.0-rc2.jar
+MAKER_COMPILER_INTERFACE_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-additional-resources/com/typesafe/sbt/compiler-interface-sources/0.12.1/compiler-interface-sources-0.12.1.jar
+
 ARGS="-Dbuild.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3 -Dgit.commit=$GIT_COMMIT -Djenkins.job=$JOB_NAME $TITAN_VERSION_ARGS"
 echo "maker jvm args : $ARGS"
 
@@ -49,8 +52,7 @@ fi
 echo "project file = $MAKER_PROJECT_FILE"
 
 export MAKER_DEBUG=true
-echo ./maker/dist/bin/maker.sh -ntty -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS
-./maker/dist/bin/maker.sh -d -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
+./maker/dist/bin/maker.sh -d -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE --ivy-url $MAKER_IVY_URL --compiler-interface-url $MAKER_COMPILER_INTERFACE_URL -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
 
 if [ "$2" == "starling" ] && [ "$3" == "starling-release" ]; then

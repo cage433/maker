@@ -70,7 +70,7 @@ object Utils {
   import RichProject._
 
   def writeClasspath(p : Project) {
-    val cp = p.compilationClasspath(SourceCompilePhase)
+    val cp = p.compilePhase.compilationClasspath
     writeToFile(file("p.name"), "export CLASSPATH=" + cp)
   }
 
