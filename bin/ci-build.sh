@@ -52,6 +52,7 @@ fi
 echo "project file = $MAKER_PROJECT_FILE"
 
 export MAKER_DEBUG=true
+export no_proxy=$no_proxy,nexus.global.trafigura.com
 ./maker/dist/bin/maker.sh -d -c "maker/project/" -y -d -p $MAKER_PROJECT_FILE --ivy-url $MAKER_IVY_URL --compiler-interface-url $MAKER_COMPILER_INTERFACE_URL -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
 
