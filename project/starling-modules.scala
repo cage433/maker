@@ -52,50 +52,66 @@ object Starling {
 
   def project(name : String, upstreamProjects : Project*) : Project = project(name, upstreamProjects.toList, Nil)
 
-  lazy val manager = project("manager")
-  lazy val utils = project("utils",  manager)
-  lazy val starlingDTOApi = project("starling.dto.api", utils)
+  // projects ordered by layer, then alphabetically, each layer depends only on layers above
+  // the dependencies of each project are also ordered by their position in this list.
+  // OCD yes but helps to visualise the project. There is a school of thought that too many layers is bad, we have 18!
   lazy val booter = project("booter")
-  lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
-  lazy val osgiManager = project("osgimanager",  utils)
-  lazy val singleClasspathManager = project("singleclasspathmanager",  osgiManager)
-  lazy val pivot = project("pivot", List(quantity), List(utils))
-  lazy val daterange = project("daterange", starlingDTOApi)
-  lazy val pivotUtils = project("pivot.utils", daterange, pivot)
-  lazy val maths = project("maths", List(daterange, quantity), List(utils, quantity, daterange))
-  lazy val props = project("props",  utils)
-  lazy val auth = project("auth", daterange)
-  lazy val bouncyrmi = project("bouncyrmi", auth)
-  lazy val loopyxl = project("loopyxl", auth, loopyxlJava)
   lazy val loopyxlJava = project("loopyxl-java")
-  lazy val browserService = project("browser.service",  manager)
-  lazy val browser = project("browser",  browserService)
-  lazy val guiapi = project("gui.api", browserService, bouncyrmi, pivotUtils)
-  lazy val fc2Facility = project("fc2.facility",  guiapi)
-  lazy val curves = project("curves", List(maths, guiapi), List(utils, quantity, daterange))
-  lazy val instrument = project("instrument",  List(curves), List(utils, quantity, curves, daterange, maths))
-  lazy val reportsFacility = project("reports.facility",  guiapi)
-  lazy val eventViewerApi = project("event.viewer.api",  guiapi)
-  lazy val tradeFacility = project("trade.facility",  guiapi)
-  lazy val gui = project("gui", fc2Facility, tradeFacility, reportsFacility, browser, eventViewerApi, singleClasspathManager)
-  lazy val starlingClient = project("starling.client", bouncyrmi)
-  lazy val dbx = project("dbx", daterange, props)
-  lazy val databases = project("databases", List(dbx, instrument), List(utils, curves, daterange))
-  lazy val schemaevolution = project("schemaevolution", dbx) // Please do not change this dependency without asking
-  lazy val titan = project("titan", List(reportsImpl), List(utils, instrument, quantity, curves, daterange, reportsImpl))
-  lazy val services = project("services", List(loopyxl, databases, schemaevolution, fc2Facility, reportsFacility), List(utils, quantity, curves, daterange, instrument))
-  lazy val eventViewerService = project("event.viewer.service", eventViewerApi, titan)
-  lazy val tradeImpl = project("trade.impl", services, tradeFacility)
-  lazy val pnlreconcile = project("pnlreconcile", List(services, tradeFacility), List(utils, curves, daterange))
-  lazy val reportsImpl = project("reports.impl", List(pnlreconcile), List(utils, quantity, curves, daterange))
-  //lazy val metals = project("metals",  List(tradeImpl, reportsImpl), List(utils, daterange, curves))
-  lazy val oil = project("oil", reportsImpl)
+  lazy val manager = project("manager")
 
+  lazy val browserService = project("browser.service", manager)
+  lazy val utils = project("utils", manager)
+
+  lazy val browser = project("browser", browserService)
+  lazy val osgiManager = project("osgimanager", utils)
+  lazy val props = project("props", utils)
+  lazy val starlingDTOApi = project("starling.dto.api", utils)
+
+  lazy val daterange = project("daterange", starlingDTOApi)
+  lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
+  lazy val singleClasspathManager = project("singleclasspathmanager", osgiManager)
+
+  lazy val auth = project("auth", daterange)
+  lazy val dbx = project("dbx", props, daterange)
+  lazy val maths = project("maths", List(daterange, quantity), List(daterange, quantity))
+  lazy val pivot = project("pivot", List(quantity), List(utils))
+
+  lazy val bouncyrmi = project("bouncyrmi", auth)
+  lazy val loopyxl = project("loopyxl", loopyxlJava, auth)
+  lazy val pivotUtils = project("pivot.utils", daterange, pivot)
+  lazy val schemaevolution = project("schemaevolution", dbx) // Please do not change this dependency without asking
+
+  lazy val guiapi = project("gui.api", browserService, bouncyrmi, pivotUtils)
+  lazy val starlingClient = project("starling.client", bouncyrmi)
+
+  lazy val curves = project("curves", List(maths, guiapi), List(daterange, quantity))
+  lazy val eventViewerApi = project("event.viewer.api", guiapi)
+  lazy val fc2Facility = project("fc2.facility",  guiapi)
+  lazy val reportsFacility = project("reports.facility", guiapi)
+  lazy val tradeFacility = project("trade.facility", guiapi)
+
+  lazy val gui = project("gui", browser, singleClasspathManager, eventViewerApi, fc2Facility, reportsFacility, tradeFacility)
+  lazy val instrument = project("instrument", List(curves), List(maths, curves))
+
+  lazy val databases = project("databases", List(dbx, instrument), List(curves))
+
+  lazy val services = project("services", List(loopyxl, fc2Facility, reportsFacility, databases), List(instrument))
+
+  lazy val tradeImpl = project("trade.impl", tradeFacility, services)
+  lazy val pnlreconcile = project("pnlreconcile", List(tradeFacility, services), List(schemaevolution, curves))
+
+  lazy val reportsImpl = project("reports.impl", List(schemaevolution, pnlreconcile), List(curves))
+
+  lazy val oil = project("oil", reportsImpl)
+  lazy val titan = project("titan", List(reportsImpl), List(instrument, reportsImpl))
+
+  lazy val eventViewerService = project("event.viewer.service", eventViewerApi, titan)
   lazy val webservice = project("webservice", List(titan), List(utils))
 
-  // below are some utils for running starling from maker
-  lazy val startserver = project("startserver", oil, tradeImpl, starlingClient, webservice, eventViewerService, singleClasspathManager)
-  lazy val launcher = project("launcher", List(startserver, booter, gui), List(curves))
+  lazy val startserver = project("startserver", singleClasspathManager, starlingClient, tradeImpl, oil, eventViewerService, webservice)
+
+  lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
+
   lazy val starling = new TopLevelProject("starling", List(launcher), makerProps,
     List(
       "logs",
@@ -111,6 +127,7 @@ object Starling {
       "refinedtestclient"
     )) with TmuxMessaging with MoreSugar
 
+  // below are some utils for running starling from maker
   def stdRunner(proj : Project)(className : String) = {
     proj.compile
     proj.runMain(className)(commonLaunchArgs : _*)()
