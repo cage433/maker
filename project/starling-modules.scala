@@ -108,7 +108,7 @@ object Starling {
   lazy val eventViewerService = project("event.viewer.service", eventViewerApi, titan)
   lazy val webservice = project("webservice", List(titan), List(utils))
 
-  lazy val startserver = project("startserver", singleClasspathManager, starlingClient, tradeImpl, oil, eventViewerService, webservice)
+  lazy val startserver = project("startserver", singleClasspathManager, tradeImpl, oil, eventViewerService, webservice)
 
   lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
 
