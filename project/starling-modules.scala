@@ -100,7 +100,7 @@ object Starling {
   lazy val tradeImpl = project("trade.impl", tradeFacility, services)
   lazy val pnlreconcile = project("pnlreconcile", List(tradeFacility, services), List(schemaevolution, curves))
 
-  lazy val reportsImpl = project("reports.impl", List(schemaevolution, pnlreconcile), List(curves))
+  lazy val reportsImpl = project("reports.impl", List(schemaevolution, pnlreconcile), List(databases))
 
   lazy val oil = project("oil", reportsImpl)
   lazy val titan = project("titan", List(starlingClient, reportsImpl), List(instrument, reportsImpl))
