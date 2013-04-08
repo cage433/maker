@@ -1,6 +1,6 @@
 <ivysettings>
   <property name="group_id" value="com.google.code.maker" />
-  <property name="scala_version" value="2.9.1" />
+  <property name="scala_version" value="2.9.2" />
   <property name="scalatest_version" value="1.8" />
   <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
   <property name="jetty_version" value="7.6.3.v20120416" />
@@ -16,9 +16,11 @@
     </filesystem>
 
     <ibiblio name="Non-Trafigura Public Repositories" root="http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/" m2compatible="true"/>
+    <ibiblio name="central" m2compatible="true" checksums="" />
 
     <chain name="default" returnFirst="true">
       <resolver ref="Non-Trafigura Public Repositories"/>
+      <resolver ref="central"/>
     </chain>
   </resolvers>
 </ivysettings>
