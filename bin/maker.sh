@@ -469,7 +469,7 @@ function write_ivy_files() {
     <dependency org="commons-io" name="commons-io" rev="2.1"/>
     <dependency org="commons-codec" name="commons-codec" rev="1.6"/>
     <dependency org="org.apache.commons" name="commons-lang3" rev="3.1"/>
-    <dependency org="org.scala-tools.testing" name="scalacheck_${scala_version}" rev="1.9"/>
+    <dependency org="org.scalacheck" name="scalacheck_${scala_version}" rev="1.9"/>
     <dependency org="org.scalatest" name="scalatest_${scala_version}" rev="${scalatest_version}"/>
     <dependency org="org.scalaz" name="scalaz-core_${scala_version}" rev="6.0.4"/>
     <dependency org="ch.qos.logback" name="logback-classic" rev="1.0.6"/> 
@@ -478,7 +478,7 @@ function write_ivy_files() {
     <dependency org="org.apache.ant" name="ant" rev="1.8.2"/>
     <dependency org="io.netty" name="netty" rev="3.4.2.Final"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="2.4.1"/>
-    <dependency org="net.debasishg" name="sjson_${scala_version}" rev="0.17"/>
+    <dependency org="net.debasishg" name="sjson_${scala_version}" rev="0.19"/>
     <dependency org="org.eclipse.jetty" name="jetty-server" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="${jetty_version}" />
     <dependency org="org.eclipse.jetty" name="jetty-util" rev="${jetty_version}" />
@@ -559,7 +559,7 @@ cat > $MAKER_OWN_IVY_SETTINGS_FILE <<'IVY_SETTINGS'
 <ivysettings>
   <property name="group_id" value="com.google.code.maker" />
   <property name="maker.module.version" value="0.01" />
-  <property name="scala_version" value="2.9.1" />
+  <property name="scala_version" value="2.9.2" />
   <property name="sbt_version" value="0.12.1" />
   <property name="scalatest_version" value="1.8" />
   <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
