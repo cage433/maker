@@ -82,7 +82,7 @@ case class PublishLocalTask(project : Project, configurations : List[String] = L
       }
       case None => {
         log.warn("No Ivy file, can't create a pom")
-        TaskResult.failure(this, sw, "No Ivy file, can't create a pom")
+        TaskResult.success(this, sw)
       }
     }
   }
