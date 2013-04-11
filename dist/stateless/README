@@ -1,3 +1,0 @@
-This jar should only be used by the continuous integration task Starling-dirty-CI-build
-
-It tests that successful starling builds are also successful if we run without a 'clean' task being executed.
