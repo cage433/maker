@@ -1,0 +1,58 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/.maker/lib/log4j-1.2.16.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/slf4j-api-1.6.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/scalaz-core_2.9.1-6.0.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/slf4j-log4j12-1.6.1.jar!/" />
+      <root url="file://$PROJECT_DIR$/resources" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/commons-io-2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/libs/ivy-2.2.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/ant-1.8.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-server-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-webapp-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-util-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/servlet-api-2.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-http-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-io-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-security-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-servlet-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jsp-2.1-glassfish-2.1.v20100127.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/h2-lzf-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-continuation-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-xml-7.6.3.v20120416.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jsp-api-6.0.20.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/netty-3.4.2.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/protobuf-java-2.4.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/scalacheck_2.9.1-1.9.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/sjson_2.9.1-0.15.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/commons-lang3-3.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/utils/lib_managed/jedis-2.0.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/libs/ivy-2.2.0-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/commons-io-2.1-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/log4j-1.2.16-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/scalatest_2.9.1-1.7.1-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/slf4j-api-1.6.1-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/slf4j-log4j12-1.6.1-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-server-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-webapp-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-util-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/servlet-api-2.5-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-http-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-io-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-security-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-servlet-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/h2-lzf-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-continuation-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/jetty-xml-7.6.3.v20120416-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/netty-3.4.2.Final-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/protobuf-java-2.4.1-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/sjson_2.9.1-0.15-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/.maker/lib/commons-lang3-3.1-sources.jar!/" />
+    </SOURCES>
+    <jarDirectory url="file://$PROJECT_DIR$/lib/resources" recursive="false" />
+  </library>
+</component>
