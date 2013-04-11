@@ -4,7 +4,7 @@
 
 MAIN_CLASS=$1
 shift
-bin/maker -d -y -e "update;clean;testCompile;writeStarlingClasspathWithTests"
+bin/maker -b -d -y -e "update;clean;testCompile;writeStarlingClasspathWithTests"
 #bin/maker -e "testCompile;writeStarlingClasspathWithTests"
 COMPILE_WORKED=$?
 
