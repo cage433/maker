@@ -1,0 +1,14 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="${group_id}" module="utils" revision="${maker.module.version}" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+    <conf name="compile" transitive="false"/>
+    <conf name="test" transitive="false"/>
+  </configurations>
+
+  <dependencies defaultconfmapping="${ivy.default.conf.mappings}">
+    <dependency org="org.scala-lang" name="scala-compiler" rev="${scala_version}" />
+    <dependency org="com.typesafe.sbt" name="sbt-interface" rev="${sbt_version}"/>
+  </dependencies>
+</ivy-module>
+
