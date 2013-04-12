@@ -11,6 +11,7 @@ import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
 import maker.MakerProps
+import scala.collection.immutable.TreeMap
 
 import Common._
 import Utils._
@@ -40,6 +41,34 @@ object Starling {
       props = makerProps,
       dependencyAdjustments = globalDependencyAdjustments
     ) with TmuxMessaging with MoreSugar
+  }
+
+  def reportRedundantJars(){
+    val projects = starling.allUpstreamProjects
+    val jarsByProject = projects.map{
+      p ⇒ (p, p.classpathJarsOnly.map(_.getName).filterNot(_.contains("scala-library")).toSet)
+    }.toMap
+    projects.foreach{
+      var redundancies = TreeMap[String, List[String]]()
+      p ⇒ 
+        jarsByProject(p).foreach{
+          jarName ⇒ 
+            p.allStrictlyUpstreamProjects.filter{
+              u ⇒ 
+                jarsByProject(u).contains(jarName)
+            } match {
+              case Nil ⇒ 
+              case ps ⇒ redundancies += (jarName -> ps.map(_.name))
+            }
+        }
+        if (redundancies.nonEmpty){
+          val errorLines = redundancies.map{
+            case (jarName, upstreams) => "\t " + jarName + " is contained in " + upstreams.mkString(", ")
+          }
+          println(errorLines.mkString("Project " + p + " has reduntant jars\n", "\n", ""))
+        }
+        redundancies = TreeMap[String, List[String]]()
+    }
   }
 
   trait MoreSugar{
@@ -126,6 +155,8 @@ object Starling {
       "refined-service",
       "refinedtestclient"
     )) with TmuxMessaging with MoreSugar
+
+  reportRedundantJars()
 
   // below are some utils for running starling from maker
   def stdRunner(proj : Project)(className : String) = {
