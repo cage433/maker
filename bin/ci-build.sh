@@ -53,6 +53,9 @@ echo "project file = $MAKER_PROJECT_FILE"
 
 export MAKER_DEBUG=true
 export no_proxy=$no_proxy,nexus.global.trafigura.com
+
+git clean -f -x -d || exit 4
+
 ./maker/dist/bin/maker.sh -d -c "maker/project/" -b -y -d -p $MAKER_PROJECT_FILE --ivy-settings-file maker/ivysettings.xml --ivy-url $MAKER_IVY_URL --compiler-interface-url $MAKER_COMPILER_INTERFACE_URL -args $ARGS | tee ci-build.log ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
 
@@ -61,6 +64,7 @@ if [ "$2" == "starling" ] && [ "$3" == "starling-release" ]; then
   ./bin/create_artifact.sh $1 $3 || exit 3
 fi
 
-## remove some of the artifacts created, in particular maker ones
-git clean -f -x -d || exit 4
 
+# To save disk space we do another clean - omitting the -x parameter as
+# this would remove scaladoc collected by jenkins
+git clean -f -d || exit 4
