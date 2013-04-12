@@ -62,5 +62,5 @@ if [ "$2" == "starling" ] && [ "$3" == "starling-release" ]; then
 fi
 
 ## remove some of the artifacts created, in particular maker ones
-git clean -f -d || exit 4
+git clean -f -x -d || exit 4
 
