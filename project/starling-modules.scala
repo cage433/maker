@@ -137,17 +137,15 @@ object Starling {
   def runDevLauncher = launcherRunner("starling.launcher.DevLauncher")
   def runServer = launcherRunner("starling.startserver.Server")
 
-  private val scalaLibraryJar = "maker/dist/.maker/scala-libs/scala-library-" + makerProps.ScalaVersion() + ".jar" 
-
   def writeStarlingClasspath() {
-    val cp = launcher.compilePhase.classpathDirectoriesAndJars.filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
-    val classpathString = scalaLibraryJar + ":" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
+    val cp = launcher.compilePhase.classpathDirectoriesAndJars
+    val classpathString = cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
     writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
 
   def writeStarlingClasspathWithTests() {
-    val cp = launcher.testCompilePhase.classpathDirectoriesAndJars.filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
-    val classpathString = scalaLibraryJar + ":" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
+    val cp = launcher.testCompilePhase.classpathDirectoriesAndJars
+    val classpathString = cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
     writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
 
