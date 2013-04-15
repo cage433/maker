@@ -11,6 +11,7 @@ import maker.utils.ModuleId._
 import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
 import maker.MakerProps
+import scala.collection.immutable.TreeMap
 
 import Common._
 import Utils._
@@ -40,6 +41,34 @@ object Starling {
       props = makerProps,
       dependencyAdjustments = globalDependencyAdjustments
     ) with TmuxMessaging with MoreSugar
+  }
+
+  def reportRedundantJars(){
+    val projects = starling.allUpstreamProjects
+    val jarsByProject = projects.map{
+      p ⇒ (p, p.classpathJarsOnly.map(_.getName).filterNot(_.contains("scala-library")).toSet)
+    }.toMap
+    projects.foreach{
+      var redundancies = TreeMap[String, List[String]]()
+      p ⇒ 
+        jarsByProject(p).foreach{
+          jarName ⇒ 
+            p.allStrictlyUpstreamProjects.filter{
+              u ⇒ 
+                jarsByProject(u).contains(jarName)
+            } match {
+              case Nil ⇒ 
+              case ps ⇒ redundancies += (jarName -> ps.map(_.name))
+            }
+        }
+        if (redundancies.nonEmpty){
+          val errorLines = redundancies.map{
+            case (jarName, upstreams) => "\t " + jarName + " is contained in " + upstreams.mkString(", ")
+          }
+          println(errorLines.mkString("Project " + p + " has reduntant jars\n", "\n", ""))
+        }
+        redundancies = TreeMap[String, List[String]]()
+    }
   }
 
   trait MoreSugar{
@@ -100,7 +129,7 @@ object Starling {
   lazy val tradeImpl = project("trade.impl", tradeFacility, services)
   lazy val pnlreconcile = project("pnlreconcile", List(tradeFacility, services), List(schemaevolution, curves))
 
-  lazy val reportsImpl = project("reports.impl", List(schemaevolution, pnlreconcile), List(curves))
+  lazy val reportsImpl = project("reports.impl", List(schemaevolution, pnlreconcile), List(databases))
 
   lazy val oil = project("oil", reportsImpl)
   lazy val titan = project("titan", List(starlingClient, reportsImpl), List(instrument, reportsImpl))
@@ -131,6 +160,8 @@ object Starling {
       "refinedtestclient"
     )) with TmuxMessaging with MoreSugar
 
+  reportRedundantJars()
+
   // below are some utils for running starling from maker
   def stdRunner(proj : Project)(className : String) = {
     proj.compile
@@ -142,14 +173,14 @@ object Starling {
   def runServer = launcherRunner("starling.startserver.Server")
 
   def writeStarlingClasspath() {
-    val cp = launcher.compilePhase.classpathDirectoriesAndJars.filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
-    val classpathString = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar:" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
+    val cp = launcher.compilePhase.classpathDirectoriesAndJars
+    val classpathString = cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
     writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
 
   def writeStarlingClasspathWithTests() {
-    val cp = launcher.testCompilePhase.classpathDirectoriesAndJars.filterNot{file ⇒ file.getName.contains("scala-library") || file.getName.contains("scala-compiler")}
-    val classpathString = "lib/scala/lib_managed/scala-library-jar-2.9.1.jar:" + cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
+    val cp = launcher.testCompilePhase.classpathDirectoriesAndJars
+    val classpathString = cp.map(_.relativeTo(file("."))).map(_.getPath).filterNot(_.endsWith("-sources.jar")).toList.sortWith(_<_).mkString(":")
     writeToFile(file("bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
   }
 
