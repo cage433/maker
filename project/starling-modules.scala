@@ -110,13 +110,13 @@ object Starling {
 
   lazy val startserver = project("startserver", singleClasspathManager, tradeImpl, oil, eventViewerService, webservice)
 
-  lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
+  lazy val eventstoreReaders = project("eventstore-readers", List(databases, daterange, curves), List(services))
+
+  lazy val launcher = project("launcher", List(booter, gui, startserver, eventstoreReaders), List(curves, eventstoreReaders))
 
   // lazy val eventstoreClient = project("eventstore-client", List(databases, daterange), Nil)
 
-  lazy val eventstoreReaders = project("eventstore-readers", List(databases, daterange), Nil)
-
-  lazy val starling = new TopLevelProject("starling", List(launcher, eventstoreReaders), makerProps,
+  lazy val starling = new TopLevelProject("starling", List(launcher), makerProps,
     List(
       "logs",
       "osgi-gui-cache",
