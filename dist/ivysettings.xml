@@ -1,24 +1,38 @@
 <ivysettings>
+  <property name="ivy.default.conf.mappings" value="default->*" />
   <property name="group_id" value="com.google.code.maker" />
-  <property name="scala_version" value="2.9.1" />
+  <property name="maker.module.version" value="0.01" />
+  <property name="scala_version" value="2.9.2" />
+  <property name="sbt_version" value="0.12.1" />
   <property name="scalatest_version" value="1.8" />
   <property name="ivy.local.default.root" value="${ivy.default.ivy.user.dir}/maker-local" override="false"/>
   <property name="jetty_version" value="7.6.3.v20120416" />
-  <property name="sbt_version" value="0.12.1" />
   <settings>
     <settings name="default" transitive="false"/>
   </settings>
   <settings defaultResolver="default"/>
+  <!-- not sure how to get params from maker into this yet...
+  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="${maker.ivy.publish.username}" passwd="${maker.ivy.publish.password}" />
+ -->
+  <credentials host="oss.sonatype.org" realm="Sonatype Nexus Repository Manager" username="LouisB" passwd="x"/>
 
-    <resolvers>
+  <resolvers>
     <filesystem name="maker-local" m2compatible="true">
       <artifact pattern="${ivy.local.default.root}/maker-local/[module]/[revision]/[artifact]-[revision].[ext]" />
     </filesystem>
-
-    <ibiblio name="Non-Trafigura Public Repositories" root="http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/" m2compatible="true"/>
-
+    <url name="maker-oss-snapshot" m2compatible="true" > <!-- Sonatype OSS Snapshots -->
+      <!-- <artifact pattern="https://oss.sonatype.org/content/repositories/snapshots/com/google/code/maker/maker-test/[revision]/[artifact]/[artifact]-[revision].[ext]" /> -->
+      <artifact pattern="https://oss.sonatype.org/content/repositories/snapshots/[organisation]/test/[revision]/[artifact]/[artifact]-[revision].[ext]" />
+    </url>
+    <url name="maker-oss-staging" m2compatible="true"> <!-- Sonatype OSS Staging -->
+      <artifact pattern="https://oss.sonatype.org/service/local/staging/deploy/maven2/maker-test/[artifact]/[revision]/[artifact]/pom.xml]" />
+    </url>
+    <ibiblio name="central" m2compatible="true" checksums="" />
+    <ibiblio name="maker" m2compatible="true" root="https://oss.sonatype.org/content/repositories/snapshots/" />
     <chain name="default" returnFirst="true">
-      <resolver ref="Non-Trafigura Public Repositories"/>
+      <resolver ref="central"/>
+      <resolver ref="maker-oss-snapshot"/>
     </chain>
   </resolvers>
 </ivysettings>
+
