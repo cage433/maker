@@ -122,7 +122,9 @@ object Starling {
   lazy val gui = project("gui", browser, singleClasspathManager, eventViewerApi, fc2Facility, reportsFacility, tradeFacility)
   lazy val instrument = project("instrument", List(curves), List(maths, curves))
 
-  lazy val databases = project("databases", List(dbx, instrument), List(curves))
+  lazy val eventstoreClient = project("eventstore-client", List(utils), Nil)
+
+  lazy val databases = project("databases", List(dbx, instrument,eventstoreClient), List(curves))
 
   lazy val services = project("services", List(loopyxl, fc2Facility, reportsFacility, databases), List(instrument))
 
@@ -141,9 +143,8 @@ object Starling {
 
   lazy val eventstoreReaders = project("eventstore-readers", List(databases, daterange, curves), List(services))
 
-  lazy val launcher = project("launcher", List(booter, gui, startserver, eventstoreReaders), List(curves, eventstoreReaders))
 
-  // lazy val eventstoreClient = project("eventstore-client", List(databases, daterange), Nil)
+  lazy val launcher = project("launcher", List(booter, gui, startserver, eventstoreReaders,eventstoreClient), List(curves, eventstoreReaders,eventstoreClient))
 
   lazy val starling = new TopLevelProject("starling", List(launcher), makerProps,
     List(
