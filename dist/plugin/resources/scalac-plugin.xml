@@ -1,4 +1,0 @@
-<plugin>
-  <name>traverser</name>
-  <classname>plugin.WriteDependencies</classname>
-</plugin>
