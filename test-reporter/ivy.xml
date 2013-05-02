@@ -1,0 +1,20 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+  <info organisation="${group_id}" module="utils" revision="${maker.module.version}" />
+  <configurations>
+    <conf name="default" transitive="false"/>
+    <conf name="compile" transitive="false"/>
+    <conf name="test" transitive="false"/>
+  </configurations>
+
+  <publications>
+    <artifact name="utils" type="pom"/>
+    <artifact name="utils" type="jar" ext="jar" conf="default" />
+    <artifact name="utils-sources" type="jar" ext="jar" conf="default" />
+    <artifact name="utils-docs" type="jar" ext="jar" conf="default" />
+  </publications>
+
+  <dependencies defaultconfmapping="*->default">
+    <dependency org="org.scalatest" name="scalatest_${scala_version}" rev="${scalatest_version}"/>
+  </dependencies>
+</ivy-module>
+
