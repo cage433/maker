@@ -1,0 +1,90 @@
+SKIP_LINE  ***************************************************************
+SKIP_LINE  * Licensed to the Apache Software Foundation (ASF) under one
+SKIP_LINE  * or more contributor license agreements.  See the NOTICE file
+SKIP_LINE  * distributed with this work for additional information
+SKIP_LINE  * regarding copyright ownership.  The ASF licenses this file
+SKIP_LINE  * to you under the Apache License, Version 2.0 (the
+SKIP_LINE  * "License"); you may not use this file except in compliance
+SKIP_LINE  * with the License.  You may obtain a copy of the License at
+SKIP_LINE  * 
+SKIP_LINE  *   http://www.apache.org/licenses/LICENSE-2.0
+SKIP_LINE  * 
+SKIP_LINE  * Unless required by applicable law or agreed to in writing,
+SKIP_LINE  * software distributed under the License is distributed on an
+SKIP_LINE  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+SKIP_LINE  * KIND, either express or implied.  See the License for the
+SKIP_LINE  * specific language governing permissions and limitations
+SKIP_LINE  * under the License.
+SKIP_LINE  ***************************************************************
+<?xml version="1.0" encoding="UTF-8"?>
+${ivy.pom.license}
+${ivy.pom.header}
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>${ivy.pom.groupId}</groupId>
+  <artifactId>${ivy.pom.artifactId}</artifactId>
+  <packaging>${ivy.pom.packaging}</packaging>
+  <version>${ivy.pom.version}</version>
+  <name>${ivy.pom.name}</name>
+  <description>${ivy.pom.description}</description>
+  <url>${ivy.pom.url}</url>
+  <licenses>
+    ${maker.licenses}
+  </licenses>
+  <scm>
+    <url>${maker.scm.url}</url>
+    <connection>${maker.scm.connection}</connection>
+  </scm>
+  <developers>
+    ${maker.developers}
+  </developers>
+
+  <build>
+    <sourceDirectory>src/</sourceDirectory>
+    <testSourceDirectory>test/</testSourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.1.0</version>
+<!--      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.15.0</version> -->
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <args>
+                <arg>-make:transitive</arg>
+                <arg>-dependencyfile</arg>
+                <arg>${project.build.directory}/.scala_dependencies</arg>
+              </args>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+          <useFile>false</useFile>
+          <disableXmlReport>true</disableXmlReport>
+          <!-- If you have classpath issue like NoDefClassError,... -->
+          <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
+          <includes>
+            <include>**/*Test.*</include>
+            <include>**/*Suite.*</include>
+          </includes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+
