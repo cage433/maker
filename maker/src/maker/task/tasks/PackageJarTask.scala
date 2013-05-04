@@ -52,7 +52,7 @@ case class PackageJarTask(project : Project, aggregateDependentModules : Boolean
       }
     }
     def jarCommand(updateOrCreate : String, dir : File) = WrappedCommand( 
-      Command(props.log, List(jar, "cf", project.outputArtifact.getAbsolutePath, "-C", dir.getAbsolutePath, "."): _*),
+      Command(props, List(jar, "cf", project.outputArtifact.getAbsolutePath, "-C", dir.getAbsolutePath, "."): _*),
       ignoreFailure = false
     )
     def createJarCommand(dir : File) = jarCommand("cf", dir)
@@ -72,7 +72,7 @@ case class PackageJarTask(project : Project, aggregateDependentModules : Boolean
     if (includeDependentLibs){
       val tmpPackagingDir = file(project.layout.packageDir, "tmp").asNewDirectory.asAbsoluteFile
       def unpackJarCommand(j : File) = WrappedCommand(
-        Command(props.log, Some(tmpPackagingDir), "unzip", "-o", j.getAbsolutePath, "-d", tmpPackagingDir.getAbsolutePath), 
+        Command(props, Some(tmpPackagingDir), "unzip", "-o", j.getAbsolutePath, "-d", tmpPackagingDir.getAbsolutePath), 
         ignoreFailure = true
       )
       cmds = cmds ::: project.classpathJars.toList.map(unpackJarCommand)

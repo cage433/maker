@@ -130,6 +130,9 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object ShowTestProgress extends SystemPropertyWithDefault("maker.show.test.progress", true) with IsBoolean
   object LogCompilerClasspath extends SystemPropertyWithDefault("maker.show.compiler.output", false) with IsBoolean
 
+  object LogCommands extends Default(true) with IsBoolean
+  object LogCommandFile extends Default(file("maker-commands.log")) with IsFile
+
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
       case List(k, v) ⇒ k → v

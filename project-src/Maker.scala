@@ -82,7 +82,7 @@ object Maker {
   lazy val utilsProj = mkProject("utils", testReporterProj)
   lazy val makerProj = mkProject("maker", utilsProj)
 
-  lazy val makerAll = new TopLevelProject("makerAll", List(testReporterProj, utilsProj, makerProj))
+  lazy val makerAll = new TopLevelProject("makerAll", List(testReporterProj, utilsProj, makerProj)) with MoreSugar
 
   lazy val mkr = makerProj
 

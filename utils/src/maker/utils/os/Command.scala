@@ -92,11 +92,12 @@ object CommandOutputHandler{
   }
 }
 
-case class Command(log : MakerLog, outputHandler : CommandOutputHandler, workingDirectory : Option[File], args : String*) {
+case class Command(props : MakerProps, outputHandler : CommandOutputHandler, workingDirectory : Option[File], args : String*) {
 
+  private lazy val log = props.log
   def savedOutput = outputHandler.savedOutput
   def withOutput(handler : CommandOutputHandler) = new Command(
-    log,
+    props,
     outputHandler = handler,
     workingDirectory,
     args : _*
@@ -134,8 +135,8 @@ case class Command(log : MakerLog, outputHandler : CommandOutputHandler, working
 }
 
 object Command{
-  def apply(log : MakerLog, args : String*) : Command = new Command(log, CommandOutputHandler(), None, args : _*)
-  def apply(log : MakerLog, workingDirectory : Option[File], args : String*) : Command = new Command(log, CommandOutputHandler(), workingDirectory, args : _*)
+  def apply(props : MakerProps, args : String*) : Command = new Command(props, CommandOutputHandler(), None, args : _*)
+  def apply(props : MakerProps, workingDirectory : Option[File], args : String*) : Command = new Command(props, CommandOutputHandler(), workingDirectory, args : _*)
 }
 
 object ScalaCommand {
@@ -147,7 +148,7 @@ object ScalaCommand {
       classpath) ::: 
       List("scala.tools.nsc.MainGenericRunner",
       klass) ::: args.toList
-    Command(props.log, outputHandler, None, allArgs :_*)
+    Command(props, outputHandler, None, allArgs :_*)
   }
 }
 
@@ -159,7 +160,7 @@ object ScalaDocCmd {
       "-classpath",
       classpath) ::: opts :::
       "scala.tools.nsc.ScalaDoc" :: files.map(_.getAbsolutePath).toList
-    Command(props.log, outputHandler, Some(outputDir), allArgs :_*)
+    Command(props, outputHandler, Some(outputDir), allArgs :_*)
   }
   def apply(props : MakerProps, outputHandler : CommandOutputHandler, outputDir : File, java : String, classpath : String, opts : List[String], optsFile : File) : Command = {
     val allArgs : List[String] = List(
@@ -168,6 +169,6 @@ object ScalaDocCmd {
       "-classpath",
       classpath) ::: opts :::
       "scala.tools.nsc.ScalaDoc" :: "@" + optsFile.getAbsolutePath :: Nil
-    Command(props.log, outputHandler, Some(outputDir), allArgs :_*)
+    Command(props, outputHandler, Some(outputDir), allArgs :_*)
   }
 }
