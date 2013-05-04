@@ -75,7 +75,7 @@ case class PackageWarTask(project : Project with WebProject) extends Task{
     })
 
     log.info("Packaging artifact " + project.outputArtifact.getAbsolutePath)
-    val cmd = Command(props.log, CommandOutputHandler().withSavedOutput, None, List(jar, "cf", project.outputArtifact.getAbsolutePath, "-C", warImage.getAbsolutePath, "."): _*)
+    val cmd = Command(props, CommandOutputHandler().withSavedOutput, None, List(jar, "cf", project.outputArtifact.getAbsolutePath, "-C", warImage.getAbsolutePath, "."): _*)
     if (cmd.exec == 0)
       TaskResult.success(this, sw)
     else 

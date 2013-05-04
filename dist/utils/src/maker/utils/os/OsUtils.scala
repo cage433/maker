@@ -32,7 +32,7 @@ object OsUtils {
   def isUnix = isLinux || isOSX
   def isPortUsed(props : MakerProps, port : Int) = {
     List("tcp", "udp").exists{ t ⇒ 
-      Command(props.log, "fuser", port + "/" + t).withNoOutput.exec == 0
+      Command(props, "fuser", port + "/" + t).withNoOutput.exec == 0
     }
   }
 }
