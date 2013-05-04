@@ -23,20 +23,21 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// All maker settings are compiled. This improves startup time consideably.
-import maker.utils.Utils._
-import maker.Maker._
-import mkr._
-
 System.setProperty("scala.usejavacp", "false")
 System.setProperty("log4j.ignoreTCL", "true")
 
-println("\nMaker v" + MAKER_VERSION + "\n")
-import mkr._
+// All maker settings are compiled. This improves startup time consideably.
+import maker.utils.Utils._
+import maker.Maker._
+
+import makerAll._
 import maker.MakerProps
 import maker.MakerProps._
 import maker.project._
 import maker.task.tasks._
 import maker.task.BuildResult._
+import maker.task.compile._
+
+println("\nMaker v" + MAKER_VERSION + "\n")
 
 def pid = maker.utils.os.ProcessID().id

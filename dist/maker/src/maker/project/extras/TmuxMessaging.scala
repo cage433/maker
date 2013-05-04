@@ -12,9 +12,9 @@ import maker.utils.RichString._
 trait TmuxMessaging extends ProjectTaskDependencies{
   self : Project ⇒ 
   def tmux(args : String*){
-    val hasTmux = (Command(log, CommandOutputHandler.NULL, None, "which", "tmux").withNoOutput.exec == 0)
+    val hasTmux = (Command(props, CommandOutputHandler.NULL, None, "which", "tmux").withNoOutput.exec == 0)
     if (hasTmux)
-      new Command(log, CommandOutputHandler.NULL, None, ("tmux"::args.toList) : _*).withNoOutput.execAsync
+      new Command(props, CommandOutputHandler.NULL, None, ("tmux"::args.toList) : _*).withNoOutput.execAsync
   }
   tmux("set-option", "-gq", "status-left-length", "100")
 
@@ -28,14 +28,13 @@ trait TmuxMessaging extends ProjectTaskDependencies{
 
   override def setUp(graph : Dependency.Graph){
     tmux("refresh-client")
+    tmuxClearStatusLeft
     tmux("set", "-g", "status-bg", "blue")
     super.setUp(graph)
   }
   override def tearDown(graph : Dependency.Graph, result : BuildResult){
     tmux("set", "-g", "status-bg", "default")
-    if (result.succeeded){
-      tmuxClearStatusLeft
-    } else {
+    if (result.failed){
       tmuxReportTaskFailed(result.originalTask + " failed ")
     }
     super.tearDown(graph, result)

@@ -141,7 +141,7 @@ object GraphVizUtils {
   }
 
   def createGraphFile(props : MakerProps, graphDef : String, file : File = defaultImageFile) = {
-    Command(props.log, "/bin/sh", "-c", "echo \"" + graphDef + "\" | dot -T" + DEFAULT_IMAGE_FORMAT + " > " + file.getAbsolutePath).exec()
+    Command(props, "/bin/sh", "-c", "echo \"" + graphDef + "\" | dot -T" + DEFAULT_IMAGE_FORMAT + " > " + file.getAbsolutePath).exec()
     file
   }
 

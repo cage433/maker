@@ -40,17 +40,17 @@ object Utils {
    */
   def openHtmlFile(props : MakerProps, f : File) = {
     if (isLinux)
-      Command(props.log, "gnome-open", f.getAbsolutePath).execAsync
+      Command(props, "gnome-open", f.getAbsolutePath).execAsync
     else // assume OSX until we want to support other OSes such as windows
-      Command(props.log, "open", f.getAbsolutePath).exec()
+      Command(props, "open", f.getAbsolutePath).exec()
     f
   }
 
   def showImage(props : MakerProps, f : File) = {
     if (isLinux)
-      Command(props.log, "xdg-open", f.getAbsolutePath).execAsync
+      Command(props, "xdg-open", f.getAbsolutePath).execAsync
     else // assume OSX until we want to support other OSes such as windows
-      Command(props.log, "open", f.getAbsolutePath).exec()
+      Command(props, "open", f.getAbsolutePath).exec()
     f
   }
   def stackTraceAsString(t : Throwable) = {
