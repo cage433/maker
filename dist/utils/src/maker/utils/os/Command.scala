@@ -35,6 +35,7 @@ import java.io.IOException
 import maker.MakerProps._
 import maker.MakerProps
 import maker.utils.MakerLog
+import maker.utils.FileUtils._
 
 
 case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWriter(System.out)),
@@ -116,8 +117,12 @@ case class Command(props : MakerProps, outputHandler : CommandOutputHandler, wor
     procBuilder.start
   }
 
+  private def logCommand{
+    appendToFile(file("maker-commands.log"), this + "\n\n")
+  }
+
   def execAsync() : (Process, Future[Int]) = {
-    log.debug("Executing cmd - " + toString)
+    logCommand
     val proc = startProc()
     val outputThread = new Thread(outputHandler.redirectOutputRunnable(proc))
     outputThread.start
@@ -125,6 +130,7 @@ case class Command(props : MakerProps, outputHandler : CommandOutputHandler, wor
   }
 
   def exec() : Int = {
+    logCommand
     val proc = startProc
     outputHandler.redirectOutputRunnable(proc).run
     proc.waitFor
