@@ -16,7 +16,7 @@ class MakerTestReporter extends Reporter{
   }
 
   object Log{
-    val showTestProgress = java.lang.Boolean.parseBoolean(Option(System.getProperty("maker.show.test.progress")).getOrElse("true"))
+    val showTestProgress = java.lang.Boolean.parseBoolean(Option(System.getProperty("maker.show.test.progress")).getOrElse("false"))
     val dateFormat = new SimpleDateFormat("mm:ss,SSS")
     def info(msg : String){
       if (showTestProgress)
