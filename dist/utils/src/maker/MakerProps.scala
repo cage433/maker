@@ -127,7 +127,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   // Show compiler output - normally switched off for tests
   object ShowCompilerOutput extends SystemPropertyWithDefault("show.compiler.output", true) with IsBoolean
 
-  object ShowTestProgress extends SystemPropertyWithDefault("maker.show.test.progress", true) with IsBoolean
+  object ShowTestProgress extends SystemPropertyWithDefault("maker.show.test.progress", false) with IsBoolean
   object LogCompilerClasspath extends SystemPropertyWithDefault("maker.show.compiler.output", false) with IsBoolean
 
   object LogCommands extends Default(true) with IsBoolean
