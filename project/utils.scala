@@ -12,6 +12,7 @@ import maker.utils.GroupAndArtifact
 import maker.task.BuildResult
 
 import Common._
+import maker.MakerProps
 
 object Utils {
 
@@ -37,7 +38,7 @@ object Utils {
     }
 
   def runMavenCmd(cwd : File, args : String*) =
-    runCmd(Command(MakerLog(), Some(cwd), ("mvn" :: args.toList) : _*))
+    runCmd(Command(MakerProps(), Some(cwd), ("mvn" :: args.toList) : _*))
 
   def updateIvyFromProjectPom(project : Project) = {
     val antFileName = "antMakeIvy.xml"
@@ -45,7 +46,7 @@ object Utils {
     val tmpFile = file(project.rootAbsoluteFile, antFileName)
     copyFile(antFile, tmpFile)
     val args = List("ant", "-f", file(project.rootAbsoluteFile, "antMakeIvy.xml").getAbsolutePath)
-    val cmd = Command(MakerLog(), Some(project.rootAbsoluteFile), args : _*)
+    val cmd = Command(MakerProps(), Some(project.rootAbsoluteFile), args : _*)
     val r = runCmd(cmd)
     tmpFile.delete
     r
