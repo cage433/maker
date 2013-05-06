@@ -87,7 +87,7 @@ case class RunUnitTestsTask(project : Project, testClassNames: String*)  extends
       "-XX:MaxPermSize=500m", 
       "-Dmaker.test.output=" + project.testOutputFile, 
       props.ShowTestProgress.toCommandLine,
-      props.ProjectTestLogbackConfigFile.toCommandLine,
+      "-Dlogback.configurationFile="+props.ProjectTestLogbackConfigFile(),
       "-Dsbt.log.format=false"
     ) ::: systemProperties
     val args = List("-P", "-C", "maker.utils.MakerTestReporter", "-R", projectPhase.outputDir.getAbsolutePath) ::: suiteParameters
