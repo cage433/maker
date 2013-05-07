@@ -76,9 +76,9 @@ launch_maker_repl(){
     RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
     echo "setting cmd as $CMDS"
   fi
-  CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/:$(project_output_dir)"
+  LAUNCHER_CLASSPATH="$(maker_internal_classpath):$(external_jars):$MAKER_OWN_ROOT_DIR/resources/:$(project_output_dir)"
   # launcher maker in the repl, with the compiled project definitions on the classpath and scripted project definition files interpreted using the -i option on scala repl
-  $JAVA_HOME/bin/java $JAVA_OPTS -classpath $CLASSPATH -Dsbt.log.format="false" -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=$MAKER_OWN_ROOT_DIR/logback.xml $RUNNING_EXEC_MODE -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
+  $JAVA_HOME/bin/java $JAVA_OPTS -classpath $LAUNCHER_CLASSPATH -Dsbt.log.format="false" -Dmaker.home="$MAKER_OWN_ROOT_DIR" -Dlogback.configurationFile=$MAKER_OWN_ROOT_DIR/logback.xml $RUNNING_EXEC_MODE -Dscala.usejavacp=true $MAKER_ARGS scala.tools.nsc.MainGenericRunner -Yrepl-sync -nc -i $MAKER_PROJECT_FILE $CMDS | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
 }
 
 recompile_project_if_required(){
