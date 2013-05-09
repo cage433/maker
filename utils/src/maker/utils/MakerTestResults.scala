@@ -128,6 +128,7 @@ case class MakerTestResults (
 
   def succeeded = failures.isEmpty && startTimeInNanos.size == endTimeInNanos.size
   def failed = !succeeded
+  def unfinished = startTimeInNanos.keySet -- (endTimeInNanos.keySet ++ failures.map(_._1)) 
   def suites = startTimeInNanos.keySet.map(_.suiteClass)
   def tests = startTimeInNanos.keySet.map(_.test)
   def endTime :Long = endTimeInNanos.values.toList.sortWith(_>_).headOption.getOrElse(0L)
