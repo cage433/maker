@@ -95,9 +95,9 @@ case class UpdateTask(project : Project, withSources : Boolean = true, confs : S
     try {
       if (ivyFile.exists){
         log.debug("confs : " + confs.mkString(", "))
-        retrieveArtifacts(List("jar", "war", "bundle"), project.layout.managedLibDir.getPath + "/[artifact]-[revision](-[classifier]).[ext]")
-        retrieveArtifacts(List("source"), project.layout.managedLibSourceDir.getPath + "/[artifact]-[revision](-[classifier]).[ext]")
-        retrieveArtifacts(List("gz", "xml", "zip", "xll", "dna"), project.layout.managedResourceDir.getPath + "/[artifact](-[classifier]).[ext]")
+        retrieveArtifacts(List("jar", "war", "bundle"), project.layout.managedLibDir.getPath + "/[organisation]-[artifact]-[revision](-[classifier]).[ext]")
+        retrieveArtifacts(List("source"), project.layout.managedLibSourceDir.getPath + "/[organisation]-[artifact]-[revision](-[classifier]).[ext]")
+        retrieveArtifacts(List("gz", "xml", "zip", "xll", "dna"), project.layout.managedResourceDir.getPath + "/[organisation]-[artifact](-[classifier]).[ext]")
 
       } else {
         log.info("Nothing to update")
