@@ -105,7 +105,7 @@ object Starling {
   lazy val maths = project("maths", List(daterange, quantity), List(daterange, quantity))
   lazy val pivot = project("pivot", List(quantity), List(utils))
 
-  lazy val bouncyrmi = project("bouncyrmi", auth)
+  lazy val bouncyrmi = project("bouncyrmi", List(auth), List(utils))
   lazy val loopyxl = project("loopyxl", loopyxlJava, auth)
   lazy val pivotUtils = project("pivot.utils", daterange, pivot)
   lazy val schemaevolution = project("schemaevolution", dbx) // Please do not change this dependency without asking
@@ -141,7 +141,7 @@ object Starling {
 
   lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
 
-  lazy val eventstoreServer = project("eventstore-server", List(databases), Nil)
+  lazy val eventstoreServer = project("eventstore-server", List(databases), List(utils))
 
   lazy val starling = new TopLevelProject("starling", List(launcher,eventstoreServer), makerProps,
     List(
