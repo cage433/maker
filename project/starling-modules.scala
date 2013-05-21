@@ -92,13 +92,12 @@ object Starling {
   lazy val utils = project("utils", manager)
 
   lazy val browser = project("browser", browserService)
-  lazy val osgiManager = project("osgimanager", utils)
   lazy val props = project("props", utils)
   lazy val starlingDTOApi = project("starling.dto.api", utils)
 
   lazy val daterange = project("daterange", starlingDTOApi)
   lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
-  lazy val singleClasspathManager = project("singleclasspathmanager", osgiManager)
+  lazy val singleClasspathManager = project("singleclasspathmanager", utils)
 
   lazy val auth = project("auth", daterange)
   lazy val dbx = project("dbx", props, daterange)
