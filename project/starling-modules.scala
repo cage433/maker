@@ -140,7 +140,7 @@ object Starling {
 
   lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
 
-  lazy val eventstoreServer = project("eventstore-server", List(databases), List(utils))
+  lazy val eventstoreServer = project("eventstore-server", List(databases,webservice), List(utils))
 
   lazy val starling = new TopLevelProject("starling", List(launcher,eventstoreServer), makerProps,
     List(
