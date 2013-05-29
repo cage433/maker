@@ -27,15 +27,11 @@ package maker.task.tasks
 
 import maker.utils.FileUtils._
 import org.apache.commons.io.FileUtils._
-import maker.maven._
 import maker.project._
-import maker.utils.Version
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
-import maker.MakerProps
 import java.io.IOException
-import maker.utils.maven.IvyLock
+import maker.utils.maven.DependencyCacheLock
 
 
 /**
@@ -47,7 +43,7 @@ case class PublishLocalTask(project : Project, configurations : List[String] = L
   def upstreamTasks = PackageJarTask(project) :: upstreamProjects.map(PublishLocalTask(_, configurations, version))
 
   def exec(results : List[TaskResult], sw : Stopwatch) = {
-    IvyLock.synchronized{
+    DependencyCacheLock.synchronized{
       doPublish(project, results, sw)
     }
   }
@@ -67,7 +63,7 @@ case class PublishLocalTask(project : Project, configurations : List[String] = L
 
     log.debug("PublishLocal for project " + project.name)
 
-    val ivyFile = project.layout.ivyFile
+    val ivyFile = project.ivyFile
     if (ivyFile.exists){
       writePom(props, ivyFile, project.layout.ivySettingsFile, pomFile, configurations, moduleDef, props.PomTemplateFile())
       try {

@@ -2,36 +2,30 @@ package maker.project
 
 import maker.utils.GroupAndArtifact
 import java.io.File
-import maker.utils.FileUtils._
-import org.apache.commons.io.FileUtils._
-import scala.xml.NodeSeq
-import maker.MakerProps
 import maker.utils.DependencyLib
 import maker.utils.ivy.IvyReader
 import maker.utils.maven.MavenRepository
 import maker.utils.maven.ModuleDef
 import maker.utils.maven.ProjectDef
 import maker.utils.maven.ScmDef
-import maker.utils.GroupId
 import maker.utils.ModuleId._
-import maker.utils.Utils
 import maker.utils.ivy.IvyReader._
-import maker.task.compile._
 
 /// some ivy/maven related utils
-trait ProjectIvy{
+trait ProjectIvy {
   self : Project ⇒
 
-    val generatedIvyExtension = "-dynamic.ivy"
-
     def description : String = name
+
+    private val ivySourceFile = layout.ivyDepsFile
+
     lazy val moduleId : GroupAndArtifact = moduleIdentity.getOrElse(props.GroupId() % name)
 
     def readIvyDependencies(subsProps : Boolean = true) : List[DependencyLib] = {
       import IvyReader._
-      if (layout.ivyFile.exists()) {
+      if (ivySourceFile.exists()) {
         val ivyProps = if (subsProps) readIvyProperties() else Map[String, String]()
-        readIvyDependenciesFromFile(log, layout.ivyFile, ivyProps)
+        readIvyDependenciesFromFile(log, ivySourceFile, ivyProps)
       }
       else {
         log.info("No Ivy config for this module")
@@ -57,7 +51,7 @@ trait ProjectIvy{
     def readIvySettingsProperties() : Map[String, String] =
       readIvyPropertiesFromFile(log, layout.ivySettingsFile)
     def extractInModuleProperties() : Map[String, String] =
-      extractIvyPropertiesFromFile(log, layout.ivyFile)
+      extractIvyPropertiesFromFile(log, ivySourceFile)
 
     /**
      * maven / ivy integration

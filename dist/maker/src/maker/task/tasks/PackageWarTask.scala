@@ -64,7 +64,7 @@ case class PackageWarTask(project : Project with WebProject) extends Task{
     log.debug("classpath providedLibs libs:")
     providedLibJars.foreach(f => log.debug(f.getAbsolutePath))
     log.debug("additional named provided libs:")
-    val providedLibNames = project.dependencyAdjustments.providedLibNames
+    val providedLibNames = project.dependencies.providedLibNames
     providedLibNames.foreach(log.debug(_))
     val allProvidedLibNames = providedLibNames ++ providedLibJars.map(_.getName)
     val allLibsButNotProvidedLibs = allLibs.filter(f => !allProvidedLibNames.exists(libName => f.getName.contains(libName)))

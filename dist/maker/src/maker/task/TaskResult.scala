@@ -2,11 +2,7 @@ package maker.task
 
 import java.io.File
 import maker.utils.RichString._
-import maker.utils.RichIterable._
-import scalaz.Scalaz._
-import maker.project.Project
 import maker.utils.Stopwatch
-import maker.utils.MakerProperties
 import maker.utils.Utils
 import maker.task.compile.CompilationInfo
 import maker.task.tasks.RunUnitTestsTask
