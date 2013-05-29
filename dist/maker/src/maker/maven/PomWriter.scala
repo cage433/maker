@@ -51,7 +51,7 @@ case object PomWriter {
                moduleDef : ModuleDef,
                pomTemplateFile : Option[File]) {
 
-    IvyLock.synchronized {
+    DependencyCacheLock.synchronized {
       val log = props.log
       val ivy = Ivy.newInstance
       ivy.configure(ivySettingsFile)
@@ -71,7 +71,7 @@ case object PomWriter {
       log.debug("In writePom using ivy, module version: " + moduleVersion)
       val pomWriterOptions : PomWriterOptions = {
         val csm = new ConfigurationScopeMapping(Map("default" -> "compile"))
-        log.debug("***** csm:\n" + csm.getScope(Array("default")).toString)
+        log.debug("***** csm:\n" + csm.getScope(Array("default")))
 
         val moduleDeps = moduleDef.projectDef.dependencyModules.map(_.toIvyPomWriterExtraDependencies)
 
@@ -248,9 +248,9 @@ case object PomWriter {
           <scope>{d.scope.mavenName}</scope>
           {d.maybeType.map(t => <type>{t.mavenName}</type>).toList}
           {d.maybeClassifier.map(c => <classifier>{c.mavenName}</classifier>).toList}
-          {if (!project.dependencyAdjustments.additionalExcludedLibs.isEmpty)
+          {if (!project.dependencies.excludedLibs.isEmpty)
             <exclusions>
-              {project.dependencyAdjustments.additionalExcludedLibs.map(e => {
+              {project.dependencies.excludedLibs.map(e => {
               <exclusion>
                 <groupId>{e.groupId.id}</groupId>
                 <artifactId>{e.artifactId.id}</artifactId>

@@ -22,7 +22,7 @@ class TestProject(
   upstreamTestProjects, 
   props,
   None,
-  DependencyAdjustments.Null,
+  Dependencies.Null,
   analyses
 ){
   def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {

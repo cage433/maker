@@ -17,7 +17,7 @@ trait ProjectLayout extends DelayedInit{
   def testResourceDirs : Set[File] // When running tests we use this AS WELL as resourceDirs
   def docDir : File
   def packageDir : File
-  def ivyFile : File
+  def ivyDepsFile : File
   def ivySettingsFile : File
   def managedLibDir : File
   def managedLibSourceDir : File
@@ -50,7 +50,7 @@ class MavenProjectLayout(private val root : File, targetDirName : String = "targ
   def testResourceDirs = Set(file(rootAbsoluteFile, "src", "test", "resources"))
   def docDir = file(targetDir, "docs")
   def packageDir = file(targetDir, "package")
-  def ivyFile = file(rootAbsoluteFile, "ivy.xml")
+  def ivyDepsFile = file(rootAbsoluteFile, "ivy.xml")
   def ivySettingsFile = file("ivysettings.xml") // Note that this is relative to CWD
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
   def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
@@ -75,7 +75,7 @@ class MakerProjectLayout(private val root : File) extends ProjectLayout{
   def testResourceDirs = Set(file(rootAbsoluteFile, "test-resources"))
   def docDir = file(targetDir, "docs")
   def packageDir = file(targetDir, "package")
-  def ivyFile = file(rootAbsoluteFile, "ivy.xml")
+  def ivyDepsFile = file(rootAbsoluteFile, "ivy.xml")
   def ivySettingsFile = file("ivysettings.xml") // Note that this is relative to CWD
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
   def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")

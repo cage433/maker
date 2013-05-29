@@ -68,7 +68,7 @@ case class MakePoms(
         writeXmlToFile(pomFile, pomXml)
       }
       case _ => {
-        if (project.layout.ivyFile.exists){
+        if (project.ivyFile.exists){
             val propertySubsDeps = moduleDef.projectDef.dependencyModules.map(d => d.updateVersion(propertyName(d.gav.groupAndArtifact)))
             //println("-- property sub deps --")
             //propertySubsDeps.foreach(println)
