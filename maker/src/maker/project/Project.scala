@@ -63,29 +63,29 @@ import com.typesafe.zinc.Parsed
 import com.typesafe.zinc.Settings
 import com.typesafe.zinc.Inputs
 import com.typesafe.zinc.Setup
+import maker.ivy.IvyUtils
 
 /**
-  * Defines a software project.
-  *
-  * A project can either be a self contained piece of software, or a module
-  * in a larger project. Each project knows its upstream dependencies, these
-  * are projects which must be compiled before it - and whose classes are on this
-  * project's classpath.
-  * 
-  * Most of the implementation is contained in the traits that Project implements. This
-  * has been done purely for code layout reasons - Project.scala became extremely large
-  * and so it its functionality was split into areas of common interest.
-  *
-  * @constructor create a new project instance
-  * @param root the root directory of the project
-  * @param name the project's name - used in logging
-  * @param layout the structure of the project's source, class and resource files
-  * @param props    a set of properties governing how maker behaves and describing its environment. Multi module projects will normally have most of these properties identical
-  * @param moduleIdentity   identity in the sense of Maven or Ivy. Published POM includes this in its name - if none is supplied then a reasonable default is invented from Props
-  * @param dependencyAdjustments  a place to put adjustments to an ivy file - required if that file is not under our
-  *        our control. e.g. if generated from a POM. [[maker.project.DependencyAdjustments]]
-  */
-
+ * Defines a software project.
+ *
+ * A project can either be a self contained piece of software, or a module
+ * in a larger project. Each project knows its upstream dependencies, these
+ * are projects which must be compiled before it - and whose classes are on this
+ * project's classpath.
+ *
+ * Most of the implementation is contained in the traits that Project implements. This
+ * has been done purely for code layout reasons - Project.scala became extremely large
+ * and so it its functionality was split into areas of common interest.
+ *
+ * @constructor create a new project instance
+ * @param root the root directory of the project
+ * @param name the project's name - used in logging
+ * @param layout the structure of the project's source, class and resource files
+ * @param props    a set of properties governing how maker behaves and describing its environment. Multi module projects will normally have most of these properties identical
+ * @param moduleIdentity   identity in the sense of Maven or Ivy. Published POM includes this in its name - if none is supplied then a reasonable default is invented from Props
+ * @param dependencies  a place to put adjustments to an ivy file - required if that file is not under our
+ *        our control. e.g. if generated from a POM. [[maker.project.Dependencies]]
+ */
 class Project(
     private val root : File,
     val name : String,
@@ -94,7 +94,7 @@ class Project(
     val upstreamTestProjects : List[Project] = Nil,
     val props : MakerProps = MakerProps(),
     val moduleIdentity : Option[GroupAndArtifact] = None, 
-    val dependencyAdjustments : DependencyAdjustments = DependencyAdjustments.Null,
+    val dependencies : Dependencies = Dependencies.Null,
     val analyses : ConcurrentHashMap[File, Analysis] = Project.analyses
 ) 
   extends ProjectSugar
@@ -105,6 +105,9 @@ class Project(
   with ProjectMetaData
   with ProjectTaskDependencies
 {
+  // proxy for generated module ivy-file
+  def ivyFile : File = IvyUtils.generateIvyFile(this)
+
   val rootAbsoluteFile = root.asAbsoluteFile
 
   val log = props.log
@@ -116,7 +119,7 @@ class Project(
      rhs match {
        case p : Project if p.root == root ⇒ {
          //I believe this assertion should always hold. It's really here so that
-         //this overriden equals method never returns true on differing projects.
+         //this overridden equals method never returns true on differing projects.
          assert(this eq p, "Shouldn't have two projects pointing to the same root")
          true
        }
@@ -126,7 +129,7 @@ class Project(
 
   override def hashCode = root.hashCode
 
-  private def warnOfRedundantDependencies() {
+  def checkForRedundantDependencies() {
     upstreamProjects.foreach{
       immediateUpstreamProj ⇒
         val otherUpstreamProjects = upstreamProjects.filterNot(_ == immediateUpstreamProj)
@@ -138,7 +141,7 @@ class Project(
     }
   }
 
-  warnOfRedundantDependencies()
+  checkForRedundantDependencies()
 
   def testCompilePhase = ProjectPhase(this, TestCompilePhase)
   def compilePhase = ProjectPhase(this, SourceCompilePhase)
@@ -155,6 +158,19 @@ class Project(
   override def toString = name
   def downstramSourceDeps(sourceFile : File){
     val analysis = Compiler.analysis(compilePhase.compilationCacheFile)
+  }
+
+  // util for converting existing ivy out of ivy files and into Scala source code
+  def showIvyDepsAsScalaList {
+    // projects in approximate dependency order
+    val projects = this :: upstreamProjects.flatMap(_.allUpstreamProjects).distinct
+    println("val moduleDependencies = Map(")
+    projects.foreach(p => {
+      val deps = p.readIvyDependencies().map(d => " \"" + d.gav.groupId.id + "\" % \"" + d.gav.artifactId.id + "\" % \"" + d.gav.version.map(_.version).getOrElse("missing") + "\"")
+      println("  \"" + p.name + "\" -> List(\n    " + deps.mkString(",\n    "))
+      println("  ),")
+    })
+    println(")")
   }
 }
 
@@ -184,20 +200,22 @@ object Project{
 
 
 /**
- * Allows adjustments to the Ivy file - needed where it is not under our control
- * e.g. if it is generated from a POM
+ * Provides means to specific dependencies as per maven conventions
  */
-case class DependencyAdjustments(
-  additionalLibs : List[GAV] = Nil,
-  additionalExcludedLibs : List[GAV] = Nil,
-  providedLibNames : List[String] = Nil // don't package any of these named jars (in wars, useful when running webapps using a single classpath)
+case class Dependencies(
+  libs : List[GAV] = Nil,
+  excludedLibs : List[GAV] = Nil,
+  providedLibNames : List[String] = Nil // don't package any of these named jars (e.g. in wars, useful when running web-apps using a single classpath)
 ) {
-  def additionalLibs(libs : GAV*) = copy(additionalLibs = additionalLibs ++ libs)
-  def withAdditionalExcludedLibs(libs : GAV*) = copy(additionalExcludedLibs = additionalExcludedLibs ++ libs)
+  def additionalLibs(moreLibs : GAV*) = copy(libs = libs ++ moreLibs)
+  def additionalExcludedLibs(moreLibs : GAV*) = copy(excludedLibs = excludedLibs ++ moreLibs)
+
+  @deprecated("use dependency scopes", "since 29/05/2013")
   def withProvidedLibNames(libNames : String*) = copy(providedLibNames = providedLibNames ++ libNames)
 }
-object DependencyAdjustments{
-  val Null = DependencyAdjustments()
+object Dependencies {
+  val Null = Dependencies()
 }
 
+/// web-app project uses these details when launched with 'embedded' jetty-runner
 case class WebAppDetails(directory : File, port : Int)

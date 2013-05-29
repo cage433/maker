@@ -36,14 +36,14 @@ import org.apache.ivy.Ivy
 import maker.task._
 import maker.utils.Stopwatch
 import maker.MakerProps
-import maker.utils.maven.IvyLock
+import maker.utils.maven.DependencyCacheLock
 
 
 case class PublishTask(project : Project, resolverName : String, version : String) extends Task {
   def name = "Publish"
   def upstreamTasks = PublishLocalTask(project, version = version) :: upstreamProjects.map(PublishTask(_, resolverName, version))
   def exec(results : List[TaskResult], sw : Stopwatch) = {
-    IvyLock.synchronized{
+    DependencyCacheLock.synchronized{
       doPublish(project, results, sw)
     }
   }
@@ -56,7 +56,7 @@ case class PublishTask(project : Project, resolverName : String, version : Strin
     val moduleLocal = file(homeDir, ".ivy2/maker-local/" + project.moduleDef().projectDef.moduleLibDef.gav.toPath)
     log.debug("moduleLocal is: " + moduleLocal.getAbsolutePath)
 
-    val ivyFile = project.layout.ivyFile
+    val ivyFile = project.ivyFile
     try {
       if (ivyFile.exists){
         val confs = Array[String]("default")

@@ -121,7 +121,7 @@ trait ProjectTasks{
             val watchedFiles = baseWatchedFiles ++ (
             if (props.UpdateOnCompile()) {
               log.info("also watching project ivy.xml files")
-              proj.layout.ivyFile :: Nil
+              proj.ivyFile :: Nil
             } else Nil)
             FileUtils.lastModifiedFileTime(watchedFiles)
           }).max

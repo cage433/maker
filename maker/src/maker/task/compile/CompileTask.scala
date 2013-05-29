@@ -7,25 +7,22 @@ import maker.utils.FileUtils._
 import maker.utils.Stopwatch
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
-import maker.MakerProps
 import maker.task.tasks.UpdateTask
 import maker.utils.PersistentCache
 import maker.utils.FileSysyemPersistentCache
 import maker.utils.RedisPersistentCache
 import maker.utils.HashCache
 import maker.utils.CompilationCache
-import maker.task.Build
 import sbt.compiler.CompileFailed
 import maker.utils.TaskInfo
 
-abstract class CompileTask extends Task{
-  
+
+abstract class CompileTask extends Task {
+
   def project : Project
   def phase : CompilePhase
 
   val projectPhase = ProjectPhase(project, phase)
-
-  private val log = project.log
 
   private def copyResourcesToTargetDirIfNecessary(){
     if (props.CopyResourcesBeforeCompiling()) {
@@ -104,12 +101,8 @@ abstract class CompileTask extends Task{
     result
   }
 
-
   def name = phase.toString 
   override def numberOfSourceFiles = projectPhase.sourceFiles.size
-
-
-
 }
 
 case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
@@ -131,7 +124,9 @@ case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
 
 case class SourceCompileTask(project :Project) extends CompileTask{
   def upstreamTasks = {
-    UpdateTask(project, omitIfNoIvyChanges = true) :: upstreamProjects.map(SourceCompileTask)
+    if (props.UpdateOnCompile())
+      UpdateTask(project, omitIfNoIvyChanges = true) :: upstreamProjects.map(SourceCompileTask)
+    else upstreamProjects.map(SourceCompileTask)
   }
   def phase = SourceCompilePhase
   override def toShortString = project + ":SC"
