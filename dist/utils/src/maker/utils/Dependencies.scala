@@ -71,7 +71,7 @@ trait GAV {
 
   def toIvyInclude : Elem =
     <dependency org={groupId.id} name={artifactId.id} rev={version.map(v => xml.Text(v.version))}>
-      {classifier.map(c => <artifact name={groupId.id} type="jar" ext="jar" e:classifier={c} />).getOrElse(NodeSeq.Empty)}
+      {classifier.map(c => <artifact name={artifactId.id} type="jar" ext="jar" e:classifier={c} />).getOrElse(NodeSeq.Empty)}
     </dependency>
 
   def toIvyExclude : Elem = <exclude org={groupId.id} module={artifactId.id} />
