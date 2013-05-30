@@ -27,7 +27,7 @@ package maker.utils
 
 import org.apache.ivy.ant.IvyMakePom
 import org.apache.ivy.plugins.parser.m2.PomWriterOptions
-import xml.Elem
+import scala.xml.{NodeSeq, Elem}
 import java.io.File
 
 trait MavenNamedElement { def mavenName : String }
@@ -64,11 +64,16 @@ trait GAV {
   val groupId : GroupId
   val artifactId : ArtifactId
   val version : Option[Version] = None
+  val classifier : Option[String] = None
   def toGroupAndArtifact = GroupAndArtifact(groupId, artifactId)
   def toGroupArtifactAndVersion = GroupArtifactAndVersion(groupId, artifactId, None)
   def withVersion(version : Version) = GroupArtifactAndVersion(groupId, artifactId, Some(version))
 
-  def toIvyInclude : Elem = <dependency org={groupId.id} name={artifactId.id} rev={version.map(v => xml.Text(v.version))} />
+  def toIvyInclude : Elem =
+    <dependency org={groupId.id} name={artifactId.id} rev={version.map(v => xml.Text(v.version))}>
+      {classifier.map(c => <artifact name={groupId.id} type="jar" ext="jar" e:classifier={c} />).getOrElse(NodeSeq.Empty)}
+    </dependency>
+
   def toIvyExclude : Elem = <exclude org={groupId.id} module={artifactId.id} />
 }
 case class GroupAndArtifact(groupId : GroupId, artifactId : ArtifactId) extends GAV {
@@ -77,11 +82,12 @@ case class GroupAndArtifact(groupId : GroupId, artifactId : ArtifactId) extends 
   override def toString = groupId.id + ":" + artifactId.id
 }
 case class Version(version : String)
-case class GroupArtifactAndVersion(groupId : GroupId, artifactId : ArtifactId, override val version : Option[Version]) extends GAV {
+case class GroupArtifactAndVersion(groupId : GroupId, artifactId : ArtifactId, override val version : Option[Version], override val classifier : Option[String] = None) extends GAV {
   override def toString = groupId.id + ":" + artifactId.id + ":" + version.map(_.version).getOrElse("")
   def updateVersion(ver : Version) = this.copy(version = Some(ver))
   def toPath = groupId.id + File.separator + artifactId.id
   def groupAndArtifact = GroupAndArtifact(groupId, artifactId)
+  def %%(classifier : String) = this.copy(classifier = Some(classifier))
 }
 
 /**
