@@ -226,7 +226,7 @@ object Starling {
          "mig-swing" % "miglayout" % "4.0",
          "net.java.dev.timingframework" % "timingframework" % "1.0",
          "starling-external-jars" % "org.eclipse.mylyn.wikitext.textile.core" % "1.4",
-         "starling-external-jars" % "org.eclipse.mylyn.wikitext.core" % "1.4"
+         "starling-external-jars" % "org.eclipse.mylyn.wikitext.core" % "1.4" %% "e3x"
       ),
       "browser.service" -> List(
          "org.scala-lang" % "scala-compiler" % "2.9.2"
