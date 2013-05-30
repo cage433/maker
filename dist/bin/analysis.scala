@@ -57,7 +57,7 @@ class Analysis(phase : ProjectPhase){
     f ⇒ (f → fileToName(f))
   }.toMap.filter{
     case(f, maybeName) ⇒ maybeName.isDefined
-  }.mapValues(_.get)
+  }.mapValuesEagerly(_.get)
 
   def sfile(name : String) : File = sourceFiles.find(_.getName==name + ".scala").get
   def cfile(name : String) : File = classFiles.find(_.getName==name + ".class").get
