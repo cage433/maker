@@ -200,7 +200,7 @@ object Starling {
       "starling" -> List(
       ),
       "launcher" -> List(
-         "starling.test.resources" % "bookmark-test-db" % "1.1",
+         "starling.test.resources" % "bookmark-test-db" % "1.2",
          "org.suecarter" % "tablediff-2.9" % "0.1.2"
       ),
       "auth" -> List(
