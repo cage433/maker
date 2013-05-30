@@ -143,7 +143,7 @@ object Starling {
   // Layer 15
   lazy val eventViewerService = project("event.viewer.service", eventViewerApi, titan)
   // Layer 16
-  lazy val startserver = project("startserver", singleClasspathManager, tradeImpl, oil, webservice, eventViewerService)
+  lazy val startserver = project("startserver", singleClasspathManager, tradeImpl, oil, eventViewerService)
   // Layer 17
   lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
   // Layer 18
