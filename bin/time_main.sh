@@ -23,6 +23,7 @@ if [ $COMPILE_WORKED -eq 0 ]; then
    -XX:+PrintGCDetails \
    -Dsun.awt.disablegrab=true \
    -Dlogback.configurationFile=./logback.xml \
+   -Dmaker.test.logback.file=logback.xml \
    starling.utils.RunMainWithStats $MAIN_CLASS $@
 
    MAIN_WORKED=$?
