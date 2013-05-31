@@ -20,21 +20,22 @@ import maker.MakerProps
 case class TestIdentifier(suite : String, suiteClass : String, test : String) extends Ordered[TestIdentifier]{
   def compare(rhs : TestIdentifier) = toString.compare(rhs.toString)
 }
-case class TestFailure(props : MakerProps, message : String, throwable : List[String]) {
-  def formatted(classToHighlight : Option[String]) = {
+case class TestFailure(message : String, throwable : List[String]) {
+  def formatted(classToHighlight : String) = {
     val buffer = new StringBuffer
-    buffer.append(message + "\n\n")
-    if (props.ShowFailingTestException()){
-      val highlightedThrowable = classToHighlight match {
-        case Some(klass) ⇒ throwable.map{
-          line ⇒ if (line.contains(klass)) line.inReverseRed else line.inRed
-        }
-        case None ⇒ throwable
+    buffer.append("Message:\n\t" + message + "\n")
+    if (throwable.isEmpty){
+      buffer.append("No stack trace")
+    } else {
+      val highlightedThrowable = throwable.map{
+        line ⇒ if (line.contains(classToHighlight)) line.inReverseRed else line.inRed
       }
-      buffer.append(highlightedThrowable.asTable(1))
+      buffer.append("\nStack trace:\n")
+      buffer.append(highlightedThrowable.mkString("\n\t", "\n\t", "\n"))
     }
     buffer.toString
   }
+
 }
 
 object MakerTestResults{
@@ -49,7 +50,7 @@ object MakerTestResults{
 
     val startTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
     val endTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
-    val failures : HashMap[TestIdentifier, TestFailure] = HashMap[TestIdentifier, TestFailure]()
+    var failures : List[(TestIdentifier, TestFailure)] = Nil
     
     withFileLineReader(file){
       line ⇒ 
@@ -64,7 +65,7 @@ object MakerTestResults{
             endTimeInNanos += TestIdentifier(suite, suiteClass, test) → time.toLong
           case "FAILURE" ⇒ 
             val suite :: suiteClass :: test :: message :: throwable = split.tail
-            failures += TestIdentifier(suite, suiteClass, test) → TestFailure(props, message, throwable)
+            failures ::= (TestIdentifier(suite, suiteClass, test), TestFailure(message, throwable))
         }
       } catch {
         case e ⇒
@@ -75,7 +76,7 @@ object MakerTestResults{
           throw e
       }
     }
-    MakerTestResults(startTimeInNanos, endTimeInNanos, failures)
+    MakerTestResults(startTimeInNanos, endTimeInNanos, failures.sortWith(_._1 < _._1))
   }
 
   def outputFile : File = Option(System.getProperty("maker.test.output")) match {
@@ -108,27 +109,19 @@ case class MakerTestResults (
 
   startTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
   endTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
-  failures : HashMap[TestIdentifier, TestFailure] = new HashMap[TestIdentifier, TestFailure]() with SynchronizedMap[TestIdentifier, TestFailure]
+  failures : List[(TestIdentifier, TestFailure)] = Nil
 ) extends TaskInfo {
   import MakerTestResults._
 
-  def failingSuiteClasses = {
-    val failuresWithNoKnownClass = failures.filterKeys{
-      case TestIdentifier(_, "", _) ⇒ true
-      case _ ⇒ false
-    }
-    if (! failuresWithNoKnownClass.isEmpty){
-      error("Unknown suite classes in " + failuresWithNoKnownClass.keys.toList.mkString("\n\t", "\n\t", ""))
-    }
-    failures.keys.map(_.suiteClass).toSet.filterNot(_ == "")
-  }
-  def failedTests = failures.keySet
+
+  def failingTestIDs = failures.map(_._1)
+
   def passedTests = endTimeInNanos.keySet
 
   def ++ (rhs : MakerTestResults) = MakerTestResults(
     startTimeInNanos ++ rhs.startTimeInNanos,
     endTimeInNanos ++ rhs.endTimeInNanos,
-    failures ++ rhs.failures
+    (failures ::: rhs.failures).sortWith(_._1 < _._1)
   )
 
   def succeeded = failures.isEmpty && startTimeInNanos.size == endTimeInNanos.size
@@ -138,8 +131,7 @@ case class MakerTestResults (
   def endTime :Long = endTimeInNanos.values.toList.sortWith(_>_).headOption.getOrElse(0L)
   def startTime :Long = endTimeInNanos.values.toList.sortWith(_<_).headOption.getOrElse(0L)
   def time = (endTime - startTime) / 1.0e9
-  def failingSuites = failures.keySet.map(_.suiteClass)
-  def failingTests(suite : String) = failures.keySet.filter(_.suiteClass == suite).map(_.test)
+  def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
 
   def testsOrderedByTime : List[(TestIdentifier, Long)] = endTimeInNanos.map{
     case (id, endTime) ⇒ 
@@ -161,11 +153,18 @@ case class MakerTestResults (
       }.asTable(3) + "\n")
     } else {
       buffer.append("Failing tests\n")
-      failingSuites.foreach{
-        suite ⇒ 
-          buffer.append("\n" + suite + "\n")
-          buffer.append(failingTests(suite).map("\t\"" + _ + "\"").inAlphabeticalOrder.asTable(1) + "\n")
+      var lastSuite : String = ""
+      failures.zipWithIndex.foreach{
+        case ((TestIdentifier(suite, _, test), TestFailure(msg, _)), i) ⇒ 
+          if (suite != lastSuite){
+            buffer.append("\n" + suite + "\n")
+            lastSuite = suite
+          }
+          buffer.append("\t" + i + " - " + test + "\n")
+          buffer.append("\t\t" + msg + "\n")
       }
+          
+      buffer.append("\ncall testResults(i) for stack trace of the i'th test")
     }
     buffer.toString
   } 
@@ -179,4 +178,11 @@ case class MakerTestResults (
   def toShortString = toString_
   def toLongString = toString_
 
+  def apply(i : Int) = {
+    val (TestIdentifier(_, suiteClass, test), testFailure) = failures(i)
+    println("\nDetails for test: " + test + "\n")
+    println(testFailure.formatted(suiteClass))
+  }
+
+  
 }

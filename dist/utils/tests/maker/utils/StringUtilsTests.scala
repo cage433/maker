@@ -26,7 +26,7 @@ class StringUtilsTests extends FunSuite with TableDrivenPropertyChecks{
   test("best intellij matches"){
     val table = Table(
       ("matcher", "names", "best")
-      ,("Ab", List("Abc", "AbcDef", "Ab"), List("Ab", "Abc"))
+      ,("Axb", List("Abc", "AbcDef", "Ab"), List("Ab", "Abc"))
       ,("AbD", List("Abc", "AbcDef", "Ab"), List("AbcDef"))
       ,("", List("Abc", "AbcDef", "Ab"), Nil)
       ,("AbD", List("bill.Abc", "fred.mike.AbcDef", "bob.Ab"), List("fred.mike.AbcDef"))
