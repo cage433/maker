@@ -57,18 +57,6 @@ trait ProjectTasks{
 
     def RunFailingTests() = Build(RunFailingTestsTask(this))
 
-
-    // Only prints the first, for any more look in testResults.failed
-    def showFailingTest {
-      testResults.failures.headOption.foreach{ 
-        case (TestIdentifier(suite, suiteClass, test), TestFailure(props, message, throwable)) ⇒ 
-          println("Test failed")
-          println(suite + ", " + suiteClass + ", " + test)
-          println("\n\t" + message)
-          println(throwable.indented())
-      }
-    }
-
     def PackageJar(aggregateDependentModules : Boolean = false, includeDependentLibs : Boolean = false) = Build(PackageJarTask(self, aggregateDependentModules, includeDependentLibs))
 
     def Update(withSources : Boolean = true) = Build(UpdateTask(self, withSources, List("default")))
