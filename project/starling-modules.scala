@@ -115,7 +115,7 @@ object Starling {
   lazy val pivotUtils = project("pivot.utils", daterange, pivot)
   lazy val schemaevolution = project("schemaevolution", dbx) // Please do not change this dependency without asking
   // Layer 7
-  lazy val guiapi = project("gui.api", browserService, bouncyrmi, pivotUtils)
+  lazy val guiapi = project("gui.api", browserService, bouncyrmi, pivotUtils, loopyxlJava)
   lazy val starlingClient = project("starling.client", bouncyrmi)
   // Layer 8
   lazy val curves = project("curves", List(maths, guiapi), List(daterange, quantity))
@@ -297,7 +297,7 @@ object Starling {
 
       ),
       "loopyxl" -> List(
-
+        "starling-external-jars" % "xlloop" % "0.3.1"
       ),
       "loopyxl-java" -> List(
          "com.google.protobuf" % "protobuf-java" % "2.4.1"
@@ -357,7 +357,6 @@ object Starling {
          "org.subethamail" % "subethasmtp-smtp" % "1.2",
          "org.springframework" % "spring-context-support" % "3.1.0.RELEASE",
          "org.springframework" % "spring-context" % "3.1.0.RELEASE",
-         "starling-external-jars" % "xlloop" % "0.3.1",
          "commons-httpclient" % "commons-httpclient" % "3.1",
          "org.jboss.resteasy" % "resteasy-jaxrs" % "2.2.2.GA",
          "org.scannotation" % "scannotation" % "1.0.3",
