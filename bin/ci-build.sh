@@ -63,4 +63,5 @@ fi
 
 # To save disk space we do another clean - omitting the -x parameter as
 # this would remove scaladoc collected by jenkins
-git clean -f -d || exit 4
+# leave the results directory here as jenkins has html regression results in this directory
+git clean -f -d -e results/ || exit 4
