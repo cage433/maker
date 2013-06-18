@@ -492,7 +492,11 @@ object Starling {
       "eventstore-server" -> List(
          "net.liftweb" % "lift-json_2.9.1" % "2.4",
          "com.h2database" % "h2" % "1.3.170",
-         "com.twitter" % "util-eval_2.9.2" % "6.0.5"
+         "com.twitter" % "util-eval_2.9.2" % "6.0.5",
+         "net.lshift.diffa" % "participant-support" % "1.5.10",
+         "org.springframework" % "spring-web" % "3.1.0.RELEASE",
+         "org.codehaus.jackson" % "jackson-core-asl" % "1.9.4",
+         "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.4"
       )
     ) withDefaultValue(Nil) // for now this can be ommited since ivy files are still supported, make more strict when we stop reading ivy altogether...
   }
