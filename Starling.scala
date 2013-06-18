@@ -4,5 +4,8 @@ import maker.project._; import maker.utils.FileUtils._; import maker.task.BuildR
 import Common._; import Utils._; import Starling._; import Starling.starling._;
 System.setProperty("scala.usejavacp", "false")
 
+// disable HTTP caching to avoid broken jars from the corporate proxy
+new java.net.URL("http://127.0.0.1/").openConnection().setDefaultUseCaches(false)
+
 println("\nStarling build loaded\n\nNote: for convenience the 'starling' project is in the root scope, clean, test etc will act on that unless a project is specified (e.g. utils.clean...)\n")
 

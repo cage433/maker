@@ -31,7 +31,6 @@ import maker.utils._
 import maker.utils.Utils._
 import maker.utils.maven._
 import maker.utils.ModuleId._
-import maker.MakerProps
 
 /**
  * Read in raw ivy xml files for module dependencies

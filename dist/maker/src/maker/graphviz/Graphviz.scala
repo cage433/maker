@@ -27,7 +27,6 @@ package maker.graphviz
 
 import maker.project.Project
 import maker.utils.os.Command
-import maker.utils.os.OsUtils._
 import java.io.File
 import maker.utils.Utils
 import maker.task.BuildResult
@@ -75,7 +74,6 @@ object GraphVizDiGrapher {
    *   Task tree (list of (parent -> list of children))
    */
   def makeDotFromTask(result : BuildResult) : String = {
-    val graph = result.graph
     val taskResults = result.results
     val resultByProjectTask = taskResults.map{
       tr ⇒ tr.task → tr
@@ -97,7 +95,7 @@ object GraphVizDiGrapher {
     }
 
     def finishingTime(pt : Task) = resultByProjectTask(pt).timeAt(EXEC_COMPLETE)
-      //val pts = result.tree.upstreams.toList
+
     val pts = result.graph.nodes.map{node ⇒ node → result.graph.upstreams(node)}.toList
     val g = pts match {
       case (pt, _) :: Nil => {
@@ -115,17 +113,13 @@ object GraphVizDiGrapher {
           "%s->%s %s".format(mkLabel(projectTask), mkLabel(pdt), mkArrowAttrs(pdt)))
       }}
     }
-    val dot = mkGraph(graphName, g.distinct.mkString(" "))
-    println("dot = " + dot)
-    dot
+    mkGraph(graphName, g.distinct.mkString(" "))
   }
 
   def makeDotFromString(graph : List[(Project, List[String])]) : String = {
     val g = graph.distinct.flatMap(pd => pd._2.map(p =>
           "\\\"-Project-%s\\\"->\\\"%s\\\"".format(pd._1.name, p))).mkString(" ")
-    val dot = mkGraph(graphName, g.distinct.mkString(" "))
-    println("dot = " + dot)
-    dot
+    mkGraph(graphName, g.distinct.mkString(" "))
   }
 }
 

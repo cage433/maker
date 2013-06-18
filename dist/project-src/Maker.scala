@@ -24,7 +24,6 @@
  */
 
 
-
 package maker
 
 import maker.project._
@@ -41,6 +40,7 @@ import maker.utils.os.CommandOutputHandler
 import maker.project.extras.TmuxMessaging
 import scala.collection.mutable.{Map ⇒ MMap}
 import maker.task.compile._
+import maker.utils.ModuleId._
 
 /**
  * this is Maker's own self-build definition,
@@ -72,7 +72,8 @@ object Maker {
       name,
       layout = new MakerProjectLayout(root),
       upstreamProjects = upstreamProjects.toList,
-      props = makerOwnDefaultProps
+      props = makerOwnDefaultProps,
+      moduleIdentity = Some("com.google.code.maker" % name)
     ) with TmuxMessaging with MoreSugar
   }
 
@@ -102,7 +103,7 @@ object Maker {
   def debug = makerProj.log.setLevel(DEBUG)
   def info = makerProj.log.setLevel(INFO)
 
-  trait MoreSugar{
+  trait MoreSugar {
     self : Project ⇒ 
       def tcc = testCompileContinuously
       def stfe {
