@@ -102,7 +102,6 @@ object Starling {
   // Layer 4
   lazy val daterange = project("daterange", starlingDTOApi)
   lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
-  lazy val singleClasspathManager = project("singleclasspathmanager", utils)
   // Layer 5
   lazy val auth = project("auth", daterange)
   lazy val dbx = project("dbx", props, daterange)
@@ -123,7 +122,7 @@ object Starling {
   lazy val reportsFacility = project("reports.facility", guiapi)
   lazy val tradeFacility = project("trade.facility", guiapi)
   // Layer 9
-  lazy val gui = project("gui", browser, singleClasspathManager, eventViewerApi, fc2Facility, reportsFacility, tradeFacility)
+  lazy val gui = project("gui", browser, eventViewerApi, fc2Facility, reportsFacility, tradeFacility)
   lazy val instrument = project("instrument", List(curves), List(maths, curves))
   // Layer 10
   lazy val databases = project("databases", List(dbx, instrument), List(curves))
@@ -142,7 +141,7 @@ object Starling {
   // Layer 15
   lazy val eventViewerService = project("event.viewer.service", eventViewerApi, titan)
   // Layer 16
-  lazy val startserver = project("startserver", singleClasspathManager, tradeImpl, oil, eventViewerService)
+  lazy val startserver = project("startserver", tradeImpl, oil, eventViewerService)
   // Layer 17
   lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
   // Layer 18
@@ -348,11 +347,8 @@ object Starling {
          "org.apache.httpcomponents" % "httpclient" % "4.1.2",
          "org.apache.httpcomponents" % "httpcore" % "4.1.2",
          "com.trafigura.titan.shared-libs" % "titan-core" % "${titan_binary_version}",
-         "com.trafigura.titan.shared-libs" % "titan-security" % "${titan_binary_version}",
-         "com.trafigura.titan" % "model-trademgmt-internal-scala-bindings" % "1.5"
-      ),
-      "singleclasspathmanager" -> List(
-
+         "com.trafigura.titan.shared-libs" % "titan-security" % "${titan_binary_version}"
+         // "com.trafigura.titan" % "model-trademgmt-internal-scala-bindings" % "1.5"
       ),
       "starling.client" -> List(
          "com.trafigura.titan.shared-libs" % "titan-framework" % "${titan_binary_version}"
@@ -379,7 +375,7 @@ object Starling {
          "com.trafigura.services" % "logistics-api-ws" % "${titan_binary_version}",
          "com.trafigura.titan" % "model-pricingmanagement-public-scala-bindings" % "${titan_binary_version}",
          "com.trafigura.services" % "pricingmanagement-api" % "${titan_binary_version}",
-         "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.5",
+         // "com.trafigura.titan" % "model-trademgmt-public-scala-bindings" % "1.5",
          "com.oracle" % "aqapi" % "11.2.0",
          "org.javatuples" % "javatuples" % "1.2",
          "aopalliance" % "aopalliance" % "1.0",
