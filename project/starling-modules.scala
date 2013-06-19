@@ -87,67 +87,65 @@ object Starling {
 
   // projects ordered by layer, then alphabetically, each layer depends only on layers above
   // the dependencies of each project are also ordered by their position in this list.
-  // OCD yes but helps to visualise the project. There is a school of thought that too many layers is bad, we have 19!
+  // OCD yes but helps to visualise the project. There is a school of thought that too many layers is bad, we have 18!
 
   // Layer 1
   lazy val booter = project("booter")
   lazy val loopyxlJava = project("loopyxl-java")
-  lazy val manager = project("manager")
+  lazy val utils = project("utils")
   // Layer 2
-  lazy val utils = project("utils", manager)
-  // Layer 3
   lazy val browserService = project("browser.service", utils)
-  // Layer 4
+  // Layer 3
   lazy val browser = project("browser", browserService)
   lazy val props = project("props", utils)
   lazy val starlingDTOApi = project("starling.dto.api", utils)
-  // Layer 5
+  // Layer 4
   lazy val daterange = project("daterange", starlingDTOApi)
   lazy val quantity = project("quantity", List(starlingDTOApi), List(utils))
   lazy val singleClasspathManager = project("singleclasspathmanager", utils)
-  // Layer 6
+  // Layer 5
   lazy val auth = project("auth", daterange)
   lazy val dbx = project("dbx", props, daterange)
   lazy val maths = project("maths", List(daterange, quantity), List(daterange, quantity))
   lazy val pivot = project("pivot", List(quantity), List(utils))
-  // Layer 7
+  // Layer 6
   lazy val bouncyrmi = project("bouncyrmi", List(auth), List(utils))
   lazy val loopyxl = project("loopyxl", loopyxlJava, auth)
   lazy val pivotUtils = project("pivot.utils", daterange, pivot)
   lazy val schemaevolution = project("schemaevolution", dbx) // Please do not change this dependency without asking
-  // Layer 8
+  // Layer 7
   lazy val guiapi = project("gui.api", browserService, bouncyrmi, pivotUtils, loopyxlJava)
   lazy val starlingClient = project("starling.client", bouncyrmi)
-  // Layer 9
+  // Layer 8
   lazy val curves = project("curves", List(maths, guiapi), List(daterange, quantity))
   lazy val eventViewerApi = project("event.viewer.api", guiapi)
   lazy val fc2Facility = project("fc2.facility",  guiapi)
   lazy val reportsFacility = project("reports.facility", guiapi)
   lazy val tradeFacility = project("trade.facility", guiapi)
-  // Layer 10
+  // Layer 9
   lazy val gui = project("gui", browser, singleClasspathManager, eventViewerApi, fc2Facility, reportsFacility, tradeFacility)
   lazy val instrument = project("instrument", List(curves), List(maths, curves))
-  // Layer 11
+  // Layer 10
   lazy val databases = project("databases", List(dbx, instrument), List(curves))
-  // Layer 12
+  // Layer 11
   lazy val services = project("services", List(loopyxl, fc2Facility, reportsFacility, databases), List(instrument))
-  // Layer 13
+  // Layer 12
   lazy val tradeImpl = project("trade.impl", tradeFacility, services)
   lazy val pnlreconcile = project("pnlreconcile", List(tradeFacility, services), List(schemaevolution, curves))
   lazy val webservice = project("webservice", List(services), List(utils))
-  // Layer 14
+  // Layer 13
   lazy val eventstoreServer = project("eventstore-server", List(webservice), List(utils))
   lazy val reportsImpl = project("reports.impl", List(schemaevolution, pnlreconcile), List(databases))
-  // Layer 15
+  // Layer 14
   lazy val oil = project("oil", webservice, reportsImpl)
   lazy val titan = project("titan", List(starlingClient, webservice, reportsImpl), List(instrument, webservice))
-  // Layer 16
+  // Layer 15
   lazy val eventViewerService = project("event.viewer.service", eventViewerApi, titan)
-  // Layer 17
+  // Layer 16
   lazy val startserver = project("startserver", singleClasspathManager, tradeImpl, oil, eventViewerService)
-  // Layer 18
+  // Layer 17
   lazy val launcher = project("launcher", List(booter, gui, startserver), List(curves))
-  // Layer 19
+  // Layer 18
   lazy val starling = new TopLevelProject("starling", List(launcher, eventstoreServer), makerProps,
     List(
       "logs",
@@ -299,19 +297,6 @@ object Starling {
       ),
       "loopyxl-java" -> List(
          "com.google.protobuf" % "protobuf-java" % "2.4.1"
-      ),
-      "manager" -> List(
-         "org.scala-lang" % "scala-swing" % "2.9.2",
-         "com.beust" % "jcommander" % "1.12",
-         "org.beanshell" % "bsh" % "2.0b4",
-         "org.testng" % "testng" % "6.2.1",
-         "org.scala-tools" % "scala-stm_2.9.2" % "0.5",
-         "cglib" % "cglib-nodep" % "2.2",
-         "org.scalatest" % "scalatest_2.9.2" % "1.8",
-         "org.scalaz" % "scalaz-core_2.9.2" % "6.0.4",
-         "org.scalamock" % "scalamock-core_2.9.2" % "2.4",
-         "org.scalamock" % "scalamock-scalatest-support_2.9.2" % "2.4",
-         "com.google.inject" % "guice" % "2.0"
       ),
       "maths" -> List(
          "org.apache.commons" % "commons-math3" % "3.0"
@@ -480,7 +465,18 @@ object Starling {
          "com.twitter" % "finagle-http_2.9.2" % "6.0.5",
          "com.twitter" % "util-core_2.9.2" % "6.0.5",
          "com.twitter" % "util-codec_2.9.2" % "6.0.5",
-         "com.twitter" % "util-jvm_2.9.2" % "6.0.5"
+         "com.twitter" % "util-jvm_2.9.2" % "6.0.5",
+         "org.scala-lang" % "scala-swing" % "2.9.2",
+         "com.beust" % "jcommander" % "1.12",
+         "org.beanshell" % "bsh" % "2.0b4",
+         "org.testng" % "testng" % "6.2.1",
+         "org.scala-tools" % "scala-stm_2.9.2" % "0.5",
+         "cglib" % "cglib-nodep" % "2.2",
+         "org.scalatest" % "scalatest_2.9.2" % "1.8",
+         "org.scalaz" % "scalaz-core_2.9.2" % "6.0.4",
+         "org.scalamock" % "scalamock-core_2.9.2" % "2.4",
+         "org.scalamock" % "scalamock-scalatest-support_2.9.2" % "2.4",
+         "com.google.inject" % "guice" % "2.0"
       ),
       "webservice" -> List(
          "dom4j" % "dom4j" % "1.6.1",
