@@ -34,7 +34,7 @@ echo "maker project file name : $4"
 MAKER_IVY_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/central/org/apache/ivy/ivy/2.3.0-rc2/ivy-2.3.0-rc2.jar
 MAKER_COMPILER_INTERFACE_URL=http://nexus.global.trafigura.com:8081/nexus/content/repositories/starling-additional-resources/com/typesafe/sbt/compiler-interface-sources/0.12.1/compiler-interface-sources-0.12.1.jar
 
-ARGS="-Dbuild.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3 -Dgit.commit=$GIT_COMMIT -Djenkins.job=$JOB_NAME" -Dmaker.test.logback.file=logback.xml
+ARGS="-Dbuild.number=$1 -Dbuild.type=$2 -Dpublishing.resolver=$3 -Dgit.commit=$GIT_COMMIT -Djenkins.job=$JOB_NAME -Dmaker.test.logback.file=logback.xml"
 echo "maker jvm args : $ARGS"
 
 MAKER_PROJECT_FILE=$4
