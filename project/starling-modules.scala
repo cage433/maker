@@ -199,7 +199,7 @@ object Starling {
       ),
       "launcher" -> List(
          "starling.test.resources" % "bookmark-test-db" % "1.2",
-         "org.suecarter" % "tablediff-2.9" % "0.2.2"
+         "org.suecarter" % "tablediff-2.9" % "0.2.3"
       ),
       "auth" -> List(
          "net.java.dev.jna" % "jna" % "3.3.0",
