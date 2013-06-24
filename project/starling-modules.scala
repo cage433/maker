@@ -133,7 +133,7 @@ object Starling {
   lazy val pnlreconcile = project("pnlreconcile", List(tradeFacility, services), List(schemaevolution, curves))
   lazy val webservice = project("webservice", List(services), List(utils))
   // Layer 13
-  lazy val eventstoreServer = project("eventstore-server", List(webservice), List(utils))
+  lazy val eventstoreServer = project("eventstore-server", List(webservice, schemaevolution), List(utils))
   lazy val reportsImpl = project("reports.impl", List(schemaevolution, pnlreconcile), List(databases))
   // Layer 14
   lazy val oil = project("oil", webservice, reportsImpl)
@@ -480,7 +480,6 @@ object Starling {
          "dom4j" % "dom4j" % "1.6.1"
       ),
       "eventstore-server" -> List(
-         "net.liftweb" % "lift-json_2.9.1" % "2.4",
          "com.h2database" % "h2" % "1.3.170",
          "com.twitter" % "util-eval_2.9.2" % "6.0.5",
          "net.lshift.diffa" % "participant-support" % "1.5.10",
