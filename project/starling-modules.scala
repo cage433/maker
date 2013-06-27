@@ -193,6 +193,9 @@ object Starling {
     daterange.Publish("local-m2-publish", version).execute
   }
 
+  def refreshDB(from : String, to : String) =
+    databases.RunMain("starling.databases.utils.RefreshDatabase")()(from, to).execute
+
   object StarlingDependencies {
     val moduleDependencies = Map(
       "starling" -> List(

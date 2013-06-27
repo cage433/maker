@@ -67,9 +67,6 @@ object Utils {
     implicit def toRichProject(project : Project) : RichProject = new RichProject(project)
   }
 
-
-  import RichProject._
-
   def writeClasspath(p : Project) {
     val cp = p.compilePhase.compilationClasspath
     writeToFile(file("p.name"), "export CLASSPATH=" + cp)
