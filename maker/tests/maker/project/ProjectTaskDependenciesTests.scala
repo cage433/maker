@@ -15,21 +15,21 @@ import maker.task.compile._
 import maker.task.Build
 
 class ProjectTaskDependenciesTests extends FunSuite{
-  case class WriteClassCountToFile(project : Project, basename : String = "ClassCount") extends Task{
+  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task{
     def name = "Write class count "
-    def copy_(p : Project) = copy(project = p)
+    def copy_(p : Module) = copy(module = p)
     def upstreamTasks = Nil
-    def exec(results : List[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
+    def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
       exec
       TaskResult.success(WriteClassCountToFile.this, sw)
     }
     def exec = {
-      writeToFile(file(project.rootAbsoluteFile, basename), project.compilePhase.classFiles.size + "")
+      writeToFile(file(module.rootAbsoluteFile, basename), module.compilePhase.classFiles.size + "")
     }
   }
 
   test("Can add custom task to run before standard task"){
-    def projectWithCustomTaskAfterClean(root : File, name : String) = new TestProject(root,name){
+    def moduleWithCustomTaskAfterClean(root : File, name : String) = new TestModule(root,name){
       self ⇒  
       val extraUpstreamTask = WriteClassCountToFile(this)
       override def extraUpstreamTasks(task : Task) = task match {
@@ -44,8 +44,8 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
     withTempDir{
       dir ⇒ 
-        val project = projectWithCustomTaskAfterClean(dir, "CustomTask")
-        project.writeSrc(
+        val module = moduleWithCustomTaskAfterClean(dir, "CustomTask")
+        module.writeSrc(
           "foo/Fred.scala",
           """
           |package foo
@@ -54,10 +54,10 @@ class ProjectTaskDependenciesTests extends FunSuite{
           """
         )
 
-        def classCountFile(basename : String) = file(project.rootAbsoluteFile, basename)
+        def classCountFile(basename : String) = file(module.rootAbsoluteFile, basename)
         assert(!classCountFile("BeforeClean").exists, "file should not exist until clean task is run")
         assert(!classCountFile("AfterClean").exists, "file should not exist until clean task is run")
-        project.clean
+        module.clean
         assert(classCountFile("BeforeClean").exists, "file should exist after clean task has run")
         assert(classCountFile("AfterClean").exists, "file should exist after clean task has run")
 
@@ -66,16 +66,16 @@ class ProjectTaskDependenciesTests extends FunSuite{
         }
         assert(numberOfClassFiles("BeforeClean") === 0)
         assert(numberOfClassFiles("AfterClean") === 0)
-        project.compile
-        project.clean
+        module.compile
+        module.clean
         assert(numberOfClassFiles("BeforeClean") > 0)
         assert(numberOfClassFiles("AfterClean") === 0)
     }
   }
 
 
-  test("Project setUp and tearDown can be overriden"){
-    def projectWithSetupAndTeardowns(root : File, upstreamProjects : Project*) = new TestProject(
+  test("Module setUp and tearDown can be overriden"){
+    def moduleWithSetupAndTeardowns(root : File, upstreamProjects : Module*) = new TestModule(
       root = root, 
       name = "With setup",
       upstreamProjects = upstreamProjects.toList
@@ -107,9 +107,9 @@ class ProjectTaskDependenciesTests extends FunSuite{
     }
     withTempDir{
       dir ⇒ 
-        val upstreamProject = projectWithSetupAndTeardowns(file(dir, "upstream"))
-        val downstreamProject = projectWithSetupAndTeardowns(file(dir, "downstream"))
-        upstreamProject.writeSrc(
+        val upstreamModule = moduleWithSetupAndTeardowns(file(dir, "upstream"))
+        val downstreamModule = moduleWithSetupAndTeardowns(file(dir, "downstream"))
+        upstreamModule.writeSrc(
           "upstream/Foo",
           """
           |package upstream
@@ -117,7 +117,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
           |case class Foo(x : Int)
           """
         )
-        downstreamProject.writeSrc(
+        downstreamModule.writeSrc(
           "downstream/Bar",
           """
           |package downstream
@@ -127,27 +127,27 @@ class ProjectTaskDependenciesTests extends FunSuite{
           """
         )
         // Initially there should be no class count files
-        List(upstreamProject, downstreamProject).foreach{
+        List(upstreamModule, downstreamModule).foreach{
           proj ⇒ 
             assert(!proj.setUpClassCountFile.exists)
             assert(!proj.tearDownClassCountFile.exists)
         }
 
         // After cleaning downstream its class count files only should exist
-        downstreamProject.clean
-        assert(!upstreamProject.setUpClassCountFile.exists)
-        assert(!upstreamProject.tearDownClassCountFile.exists)
-        assert(downstreamProject.setUpClassCountFile.exists)
-        assert(downstreamProject.tearDownClassCountFile.exists)
+        downstreamModule.clean
+        assert(!upstreamModule.setUpClassCountFile.exists)
+        assert(!upstreamModule.tearDownClassCountFile.exists)
+        assert(downstreamModule.setUpClassCountFile.exists)
+        assert(downstreamModule.tearDownClassCountFile.exists)
     }
   }
 
-  test("TestCompile by default doesn't depend on upstream projects TestCompile"){
+  test("TestCompile by default doesn't depend on upstream modules TestCompile"){
     withTempDir{
       dir ⇒ 
-        val A = new TestProject(file(dir, "upstream"), "A")
-        val B = new TestProject(file(dir, "downstream"), "B", List(A))
-        val C = new TestProject(file(dir, "downstream2"), "C", List(A), List(A))
+        val A = new TestModule(file(dir, "upstream"), "A")
+        val B = new TestModule(file(dir, "downstream"), "B", List(A))
+        val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
 
         assert(
           !B.TestCompile.graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
@@ -168,47 +168,50 @@ class ProjectTaskDependenciesTests extends FunSuite{
   test("test dependencies are observed in classpaths"){
     withTempDir{
       dir ⇒ 
-        val A = new TestProject(file(dir, "A"), "A")
-        val B = new TestProject(file(dir, "B"), "B", List(A))
-        val C = new TestProject(file(dir, "C"), "C", List(A), List(A))
-        val D = new TestProject(file(dir, "D"), "D", List(C))
+        val A = new TestModule(file(dir, "A"), "A")
+        val B = new TestModule(file(dir, "B"), "B", List(A))
+        val C = new TestModule(file(dir, "C"), "C", List(A), List(A))
+        val D = new TestModule(file(dir, "D"), "D", List(C))
 
         assert(
-          ! B.testCompilePhase.classpathDirectoriesAndJars.contains(A.layout.testOutputDir), 
+          ! B.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.testOutputDir), 
           "A's test output directory is not in B's classpath"
         )
         assert(
-          C.testCompilePhase.classpathDirectoriesAndJars.contains(A.layout.testOutputDir), 
+          C.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.testOutputDir), 
           "A's test output directory is in C's classpath"
         )
         assert(
-          ! D.testCompilePhase.classpathDirectoriesAndJars.contains(A.layout.testOutputDir), 
+          ! D.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.testOutputDir), 
           "A's test output directory is not in D's classpath"
         )
     }
   }
 
-  test("Upstream project tests are associated tasks"){
+  test("Upstream module tests are associated tasks"){
     withTempDir{
       dir ⇒ 
-        def project(name : String, upstreams : List[Project] = Nil, testUpstreams : List[Project] = Nil) : Project = {
-          new TestProject(file(dir, name), name, upstreams, testUpstreams)
+        def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {
+          new TestModule(file(dir, name), name, upstreams, testUpstreams)
         }
-        val A = project("A")
-        val B = project("B", List(A))
-        val C = project("C", List(B), List(A))
-        val D = project("D", List(C))
+        val A = module("A")
+        val B = module("B", List(A))
+        val C = module("C", List(B), List(A))
+        val D = module("D", List(C))
 
         List(A, B, C).foreach{
           proj ⇒ 
-            assert(proj.Test.graph.nodes.contains(RunUnitTestsTask(proj)))
+            assert(proj.Test.graph.nodes.exists{
+              case RunUnitTestsTask(_, `proj`, _) ⇒ true
+              case _ ⇒ false
+            })
         }
         import Dependency.Edge
         assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
         assert(D.Test.graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
         assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(B), TestCompileTask(C))))
 
-        assert(D.TestCompile.graph.subGraphOf(D.Test.graph))
+        assert(D.TestCompile.graph.subGraphOf(D.test.graph))
         
     }
     

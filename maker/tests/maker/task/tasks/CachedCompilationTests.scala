@@ -5,7 +5,7 @@ import maker.utils.FileUtils._
 import maker.utils.RichString._
 import java.io.File
 import maker.project._
-import maker.project.TestProject
+import maker.project.TestModule
 import maker.MakerProps
 import maker.task.compile._
 
@@ -16,12 +16,12 @@ class CachedCompilationTests extends FunSuite {
     assert(file.exists(), file + " does not exist")
     assert(file.length() > 1, file + " is empty")
   }
-  def checkCompile(project:Project, expectedState :CompilationState) {
-    val r = project.compile
+  def checkCompile(module:Module, expectedState :CompilationState) {
+    val r = module.compile
     val info = r.results(0).info.get.asInstanceOf[CompilationInfo]
     assert(
       info.state === expectedState,
-      "Error when compiling " + project 
+      "Error when compiling " + module
     )
   }
 
@@ -32,12 +32,13 @@ class CachedCompilationTests extends FunSuite {
 
       withTempDir{
       dir ⇒ {
-        val projU = new TestProject(new File(dir, "u"), "CachedCompilationTests-u", props = MakerProps("CompilationCache","file", "StripInfoFromTaskResults", "false"))
+        val overrideProps = Some(TestModule.makeTestProps(dir) ++ ("CompilationCache","file"))
+        val projU = new TestModule(new File(dir, "u"), "CachedCompilationTests-u", overrideProps = overrideProps)
         val v1 = "package foo\nobject Sample { def hello():Int = 1 }"
         val v2 = "package foo\nobject Sample { def hello():String = \"x\" }\nobject Bob"
         val sample = projU.writeSrc("foo/Sample.scala", v1)
 
-        val projA = new TestProject(new File(dir, "A"), "CachedCompilationTests-A", props = MakerProps("CompilationCache","file", "StripInfoFromTaskResults", "false"), upstreamProjects = List(projU))
+        val projA = new TestModule(new File(dir, "A"), "CachedCompilationTests-A", overrideProps = overrideProps, upstreamProjects = List(projU))
         val bar = projA.writeSrc("bar/Bar.scala", "package bar;\nobject Bar { def abc = foo.Sample.hello }")
 
         checkCompile(projA, CompilationSucceeded)

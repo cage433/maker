@@ -34,7 +34,7 @@ import maker.utils.RichString._
 import maker.MakerProps
 
 case class IDEAProjectGenerator(props : MakerProps) {
-  val scalaVersion = props.ScalaVersion()
+  val scalaVersion = props.ProjectScalaVersion()
 
   def generateTopLevelModule(rootDir:File, name:String, excludedFolders:List[String]) {
 
@@ -64,64 +64,64 @@ case class IDEAProjectGenerator(props : MakerProps) {
   }
 
   def generateIDEAProjectDir(rootDir:File, name:String) {
-    val ideaProjectRoot = mkdirs(file(rootDir, ".idea"))
+    val ideaProjectRoot = mkdir(file(rootDir, ".idea"))
     writeToFileIfDifferent(file(ideaProjectRoot, ".name"), name)
 
     // For now we are insisting that there is a "scala directory" at this location: $PROJECT_DIR$/lib/scala/lib_managed/
     // Obviously, this isn't very good and we should allow it to be specified.
-    List(props.ScalaLibraryJar(), props.ScalaCompilerJar()).foreach{
+    List(props.ProjectScalaLibraryJar(), props.ProjectScalaCompilerJar()).foreach{
       jar ⇒ 
       if (!jar.exists) {
         throw new Exception("Maker requires that file " + jar + " + be present. Launch maker with the '-y' flag to download it")
       }
     }
 
-    val librariesDir = mkdirs(file(ideaProjectRoot, "libraries"))
+    val librariesDir = mkdir(file(ideaProjectRoot, "libraries"))
     val scalaLibraryContent = """<component name="libraryTable">
   <library name="scala-library-%s">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/scala-lib/scala-library-%s.jar!/" />
+      <root url="jar://$PROJECT_DIR$/%s!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="jar://$PROJECT_DIR$/scala-lib/scala-library-%s-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/%s!/" />
     </SOURCES>
   </library>
 </component>
-""" % (scalaVersion, scalaVersion, scalaVersion)
+""" % (scalaVersion, props.ProjectScalaLibraryJar().getPath, props.ProjectScalaLibrarySourceJar())
     writeToFileIfDifferent(file(librariesDir, "scala_library_%s.xml" % scalaVersion.replace('.', '_')), scalaLibraryContent)
 
     val scalaCompilerLibraryContent = """<component name="libraryTable">
   <library name="scala-compiler-%s">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/zinc-libs/scala-compiler-%s.jar!/" />
-      <root url="jar://$PROJECT_DIR$/scala-lib/scala-library-%s.jar!/" />
+      <root url="jar://$PROJECT_DIR$/%s!/" />
+      <root url="jar://$PROJECT_DIR$/%s!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
   </library>
 </component>
-""" % (scalaVersion, scalaVersion, scalaVersion)
+""" % (scalaVersion, props.ProjectScalaCompilerJar(), props.ProjectScalaLibraryJar())
     writeToFileIfDifferent(file(librariesDir, "scala_compiler_%s.xml" % scalaVersion.replace('.', '_')), scalaCompilerLibraryContent)
 
     val scalaCompilerContent = """<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
+<module version="4">
   <component name="ScalacSettings">
     <option name="COMPILER_LIBRARY_NAME" value="scala-compiler-%s" />
     <option name="COMPILER_LIBRARY_LEVEL" value="Project" />
     <option name="MAXIMUM_HEAP_SIZE" value="2048" />
     <option name="FSC_OPTIONS" value="-max-idle 0" />
   </component>
-</project>
+</module>
 """ % scalaVersion
     writeToFileIfDifferent(file(ideaProjectRoot, "scala_compiler.xml"), scalaCompilerContent)
 
     val miscContent = """<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="JDK6" project-jdk-type="JavaSDK">
+<module version="4">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" module-jdk-name="JDK6" module-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
-</project>
+</module>
 """
     writeMiscFileIfRequired(file(ideaProjectRoot, "misc.xml"), miscContent)
 
@@ -146,45 +146,45 @@ case class IDEAProjectGenerator(props : MakerProps) {
       }
 
       val vcsContent = """<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
+<module version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="%s" vcs="Git" />
   </component>
-</project>
+</module>
 """.format(relDirectory)
       writeToFileIfDifferent(file(ideaProjectRoot, "vcs.xml"), vcsContent)
     }
 
     val highlightingContent = """<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
+<module version="4">
   <component name="HighlightingAdvisor">
     <option name="SUGGEST_TYPE_AWARE_HIGHLIGHTING" value="false" />
     <option name="TYPE_AWARE_HIGHLIGHTING_ENABLED" value="true" />
   </component>
-</project>
+</module>
 """
     writeToFileIfDifferent(file(ideaProjectRoot, "highlighting.xml"), highlightingContent)
   }
 
-  def generateModule(project:Project) {
-    val projComp = ProjectPhase(project, SourceCompilePhase)
-    val projTestComp = ProjectPhase(project, TestCompilePhase)
+  def generateModule(module:Module) {
+    val projComp = ModuleCompilePhase(module, SourceCompilePhase)
+    val projTestComp = ModuleCompilePhase(module, TestCompilePhase)
     val sources = if (
-      projComp.sourceDirs.isEmpty && 
-      project.layout.resourceDirs.isEmpty && 
-      project.layout.testResourceDirs.isEmpty && 
-      projTestComp.sourceDirs.isEmpty) {
+      !projComp.sourceDir.exists && 
+      !module.resourceDir.exists &&
+      !module.testResourceDir.exists &&
+      !projTestComp.sourceDir.exists) {
         """    <content url="file://$MODULE_DIR$" />"""
     } else {
       def sourceFolder(dir:File, test:Boolean=false) = {
-        val relDir = dir.relativeTo(project.rootAbsoluteFile).getPath
+        val relDir = dir.relativeTo(module.rootAbsoluteFile).getPath
         """      <sourceFolder url="file://$MODULE_DIR$/%s" isTestSource="%s" />""".format(relDir, test.toString)
       }
-      val sourcesAndResources = (projComp.sourceDirs.filter(_.exists)
-              ++ project.layout.resourceDirs.filter(_.exists)).map(sourceFolder(_, false))
-      val testSourcesAndResources = (projTestComp.sourceDirs.filter(_.exists)
-              ++ project.layout.testResourceDirs.filter(_.exists)).map(sourceFolder(_, true))
-      val outputDirectoryToExclude = project.layout.targetDir.relativeTo(project.rootAbsoluteFile).getPath
+      val sourcesAndResources = (Set(projComp.sourceDir).filter(_.exists)
+              ++ Set(module.resourceDir).filter(_.exists)).map(sourceFolder(_, false))
+      val testSourcesAndResources = (Set(projTestComp.sourceDir).filter(_.exists)
+              ++ Set(module.testResourceDir).filter(_.exists)).map(sourceFolder(_, true))
+      val outputDirectoryToExclude = module.targetDir.relativeTo(module.rootAbsoluteFile).getPath
       val allSources = (sourcesAndResources ++ testSourcesAndResources).toList.mkString("\n")
       """    <content url="file://$MODULE_DIR$">
 %s
@@ -223,43 +223,46 @@ case class IDEAProjectGenerator(props : MakerProps) {
       val sortedJarFiles = jarFiles.sorted
       sortedJarFiles.map(jarFile => {
         val sourceFile = jarFileToSourceFileMap.get(jarFile)
-        val jarPath = jarFile.relativeTo(project.rootAbsoluteFile).getPath
-        val sourcePath = sourceFile.map(_.relativeTo(project.rootAbsoluteFile).getPath)
+        val jarPath = jarFile.relativeTo(module.rootAbsoluteFile).getPath
+        val sourcePath = sourceFile.map(_.relativeTo(module.rootAbsoluteFile).getPath)
         val jarEntryString = jarEntry(jarPath)
         val jarSourcesEntryString = jarSourcesEntry(sourcePath)
         libraryEntry(jarEntryString, jarSourcesEntryString, provided)
       })
     }
 
-    def jars(dirs:Set[File]) = dirs.flatMap(dir => {
+    def jars(dirs:Iterable[File]) = dirs.flatMap(dir => {
       if (dir.exists) dir.listFiles.filter(_.getName.endsWith(".jar")).toList else Nil
     }).toList
 
-    val managedLibraryJars = jars(Set(project.layout.managedLibDir))
-    val managedLibrarySourceJars = jars(Set(project.layout.managedLibSourceDir))
+    val managedLibraryJars = jars(List(module.managedLibDir))
+    val managedLibrarySourceJars = jars(List(module.managedLibSourceDir))
     val managedLibraryEntries = libraryEntriesForJars(managedLibraryJars, managedLibrarySourceJars, "").mkString("", "\n", "\n")
 
-    val unmanagedLibraryJars = jars(project.layout.unmanagedLibDirs).filterNot(_.getName.endsWith("-sources.jar"))
+    val unmanagedLibraryJars = jars(module.unmanagedLibDirs).filterNot(_.getName.endsWith("-sources.jar"))
     val unmanagedLibraryEntries = libraryEntriesForJars(unmanagedLibraryJars, Nil, "").mkString("", "\n", "\n")
-
-    val providedLibraryJars = jars(project.layout.providedLibDirs).filterNot(_.getName.endsWith("-sources.jar"))
-    val providedLibraryEntries = libraryEntriesForJars(providedLibraryJars, Nil, """ scope="PROVIDED"""").mkString("\n")
 
     val moduleDependencies = {
       def moduleDependency(module:String, scope:String) =
         """    <orderEntry type="module" module-name="%s" exported="" %s/>""".format(module, scope)
 
-      val dependencies = project.upstreamProjects.map(up         => moduleDependency(up.name, "")) ++
-                         project.testOnlyUpStreamProjects.map(tp => moduleDependency(tp.name, """scope="TEST" """))
+      val testOnlyUpStreamModules : List[Module] = {
+        val allUpstream = module.allUpstreamModules
+
+        module.immediateUpstreamTestModules.filterNot(tp => allUpstream.contains(tp))
+      }
+
+      val dependencies = module.immediateUpstreamModules.map(up         => moduleDependency(up.name, "")) ++
+                         testOnlyUpStreamModules.map(tp => moduleDependency(tp.name, """scope="TEST" """))
 
       dependencies.mkString("\n") + "\n"
     }
 
-    val dependencies = moduleDependencies + managedLibraryEntries + unmanagedLibraryEntries + providedLibraryEntries
+    val dependencies = moduleDependencies + managedLibraryEntries + unmanagedLibraryEntries 
 
     val output = {
-      val relativeOutputDir = projComp.outputDir.relativeTo(project.rootAbsoluteFile).getPath
-      val relativeTestOutputDir = projTestComp.outputDir.relativeTo(project.rootAbsoluteFile).getPath
+      val relativeOutputDir = projComp.outputDir.relativeTo(module.rootAbsoluteFile).getPath
+      val relativeTestOutputDir = projTestComp.outputDir.relativeTo(module.rootAbsoluteFile).getPath
       """    <output url="file://$MODULE_DIR$/%s" />
     <output-test url="file://$MODULE_DIR$/%s" />""".format(relativeOutputDir, relativeTestOutputDir)
     }
@@ -274,10 +277,10 @@ case class IDEAProjectGenerator(props : MakerProps) {
       </library>
     </orderEntry>""".format(test, dir)
 
-    val resourceDirectoriesThatExist = project.layout.resourceDirs.filter(_.exists)
-    val resources = resourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(project.rootAbsoluteFile).getPath, "")).toList
-    val testResourceDirectoriesThatExist = project.layout.testResourceDirs.filter(_.exists)
-    val testResources = testResourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(project.rootAbsoluteFile).getPath, """ scope="TEST"""")).toList
+    val resourceDirectoriesThatExist = Set(module.resourceDir).filter(_.exists)
+    val resources = resourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(module.rootAbsoluteFile).getPath, "")).toList
+    val testResourceDirectoriesThatExist = Set(module.testResourceDir).filter(_.exists)
+    val testResources = testResourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(module.rootAbsoluteFile).getPath, """ scope="TEST"""")).toList
     val resourceDirEntry = (resources ::: testResources).mkString("\n")
 
     val moduleContent = """<?xml version="1.0" encoding="UTF-8"?>
@@ -305,29 +308,27 @@ case class IDEAProjectGenerator(props : MakerProps) {
   </component>
 </module>
                         """ % (scalaVersion, output, sources, scalaVersion, dependencies, resourceDirEntry)
-    writeToFileIfDifferent(file(project.rootAbsoluteFile, project.name + ".iml"), moduleContent)
+    writeToFileIfDifferent(file(module.rootAbsoluteFile, module.name + ".iml"), moduleContent)
   }
 
-  def generateModulesFile(ideaProjectRoot:File, modules:List[String]) {
-    case class ModuleEntry(moduleName: String, isProject: Boolean = false) {
-      def moduleFile = (if (isProject) moduleName else moduleName + "/" + moduleName) + ".iml"
-      def xml = """      <module fileurl="file://$PROJECT_DIR$/%s" filepath="$PROJECT_DIR$/%s" />""".format(moduleFile, moduleFile)
-    }
-    val moduleEntries = (modules match {
-      case head :: tail => {
-        ModuleEntry(head, isProject = true) :: tail.map(ModuleEntry(_))
+  def generateModulesFile(ideaProjectRoot:File, topLevel : Project) {
+    def xml(p : BaseProject) = {
+      val imlFile : File = p match {
+        case _ : Module => file(p.name, p.name + ".iml")
+        case _ : Project => file(p.name + ".iml")
       }
-      case _ => Nil
-    }).sortBy(_.moduleName).map(_.xml).mkString("\n")
+      """      <module fileurl="file://$PROJECT_DIR$/%s" filepath="$PROJECT_DIR$/%s" />""".format(imlFile, imlFile)
+    }
+    val moduleEntries = (topLevel :: topLevel.allModules.toList).sortBy(_.name).map(xml(_)).mkString("\n")
 
     val modulesContent = """<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
+<module version="4">
   <component name="ProjectModuleManager">
     <modules>
 %s
     </modules>
   </component>
-</project>
+</module>
 
 """.format(moduleEntries)
     writeToFileIfDifferent(file(ideaProjectRoot, "modules.xml"), modulesContent)

@@ -117,44 +117,55 @@ object FileUtils extends Asserting{
 
     // Taken from http://www.4pmp.com/2009/12/java-touch-set-file-last-modified-time/
     def touch {
-      if (plainFile.exists) 
+      if (plainFile.exists) {
           if (!plainFile.setLastModified(System.currentTimeMillis)) 
               throw new Exception("Could not touch file " + plainFile)
-      else 
-          plainFile.createNewFile()
+      } else {
+        createParentDir(plainFile)
+        plainFile.createNewFile()
+      }
+      assert(plainFile.exists, plainFile + "should exist")
     }
 
     def asNewDirectory : File = {
       recursiveDelete(plainFile)
-      plainFile.mkdirs
+      plainFile.mkdir
       plainFile
     }
 
+    def makeDir() : File = FileUtils.mkdir(plainFile)
+    def makeDirs() : File = {
+      plainFile.mkdirs
+      plainFile
+    }
     def hash : String = {
       Hash.calculateHash(plainFile).hex
     }
     def subDirs : List[File] = safeListFiles.filter(_.isDirectory)
+
+    def doesNotExist = !plainFile.exists
+    def dirname = plainFile.getParentFile
   }
 
-  def findFiles(pred : File => Boolean, dirs : Set[File]) : Set[File] = {
-    def rec(file : File) : Set[File] = {
+  def findFiles(pred : File => Boolean, dirs : Iterable[File]) : Iterable[File] = {
+    def rec(file : File) : Iterable[File] = {
       if (file.isDirectory)
         file.listFiles.toSet.flatMap(rec)
       else if (pred(file))
-        Set(file)
+        List(file)
       else
-        Set.empty
+        Nil
     }
     dirs.flatMap(rec).map{f : File ⇒ f.asAbsoluteFile}
   }
 
-  def findFilesWithExtension(ext : String, dirs : Set[File]) : Set[File] =
+  def findFilesWithExtension(ext : String, dirs : Iterable[File]) : Iterable[File] =
     findFiles(_.getName.endsWith("." + ext), dirs)
 
-  def findFilesWithExtension(ext : String, dirs : File*) : Set[File] =
+  def findFilesWithExtension(ext : String, dirs : File*) : Iterable[File] =
       findFilesWithExtension(ext, dirs.toSet)
 
-  def findFilesWithExtensions(exts : List[String], dirs : Set[File]) =
+  def findFilesWithExtensions(exts : List[String], dirs : Iterable[File]) =
     findFiles((f : File) => exts.exists(e => f.getName.endsWith("." + e)), dirs)
 
   def traverseDirectories(root : File, fn : File => Unit){
@@ -221,8 +232,8 @@ object FileUtils extends Asserting{
     }
   }
 
-  def findJars(dir : File) : Set[File] = findJars(Set(dir))
-  def findJars(dirs : Set[File]) = findFilesWithExtension("jar", dirs)
+  def findJars(dir : File) : Iterable[File] = findJars(List(dir))
+  def findJars(dirs : Iterable[File]) = findFilesWithExtension("jar", dirs)
   def findClasses(dir : File) = findFilesWithExtension("class", Set(dir))
 
   /**
@@ -287,18 +298,19 @@ object FileUtils extends Asserting{
     res.reverse
   }
   
-  def tempDir(name : String = "") = {
+  def tempDir(name : String = "makerTempFile") = {
     val temp = File.createTempFile(name, java.lang.Long.toString(System.nanoTime))
-    temp.delete
-    temp.mkdirs
+    recursiveDelete(temp)
+    temp.mkdir
     temp
   }
 
   def cleanRegularFilesLeavingDirectories(file : File){
     if (file.exists && file.isDirectory){
       Option(file.listFiles).flatten.foreach(cleanRegularFilesLeavingDirectories)
-    } else
+    } else {
       file.delete
+    }
   }
 
   def recursiveDelete(file : File){
@@ -331,27 +343,21 @@ object FileUtils extends Asserting{
       f(file)
     } finally {
       if (deleteOnExit)
-        file.delete
+        recursiveDelete(file)
     }
     result
   }
 
 
-  def withTempDir[A](f : File => A, deleteOnExit : Boolean = true) = {
-    val result = withTempFile({
-      file : File => 
-        file.delete
+  def withTempDir[A](f : File => A) = {
+    withTempFile(
+      {file : File => 
+        recursiveDelete(file)
         file.mkdir
-        val result = try {
-          f(file)
-        } finally {
-          if (deleteOnExit)
-            recursiveDelete(file)
-        }
-        result
-      }, deleteOnExit
+        f(file)
+      }, 
+      deleteOnExit = true
     )
-    result
   }
 
   /**
@@ -362,7 +368,7 @@ object FileUtils extends Asserting{
   def withTestDir[A](f : File ⇒ A) = {
     assert(testDirBeingUsed.compareAndSet(false, true), "Test directory used by another test - this will end badly")
     val dir = file("/tmp/makerTestDir")
-    dir.mkdirs
+    dir.mkdir
     dir.listFiles.foreach(recursiveDelete(_))
     f(dir)
   }
@@ -388,8 +394,19 @@ object FileUtils extends Asserting{
     }
   }
 
-  def mkdirs(dir : File) = {
-    dir.mkdirs
+  def mkdirs(dir : File, subdirs : String*) = {
+    val dir_ = file(dir, subdirs : _*)
+    dir_.mkdirs
+    dir_
+  }
+
+  def mkdir(dir : File) : File = {
+    if (!dir.exists)
+      assert(dir.mkdir, "Couldn't create " + dir)
+    assert(dir.isDirectory, "Couldn't create directory " + dir + " as there is a proper file of that name")
     dir
+  }
+  def mkdir(dir : File, name : String) : File = {
+    mkdir(file(dir, name))
   }
 }

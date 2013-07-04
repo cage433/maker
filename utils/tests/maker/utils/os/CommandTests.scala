@@ -75,7 +75,7 @@ class CommandTests extends FunSuite{
       dir ⇒
         val cmd = Command(props, CommandOutputHandler.NULL.withSavedOutput, None, "echo", "HELLO")
         cmd.exec
-        assert(cmd.savedOutput === "HELLO")
+        assert(cmd.savedOutput === "HELLO\n")
     }
   }
 

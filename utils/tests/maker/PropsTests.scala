@@ -32,6 +32,7 @@ import java.io.File
 
 class PropsTests extends FunSuite{
 
+
   test("Can't have invalid properties in props file"){
     withTempFile{
       file ⇒ 
@@ -49,16 +50,16 @@ class PropsTests extends FunSuite{
     withTempFile{
       file ⇒ 
         writeToFile(file, "#InvalidPropKey=jfsfksjfks")
-        assert(MakerProps(file) === MakerProps())
+        assert(MakerProps(file) === MakerProps(MMap[String, String]()))
     }
   }
 
   test("Properties are overriden"){
     withTempFile{
       file ⇒ 
-        writeToFile(file, "Username=Fred")
-        assert(MakerProps(file).Username() === "Fred")
-        assert(MakerProps().Username() === "")
+        writeToFile(file, "ProjectScalaVersion=Fred")
+        assert(MakerProps(file).ProjectScalaVersion() === "Fred")
+        assert(MakerProps().ProjectScalaVersion() === "2.9.2")
     }
   }
 

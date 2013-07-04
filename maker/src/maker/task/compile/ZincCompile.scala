@@ -8,12 +8,12 @@ import maker.utils.FileUtils._
 object ZincCompile{
 
   lazy val zinc = new ZincClient()
-  def apply(projectPhase : ProjectPhase) : Int = {
-    val props = projectPhase.project.props
+  def apply(projectPhase : ModuleCompilePhase) : Int = {
+    val props = projectPhase.module.props
     val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ProjectPhase ⇒ 
+      case pp : ModuleCompilePhase ⇒
         upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
     }
 
@@ -28,11 +28,12 @@ object ZincCompile{
 
     val arguments = List[String](
       "-log-level",
-      "info",
+      "error",
+      "-no-color",
       "-scala-compiler",
-      props.ScalaCompilerJar().getAbsolutePath(),
+      props.ProjectScalaCompilerJar().getAbsolutePath(),
       "-scala-library",
-      props.ScalaLibraryJar().getAbsolutePath(),
+      props.ProjectScalaLibraryJar().getAbsolutePath(),
       //"-scala-extra",
       "-classpath",
       projectPhase.classpathDirectoriesAndJars.filterNot(_ == projectPhase.outputDir).toList.map(_.getCanonicalFile.getAbsolutePath).mkString(File.pathSeparator),
@@ -67,10 +68,13 @@ object ZincCompile{
 
 
     try {
-      zinc.run(arguments, projectPhase.project.rootAbsoluteFile, System.out, System.err);
+      val result = zinc.run(arguments, projectPhase.module.rootAbsoluteFile, projectPhase.compilationOutputStream, projectPhase.compilationOutputStream)
+      val analysis = Compiler.analysis(projectPhase.compilationCacheFile)
+      projectPhase.module.analyses.put(projectPhase.outputDir, analysis)
+      result
     } catch {
       case e : Throwable ⇒ 
-        println("Debug: Project: bad things")
+        println("Debug: Module: bad things")
         println(settings)
         throw e
     }

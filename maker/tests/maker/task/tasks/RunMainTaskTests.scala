@@ -28,13 +28,13 @@ package maker.task.tasks
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.RichString._
-import maker.project.{TestProject, Project}
+import maker.project.{TestModule, Module}
 
 class RunMainTaskTests extends FunSuite {
 
   /**
-   * Check run main works, and runs the main only on the project it is invoked on,
-   *   but still runs dependency tasks in upstream projects and within the target project correctly
+   * Check run main works, and runs the main only on the module it is invoked on,
+   *   but still runs dependency tasks in upstream modules and within the target module correctly
    */
   test("Can run task run-main with correct upstream tasks run first") {
     withTempDir{
@@ -42,8 +42,8 @@ class RunMainTaskTests extends FunSuite {
         val p1Dir = file(dir, "p1")
         val p2Dir = file(dir, "p2")
 
-        val proj1 = new TestProject(p1Dir, "p1")
-        val proj2 = new TestProject(p2Dir, "p2", upstreamProjects = List(proj1))
+        val proj1 = new TestModule(p1Dir, "p1")
+        val proj2 = new TestModule(p2Dir, "p2", upstreamProjects = List(proj1))
 
         val outputFile = file(p1Dir, "output.txt")
         assert(! outputFile.exists)

@@ -49,7 +49,7 @@ case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWri
         w.println(line)
         w.flush
     }
-    buffer.foreach(_.append(line))
+    buffer.foreach(_.append(line + "\n"))
   }
   def close {
     writer.foreach{

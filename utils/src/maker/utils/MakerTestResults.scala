@@ -117,6 +117,8 @@ case class MakerTestResults (
   def failingTestIDs = failures.map(_._1)
 
   def passedTests = endTimeInNanos.keySet
+  def failedTests = failures.map(_._1)
+  
 
   def ++ (rhs : MakerTestResults) = MakerTestResults(
     startTimeInNanos ++ rhs.startTimeInNanos,

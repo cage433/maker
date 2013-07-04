@@ -25,7 +25,7 @@
 
 package maker.task
 
-import maker.project.Project
+import maker.project.Module
 import tasks._
 import maker.utils.RichString._
 import maker.task.TaskResult._
@@ -36,29 +36,21 @@ import maker.MakerProps
 
 trait Task {
   def name : String
-  override def toString = name + " " + project
   def toShortString = toString
-  def exec(results : List[TaskResult] = Nil, sw : Stopwatch) : TaskResult
+  def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
   def failureHaltsTaskManager : Boolean = true
 
   /**
    * Tasks that normally need to run BEFORE this one does 
    */
-  def upstreamTasks : List[Task] 
-  def project : Project
-  def props : MakerProps = project.props
-  def extraUpstreamTasks = project.extraUpstreamTasks(this)
-  def extraDownstreamTasks = project.extraDownstreamTasks(this)
-  def upstreamProjects = project.upstreamProjects
-  def upstreamTestProjects = project.upstreamTestProjects
-  def numberOfSourceFiles = 0
+  def upstreamTasks : Iterable[Task] 
 }
+
 
 object NullTask extends Task{
   def name = "Null Task"
-  def exec(results : List[TaskResult] = Nil, sw : Stopwatch) : TaskResult = TaskResult.success(this, sw)
+  def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = TaskResult.success(this, sw)
   def upstreamTasks = Nil
-  def project : Project = throw new Exception("Null task has no project")
 }
 
 object Task {

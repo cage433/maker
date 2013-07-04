@@ -31,10 +31,9 @@ import org.slf4j.LoggerFactory
 import maker.MakerProps
 
 object MakerLog{
-  def apply(level : Level = Level.INFO, name : String = "STDOUT") : MakerLog = {
+  def apply() : MakerLog = {
     synchronized{
-      val logger = LoggerFactory.getLogger(name).asInstanceOf[Logger]
-      logger.setLevel(level)
+      val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
       MakerLog(logger)
     }
   }
@@ -75,7 +74,9 @@ case class MakerLog(logger: Logger) {
 
    def warn(msg: => AnyRef, t: => Throwable) = logger.warn(msg.toString, t)
 
-   def warn(msg: => AnyRef) = logger.warn(msg.toString)
+   def warn(msg: => AnyRef) = {
+    logger.warn(msg.toString)
+  }
 
    def setLevel(level: Level) = {
      logger.setLevel(level)

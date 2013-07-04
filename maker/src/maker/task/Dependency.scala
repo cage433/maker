@@ -1,6 +1,7 @@
 package maker.task
 
-import maker.project.Project
+import maker.project.Module
+import maker.project.BaseProject
 
 object Dependency{
 
@@ -10,9 +11,9 @@ object Dependency{
     def contains(node : Task) = nodes.contains(node)
   }
   object Edge{
-    def edges(task : Task) = {
-      val upstreams = (task.upstreamTasks ++ task.extraUpstreamTasks).map(Edge(_, task))
-      val downstreams = task.extraDownstreamTasks.map(Edge(task, _))
+    def edges(baseProject : BaseProject, task : Task) = {
+      val upstreams = (task.upstreamTasks ++ baseProject.extraUpstreamTasks(task)).map(Edge(_, task))
+      val downstreams = baseProject.extraDownstreamTasks(task).map(Edge(task, _))
       upstreams ++ downstreams
     }
   }
@@ -55,16 +56,22 @@ object Dependency{
 
   object Graph{
     def empty = Graph(Set.empty, Set.empty)
-    def transitiveClosure(task : Task) : Graph = {
+    def transitiveClosure(baseProject : BaseProject, task : Task) : Graph = transitiveClosure(baseProject, Set(task))
+
+    def transitiveClosure(baseProject : BaseProject, tasks : Iterable[Task]) : Graph = {
       def recurse(acc : Graph) : Graph = {
-        val newEdges = acc.leaves.flatMap(Edge.edges) -- acc.edges
+        val newEdges = acc.leaves.flatMap(Edge.edges(baseProject, _)) -- acc.edges
         val newNodes = newEdges.flatMap(_.nodes)
         if (newEdges.isEmpty)
           acc
         else
           recurse(Graph(acc.nodes ++ newNodes, acc.edges ++ newEdges))
       }
-      recurse(Graph(Set(task), Set.empty))
+      recurse(Graph(tasks.toSet, Set.empty))
     }
+
+    def apply(task : Task) : Graph = Graph(Set(task), Set.empty)
+    def apply(tasks : Iterable[Task]) : Graph = Graph(tasks.toSet, Set.empty)
+    def combine(graphs : Iterable[Graph]) : Graph = graphs.fold(empty)(_++_)
   }
 }

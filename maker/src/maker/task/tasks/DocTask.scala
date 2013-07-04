@@ -25,7 +25,7 @@
 
 package maker.task.tasks
 
-import maker.project.Project
+import maker.project.Module
 import maker.utils.FileUtils._
 import java.io.PrintWriter
 import maker.utils.TeeToFileOutputStream
@@ -36,43 +36,43 @@ import maker.utils.Stopwatch
 import maker.MakerProps
 import maker.task.compile.SourceCompileTask
 import maker.task.compile._
+import maker.project.BaseProject
 
 
-/** Doc generation task - produces scaladocs from project sources
+/** Doc generation task - produces scaladocs from module sources
   *
-  * Outputs scala-docs per module in the "docs" sub-dir of the project target output dir
+  * Outputs scala-docs per module in the "docs" sub-dir of the module target output dir
   */
-case class DocTask(project : Project, aggregate : Boolean = true) extends Task {
-  def name = "Doc" + (if (aggregate) " (agg)" else "")
-  def upstreamTasks = SourceCompileTask(project) :: (if (aggregate) Nil else upstreamProjects.map(DocTask(_, false)))
-  def exec(results : List[TaskResult], sw : Stopwatch) = {
-    val props = project.props
+case class DocTask(baseProject : BaseProject) extends Task {
+  
+  def name = "Doc " + baseProject.name
+  def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask(_)).toList
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+    val props = baseProject.props
     val log = props.log
 
     val runDocLogFile = file("rundoc.out")
 
-    log.info("running scala-doc gen for project " + project)
+    log.info("running scala-doc gen for module " + baseProject)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runDocLogFile))
 
-    val projects = if (aggregate) project.allUpstreamProjects else project :: Nil
+    val projects = baseProject.allUpstreamModules
     val (classpath, inputFiles) = (
       projects.map(_.compilePhase.compilationClasspath).mkString(":"),
       projects.flatMap(_.compilePhase.sourceFiles))
 
-    log.debug("input files " + inputFiles)
-    log.debug("times " + lastModifiedFileTime(inputFiles) + ", " + lastModifiedFileTime(List(project.layout.docDir)))
 
-    val docDir = project.layout.docDir
-    if (aggregate || !docDir.exists || lastModifiedFileTime(inputFiles).getOrElse(0L) > lastModifiedFileTime(List(docDir)).getOrElse(0L)) {
-      log.debug("generating doc for project " + project.toString)
+    val docDir = baseProject.docOutputDir
+    if (!docDir.exists || lastModifiedFileTime(inputFiles).getOrElse(0L) > lastModifiedFileTime(List(docDir)).getOrElse(0L)) {
+      log.debug("generating doc for module " + baseProject.toString)
       if (!docDir.exists) docDir.mkdirs else docDir.deleteAll
 
       // make a separate opts file as the args can get too big for a single command
       val optsFile = file(docDir, "docopts")
       writeToFile(optsFile, "-classpath " + classpath + " " + inputFiles.mkString(" "))
 
-      val scalaToolsClasspath = project.props.ScalaCompilerJar().getAbsolutePath + ":" + project.props.ScalaLibraryJar().getAbsolutePath
+      val scalaToolsClasspath = baseProject.props.ProjectScalaCompilerJar().getAbsolutePath + ":" + baseProject.props.ProjectScalaLibraryJar().getAbsolutePath
 
       val cmd = ScalaDocCmd(
         props,
@@ -83,15 +83,13 @@ case class DocTask(project : Project, aggregate : Boolean = true) extends Task {
         Nil,
         optsFile)
 
-      writeToFile(file(project.rootAbsoluteFile, "doccmd.sh"), "#!/bin/bash\n" + cmd.asString)
-
       cmd.exec() match {
         case 0 => TaskResult.success(this, sw)
         case _ => TaskResult.failure(this, sw, cmd.savedOutput)
       }
     }
     else {
-      log.debug("not generating doc for project " + project.toString)
+      log.debug("not generating doc for module " + baseProject.toString)
       TaskResult.success(this, sw)
     }
   }

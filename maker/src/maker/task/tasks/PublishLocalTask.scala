@@ -30,54 +30,42 @@ import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.task._
 import maker.utils.Stopwatch
+import maker.MakerProps
+import maker.MakerProps
 import java.io.IOException
-import maker.utils.maven.DependencyCacheLock
+import maker.utils.maven.IvyLock
+import maker.utils.FileUtils
+import maker.PomUtils
 
 
 /**
  * publishes poms and packaged artifacts to the local filesystem at ~/.ivy2/maker-local - subject to change
  */
-case class PublishLocalTask(project : Project, configurations : List[String] = List("default"), version : String) extends Task {
+case class PublishLocalTask(baseProject : BaseProject, version : String) extends Task {
+  private val configurations = List("default")
+
   def name = "Publish Local"
 
-  def upstreamTasks = PackageJarTask(project) :: upstreamProjects.map(PublishLocalTask(_, configurations, version))
+  def upstreamTasks = baseProject match {
+    case _ : Project => baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
+    case m : Module => PackageJarTask(m) :: baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
+  }
 
-  def exec(results : List[TaskResult], sw : Stopwatch) = {
-    DependencyCacheLock.synchronized{
-      doPublish(project, results, sw)
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+    IvyLock.synchronized{
+      doPublish(baseProject, results, sw)
     }
   }
   
-  private def doPublish(project: Project, results : List[TaskResult], sw : Stopwatch) = {
-    import maker.maven.PomWriter._
-    val props = project.props
-    val log = props.log
-    val homeDir = props.HomeDir()
-    val moduleDef = project.moduleDef(Some(version))
-    val moduleLocal = file(homeDir, ".ivy2/maker-local/" + project.moduleDef().projectDef.moduleLibDef.gav.toPath)
-    val moduleLocalPomDir = file(moduleLocal, "/poms/")
-    moduleLocalPomDir.mkdirs
-    val moduleJarDir = file(moduleLocal, "/jars/")
-    moduleJarDir.mkdirs
-    val pomFile = file(moduleLocalPomDir, "pom.xml")
+  private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
 
-    log.debug("PublishLocal for project " + project.name)
+    FileUtils.writeToFile(baseProject.publishLocalPomFile, PomUtils.pomXml(baseProject, version))
 
-    val ivyFile = project.ivyFile
-    if (ivyFile.exists){
-      writePom(props, ivyFile, project.layout.ivySettingsFile, pomFile, configurations, moduleDef, props.PomTemplateFile())
-      try {
-        copyFileToDirectory(project.outputArtifact, moduleJarDir)
-        TaskResult.success(this, sw)
-      }
-      catch {
-        case e : IOException ⇒ 
-          val msg = "IOException when copying " + project.outputArtifact + " to " + moduleJarDir
-          TaskResult.failure(this, sw, msg)
-      }
-    } else {
-      log.warn("No Ivy file, can't create a pom")
-      TaskResult.success(this, sw)
+    baseProject match {
+      case _ : Project => 
+      case m : Module => 
+        copyFileToDirectory(m.outputArtifact, m.publishLocalJarDir)
     }
+    TaskResult.success(this, sw)
   }
 }

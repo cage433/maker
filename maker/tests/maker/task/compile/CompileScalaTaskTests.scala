@@ -29,7 +29,7 @@ package maker.task.compile
 import org.scalatest.FunSuite
 import java.io.File
 import maker.utils.FileUtils._
-import maker.project.Project._
+import maker.project.Module._
 import scalaz.Scalaz._
 import ch.qos.logback.classic.Level._
 import scala.collection.mutable.ListBuffer
@@ -40,11 +40,12 @@ import maker.MakerProps
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
+import maker.utils.FileUtils
 
 class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExecution{
 
   def simpleProject(root : File) = {
-    val proj : TestProject = new TestProject(root, "CompileScalaTaskTests")
+    val proj : TestModule = new TestModule(root, "CompileScalaTaskTests")
     val outputDir = proj.compilePhase.outputDir
     val files = new {
 
@@ -76,7 +77,6 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
         case class Baz(y : Int)
         """
       )
-      proj.writeMakerFile
 
       def fooClass = new File(outputDir, "foo/Foo.class")
       def fooObject = new File(outputDir, "foo/Foo$.class")
@@ -93,7 +93,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
         val (proj, _) = simpleProject(dir)
         proj.clean
         assert(proj.compilePhase.classFiles.size === 0)
-        assert(proj.Compile.execute.succeeded, "Compile should succeed")
+        assert(proj.compile.succeeded, "Compile should succeed")
         assert(proj.compilePhase.classFiles.size > 0)
         assert(!proj.outputArtifact.exists)
         proj.pack
@@ -109,20 +109,19 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
     withTempDir{
       dir ⇒ 
         val (proj, files) = simpleProject(dir)
-        proj.writeMakerFile
         import files._
-        proj.Compile.execute
+        proj.compile
         Set(barClass, barObject) |> {
-          s => assert((s & proj.compilePhase.classFiles) === s)
+          s => assert((s & proj.compilePhase.classFiles.toSet) === s)
         }
         assert(barSrc.exists)
         barSrc.delete
         assert(!barSrc.exists)
         sleepToNextSecond
-        proj.Compile.execute
+        proj.compile
         assert(!barClass.exists)
         Set(barClass, barObject) |> {
-          s => assert((s & proj.compilePhase.classFiles) === Set())
+          s => assert((s & proj.compilePhase.classFiles.toSet) === Set())
         }
 
     }
@@ -131,7 +130,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
   test("Generated class files are deleted before compilation of source"){
     withTempDir{
       dir ⇒ 
-        val proj = new TestProject(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileScalaTaskTests")
         val fooSrc = file(dir, "src/foo/Foo.scala")
         writeToFile(
           fooSrc,
@@ -141,7 +140,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             case class Ginger(i : Int)
           """
         )
-        proj.Compile.execute
+        proj.compile
         val fredClass = new File(proj.compilePhase.outputDir, "foo/Fred.class")
         val gingerClass = new File(proj.compilePhase.outputDir, "foo/Ginger.class")
         assert(fredClass.exists && gingerClass.exists)
@@ -155,7 +154,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             //case class Ginger(i : Int)
           """
         )
-        proj.Compile.execute
+        proj.compile
         assert(fredClass.exists, "Fred should still exist")
         assert(!gingerClass.exists, "Ginger should not exist")
     }
@@ -167,7 +166,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
         val dir : File = file(tempDir, "proj")
         dir.mkdirs
         
-        val proj = new TestProject(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileScalaTaskTests")
 
         proj.writeSrc(
           "foo/Foo.scala",
@@ -190,8 +189,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             }
           """
         )
-        proj.writeMakerFile
-        assert(proj.TestCompile.execute.succeeded)
+        assert(proj.testCompile.succeeded)
         sleepToNextSecond
         proj.writeSrc(
           "foo/Foo.scala",
@@ -204,17 +202,17 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             }
           """
         )
-        val result = proj.TestCompile.execute
+        val result = proj.testCompile
         assert(!result.succeeded)
     }
   }
 
-  test("Compilation across dependent projects works"){
+  test("Compilation across dependent modules works"){
     withTempDir{
       dir ⇒ 
         val analyses = new ConcurrentHashMap[File, Analysis]()
-        val one = new TestProject(file(dir, "one"), "CompileScalaTaskTests - one", analyses = analyses)
-        val two = new TestProject(file(dir, "two"), "CompileScalaTaskTests - two", upstreamProjects = List(one), analyses = analyses)
+        val one = new TestModule(file(dir, "one"), "CompileScalaTaskTests - one", analyses = analyses)
+        val two = new TestModule(file(dir, "two"), "CompileScalaTaskTests - two", upstreamProjects = List(one), analyses = analyses)
         
         val fooSrc = one.writeSrc(
           "foo/Foo.scala",
@@ -233,11 +231,10 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             }
           """
         )
-        two.writeMakerFile
-        assert(two.Compile.execute.succeeded)
+        assert(two.compile.succeeded)
         sleepToNextSecond
 
-        // Rename variable - project two should now fail to compile
+        // Rename variable - module two should now fail to compile
         one.writeSrc(
           "foo/Foo.scala",
           """
@@ -245,14 +242,14 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             case class Foo(j : Int)
           """
         )
-        assert(!two.Compile.execute.succeeded, "Expected dependent project to fail")
+        assert(!two.compile.succeeded, "Expected dependent module to fail")
     }
   }
 
   test("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
       dir ⇒ 
-        val proj = new TestProject(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileScalaTaskTests")
         
         val fooSrc = file(dir, "src/foo/Foo.scala")
         val barSrc = file(dir, "src/foo/Bar.scala")
@@ -279,7 +276,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             case class Baz(foo : Foo)
           """
         )
-        assert(proj.Compile.execute.succeeded)
+        assert(proj.compile.succeeded)
 
         sleepToNextSecond
 
@@ -290,7 +287,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             case class Foo2(i : Int)
           """
         )
-        assert(!proj.Compile.execute.succeeded)
+        assert(!proj.compile.succeeded)
 
         sleepToNextSecond
 
@@ -301,18 +298,18 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             case class Bar(foo : Foo2)
           """
         )
-        assert(!proj.Compile.execute.succeeded, "Compilation should have failed")
+        assert(!proj.compile.succeeded, "Compilation should have failed")
     }
   }
 
   /// add test for suspected problem underlying bug #57
-  test("Compilation across dependent projects and scopes works correctly"){
+  test("Compilation across dependent modules and scopes works correctly"){
     withTempDir{
       dir ⇒
         val analyses = new ConcurrentHashMap[File, Analysis]()
-        val one = new TestProject(file(dir, "one"), "one", analyses = analyses)
-        val two = new TestProject(file(dir, "two"), "two", upstreamProjects = List(one), analyses = analyses)
-        val three = new TestProject(file(dir, "three"), "three", upstreamProjects = List(two), analyses = analyses)
+        val one = new TestModule(file(dir, "one"), "one", analyses = analyses)
+        val two = new TestModule(file(dir, "two"), "two", upstreamProjects = List(one), analyses = analyses)
+        val three = new TestModule(file(dir, "three"), "three", upstreamProjects = List(two), analyses = analyses)
 
 
         val fooSrc = one.writeSrc( 
@@ -343,7 +340,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             }
           """
         )
-        assert(three.Compile.execute.succeeded)
+        assert(three.compile.succeeded)
 
         var classes = List(one, two, three).flatMap(_.compilePhase.classFiles)
 
@@ -364,7 +361,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
             }
           """
         )
-        assert(three.Compile.execute.succeeded)
+        assert(three.compile.succeeded)
         classes = List(one, two, three).flatMap(_.compilePhase.classFiles)
 
         classCount = classes.groupBy(_.getName)
@@ -379,7 +376,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExe
   test("Compilation of mutually dependent classes works"){
     withTempDir{
       dir ⇒ 
-        val proj = new TestProject(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileScalaTaskTests")
         val traitSrc = proj.writeSrc(
           "foo/SomeTrait.scala",
           """
@@ -409,7 +406,7 @@ class SomeClass extends SomeTrait{
   test("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir ⇒ 
-        val proj = new TestProject(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileScalaTaskTests")
         proj.writeSrc(
           "foo/Foo.scala",
           """
@@ -432,7 +429,7 @@ class SomeClass extends SomeTrait{
         )
         assert(proj.compilePhase.classFiles.size === 0)
 
-        assert(proj.Compile.execute.succeeded)
+        assert(proj.compile.succeeded)
 
         // now update the base trait to invalidate implementations, check it fails
         val compilationTime = proj.compilePhase.lastCompilationTime.get
@@ -448,7 +445,7 @@ class SomeClass extends SomeTrait{
         )
 
 
-        assert(proj.Compile.execute.failed, "compilation succeeded when should have failed")
+        assert(proj.compile.failed, "compilation succeeded when should have failed")
 
         var changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
         val fooClass = file(proj.compilePhase.outputDir, "foo", "Foo.class")
@@ -468,7 +465,7 @@ class SomeClass extends SomeTrait{
           """
         )
 
-        assert(proj.Compile.execute.succeeded, "compilation failed when should have succeeded")
+        assert(proj.compile.succeeded, "compilation failed when should have succeeded")
 
         changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
         assert(changedClassFiles === Set(fooClass, barClass))
@@ -479,8 +476,8 @@ class SomeClass extends SomeTrait{
     withTempDir{
       dir ⇒ 
         val analyses = new ConcurrentHashMap[File, Analysis]()
-        val A = new TestProject(file(dir, "A"), "A", analyses = analyses)
-        val B = new TestProject(file(dir, "B"), "B", List(A), analyses = analyses)
+        val A = new TestModule(file(dir, "A"), "A", analyses = analyses)
+        val B = new TestModule(file(dir, "B"), "B", List(A), analyses = analyses)
         A.writeSrc(
           "foo/Foo.scala",
           """
@@ -513,12 +510,12 @@ class SomeClass extends SomeTrait{
     }
   }
 
-//  test("Compilation only of upstream project shouldn't prevent downstream project from being recompiled"){
+//  test("Compilation only of upstream module shouldn't prevent downstream module from being recompiled"){
 //    withTempDir{
 //      dir ⇒ 
 //        val analyses = new ConcurrentHashMap[File, Analysis]()
-//        val A = new TestProject(file(dir, "A"), "A", analyses = analyses)
-//        val B = new TestProject(file(dir, "B"), "B", List(A), analyses = analyses)
+//        val A = new TestModule(file(dir, "A"), "A", analyses = analyses)
+//        val B = new TestModule(file(dir, "B"), "B", List(A), analyses = analyses)
 //
 //        A.writeSrc(
 //          "foo/Foo.scala",

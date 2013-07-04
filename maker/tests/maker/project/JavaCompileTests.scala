@@ -3,17 +3,17 @@ package maker.project
 import org.scalatest.FunSuite
 import java.io.File
 import maker.utils.FileUtils._
-import maker.project.Project._
+import maker.project.Module._
 import maker.MakerProps
 import maker.task.compile._
 
 
 class JavaCompileTests extends FunSuite with TestUtils {
 
-  test("Java project fails when expected and stays failed"){
+  test("Java module fails when expected and stays failed"){
     withTempDir{
       root ⇒ 
-        val proj = new TestProject(root, "JavaCompileTests", props = MakerProps("MakerLogLevel", "ERROR", "ShowCompilerOutput", "false"))
+        val proj = new TestModule(root, "JavaCompileTests")
         proj.writeSrc(
           "src/foo/Foo.java", 
           """
@@ -39,7 +39,6 @@ class JavaCompileTests extends FunSuite with TestUtils {
 
         assert(proj.compile.failed, "Compilation should have failed")
 
-        //assert(files.fooClass.exists, "failed to create Foo.class")
         assert(!file(proj.compilePhase.outputDir, "foo", "Bar.class").exists, "Bar.class should not exist")
         sleepToNextSecond
         assert(proj.compile.failed, "Compilation should have failed")

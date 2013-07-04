@@ -36,70 +36,61 @@ import org.apache.ivy.Ivy
 import maker.task._
 import maker.utils.Stopwatch
 import maker.MakerProps
-import maker.utils.maven.DependencyCacheLock
+import maker.utils.maven.IvyLock
+import org.apache.ivy.core.module.id.ModuleRevisionId
+import org.apache.ivy.core.module.id.ModuleId
 
 
-case class PublishTask(project : Project, resolverName : String, version : String) extends Task {
+case class PublishTask(baseProject : BaseProject, resolverName : String, version : String) extends Task {
+
   def name = "Publish"
-  def upstreamTasks = PublishLocalTask(project, version = version) :: upstreamProjects.map(PublishTask(_, resolverName, version))
-  def exec(results : List[TaskResult], sw : Stopwatch) = {
-    DependencyCacheLock.synchronized{
-      doPublish(project, results, sw)
+  def upstreamTasks = PublishLocalTask(baseProject, version = version) :: baseProject.immediateUpstreamModules.map(PublishTask(_, resolverName, version))
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+    IvyLock.synchronized{
+      doPublish(baseProject, results, sw)
     }
   }
 
-  private def doPublish(project: Project, results : List[TaskResult], sw : Stopwatch) = {
+  private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
 
-    val props : MakerProps = project.props
-    val log = props.log
+    val props : MakerProps = baseProject.props
     val homeDir = props.HomeDir()
-    val moduleLocal = file(homeDir, ".ivy2/maker-local/" + project.moduleDef().projectDef.moduleLibDef.gav.toPath)
-    log.debug("moduleLocal is: " + moduleLocal.getAbsolutePath)
 
-    val ivyFile = project.ivyFile
+    val ivyFile = baseProject.ivyFile
     try {
-      if (ivyFile.exists){
-        val confs = Array[String]("default")
-        val artifactFilter = FilterHelper.getArtifactTypeFilter(Array[String]("xml", "jar", "bundle", "source"))
-        val resolveOptions = new ResolveOptions().setConfs(confs)
-          .setValidate(true)
-          .setArtifactFilter(artifactFilter)
-        val ivy = Ivy.newInstance
-        val settings = ivy.getSettings
-        settings.addAllVariables(System.getProperties)
-        ivy.configure(project.layout.ivySettingsFile)
+      val confs = Array[String]("default")
+      val artifactFilter = FilterHelper.getArtifactTypeFilter(Array[String]("xml", "jar", "bundle", "source"))
+      val resolveOptions = new ResolveOptions().setConfs(confs)
+        .setValidate(true)
+        .setArtifactFilter(artifactFilter)
+      val ivy = Ivy.newInstance
+      val settings = ivy.getSettings
 
-        ivy.setVariable("maker.module.groupid", project.moduleDef().projectDef.moduleLibDef.gav.groupId.id.replace(".", "/"))
+      settings.addAllVariables(System.getProperties)
+      ivy.configure(baseProject.ivySettingsFile)
 
-        settings.setVariable("maker.ivy.publish.username", props.Username(), true)
-        settings.setVariable("maker.ivy.publish.password", props.Password(), true)
-        val report = ivy.resolve(ivyFile.toURI().toURL(), resolveOptions)
-        val md = report.getModuleDescriptor
+      val report = ivy.resolve(ivyFile.toURI().toURL(), resolveOptions)
+      val md = report.getModuleDescriptor
 
-        import scala.collection.JavaConversions._
+      import scala.collection.JavaConversions._
 
-        val po = new PublishOptions()
-                      .setConfs(confs).setOverwrite(true)
-                      .setPubrevision(version)
-                      .setPubdate(new Date())
+      val po = new PublishOptions()
+                    .setConfs(confs).setOverwrite(true)
+                    .setPubrevision(version)
+                    .setPubdate(new Date())
 
-        val srcArtifactPattern = List(
-          moduleLocal.getAbsolutePath + "/[type]s/pom.xml",
-          moduleLocal.getAbsolutePath + "/[type]s/" + project.moduleId.artifactId.id + ".jar")
+      val srcArtifactPattern = List(
+        baseProject.publishLocalDir.getAbsolutePath + "/[type]s/pom.xml",
+        baseProject.publishLocalDir.getAbsolutePath + "/[type]s/" + baseProject.artifactId + ".jar")
 
-        log.info("Publish for project" + project.name)
 
-        ivy.publish(
-          md.getModuleRevisionId(),
-          srcArtifactPattern,
-          resolverName,
-          po)
+      ivy.publish(
+        md.getModuleRevisionId(),
+        srcArtifactPattern,
+        resolverName,
+        po)
 
-        TaskResult.success(this, sw)
-      } else {
-        log.info("Nothing to publish")
-        TaskResult.success(this, sw)
-      }
+      TaskResult.success(this, sw)
     }
     catch {
       case e =>

@@ -7,54 +7,55 @@ import maker.utils.FileUtils._
 import maker.utils.Stopwatch
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
+import maker.MakerProps
 import maker.task.tasks.UpdateTask
 import maker.utils.PersistentCache
 import maker.utils.FileSysyemPersistentCache
 import maker.utils.RedisPersistentCache
 import maker.utils.HashCache
 import maker.utils.CompilationCache
+import maker.task.Build
 import sbt.compiler.CompileFailed
 import maker.utils.TaskInfo
 
-
-abstract class CompileTask extends Task {
-
-  def project : Project
+abstract class CompileTask extends Task{
+  
+  def module : Module
   def phase : CompilePhase
+  val props = module.props
 
-  val projectPhase = ProjectPhase(project, phase)
+  val modulePhase = ModuleCompilePhase(module, phase)
+
+  private val log = module.log
 
   private def copyResourcesToTargetDirIfNecessary(){
     if (props.CopyResourcesBeforeCompiling()) {
-      project.layout.resourceDirs.foreach(rd =>
-        Option(rd).foreach(d =>
-          if (d.exists) copyDirectoryToDirectory(d, project.layout.targetDir)
-        )
-      )
+      val d = module.resourceDir
+      if (d.exists) copyDirectoryToDirectory(d, module.targetDir)
     }
   }
 
-  private val classesCache:Option[PersistentCache] = project.props.CompilationCache() match {
+  private val classesCache:Option[PersistentCache] = module.props.CompilationCache() match {
     case ""|"None"|"No"|"Off" => None
-    case "file" => Some(new FileSysyemPersistentCache(project.cacheDirectory))
+    case "file" => Some(new FileSysyemPersistentCache(module.cacheDirectory))
     case hostname => Some(RedisPersistentCache.instance(hostname))
   }
-  def inputsHash = HashCache.hash(projectPhase.compilationDependencies())
+  def inputsHash = HashCache.hash(modulePhase.compilationDependencies())
 
   private def cachedCompilation(sw : Stopwatch) : Option[TaskResult] = {
     classesCache collect {
       case cache if cache.contains(inputsHash) ⇒ {
         val files = CompilationCache.lookup(cache, inputsHash).get
-        files.copyTo(projectPhase.project.rootAbsoluteFile, projectPhase.outputDir, projectPhase.makerDirectory)
+        files.copyTo(modulePhase.module.rootAbsoluteFile, modulePhase.outputDir, modulePhase.phaseDirectory)
         success(this, sw).withInfo(CompilationInfo(this, CachedCompilation))
       }
     }
   }
 
-  def compilationRequired(upstreamTaskResults : List[TaskResult]) = {
-    def hasDeletedSourceFiles = projectPhase.sourceFilesDeletedSinceLastCompilation.nonEmpty
+  def compilationRequired(upstreamTaskResults : Iterable[TaskResult]) = {
+    def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation.nonEmpty
     def upstreamCompilation = upstreamTaskResults.flatMap(_.compilationInfo).exists(_.state != CompilationNotRequired)
-    def modificationSinceLastCompilation = (projectPhase.lastSourceModifcationTime, projectPhase.lastCompilationTime) match {
+    def modificationSinceLastCompilation = (modulePhase.lastSourceModifcationTime, modulePhase.lastCompilationTime) match {
       case (Some(t1), Some(t2)) ⇒ t1 > t2
       case _ ⇒ true
     }
@@ -62,47 +63,50 @@ abstract class CompileTask extends Task {
   }
 
 
-  def exec(upstreamTaskResults : List[TaskResult], sw : Stopwatch) : TaskResult = {
+  def exec(upstreamTaskResults : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
-    if (projectPhase.sourceFiles.isEmpty){
-      cleanRegularFilesLeavingDirectories(projectPhase.outputDir)
-      projectPhase.compilationCacheFile.delete
+    if (modulePhase.sourceFiles.isEmpty){
+      cleanRegularFilesLeavingDirectories(modulePhase.outputDir)
+      modulePhase.compilationCacheFile.delete
       return success(this, sw).withInfo(CompilationInfo(this, CompilationNotRequired))
     }
     copyResourcesToTargetDirIfNecessary()
     val result = cachedCompilation(sw).getOrElse{
       if (compilationRequired(upstreamTaskResults)){
-        
-        if (props.UseZincCompiler()){
-          val exitCode = ZincCompile(projectPhase) 
-            if (exitCode == 0){
-            success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
-          } else {
-            failure(this, sw, "compilation failure")
-          }
-        } else {
-
-          CompileScalaTask(projectPhase).exec match {
-            case Left(e) ⇒ {
-              failure(this, sw, "compilation failure").withInfo(CompilationFailedInfo(e))
-            }
-            case Right(a) ⇒ {
+        props.Compiler() match {
+          case "zinc" => 
+            val exitCode = ZincCompile(modulePhase)
+            if (exitCode == 0)
               success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
+            else 
+              failure(this, sw, "compilation failure")
+          case "scalac" => 
+            CompileScalaTask(modulePhase).exec match {
+              case Left(e) ⇒ {
+                failure(this, sw, "compilation failure").withInfo(CompilationFailedInfo(e))
+              }
+              case Right(a) ⇒ {
+                success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
+              }
             }
-          }
+          case "dummy-test-compiler" =>
+            DummyCompileTask(modulePhase).exec
+            success(this, sw)
+
         }
       } else {
         success(this, sw).withInfo(CompilationInfo(this, CompilationNotRequired))
       }
     }
     classesCache.foreach{
-      cache ⇒  CompilationCache.save(cache, project.rootAbsoluteFile, inputsHash, projectPhase.outputDir, projectPhase.makerDirectory)
+      cache ⇒  CompilationCache.save(cache, module.rootAbsoluteFile, inputsHash, modulePhase.outputDir, modulePhase.phaseDirectory)
     }
     result
   }
 
+
   def name = phase.toString 
-  override def numberOfSourceFiles = projectPhase.sourceFiles.size
+
 }
 
 case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
@@ -122,31 +126,29 @@ case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
 }
 
 
-case class SourceCompileTask(project :Project) extends CompileTask{
+case class SourceCompileTask(module :Module) extends CompileTask{
   def upstreamTasks = {
-    if (props.UpdateOnCompile())
-      UpdateTask(project, omitIfNoIvyChanges = true) :: upstreamProjects.map(SourceCompileTask)
-    else upstreamProjects.map(SourceCompileTask)
+    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module))
   }
   def phase = SourceCompilePhase
-  override def toShortString = project + ":SC"
+  override def toShortString = module + ":SC"
 }
 
-case class TestCompileTask(project : Project) extends CompileTask{
+case class TestCompileTask(module : Module) extends CompileTask{
   def upstreamTasks = {
-    var tasks : List[Task] = SourceCompileTask(project) :: upstreamTestProjects.map(TestCompileTask)
+    var tasks : List[Task] = SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
     tasks
   }
 
   def phase = TestCompilePhase
-  override def toShortString = project + ":TC"
+  override def toShortString = module + ":TC"
 }
 
 object CompileTask{
-  def apply(project : Project, phase : CompilePhase) : CompileTask = {
+  def apply(module : Module, phase : CompilePhase) : CompileTask = {
     phase match{
-      case SourceCompilePhase ⇒ SourceCompileTask(project)
-      case TestCompilePhase ⇒ TestCompileTask(project)
+      case SourceCompilePhase ⇒ SourceCompileTask(module)
+      case TestCompilePhase ⇒ TestCompileTask(module)
     }
   }
 }

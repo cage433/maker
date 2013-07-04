@@ -26,7 +26,7 @@
 package maker.task.tasks
 
 import annotation.tailrec
-import maker.project.Project
+import maker.project.Module
 import maker.task.Task
 import maker.utils.FileUtils._
 import java.io.PrintWriter
@@ -37,22 +37,23 @@ import maker.task._
 import maker.utils.Stopwatch
 import maker.MakerProps
 import maker.task.compile.SourceCompileTask
+import maker.project.BaseProject
 
 
 /**
  * run a class main in a separate JVM instance (but currently synchronously to maker repl)
  */
-case class RunMainTask(project : Project, className : String, opts : List[String], mainArgs : List[String]) extends Task {
+case class RunMainTask(baseProject : BaseProject, className : String, opts : List[String], mainArgs : List[String]) extends Task {
   def name = "Run Main"
 
-  def upstreamTasks = SourceCompileTask(project) :: Nil
+  def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask(_))
 
 
   val runLogFile = file("runlog.out")
-  def exec(results : List[TaskResult], sw : Stopwatch) = {
-    val props = project.props
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+    val props = baseProject.props
     val log = props.log
-    log.info("running main in class " + className + " of project " + project)
+    log.info("running main in class " + className)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
     val cmd = ScalaCommand(
@@ -60,9 +61,9 @@ case class RunMainTask(project : Project, className : String, opts : List[String
       new CommandOutputHandler(Some(writer)).withSavedOutput,
       props.Java().getAbsolutePath,
       opts,
-      project.testCompilePhase.compilationClasspath,
+      baseProject.testClasspath,
       className,
-      "Running main in " + project.name, 
+      "Running main in " + baseProject.name,
       mainArgs 
     )
 
@@ -85,7 +86,7 @@ case class RunMainTask(project : Project, className : String, opts : List[String
       else {
         procHandle._2() match {
           case 0 => TaskResult.success(this, sw)
-          case code => TaskResult.failure(this, sw, "Run Main failed in " + project + ", " + cmd.savedOutput)
+          case code => TaskResult.failure(this, sw, "Run Main failed in " + baseProject)
         }
       }
     }

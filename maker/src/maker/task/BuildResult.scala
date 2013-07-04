@@ -13,30 +13,24 @@ import maker.utils.RichIterable._
 
 
 case class BuildResult(
+  name : String,
   results : List[TaskResult],
   graph : Dependency.Graph,
-  originalTask : Task
+  props : MakerProps
 ) {
 
   self =>
-  val props : MakerProps = originalTask.project.props
 
   def succeeded = results.forall(_.succeeded)
   def failed = !succeeded
-  import maker.graphviz.GraphVizDiGrapher._
-  import maker.graphviz.GraphVizUtils._
 
   def linearTime : Long = results.map(_.timeTaken(EXEC_COMPLETE)).toList.sum
   def taskCompletedTimes = results.map(r => (r, Stopwatch.milliToHumanString(r.timeTaken(TaskResult.TASK_COMPLETE) / 1000 * 1000))).sortWith(_._2 > _._2)
 
-  def showBuildGraph() : File = {
-  showGraph(props, makeDotFromTask(this))
-  }
-
-  def result : TaskResult = if (succeeded)
-    results.find(r => r.task == originalTask).get
-  else
-    results.find(!_.succeeded).get
+  //def result : TaskResult = if (succeeded)
+  //results.find(r => r.task == originalTask).get
+  //else
+  //results.find(!_.succeeded).get
 
   def maybeFirstFailure : Option[TaskResult] = results.reverse.find(_.failed)
   def toString_ = {
@@ -49,15 +43,11 @@ case class BuildResult(
     }
 
     if (succeeded){
-      val originalTaskResult = results.find(_.task == originalTask).get
-      buffer.append(originalTaskResult + "")
-      reportNumberOfScalaFilesCompiled
+      buffer.append(name + " succeeded")
       buffer.toString inBlue
     } else {
       val firstFailure : TaskResult = maybeFirstFailure.get
-      if (firstFailure.task != originalTask){
-        buffer.append(originalTask + " failed. First failing upstream task is\n\n")
-      } 
+      buffer.append(name + " failed. First failing upstream task is\n\n")
       buffer.append(firstFailure + "")
       reportNumberOfScalaFilesCompiled
       buffer.toString inRed
@@ -99,7 +89,6 @@ case class BuildResult(
 }
 
 case class LastResult(result : BuildResult){
-  val originalTask = result.originalTask
   val succeeded = result.succeeded
 
   def newLine(implicit b : StringBuffer){b.append("\n")}
@@ -109,7 +98,7 @@ case class LastResult(result : BuildResult){
     implicit val b = new StringBuffer
     //def newLine{b.append("\n")}
     newLine
-    addLine("The last task run was " + originalTask + ". It " + (if (succeeded) "succeeded" else "failed"))
+    addLine("The last task run was " + result.name + ". It " + (if (succeeded) "succeeded" else "failed"))
     newLine
     addLine("Methods")
     addLine("list       - show a list of each result")

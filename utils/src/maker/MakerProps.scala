@@ -12,56 +12,42 @@ import maker.utils.FileUtils._
 case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   
   lazy val log = {
-    val log = MakerLog(MakerLogLevel())
+    val log = MakerLog()
     log
   }
-
-  object HttpProxyHost extends IsOptionalString
-  object HttpProxyPort extends IsOptionalString
-  object HttpNonProxyHosts extends IsOptionalString
 
   object MakerHome extends SystemProperty("maker.home") with IsString
   object MakerTestReporterJar extends Default(MakerHome() + "/maker-scalatest-reporter.jar") with IsFile
 
-  object MakerLogLevel extends SystemPropertyWithDefault("maker.log.level", "INFO") with IsLogLevel
-
-  val httpProperties : List[(String, String)]= List(HttpProxyHost, HttpProxyPort, HttpNonProxyHosts).flatMap{
-    case prop => List(prop.name).zip(prop())
-  }
 
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
   object Javac extends Default(JavaHome() + "/bin/javac") with IsFile
   object Jar extends Default(JavaHome() + "/bin/jar") with IsFile
-  object ScalaVersion extends Default("2.9.2") with IsString
+  object MakerScalaVersion extends Default("2.9.2") with IsString
+  object ProjectScalaVersion extends Default("2.9.2") with IsString
   object HomeDir extends SystemProperty("user.home") with IsFile
   object VimErrorFile extends Default("vim-compile-output") with IsFile
-  object RemoteTaskPort extends SystemPropertyWithDefault("maker.remote.task.port", 10101) with IsInt
-  object Organisation extends Default("The Acme Org") with IsString
-  object GroupId extends Default("org.acme") with IsString
-  object Version extends Default("1.0-SNAPSHOT") with IsString
-  object DefaultPublishResolver extends Default("default") with IsString
-  object UseZincCompiler extends Default(false) with IsBoolean
+  object GroupId extends Property with IsString
+  object Compiler extends Default("scalac") with IsString
+  object ResolversFile extends Default(file("resource-resolvers")) with IsFile
+  object VersionsFile extends Default(file("resource-versions")) with IsFile
+  def resourceVersions() = MakerProps.propsFileToMap(VersionsFile())
+  def resourceResolvers() : Map[String, String] = MakerProps.propsFileToMap(ResolversFile())
+  def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
 
-  object TestLogbackConfigFile extends SystemPropertyWithDefault("maker.test.logback.file", file("logback-unit-tests.xml")) with IsFile
+  /**
+   * Maker has its own logback file which applies during compilation, 
+   * this is the one that is used when running tests and main methods
+   */
+  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
 
-  object ScalaLibraryJar extends Default(file("scala-lib/scala-library-" + ScalaVersion() + ".jar")) with IsFile
-  object ScalaCompilerJar extends Default(file("zinc-libs/scala-compiler-" + ScalaVersion() + ".jar")) with IsFile
-  object SbtInterfaceJar extends Default(file("zinc-libs/sbt-interface-0.12.1.jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file("zinc-libs/compiler-interface-sources-0.12.1.jar")) with IsFile
-
-
-  object PomTemplateFile extends IsOptionalFile
-  object PomBuildTemplateFile extends IsOptionalFile
-
-  object PomPluginRepo extends Default("""
-    <pluginRepositories>
-      <pluginRepository>
-        <id>nexus</id>
-        <url>http://nexus.myorg.com:8081/nexus/content/groups/myProj</url>
-      </pluginRepository>
-    </pluginRepositories>""") with IsXml
+  object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
+  object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
+  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-0.12.1.jar")) with IsFile
+  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-0.12.1-sources.jar")) with IsFile
 
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {
@@ -76,30 +62,8 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
       }.toMap
     }
   }
-  object ScmUrl extends EmptyString
-  object ScmConnection extends EmptyString
-  object Licenses extends EmptyString
-  object Developers extends EmptyString
-  object Username extends EmptyString
-  object Password extends EmptyString
-
-  object IvyChecksums extends IsOptionalString
-
-  /** 
-  * Check for ivy updates before each compile - strictly a
-  * dependency but does have a performance impact, hence
-  * optional
-  */
-  object UpdateOnCompile extends Default(false) with IsBoolean
-
-  /**
-   * Think that large info objects may be causing a memory leak
-   */
-  object StripInfoFromTaskResults extends Default(true) with IsBoolean
-
   object ShowFailingTestException extends Default(false) with IsBoolean
   object CopyResourcesBeforeCompiling extends Default(false) with IsBoolean
-  object FailCompilationIfNoClassesGenerated extends Default(true) with IsBoolean
 
   /** 
    * Set to true in maker.sh if we are executing a maker command,
@@ -116,17 +80,20 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object NumberOfTaskThreads extends Default(Runtime.getRuntime.availableProcessors / 2 max 1) with IsInt
   object CompilationCache extends EmptyString
 
-  object MinimumTaskReportingTime extends Default(100) with IsInt
-
 
   // Show compiler output - normally switched off for tests
   object ShowCompilerOutput extends SystemPropertyWithDefault("show.compiler.output", true) with IsBoolean
 
-  object ShowTestProgress extends SystemPropertyWithDefault("maker.show.test.progress", false) with IsBoolean
   object LogCompilerClasspath extends SystemPropertyWithDefault("maker.show.compiler.output", false) with IsBoolean
 
   object LogCommands extends Default(true) with IsBoolean
   object LogCommandFile extends Default(file("maker-commands.log")) with IsFile
+
+  object TmuxMessaging extends Default(true) with IsBoolean
+
+  object ResourceCacheDirectory extends Default(file(System.getenv("HOME"), ".maker-resource-cache")) with IsFile
+
+  object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
@@ -135,6 +102,10 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
     }.toMap
     copy(overrides = overrides ++  moreOverridesAsMap)
   }
+
+  def ++(rhs : MakerProps) = MakerProps(overrides ++ rhs.overrides)
+  // DelayedInit should maker this unnecessary - scala bug?
+  checkForInvalidProperties
 }
 
 object MakerProps {

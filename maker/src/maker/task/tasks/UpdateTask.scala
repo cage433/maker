@@ -25,104 +25,45 @@
 
 package maker.task.tasks
 
-import maker.project.Project
+import maker.project.Module
 import maker.utils.FileUtils._
+import maker.task.Task
+import org.apache.commons.io.FileUtils._
 import org.apache.ivy.core.resolve.ResolveOptions
 import org.apache.ivy.util.filter.FilterHelper
 import org.apache.ivy.Ivy
 import org.apache.ivy.core.retrieve.RetrieveOptions
+import xml.NodeSeq
 import maker.task._
 import maker.utils.Stopwatch
-import maker.utils.maven.DependencyCacheLock
+import maker.MakerProps
+import maker.utils.maven.IvyLock
+import org.apache.commons.io.{FileUtils => ApacheFileUtils}
+import maker.Resource
+import maker.utils.os.Command
 
-
-/**
- * Dependency management update task, fetch lib dependencies from specificied repositories
- */
-case class UpdateTask(project : Project,
-                      withSources : Boolean = true,
-                      confs : Seq[String] = Array("default"),
-                      omitIfNoIvyChanges : Boolean = false) extends Task {
-
-  def name = "Update"
-  def upstreamTasks : List[Task] = upstreamProjects.map(UpdateTask(_, withSources, confs, omitIfNoIvyChanges))
-
+case class UpdateTask(module : Module) extends Task {
+  def name = "Update " + module
+  private val props = module.props
   private lazy val log = props.log
-  private lazy val ivyFile = project.ivyFile
+  
+  def upstreamTasks : List[Task] = Nil
 
-  def exec(results : List[TaskResult], sw : Stopwatch) : TaskResult = {
-    def doUpdate() = {
-      try {
-        if (ivyFile.exists) {
-          log.debug("confs : " + confs.mkString(", "))
-          retrieveArtifacts(List("jar", "war", "bundle"), project.layout.managedLibDir.getPath + "/[organisation]-[artifact]-[revision](-[classifier]).[ext]")
-          retrieveArtifacts(List("source"), project.layout.managedLibSourceDir.getPath + "/[organisation]-[artifact]-[revision](-[classifier]).[ext]")
-          retrieveArtifacts(List("gz", "xml", "zip", "xll", "dna"), project.layout.managedResourceDir.getPath + "/[organisation]-[artifact](-[classifier]).[ext]")
-        }
-        else {
-          log.info("Unable to update, no dependency definitions")
-        }
-        downloadedArtifacts.foreach(_.touch) // touch so we don't update again until we amend ivy.xml
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+    val (_, failures) = module.resources().partition(Exec(_).apply())
+    failures match {
+      case Nil => 
         TaskResult.success(this, sw)
-      }
-      catch {
-        case e =>
-          e.printStackTrace
-          TaskResult.failure(this, sw, e)
-      }
-    }
-
-    checkForRequiredUpdate() match {
-      case Some(moreRecentArtifact) ⇒ {
-        log.debug("Updating, artifact %s is more recent than %s, %s > %s"
-          .format(moreRecentArtifact, project.layout.ivyDepsFile, moreRecentArtifact.lastModified, project.layout.ivyDepsFile.lastModified))
-        doUpdate()
-      }
-      case None if (omitIfNoIvyChanges) => {
-        log.debug("Not updating, nothing to update (omit update is enabled)")
-        TaskResult.success(this, sw)
-      }
-      case None ⇒ {
-        log.debug("Updating, (omit update is disabled)")
-        doUpdate()
-      }
+      case _ => 
+        TaskResult.failure(this, sw, "Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t"))
     }
   }
 
-  // todo; this test needs revising since we'll not necessarily have ivy files
-  private def checkForRequiredUpdate() =
-    downloadedArtifacts.find(_.lastModified < project.layout.ivyDepsFile.lastModified)
-
-  private def retrieveArtifacts(artifactTypes : List[String], pathTemplate : String) {
-    log.info("Retreiving artifacts " + artifactTypes)
-
-    val artifactFilter = FilterHelper.getArtifactTypeFilter(artifactTypes.toArray)
-    val resolveOptions = new ResolveOptions().setConfs(confs.toArray)
-      .setValidate(true)
-      .setArtifactFilter(artifactFilter)
-
-    DependencyCacheLock.synchronized {
-      val ivy = Ivy.newInstance
-      val settings = ivy.getSettings
-      props.IvyChecksums().map(checksums => settings.setVariable("ivy.checksums", checksums))
-      settings.addAllVariables(System.getProperties)
-      ivy.configure(project.layout.ivySettingsFile)
-
-      ivy.configure(ivyFile)
-      val report = ivy.resolve(ivyFile.toURI().toURL(), resolveOptions)
-      val md = report.getModuleDescriptor
-      ivy.retrieve(
-        md.getModuleRevisionId(),
-        pathTemplate,
-        new RetrieveOptions()
-          .setConfs(confs.toArray).setSync(true)
-          .setArtifactFilter(artifactFilter))
+  private case class Exec(resource : Resource){
+    def apply() : Boolean = {
+      resource.update(module)
+      resource.resourceFile(module).exists || resource.classifier == Some("sources")
     }
   }
 
-  private def downloadedArtifacts = List(
-    project.layout.managedLibDir,
-    project.layout.managedLibSourceDir,
-    project.layout.managedResourceDir
-  ).flatMap(allFiles).filter(_.exists).filterNot(_.isDirectory)
 }

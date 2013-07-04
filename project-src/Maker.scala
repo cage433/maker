@@ -24,6 +24,7 @@
  */
 
 
+
 package maker
 
 import maker.project._
@@ -37,78 +38,33 @@ import task.BuildResult
 import maker.task.Task
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
-import maker.project.extras.TmuxMessaging
 import scala.collection.mutable.{Map ⇒ MMap}
 import maker.task.compile._
-import maker.utils.ModuleId._
 
 /**
- * this is Maker's own self-build definition,
- *   e.g. loaded after a maker.sh -b bootstrap
+ * Maker's own self-build definition,
  */
 object Maker {
-  val MAKER_VERSION = ".1"
 
-  private val makerOwnDefaultProps = MakerProps(
-    MMap(
-      // Publishing related parameters
-      "DefaultPublishResolver" → "maker-oss-snapshot",
-      // Pom generation related params
-      "Organisation" → "maker",
-      "GroupId" → "com.google.code.maker",
-      "PomTemplateFile" → "pom.template",
-      "PomBuildTemplateFile" → "pom-build.template",
-      "ScmUrl" → "https://github.com/cage433/maker",
-      "ScmConnection" → "git@github.com:cage433/maker.git",
-      "Licenses" → "<license><name>GNU GENERAL PUBLIC LICENSE</name><url>http://www.gnu.org/licenses/gpl.html</url><distribution>repo</distribution></license>",
-      "Developers" → "<developer><id>bob</id><name>bob></name><email>bob@bob.com</email></developer>"
-    ) ++ MakerProps.propsFileToMap(file("Maker.conf"))
-  )
+  private val props = MakerProps() ++ ("GroupId", "com.google.code.maker")
 
-  def mkProject(name : String, upstreamProjects : Project*) = {
+  def module(name : String, upstreamProjects : Module*) = {
     val root = file(name).asAbsoluteFile
-    new Project(
+    new Module(
       root,
       name,
-      layout = new MakerProjectLayout(root),
-      upstreamProjects = upstreamProjects.toList,
-      props = makerOwnDefaultProps,
-      moduleIdentity = Some("com.google.code.maker" % name)
-    ) with TmuxMessaging with MoreSugar
+      immediateUpstreamModules = upstreamProjects.toList,
+      props = props
+    ) 
   }
 
-  val topLevelExcludedFolders : List[String] = Nil
+  lazy val testReporter = module("test-reporter")
+  lazy val utils = module("utils", testReporter)
+  lazy val mkr = module("maker", utils)
 
-  lazy val testReporterProj = mkProject("test-reporter")
-  lazy val utilsProj = mkProject("utils", testReporterProj)
-  lazy val makerProj = mkProject("maker", utilsProj)
-
-  lazy val makerAll = new TopLevelProject("makerAll", List(testReporterProj, utilsProj, makerProj)) with MoreSugar
-
-  lazy val mkr = makerProj
-
-  var verboseTestOutput : Boolean = true
-  var verboseTaskOutput : Boolean = true
-
-  def analyseBuild(r : BuildResult){
-    val execTimes = r.results.map(_.timeTaken(EXEC_COMPLETE))
-    val taskTimes = r.results.map(_.timeTaken(TASK_COMPLETE))
-
-    println("Total exec time " + execTimes.sum)
-    println("Total task time " + taskTimes.sum)
-  }
+  lazy val topLevel = new Project("top-level", file("."), List(mkr), props)
 
   // Used to disambiguate which maker is running in the repl.
   def pwd = println(System.getProperty("user.dir"))
-  def debug = makerProj.log.setLevel(DEBUG)
-  def info = makerProj.log.setLevel(INFO)
-
-  trait MoreSugar {
-    self : Project ⇒ 
-      def tcc = testCompileContinuously
-      def stfe {
-        props.ShowFailingTestException := ! props.ShowFailingTestException()
-      }
-  }
 
 }

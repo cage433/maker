@@ -1,6 +1,6 @@
 package maker.task.compile
 
-import maker.project.Project
+import maker.project.Module
 import com.typesafe.zinc.Inputs
 import scala.collection.JavaConversions._
 import java.io.File
@@ -10,25 +10,25 @@ import sbt.inc.Analysis
 import sbt.inc.Locate
 import maker.task.Build
 
-case class CompileScalaTask(projectPhase : ProjectPhase){
+case class CompileScalaTask(modulePhase : ModuleCompilePhase){
 
-  val log = projectPhase.log
+  val log = modulePhase.log
 
   val inputs = {
-    val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
+    val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ProjectPhase ⇒ 
+      case pp : ModuleCompilePhase ⇒
         upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
     }
     
-    val sourceFiles : Seq[File] = projectPhase.sourceFiles.toList
-    val cp : Seq[File] = projectPhase.classpathDirectoriesAndJars.toList
-    val outputDir = projectPhase.outputDir
-    val cacheFile = projectPhase.compilationCacheFile
+    val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
+    val cp : Seq[File] = modulePhase.classpathDirectoriesAndJars.toList
+    val outputDir = modulePhase.outputDir
+    val cacheFile = modulePhase.compilationCacheFile
     val scalacOptions : Seq[String] = Nil
     val javacOptions : Seq[String] = Nil
-    val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ projectPhase.project.analyses
+    val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
     val definesClass: File ⇒ String ⇒ Boolean = Locate.definesClass _
         
     val inputs = Inputs(
@@ -51,20 +51,20 @@ case class CompileScalaTask(projectPhase : ProjectPhase){
   }
 
   def exec : Either[CompileFailed, Analysis] = {
-    val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
+    val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ProjectPhase ⇒ 
+      case pp : ModuleCompilePhase ⇒
         upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
     }
     
-    val sourceFiles : Seq[File] = projectPhase.sourceFiles.toList
-    val cp : Seq[File] = projectPhase.classpathDirectoriesAndJars.toList
-    val outputDir = projectPhase.outputDir
-    val cacheFile = projectPhase.compilationCacheFile
+    val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
+    val cp : Seq[File] = modulePhase.classpathDirectoriesAndJars.toList
+    val outputDir = modulePhase.outputDir
+    val cacheFile = modulePhase.compilationCacheFile
     val scalacOptions : Seq[String] = Nil
     val javacOptions : Seq[String] = Nil
-    val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ projectPhase.project.analyses
+    val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
     val definesClass: File ⇒ String ⇒ Boolean = Locate.definesClass _
         
     val inputs = Inputs(
@@ -85,12 +85,9 @@ case class CompileScalaTask(projectPhase : ProjectPhase){
     )
 
 
-
     val result = try {
-      val t0 = System.currentTimeMillis
-      val analysis = Project.compiler.compile(inputs)(projectPhase.compilerLogger)
-      Build.addCompileTime(t0, System.currentTimeMillis)
-      projectPhase.project.analyses.put(outputDir, analysis)
+      val analysis = Module.compiler.compile(inputs)(modulePhase.compilerLogger)
+      modulePhase.module.analyses.put(outputDir, analysis)
       Right(analysis)
     } catch {
       case e : CompileFailed ⇒ 

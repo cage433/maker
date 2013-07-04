@@ -2,6 +2,9 @@ package maker.task
 
 import java.io.File
 import maker.utils.RichString._
+import maker.utils.RichIterable._
+import scalaz.Scalaz._
+import maker.project.Module
 import maker.utils.Stopwatch
 import maker.utils.Utils
 import maker.task.compile.CompilationInfo
@@ -15,7 +18,6 @@ trait TaskResult {
   def succeeded : Boolean
   def failed = !succeeded
   def status = if (succeeded) "succeeded" else "failed"
-  def roundNo : Option[Int]
   def timeTaken(name : String) = (timeAt(name) - sw.startTime) / 1000000
   def timeAt(name : String) = sw.snapshotTime(name).get
   def info : Option[TaskInfo]
@@ -23,10 +25,8 @@ trait TaskResult {
   protected def copy_(
     task : Task = task, 
     sw : Stopwatch = sw,
-    roundNo : Option[Int] = roundNo,
     info : Option[TaskInfo] = info
   ) : TaskResult
-  def withRoundNo(no : Int) = copy_(roundNo = Some(no))
   def withInfo(info : TaskInfo) = copy_(info = Some(info))
   def withoutInfo = copy_(info = None)
   def withTask(newTask : Task) : TaskResult = copy_(task = newTask)
@@ -55,7 +55,6 @@ trait TaskResult {
 case class TaskSucceeded(
   task : Task,
   sw : Stopwatch,
-  roundNo : Option[Int] = None, 
   info : Option[TaskInfo] = None	  
 ) extends TaskResult {
 
@@ -64,12 +63,10 @@ case class TaskSucceeded(
   protected def copy_(
     task : Task = task, 
     sw : Stopwatch = sw,
-    roundNo : Option[Int] = roundNo,
     info : Option[TaskInfo] = info
   ) : TaskResult = copy(
     task = task, 
     sw = sw,
-    roundNo = roundNo,
     info = info
   )
 
@@ -78,7 +75,6 @@ case class TaskSucceeded(
 case class TaskFailed(
   task : Task,
   sw : Stopwatch,
-  roundNo : Option[Int] = None,
   reasonForFailure : Option[String] = None,
   exception : Option[Throwable] = None,
   info : Option[TaskInfo] = None
@@ -87,12 +83,10 @@ case class TaskFailed(
   protected def copy_(
     task : Task = task, 
     sw : Stopwatch = sw,
-    roundNo : Option[Int] = roundNo,
     info : Option[TaskInfo] = info
   ) : TaskResult = copy(
     task = task, 
     sw = sw,
-    roundNo = roundNo,
     info = info
   )
 

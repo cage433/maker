@@ -25,7 +25,7 @@
 
 package maker.task.tasks
 
-import maker.project.Project
+import maker.project.Module
 import java.lang.reflect.Modifier
 import maker.utils.FileUtils
 import maker.utils.os.{ScalaCommand, Command}
@@ -40,40 +40,31 @@ import maker.task.Dependency
 import java.io.File
 import maker.task.compile.TestCompileTask
 import maker.task.compile.TestCompilePhase
-import maker.task.compile.ProjectPhase
+import maker.task.compile.ModuleCompilePhase
+import maker.project.BaseProject
+import maker.utils.MakerTestResults
+import maker.task.compile.CompileTask
+import maker.task.compile.TestCompileTask
+import maker.utils.StringUtils
+import maker.task.compile.SourceCompileTask
+import maker.task.NullTask
 
-case class RunUnitTestsTask(project : Project, testClassNames: String*)  extends Task {
 
-  val projectPhase = ProjectPhase(project, TestCompilePhase)
+case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String])  extends Task {
 
-  def name = {
-    if (testClassNames.isEmpty)
-      "Test all"
-    else
-      "Test " + testClassNames.toList.formatted(4)
-  }
 
   override def failureHaltsTaskManager = false
+  val props = baseProject.props
 
 
-  private def suiteClassNames: List[String] = {
-    val classNames = projectPhase.classFiles.map(_.className(projectPhase.outputDir)).filterNot(_.contains("$"))
-    classNames.filter(project.isAccessibleScalaTestSuite).toList
-  }
+  def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
-  def upstreamTasks = TestCompileTask(project) :: Nil
-
-  def exec(rs : List[TaskResult], sw : Stopwatch) : TaskResult = {
-    val props = project.props
+  def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     val log = props.log
 
-    val classOrSuiteNames : List[String] = if (testClassNames.nonEmpty)
-      testClassNames.toList
-    else
-      suiteClassNames
+    val classOrSuiteNames = classOrSuiteNames_()
 
     if (classOrSuiteNames.isEmpty) {
-      log.info(project.name + " has no tests")
       return TaskResult.success(this, sw)
     }
 
@@ -81,35 +72,79 @@ case class RunUnitTestsTask(project : Project, testClassNames: String*)  extends
     val systemProperties = (props.JavaSystemProperties.asMap + "scala.usejavacp" → "true").map{
       case (key, value) ⇒ "-D" + key + "=" + value
     }.toList
-    project.testOutputFile.delete
+    baseProject.testOutputFile.delete
     val opts = List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
-      "-XX:MaxPermSize=500m", 
-      "-Dmaker.test.output=" + project.testOutputFile, 
-      props.ShowTestProgress.toCommandLine,
-      "-Dlogback.configurationFile="+props.TestLogbackConfigFile(),
+      "-XX:MaxPermSize=200m", 
+      "-Dmaker.test.output=" + baseProject.testOutputFile,
+      "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false"
     ) ::: systemProperties
-    val args = List("-P", "-C", "maker.utils.MakerTestReporter", "-R", projectPhase.outputDir.getAbsolutePath) ::: suiteParameters
+    val args = List("-P", "-C", "maker.utils.MakerTestReporter") ++ suiteParameters
     val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 
       props.Java().getAbsolutePath, 
       opts,
-      projectPhase.compilationClasspath + ":" + props.MakerTestReporterJar() + ":" + props.ScalaCompilerJar(),
+      baseProject.testClasspath + ":" + props.MakerTestReporterJar(),
       "org.scalatest.tools.Runner", 
-      "Running tests in " + project.name,
+      "Running tests in " + name,
       args 
     )
     val res = cmd.exec
-    val results = project.testResultsOnly
+    val results = MakerTestResults(baseProject.props, baseProject.testOutputFile)
     val result = if (results.failures.isEmpty){
       TaskResult.success(this, sw)
     } else {
       val failingSuiteClassesText = results.failingSuiteClasses.indented()
-      TaskResult.failure(this, sw, "Test failed in " + project + failingSuiteClassesText)
+      TaskResult.failure(this, sw, "Test failed in " + baseProject + failingSuiteClassesText)
     }
-    result.withInfo(project.testResultsOnly)
+    result.withInfo(results)
   }
 
+}
+
+object RunUnitTestsTask{
+  def apply(module : Module) : RunUnitTestsTask = {
+    RunUnitTestsTask(
+      module.name + " test all",
+      module,
+      () ⇒ module.testClassNames()
+    )
+  }
+  
+  def apply(baseProject : BaseProject, classNameOrAbbreviation : String) : Task  = {
+    def resolveClassName() = {
+      if (classNameOrAbbreviation.contains('.'))
+        List(classNameOrAbbreviation)
+      else {
+        val matchingTestClasses = StringUtils.bestIntellijMatches(
+          classNameOrAbbreviation,
+          baseProject.testClassNames()
+        )
+        if (matchingTestClasses.isEmpty){
+          baseProject.log.warn("No class matching " + classNameOrAbbreviation + " found")
+          Nil
+        } else {
+          if (matchingTestClasses.size > 1)
+            baseProject.log.info("Multiple matches: " + matchingTestClasses.mkString(", ") + ", using " + matchingTestClasses.head)
+          matchingTestClasses.take(1)
+        }
+      }
+    }
+    RunUnitTestsTask(
+      "Test class " + classNameOrAbbreviation, 
+      baseProject,
+      resolveClassName
+    )
+  }
+
+
+  def failingTests(module : Module) : RunUnitTestsTask = {
+    RunUnitTestsTask(
+      "Failing tests",
+      module,
+      () ⇒ MakerTestResults(module.props, module.testOutputFile).failingSuiteClasses
+    )
+  }
 }

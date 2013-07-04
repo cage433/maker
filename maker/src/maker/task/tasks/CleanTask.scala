@@ -25,43 +25,44 @@
 
 package maker.task.tasks
 
-import maker.project.Project
+import maker.project.Module
 import maker.utils.FileUtils._
 import maker.task.Task
 import maker.task._
 import maker.utils.Stopwatch
 import maker.MakerProps
 import maker.task.compile._
+import maker.utils.FileUtils
 
 
 /** Clean task - cleans up all build artifacts from the classpath
   *
   *  removes all build content and directories that contained it
   */
-case class CleanTask(project : Project, deleteManagedLibs : Boolean = false) extends Task {
+case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) extends Task {
   def name = "Clean"
-  def upstreamTasks = (upstreamProjects ::: upstreamTestProjects).distinct.map(CleanTask(_, deleteManagedLibs))
+  def upstreamTasks = (module.immediateUpstreamModules ::: module.immediateUpstreamTestModules).distinct.map(CleanTask(_, deleteManagedLibs))
 
-  def exec(results : List[TaskResult], sw : Stopwatch) = {
-    val props = project.props
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+    val props = module.props
     val log = props.log
-    log.debug("cleaning " + project)
+    log.debug("cleaning " + module)
     if (deleteManagedLibs){
-      Option(project.layout.managedLibDir.listFiles).foreach(_.foreach(_.delete))
+      Option(module.managedLibDir.listFiles).foreach(_.foreach(_.delete))
     }
 
     // remove all output as we don't want lingering files or even empty dirs messing up a subsequent builds
-    project.outputArtifact.delete
+    module.outputArtifact.delete
 
-    cleanRegularFilesLeavingDirectories(project.compilePhase.outputDir)
-    cleanRegularFilesLeavingDirectories(project.testCompilePhase.outputDir)
-    cleanRegularFilesLeavingDirectories(project.layout.packageDir)
-    cleanRegularFilesLeavingDirectories(project.layout.docDir)
-    cleanRegularFilesLeavingDirectories(project.layout.targetDir)
-    recursiveDelete(project.compilePhase.makerDirectory)
-    recursiveDelete(project.testCompilePhase.makerDirectory)
-    project.compilePhase.compilationCacheFile.delete
-    project.testCompilePhase.compilationCacheFile.delete
+    cleanRegularFilesLeavingDirectories(module.compilePhase.outputDir)
+    cleanRegularFilesLeavingDirectories(module.testCompilePhase.outputDir)
+    cleanRegularFilesLeavingDirectories(module.packageDir)
+    cleanRegularFilesLeavingDirectories(module.docOutputDir)
+    cleanRegularFilesLeavingDirectories(module.targetDir)
+    recursiveDelete(module.compilePhase.phaseDirectory)
+    recursiveDelete(module.testCompilePhase.phaseDirectory)
+    module.compilePhase.compilationCacheFile.delete
+    module.testCompilePhase.compilationCacheFile.delete
 
     TaskResult.success(this, sw)
   }

@@ -5,6 +5,9 @@ import maker.utils.FileUtils._
 import scala.xml.{PrettyPrinter, NodeSeq}
 import org.apache.commons.io.FileUtils._
 import maker.project.Project
+import maker.project.BaseProject
+import java.io.File
+import maker.project.Module
 
 
 /**
@@ -12,22 +15,20 @@ import maker.project.Project
  */
 object IvyUtils {
 
-  val IVY_FILE_EXT = "-dynamic.xml"
-  def generateIvyFile(project : Project) : File = {
-    val layout = project.layout
-    val genFile = file(layout.targetDir, nameAndExt(layout.ivyDepsFile)._1 + IVY_FILE_EXT)
+  // TODO - check this is actually necessary, as the 
+  // ivy file produced look somewhat odd
+  def generateIvyFile(baseProject : BaseProject) : File = {
+    val genFile = file(baseProject.rootAbsoluteFile, "ivy-dynamic.xml")
 
-    val ivyDeps = project.readIvyDependencies()
+    val excludeDeps : List[NodeSeq] = baseProject.allUpstreamBaseProjects.flatMap(_.toIvyExclude).toList
+    val ivyDepsXmlElems = baseProject match {
+      case _ : Project => excludeDeps
+      case m : Module => m.resources.map(_.toIvyInclude).toList ::: excludeDeps
+    }
 
-    val includeDeps : List[NodeSeq] = (project.dependencies.libs.map(_.toIvyInclude) ::: ivyDeps.map(_.gav.toIvyInclude)).distinct
-    val excludeDeps : List[NodeSeq] = (project.allUpstreamProjects.flatMap(_.moduleId.toIvyExclude) :::
-      project.dependencies.excludedLibs.map(_.toIvyExclude)).distinct
+    val groupId = baseProject.groupId
+    val artifactId = baseProject.artifactId
 
-    val id = project.moduleIdentity
-    val groupId = id.map(_.groupId.id).getOrElse("undefined")
-    val artifactId = id.map(_.artifactId.id).getOrElse("undefined")
-
-    val ivyDepsXmlElems = (includeDeps ::: excludeDeps)
 
     // Todo: some of this is currently 'hard-coded' to our build...
     val ivyFileXML =

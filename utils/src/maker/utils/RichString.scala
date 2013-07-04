@@ -36,6 +36,7 @@ object RichString {
   def box(args: Seq[Any]): Array[AnyRef] = args.flatMap(boxValue).toArray
   def nullsafe(args: Seq[Any]): Seq[Any] = args.map(_ ?? "null")
 
+  def apply(s : String) = RichString(s)
   private def boxValue(x: Any): Seq[AnyRef] = {
     if (x == null) {
       null
@@ -71,7 +72,7 @@ object RichString {
     def inReverseRed = "\033[7;31m" + s + "\033[0m"
     def inBlue = "\033[1;34m" + s + "\033[0m"
     def justified : String = {
-      val n = MakerProperties.indent.length
+      val n = 2
       if (n == 0 || s.length % n == 0)
         s
       else {
@@ -80,9 +81,9 @@ object RichString {
     }
     def formatted(indentSize : Int) = {
       if (s == "")
-        MakerProperties.indent *indentSize + s.justified
+        2 *indentSize + s.justified
       s.split("\n").toList.map(
-        MakerProperties.indent *indentSize + _.justified
+        2 *indentSize + _.justified
       ).mkString("\n")
     }
     def indent(width : Int) : String = indent(" " * width)

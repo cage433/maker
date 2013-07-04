@@ -30,10 +30,9 @@ import scala.xml.XML
 import scala.xml.MetaData
 import scala.xml.Attribute
 import java.io.File
-import maker.project.{TestProject, Project}
+import maker.project.{TestModule, Module}
 import maker.utils.FileUtils._
 import ch.qos.logback.classic.Level._
-import maker.project.ProjectLayout
 
 
 class ScalatestResultsTests extends FunSuite{
@@ -47,7 +46,7 @@ class ScalatestResultsTests extends FunSuite{
   test("Errors are correctly counted"){
     withTempDir{
       dir ⇒
-        val proj = new TestProject(dir, "ScalatestResultsTests")
+        val proj = new TestModule(dir, "ScalatestResultsTests")
         val fooTestContent = 
           """
           package foo

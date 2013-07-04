@@ -19,6 +19,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/resources" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test-resources" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/.maker" />
       <excludeFolder url="file://$MODULE_DIR$/target-maker" />
     </content>
@@ -93,6 +94,15 @@
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib_managed/commons-pool-commons-pool-1.5.5.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/lib_managed/io.netty-netty-3.4.2.Final.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -281,15 +291,6 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/org.scalatest-scalatest_2.9.2-1.8.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
           <root url="jar://$MODULE_DIR$/lib_managed/org.scalaz-scalaz-core_2.9.2-6.0.4.jar!/" />
         </CLASSES>
         <JAVADOC />
@@ -318,6 +319,15 @@
       <library>
         <CLASSES>
           <root url="file://$MODULE_DIR$/resources" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" exported="" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/test-resources" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
