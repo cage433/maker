@@ -86,9 +86,14 @@ HERE
 build_jar(){
   read jar_name src_files <<<$(echo $*)
 
+  # Not sure why it's necessary to go to the maker root directory. Get 
+  # strange compilation errors otherwise
+  pushd $MAKER_ROOT_DIR
+
   echo "Building $jar_name"
   rm -f $jar_name
   TEMP_OUTPUT_DIR=`mktemp -d maker-tmp-XXXXXXXXXX`
+
 
   java -classpath $(external_jars) \
     -Dscala.usejavacp=true \
@@ -99,6 +104,7 @@ build_jar(){
 
   run_command "$JAVA_HOME/bin/jar cf $jar_name -C $TEMP_OUTPUT_DIR . " || exit -1
   rm -rf $TEMP_OUTPUT_DIR
+  popd
 }
 
 bootstrap_maker_if_required() {
