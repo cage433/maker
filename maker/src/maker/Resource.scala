@@ -113,7 +113,6 @@ case class Resource(
     if (resourceFile_.exists && cachedFile.doesNotExist){
       withTempDir{
         dir => 
-          println("Debug: Resource: moving " + resourceFile_ + " to " + dir)
           ApacheFileUtils.copyFileToDirectory(resourceFile_, dir)
           // Hoping move is atomic
           ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile_.basename), props.ResourceCacheDirectory(), false)
