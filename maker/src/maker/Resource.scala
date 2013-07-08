@@ -84,6 +84,7 @@ case class Resource(
     resourceFile_.dirname.makeDirs
 
     val cachedFile = file(props.ResourceCacheDirectory(), resourceFile_.basename)
+    
 
     def download() {
       (preferredRepository.toList ::: props.resourceResolvers().values.toList).find{
@@ -109,21 +110,17 @@ case class Resource(
     if (resourceFile_.doesNotExist)
       download()
 
-    if (resourceFile_.exists)
-      ApacheFileUtils.copyFileToDirectory(resourceFile_, props.ResourceCacheDirectory())
+    if (resourceFile_.exists && cachedFile.doesNotExist){
+      withTempDir{
+        dir => 
+          println("Debug: Resource: moving " + resourceFile_ + " to " + dir)
+          ApacheFileUtils.copyFileToDirectory(resourceFile_, dir)
+          // Hoping move is atomic
+          ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile_.basename), props.ResourceCacheDirectory(), false)
+      }
+    }
 
   }
-
-  //def file(module : Module) : File = {
-    //(extension, classifier) match {
-      //case (_, Some("sources")) => 
-      //FileUtils.file(module.managedLibSourceDir, basename)
-      //case ("jar", _) => 
-      //FileUtils.file(module.managedLibDir, basename)
-      //case _ => 
-      //FileUtils.file(module.managedResourceDir, basename)
-      //}
-      //}
 
 }
 
