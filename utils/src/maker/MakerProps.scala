@@ -91,7 +91,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   object TmuxMessaging extends Default(true) with IsBoolean
 
-  object ResourceCacheDirectory extends Default(file(System.getenv("HOME"), ".maker-resource-cache")) with IsFile
+  object ResourceCacheDirectory extends Default(file(System.getenv("HOME"), ".maker-resource-cache").makeDirs()) with IsFile
 
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
