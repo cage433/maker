@@ -127,6 +127,13 @@ bootstrap_maker_if_required() {
 }
 
 launch_maker_repl(){
+  if [ ! -z $MAKER_CMD ];
+  then
+    CMDS="-e $MAKER_CMD"
+    RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
+    echo "setting cmd as $CMDS"
+  fi
+ 
   JAVA_OPTS=" -Xmx$MAKER_HEAP_SPACE \
     -XX:MaxPermSize=$MAKER_PERM_GEN_SPACE \
     $MAKER_DEBUG_PARAMETERS \
@@ -150,12 +157,14 @@ launch_maker_repl(){
     -classpath "$(maker_classpath):$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
+    $RUNNING_EXEC_MODE \
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
     scala.tools.nsc.MainGenericRunner \
     -Yrepl-sync -nc \
     -i $PROJECT_FILE \
+    $CMDS \
     | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
 }
 
