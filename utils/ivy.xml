@@ -18,7 +18,7 @@
     <dependency org="commons-codec" name="commons-codec" rev="1.6"/>
     <dependency org="org.apache.commons" name="commons-lang3" rev="3.1"/>
     <dependency org="org.scalacheck" name="scalacheck_${scala_version}" rev="1.9"/>
-    <dependency org="org.scalaz" name="scalaz-core_${scala_version}" rev="6.0.4"/>
+    <dependency org="org.scalaz" name="scalaz-core_${scala_version}" rev="7.0.1"/>
     <dependency org="ch.qos.logback" name="logback-classic" rev="1.0.6"/>
     <dependency org="ch.qos.logback" name="logback-core" rev="1.0.6"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="1.6.1"/>

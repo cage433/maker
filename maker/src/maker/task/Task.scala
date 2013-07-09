@@ -30,7 +30,6 @@ import tasks._
 import maker.utils.RichString._
 import maker.task.TaskResult._
 import java.io.File
-import scalaz.Scalaz._
 import maker.utils.Stopwatch
 import maker.MakerProps
 

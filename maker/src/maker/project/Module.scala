@@ -38,7 +38,6 @@ import scala.tools.nsc.io.PlainDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.io.Directory
 import maker.utils.maven._
-import scalaz.Scalaz._
 import maker.MakerProps
 import org.apache.commons.io.output.TeeOutputStream
 import org.apache.commons.io.output.NullOutputStream

@@ -6,7 +6,6 @@ import maker.utils.FileUtils._
 import maker.utils.RichIterable._
 import maker.utils.RichString._
 import maker.task.TaskResult
-import scalaz.Scalaz._
 import sbt.inc.Analysis
 import maker.utils.TaskInfo
 

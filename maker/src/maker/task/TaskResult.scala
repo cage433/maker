@@ -3,7 +3,6 @@ package maker.task
 import java.io.File
 import maker.utils.RichString._
 import maker.utils.RichIterable._
-import scalaz.Scalaz._
 import maker.project.Module
 import maker.utils.Stopwatch
 import maker.utils.Utils
