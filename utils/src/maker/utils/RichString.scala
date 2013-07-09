@@ -25,7 +25,7 @@
 
 package maker.utils
 
-import scalaz.Scalaz._
+import scalaz.syntax.id._
 import scala.collection.immutable.TreeMap
 
 

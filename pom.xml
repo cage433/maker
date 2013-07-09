@@ -44,7 +44,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <m_commons_codec_commons_codec_version>1.6</m_commons_codec_commons_codec_version>
     <m_com_google_protobuf_protobuf_java_version>2.4.1</m_com_google_protobuf_protobuf_java_version>
     <m_org_eclipse_jetty_jetty_servlet_version>${jetty_version}</m_org_eclipse_jetty_jetty_servlet_version>
-    <m_org_scalaz_scalaz_core___scala_version__version>6.0.4</m_org_scalaz_scalaz_core___scala_version__version>
+    <m_org_scalaz_scalaz_core___scala_version__version>7.0.1</m_org_scalaz_scalaz_core___scala_version__version>
     <m_net_debasishg_sjson___scala_version__version>0.19</m_net_debasishg_sjson___scala_version__version>
     <m_ch_qos_logback_logback_classic_version>1.0.6</m_ch_qos_logback_logback_classic_version>
     <m_redis_clients_jedis_version>2.0.0</m_redis_clients_jedis_version>

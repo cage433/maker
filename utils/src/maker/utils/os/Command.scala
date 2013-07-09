@@ -30,7 +30,7 @@ import java.io.{File, InputStreamReader, BufferedReader, PrintWriter}
 import actors.Future
 import actors.Futures._
 import java.io.FileWriter
-import scalaz.Scalaz._
+import scalaz.syntax.std.option._
 import java.io.IOException
 import maker.MakerProps._
 import maker.MakerProps
