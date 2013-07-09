@@ -71,9 +71,10 @@ HERE
   update_resources $MAKER_ROOT_DIR/zinc-libs dynamic-zinc-resource-list 
 
   cat > dynamic-scala-resource-list <<HERE
+org.scala-lang scala-library {scala_version} classifier:sources path:scala-library-{scala_version}-sources.jar 
 org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.jar
 org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version}.jar
-org.scala-lang scala-library {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
+org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
