@@ -96,7 +96,7 @@ class Module(
     val resources = resourcesFile.readLines.toList.filterNot{
       line => 
         line.startsWith("#") || line.trim.size == 0
-    }.map(Resource.build(_, props.resourceVersions(), props.resourceResolvers()))
+    }.map(Resource.build(this, _, props.resourceVersions(), props.resourceResolvers()))
     val sourceResources = resources.filter(_.extension == "jar").map(_.copy(classifier = Some("sources")))
     (resources ::: sourceResources).distinct
   }
