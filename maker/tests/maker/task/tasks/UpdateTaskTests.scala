@@ -37,10 +37,10 @@ class UpdateTaskTests extends FreeSpec {
 
         assert(
           module.resources().toSet === Set(
-            Resource("org.foo", "bar", "0.12.1"),
-            Resource("org.foo", "bar", "0.12.1", classifier=Some("sources")),
-            Resource("com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath)),
-            Resource("com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath), classifier=Some("sources"))
+            Resource(module, "org.foo", "bar", "0.12.1"),
+            Resource(module, "org.foo", "bar", "0.12.1", classifier=Some("sources")),
+            Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath)),
+            Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath), classifier=Some("sources"))
           )
         )
 
@@ -54,6 +54,12 @@ class UpdateTaskTests extends FreeSpec {
           "bar"
         )
         assert(module.updateOnly.succeeded, "Update should fail before resources are available")
+
+        // test jars not in the resource list are deleted when we update
+        val oldJar = file(module.managedLibDir, "Foo.jar").touch
+        assert(oldJar.exists, oldJar + " should exist")
+        module.updateOnly
+        assert(oldJar.doesNotExist, oldJar + " should not exist")
     }
   }
 }

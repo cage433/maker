@@ -50,6 +50,13 @@ case class UpdateTask(module : Module) extends Task {
   def upstreamTasks : List[Task] = Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+    // delete old resource files
+    module.resources().map(_.resourceFile).groupBy(_.dirname).foreach{
+      case (dir, expectedResourceFiles) => 
+        val actualResourceFiles = dir.safeListFiles.map(_.asAbsoluteFile).toSet
+        (actualResourceFiles -- expectedResourceFiles.map(_.asAbsoluteFile)).foreach(_.delete)
+    }
+    // update any missing resources
     val (_, failures) = module.resources().partition(Exec(_).apply())
     failures match {
       case Nil => 
@@ -61,8 +68,8 @@ case class UpdateTask(module : Module) extends Task {
 
   private case class Exec(resource : Resource){
     def apply() : Boolean = {
-      resource.update(module)
-      resource.resourceFile(module).exists || resource.classifier == Some("sources")
+      resource.update()
+      resource.resourceFile.exists || resource.classifier == Some("sources")
     }
   }
 
