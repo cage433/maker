@@ -36,8 +36,12 @@ case class Resource(
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
 ) {
-  def relativeURL = "%s/%s/%s/%s-%s.%s" % (groupId.replace('.', '/'), artifactId, version, artifactId, version, extension)
-  def basename : String = "%s-%s-%s.%s" % (groupId, artifactId, version, extension)
+  def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
+    (groupId.replace('.', '/'), artifactId, version, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
+
+  def basename : String = "%s-%s-%s%s.%s" %
+    (groupId, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
+
   def pomDependencyXML : String = {
     """|<dependency>
        |  <groupId>%s</groupId>
@@ -88,7 +92,7 @@ case class Resource(
 
     def download() {
       (preferredRepository.toList ::: props.resourceResolvers().values.toList).find{
-        repository => 
+        repository =>
           val cmd = Command(
             props, 
             "curl",
@@ -99,7 +103,7 @@ case class Resource(
             "-o",
             resourceFile_.getAbsolutePath
           )
-          cmd.exec 
+          cmd.exec
           resourceFile_.exists
       }
     }
@@ -113,7 +117,6 @@ case class Resource(
     if (resourceFile_.exists && cachedFile.doesNotExist){
       withTempDir{
         dir => 
-          println("Debug: Resource: moving " + resourceFile_ + " to " + dir)
           ApacheFileUtils.copyFileToDirectory(resourceFile_, dir)
           // Hoping move is atomic
           ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile_.basename), props.ResourceCacheDirectory(), false)
