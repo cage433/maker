@@ -77,7 +77,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
     (runtimeMemory / 2) min 1024
   }
   object TestProcessMemoryInMB extends Default(defaultTestProcessMemory) with IsInt
-  object NumberOfTaskThreads extends Default(Runtime.getRuntime.availableProcessors / 2 max 1) with IsInt
+  object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
   object CompilationCache extends EmptyString
 
 
@@ -120,7 +120,9 @@ object MakerProps {
   def propsFileToMap(file : File) : Map[String, String] = {
     val p = new Properties()
     if (file.exists) {
-      p.load(new FileInputStream(file))
+	    val fis = new FileInputStream(file)
+      p.load(fis)
+			fis.close
     }
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }

@@ -74,6 +74,7 @@ case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWri
         processLine(line)
         line = nextLine
       }
+      br.close
       close
     }
   }
