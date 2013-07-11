@@ -7,7 +7,7 @@ import org.apache.commons.io.output.ByteArrayOutputStream
 import java.util.zip.{GZIPOutputStream, GZIPInputStream}
 
 class RedisPersistentCache(val hostname:String) extends PersistentCache {
-  val pool = new JedisPool(new JedisPoolConfig(), hostname)
+  val pool = new JedisPool(new JedisPoolConfig(), hostname, 6379, 10000)
   private def withJedis[R](f: (Jedis) => R):R = {
     val jedis = pool.getResource
     try {
