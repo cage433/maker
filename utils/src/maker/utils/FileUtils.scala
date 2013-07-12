@@ -395,7 +395,7 @@ object FileUtils extends Asserting{
     }
   }
 
-  def mkdirs(dir : File, subdirs : String*) = {
+  def mkdirs(dir : File, subdirs : String*) : File = {
     val dir_ = file(dir, subdirs : _*)
     dir_.mkdirs
     dir_
