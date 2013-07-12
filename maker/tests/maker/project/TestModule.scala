@@ -85,9 +85,8 @@ object TestModule{
       "SbtInterfaceJar", props.SbtInterfaceJar().getPath,
       "CompilerInterfaceSourcesJar", props.CompilerInterfaceSourcesJar().getPath,
       "TmuxMessaging", "false",
-      "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs.getPath,
-      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs.getPath
-    //"Compiler", "zinc"
+      "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
+      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs()getPath
     )
   }
 

@@ -134,6 +134,7 @@ case class MakerTestResults (
   def startTime :Long = endTimeInNanos.values.toList.sortWith(_<_).headOption.getOrElse(0L)
   def time = (endTime - startTime) / 1.0e9
   def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
+  def unfinishedTests = startTimeInNanos.keySet -- endTimeInNanos.keySet
 
   def testsOrderedByTime : List[(TestIdentifier, Long)] = endTimeInNanos.map{
     case (id, endTime) ⇒ 
@@ -154,19 +155,33 @@ case class MakerTestResults (
           List(suiteClass, test, "%.2f (s)" % (timeInNanos / 1.0e9))
       }.asTable(3) + "\n")
     } else {
-      buffer.append("Failing tests\n")
-      var lastSuite : String = ""
-      failures.zipWithIndex.foreach{
-        case ((TestIdentifier(suite, _, test), TestFailure(msg, _)), i) ⇒ 
-          if (suite != lastSuite){
-            buffer.append("\n" + suite + "\n")
-            lastSuite = suite
-          }
-          buffer.append("\t" + i + " - " + test + "\n")
-          buffer.append("\t\t" + msg + "\n")
+      if (unfinishedTests.nonEmpty){
+        buffer.append("Unfinished\n")
+        var lastSuite : String = ""
+        unfinishedTests.foreach{
+          case TestIdentifier(suite, _, test) => 
+            if (suite != lastSuite){
+              buffer.append("\n  " + suite + "\n")
+              lastSuite = suite
+            }
+            buffer.append("    " + test + "\n")
+        }
+        buffer.append("\n")
+      } 
+      if (failures.nonEmpty){
+        buffer.append("Failures\n")
+        var lastSuite : String = ""
+        failures.zipWithIndex.foreach{
+          case ((TestIdentifier(suite, _, test), TestFailure(msg, _)), i) ⇒ 
+            if (suite != lastSuite){
+              buffer.append("\n  " + suite + "\n")
+              lastSuite = suite
+            }
+            buffer.append("    " + test + " (" + i + ")\n")
+            buffer.append("      " + msg + "\n")
+        }
+        buffer.append("\ncall testResults(i) for stack trace of the i'th failing test")
       }
-          
-      buffer.append("\ncall testResults(i) for stack trace of the i'th test")
     }
     buffer.toString
   } 
