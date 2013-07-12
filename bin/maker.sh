@@ -159,7 +159,7 @@ launch_maker_repl(){
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
-    -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
+    -Dlogback.configurationFile=$PROJECT_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
     scala.tools.nsc.MainGenericRunner \
