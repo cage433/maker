@@ -60,7 +60,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
       props,
       new CommandOutputHandler(Some(writer)).withSavedOutput,
       props.Java().getAbsolutePath,
-      opts,
+      ("-Dlogback.configurationFile=" + props.LogbackTestConfigFile()) :: opts,
       baseProject.testClasspath,
       className,
       "Running main in " + baseProject.name,
