@@ -38,7 +38,6 @@ import scala.tools.nsc.io.PlainDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.io.Directory
 import maker.utils.maven._
-import scalaz.Scalaz._
 import maker.MakerProps
 import org.apache.commons.io.output.TeeOutputStream
 import org.apache.commons.io.output.NullOutputStream
@@ -96,7 +95,7 @@ class Module(
     val resources = resourcesFile.readLines.toList.filterNot{
       line => 
         line.startsWith("#") || line.trim.size == 0
-    }.map(Resource.build(_, props.resourceVersions(), props.resourceResolvers()))
+    }.map(Resource.build(this, _, props.resourceVersions(), props.resourceResolvers()))
     val sourceResources = resources.filter(_.extension == "jar").map(_.copy(classifier = Some("sources")))
     (resources ::: sourceResources).distinct
   }

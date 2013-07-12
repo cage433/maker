@@ -72,7 +72,7 @@ object FileUtils extends Asserting{
       recurse(plainFile)
     }
 
-    def readLines : Iterator[String] = if (plainFile.exists) io.Source.fromFile(plainFile).getLines() else Nil.iterator
+    def readLines : List[String] = if (plainFile.exists) io.Source.fromFile(plainFile).getLines().toList else Nil
     def append(s:String) {
       val stringToWrite = {
         readLines.toList.lastOption match {
@@ -116,7 +116,7 @@ object FileUtils extends Asserting{
     def rich = this
 
     // Taken from http://www.4pmp.com/2009/12/java-touch-set-file-last-modified-time/
-    def touch {
+    def touch = {
       if (plainFile.exists) {
           if (!plainFile.setLastModified(System.currentTimeMillis)) 
               throw new Exception("Could not touch file " + plainFile)
@@ -125,6 +125,7 @@ object FileUtils extends Asserting{
         plainFile.createNewFile()
       }
       assert(plainFile.exists, plainFile + "should exist")
+      plainFile
     }
 
     def asNewDirectory : File = {

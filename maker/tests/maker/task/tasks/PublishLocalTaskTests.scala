@@ -23,13 +23,15 @@ class PublishLocalTaskTests extends FreeSpec{
         // any other if utils no longer uses common-io-2.1
         val anyJar = file("utils/lib_managed/commons-io-commons-io-2.1.jar") 
 
-        val proj = new TestModule(
+        var resourcesList : List[Resource] = Nil
+        val proj : TestModule = new TestModule(
           dir,
           "testPublishLocal",
           overrideProps = Some(TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler"))
         ){
-          override def resources() = List(Resource.build("commons-io commons-io 2.1"))
+          override def resources() = resourcesList
         }
+        resourcesList = List(Resource.build(proj, "commons-io commons-io 2.1"))
         proj.managedLibDir.makeDir
         ApacheFileUtils.copyFileToDirectory(anyJar, proj.managedLibDir)
 

@@ -30,7 +30,7 @@ import org.scalatest.FunSuite
 import java.io.File
 import maker.utils.FileUtils._
 import maker.project.Module._
-import scalaz.Scalaz._
+import scalaz.syntax.id._
 import ch.qos.logback.classic.Level._
 import scala.collection.mutable.ListBuffer
 import maker.utils.RichString._

@@ -29,6 +29,7 @@ import maker.utils.FileUtils._
     ./<project-dir>/lib_managed/org.scalacheck-scalacheck_2.9.2-1.9.jar
 */
 case class Resource(
+  module : Module,
   groupId : String, 
   artifactId : String, 
   version : String, 
@@ -70,7 +71,7 @@ case class Resource(
     copy(groupId=resolve(groupId), artifactId=resolve(artifactId), version=resolve(version))
   }
 
-  def resourceFile(module : Module) = {
+  lazy val resourceFile = {
     (extension, classifier) match {
       case (_, Some("sources")) => 
         FileUtils.file(module.managedLibSourceDir, basename)
@@ -80,14 +81,13 @@ case class Resource(
         FileUtils.file(module.managedResourceDir, basename)
     }
   }
-  def update(module : Module){
+  def update(){
 
     val props = module.props
 
-    val resourceFile_ = resourceFile(module)
-    resourceFile_.dirname.makeDirs
+    resourceFile.dirname.makeDirs
 
-    val cachedFile = file(props.ResourceCacheDirectory(), resourceFile_.basename)
+    val cachedFile = file(props.ResourceCacheDirectory(), resourceFile.basename)
     
 
     def download() {
@@ -101,25 +101,25 @@ case class Resource(
             repository + "/" + relativeURL,
             "-f",
             "-o",
-            resourceFile_.getAbsolutePath
+            resourceFile.getAbsolutePath
           )
-          cmd.exec
-          resourceFile_.exists
+          cmd.exec 
+          resourceFile.exists
       }
     }
 
-    if (resourceFile_.doesNotExist && cachedFile.exists)
-      ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile_.dirname)
+    if (resourceFile.doesNotExist && cachedFile.exists)
+      ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile.dirname)
 
-    if (resourceFile_.doesNotExist)
+    if (resourceFile.doesNotExist)
       download()
 
-    if (resourceFile_.exists && cachedFile.doesNotExist){
+    if (resourceFile.exists && cachedFile.doesNotExist){
       withTempDir{
         dir => 
-          ApacheFileUtils.copyFileToDirectory(resourceFile_, dir)
+          ApacheFileUtils.copyFileToDirectory(resourceFile, dir)
           // Hoping move is atomic
-          ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile_.basename), props.ResourceCacheDirectory(), false)
+          ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
       }
     }
 
@@ -128,7 +128,7 @@ case class Resource(
 }
 
 object Resource{
-  def build(s : String, resourceVersions : Map[String, String] = Map.empty, resourceResolvers : Map[String, String] = Map.empty) : Resource = {
+  def build(module : Module, s : String, resourceVersions : Map[String, String] = Map.empty, resourceResolvers : Map[String, String] = Map.empty) : Resource = {
     def exitWithBadUsage{
       val errorMessage = """|Valid resource format is 
                             | <group-id> <artifact-id> <version> [resolver:<resolver-name>] [type:<type-name - e.g. jar, xml, gz>]
@@ -154,6 +154,7 @@ object Resource{
     }.toMap
 
     Resource(
+      module,
       groupId, artifactId, version,
       extension = optionalArgs.getOrElse("type", "jar"),
       classifier = optionalArgs.get("classifier"),

@@ -81,6 +81,7 @@ HERE
   GLOBAL_RESOURCE_VERSIONS="$PROJECT_ROOT_DIR/resource-versions" 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   rm dynamic-scala-resource-list
+  rm dynamic-zinc-resource-list
 }
 
 build_jar(){
