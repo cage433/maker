@@ -36,7 +36,7 @@ import maker.utils.os.ScalaCommand
 import maker.task._
 import maker.utils.Stopwatch
 import maker.MakerProps
-import maker.task.compile.SourceCompileTask
+import maker.task.compile.TestCompileTask
 import maker.project.BaseProject
 
 
@@ -46,7 +46,7 @@ import maker.project.BaseProject
 case class RunMainTask(baseProject : BaseProject, className : String, opts : List[String], mainArgs : List[String]) extends Task {
   def name = "Run Main"
 
-  def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask(_))
+  def upstreamTasks = baseProject.allUpstreamModules.map(TestCompileTask(_))
 
 
   val runLogFile = file("runlog.out")
@@ -56,11 +56,16 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     log.info("running main in class " + className)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
+    val optsToUse = List(
+      "-Xmx" + props.TestProcessMemoryInMB() + "m", 
+      "-XX:MaxPermSize=200m",
+      "-Dlogback.configurationFile=" + "logback.xml"
+    ) ::: opts
     val cmd = ScalaCommand(
       props,
       new CommandOutputHandler(Some(writer)).withSavedOutput,
       props.Java().getAbsolutePath,
-      ("-Dlogback.configurationFile=" + props.LogbackTestConfigFile()) :: opts,
+      optsToUse,
       baseProject.testClasspath,
       className,
       "Running main in " + baseProject.name,
