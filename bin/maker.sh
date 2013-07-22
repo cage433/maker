@@ -155,7 +155,9 @@ launch_maker_repl(){
     PROJECT_FILE=${scala_files[0]}
   fi
 
-  $JAVA_HOME/bin/java $JAVA_OPTS \
+  # echo "Maker script DEBUG: $EXTRA_REPL_ARGS"
+
+  JAVA_COMMAND_ARGS=" $JAVA_OPTS \
     -classpath "$(maker_classpath):$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
@@ -163,11 +165,16 @@ launch_maker_repl(){
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
+    $EXTRA_REPL_ARGS \
     scala.tools.nsc.MainGenericRunner \
     -Yrepl-sync -nc \
     -i $PROJECT_FILE \
     $CMDS \
-    | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
+    | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}"
+
+  # echo "DEBUG: JAVA COMMAND = $JAVA_COMMAND"
+  
+  $JAVA_HOME/bin/java $JAVA_COMMAND_ARGS
 }
 
 recompile_project_if_required(){
@@ -230,7 +237,7 @@ process_options() {
       -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
-      -- ) shift; EXTRA_REPL_ARGS=$*; break;;
+     -args | -- ) shift; EXTRA_REPL_ARGS=$*; break;;
       *  ) break;;
     esac
   done
