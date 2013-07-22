@@ -53,7 +53,7 @@ case class Resource(
   }
 
   def toIvyInclude : Elem =
-    <dependency org={groupId} name={artifactId} rev={version.map(v => xml.Text(version))}>
+    <dependency org={groupId} name={artifactId} rev={version}>
       {classifier.map(c => <artifact name={artifactId} type="jar" ext="jar" e:classifier={c} />).getOrElse(NodeSeq.Empty)}
     </dependency>
 
