@@ -157,7 +157,7 @@ launch_maker_repl(){
 
   # echo "Maker script DEBUG: $EXTRA_REPL_ARGS"
 
-  JAVA_COMMAND_ARGS=" $JAVA_OPTS \
+  $JAVA_HOME/bin/java $JAVA_OPTS \
     -classpath "$(maker_classpath):$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
@@ -165,16 +165,11 @@ launch_maker_repl(){
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
-    $EXTRA_REPL_ARGS \
     scala.tools.nsc.MainGenericRunner \
     -Yrepl-sync -nc \
     -i $PROJECT_FILE \
     $CMDS \
-    | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}"
-
-  # echo "DEBUG: JAVA COMMAND = $JAVA_COMMAND"
-  
-  $JAVA_HOME/bin/java $JAVA_COMMAND_ARGS
+    | tee maker-session.log ; scala_exit_status=${PIPESTATUS[0]}
 }
 
 recompile_project_if_required(){
