@@ -41,7 +41,9 @@ main() {
     echo "JAVA_HOME not defined"
     exit -1
   fi
-  process_options $*
+  MAKER_OPTIONS=$*
+  echo "maker; processing options: $MAKER_OPTIONS"
+  process_options $MAKER_OPTIONS
   saveStty
 
   update_external_jars && check_for_errors
