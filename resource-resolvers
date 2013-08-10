@@ -1,1 +1,2 @@
 default http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror
+maven http://repo1.maven.org/maven2/
