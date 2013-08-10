@@ -41,9 +41,7 @@ main() {
     echo "JAVA_HOME not defined"
     exit -1
   fi
-  MAKER_OPTIONS=$*
-  echo "maker; processing options: $MAKER_OPTIONS"
-  process_options $MAKER_OPTIONS
+  process_options $*
   saveStty
 
   update_external_jars && check_for_errors
@@ -157,8 +155,6 @@ launch_maker_repl(){
     PROJECT_FILE=${scala_files[0]}
   fi
 
-  # echo "Maker script DEBUG: $EXTRA_REPL_ARGS"
-
   $JAVA_HOME/bin/java $JAVA_OPTS \
     -classpath "$(maker_classpath):$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
@@ -167,7 +163,6 @@ launch_maker_repl(){
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
-    $EXTRA_REPL_ARGS \
     scala.tools.nsc.MainGenericRunner \
     -Yrepl-sync -nc \
     -i $PROJECT_FILE \
@@ -235,7 +230,7 @@ process_options() {
       -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
-     -args | -- ) shift; EXTRA_REPL_ARGS=$*; break;;
+      -- ) shift; EXTRA_REPL_ARGS=$*; break;;
       *  ) break;;
     esac
   done
