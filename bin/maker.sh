@@ -17,7 +17,6 @@
 MAKER_ROOT_DIR="$( cd "$(dirname $( dirname "${BASH_SOURCE[0]}" ))" && pwd )"
 PROJECT_ROOT_DIR=`pwd`
 
-echo $MAKER_ROOT_DIR
 MAKER_JAR=$MAKER_ROOT_DIR/maker.jar
 MAKER_SCALATEST_REPORTER_JAR=$MAKER_ROOT_DIR/maker-scalatest-reporter.jar
 
@@ -45,8 +44,10 @@ main() {
   saveStty
 
   update_external_jars && check_for_errors
-  bootstrap_maker_if_required && check_for_errors
-  recompile_project_if_required && check_for_errors
+  if [ -z $MAKER_DEVELOPER_MODE ]; then
+    bootstrap_maker_if_required && check_for_errors
+    recompile_project_if_required && check_for_errors
+  fi
 
   launch_maker_repl
 }
@@ -138,7 +139,7 @@ launch_maker_repl(){
  
   JAVA_OPTS=" -Xmx$MAKER_HEAP_SPACE \
     -XX:MaxPermSize=$MAKER_PERM_GEN_SPACE \
-    $MAKER_DEBUG_PARAMETERS \
+    $MAKER_JAVA_OPTS \
     -XX:+HeapDumpOnOutOfMemoryError \
     -XX:+UseCodeCacheFlushing \
     -XX:ReservedCodeCacheSize=256m \
@@ -171,8 +172,6 @@ launch_maker_repl(){
 }
 
 recompile_project_if_required(){
-  PROJECT_DEFINITION_SRC_DIR=${PROJECT_DEFINITION_SRC_DIR-$PROJECT_ROOT_DIR/project-src}
-  PROJECT_DEFINITION_CLASS_DIR=`dirname $PROJECT_DEFINITION_SRC_DIR`/project-classes
 
   if [ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
      has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
@@ -227,13 +226,16 @@ process_options() {
       -m | --mem-heap-space ) MAKER_HEAP_SPACE=$2; shift 2;;
       -y | --do-ivy-update ) MAKER_IVY_UPDATE=true; shift;;
       -b | --boostrap ) MAKER_BOOTSTRAP=true; shift;;
-      -x | --allow-remote-debugging ) MAKER_DEBUG_PARAMETERS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
+      -x | --allow-remote-debugging ) MAKER_JAVA_OPTS="$MAKER_JAVA_OPTS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
+      -j | --use-jrebel ) MAKER_JAVA_OPTS="$MAKER_JAVA_OPTS -javaagent:/usr/local/jrebel/jrebel.jar "; shift 1;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
       -- ) shift; EXTRA_REPL_ARGS=$*; break;;
       *  ) break;;
     esac
   done
+  PROJECT_DEFINITION_SRC_DIR=${PROJECT_DEFINITION_SRC_DIR-$PROJECT_ROOT_DIR/project-src}
+  PROJECT_DEFINITION_CLASS_DIR=`dirname $PROJECT_DEFINITION_SRC_DIR`/project-classes
 }
 
 display_usage() {
