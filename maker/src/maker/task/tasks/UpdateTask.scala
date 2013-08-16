@@ -56,8 +56,9 @@ case class UpdateTask(module : Module) extends Task {
         val actualResourceFiles = dir.safeListFiles.map(_.asAbsoluteFile).toSet
         (actualResourceFiles -- expectedResourceFiles.map(_.asAbsoluteFile)).foreach(_.delete)
     }
+    val missingResources = module.resources().filterNot(_.resourceFile.exists)
     // update any missing resources
-    val (_, failures) = module.resources().partition(Exec(_).apply())
+    val (_, failures) = missingResources.partition(Exec(_).apply())
     failures match {
       case Nil => 
         TaskResult.success(this, sw)

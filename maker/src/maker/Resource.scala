@@ -37,6 +37,8 @@ case class Resource(
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
 ) {
+  lazy val props = module.props
+  lazy val log = module.log
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
     (groupId.replace('.', '/'), artifactId, version, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
 
@@ -71,47 +73,37 @@ case class Resource(
     copy(groupId=resolve(groupId), artifactId=resolve(artifactId), version=resolve(version))
   }
 
-  lazy val resourceFile = {
-    (extension, classifier) match {
-      case (_, Some("sources")) => 
-        FileUtils.file(module.managedLibSourceDir, basename)
-      case ("jar", _) => 
-        FileUtils.file(module.managedLibDir, basename)
-      case _ => 
-        FileUtils.file(module.managedResourceDir, basename)
-    }
-  }
-  def update(){
+  def isJarResource = extension == "jar"
+  def isSourceJarResource = isJarResource && classifier == Some("sources")
+  def isBinaryJarResource = isJarResource && ! isSourceJarResource
 
-    val props = module.props
+  lazy val resourceFile = {
+    if (isSourceJarResource)
+      FileUtils.file(module.managedLibSourceDir, basename)
+    else if (isJarResource)
+      FileUtils.file(module.managedLibDir, basename)
+    else
+      FileUtils.file(module.managedResourceDir, basename)
+  }
+
+  /**
+   * If the resource is not already in lib_managed (or equivalent) then try to copy from cache,
+   * else download from external repository and put into cache.
+   *
+   * Note that source jars are only downloaded when we download a binary - this is as some
+   * simply don't exist, and trying to download them every time we get an update can become
+   * expensive if there are Nexus problems
+   */
+  def update(){
 
     resourceFile.dirname.makeDirs
 
     val cachedFile = file(props.ResourceCacheDirectory(), resourceFile.basename)
     
-
-    def download() {
-      (preferredRepository.toList ::: props.resourceResolvers().values.toList).find{
-        repository =>
-          val cmd = Command(
-            props, 
-            "curl",
-            "-s",
-            "-H", "Pragma: no-cache",
-            repository + "/" + relativeURL,
-            "-f",
-            "-o",
-            resourceFile.getAbsolutePath
-          )
-          cmd.exec 
-          resourceFile.exists
-      }
-    }
-
     if (resourceFile.doesNotExist && cachedFile.exists)
       ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile.dirname)
 
-    if (resourceFile.doesNotExist)
+    if (resourceFile.doesNotExist && !isSourceJarResource) 
       download()
 
     if (resourceFile.exists && cachedFile.doesNotExist){
@@ -122,9 +114,33 @@ case class Resource(
           ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
       }
     }
-
   }
 
+  private def download() {
+    (preferredRepository.toList ::: props.resourceResolvers().values.toList).find{
+      repository =>
+        val cmd = Command(
+          props, 
+          "curl",
+          "-s",
+          "-H", "Pragma: no-cache",
+          repository + "/" + relativeURL,
+          "-f",
+          "-o",
+          resourceFile.getAbsolutePath
+        )
+        log.info("Downloading " + basename)
+        log.info("" + cmd)
+        cmd.exec 
+        resourceFile.exists
+    }
+    downloadAssociatedSourceJar()
+  }
+
+  private def downloadAssociatedSourceJar(){
+    if (isBinaryJarResource)
+      copy(classifier = Some("sources")).download()
+  }
 }
 
 object Resource{

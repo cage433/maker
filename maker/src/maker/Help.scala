@@ -23,7 +23,11 @@ object Help{
 
 
   def help{
+    println("Helping")
     println(text)
+  }
+  def help(thing : String){
+    println(thing)
   }
 }
 

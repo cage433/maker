@@ -90,7 +90,7 @@ class Module(
 
   val resourcesFile = file(root, "external-resources")
 
-  def resources() : Iterable[Resource]  = {
+  def resources() : List[Resource]  = {
     
     val resources = resourcesFile.readLines.toList.filterNot{
       line => 
