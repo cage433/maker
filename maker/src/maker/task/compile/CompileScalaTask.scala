@@ -9,10 +9,13 @@ import sbt.compiler.CompileFailed
 import sbt.inc.Analysis
 import sbt.inc.Locate
 import maker.task.Build
+import maker.utils.FileUtils._
 
 case class CompileScalaTask(modulePhase : ModuleCompilePhase){
 
   val log = modulePhase.log
+
+  val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
 
   val inputs = {
     val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
@@ -22,7 +25,6 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase){
         upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
     }
     
-    val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
     val cp : Seq[File] = modulePhase.classpathDirectoriesAndJars.toList
     val outputDir = modulePhase.outputDir
     val cacheFile = modulePhase.compilationCacheFile
@@ -90,7 +92,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase){
       modulePhase.module.analyses.put(outputDir, analysis)
       Right(analysis)
     } catch {
-      case e : CompileFailed ⇒ 
+      case e : CompileFailed => 
         Left(e)
     }
     result
