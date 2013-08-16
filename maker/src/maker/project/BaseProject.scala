@@ -215,7 +215,6 @@ trait BaseProject {
 
   def doc = Doc.execute
 
-  def help = Help.help
   def builds = {
     val buildFields = this.getClass.getDeclaredFields.filter{f ⇒ classOf[maker.task.Build].isAssignableFrom(f.getType)}.map(_.getName)
     val helpText = """
