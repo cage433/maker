@@ -42,7 +42,7 @@ import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
 import maker.utils.FileUtils
 
-class CompileScalaTaskTests extends FunSuite with TestUtils with ParallelTestExecution{
+class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
     val proj : TestModule = new TestModule(root, "CompileScalaTaskTests")

@@ -86,7 +86,7 @@ object TestModule{
       "CompilerInterfaceSourcesJar", props.CompilerInterfaceSourcesJar().getPath,
       "TmuxMessaging", "false",
       "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
-      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs()getPath
+      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath
     )
   }
 
