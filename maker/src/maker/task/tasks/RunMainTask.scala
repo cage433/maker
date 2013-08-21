@@ -63,7 +63,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     ) ::: opts
     val cmd = ScalaCommand(
       props,
-      new CommandOutputHandler(Some(writer)).withSavedOutput,
+      new CommandOutputHandler(Some(writer)),
       props.Java().getAbsolutePath,
       optsToUse,
       baseProject.testClasspath,

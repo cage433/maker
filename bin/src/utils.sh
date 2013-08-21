@@ -116,10 +116,10 @@ update_resources(){
 resolve_version(){
   line=$*
   version_file=$(eval_file_variable GLOBAL_RESOURCE_VERSIONS) 
-  while read key version; do
+  cat $version_file 2>/dev/null | ( while read key version; do
     line=`echo $line | sed "s/{$key}/$version/g"`
-  done < <(cat $version_file 2>/dev/null)
-  echo $line
+  done
+  echo $line )
 }
 
 find_resolver(){
