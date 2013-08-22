@@ -40,7 +40,9 @@ main() {
     echo "JAVA_HOME not defined"
     exit -1
   fi
-  process_options $*
+  MAKER_OPTIONS=$*
+  echo "maker; processing options: $MAKER_OPTIONS"
+  process_options $MAKER_OPTIONS
   saveStty
 
   update_external_jars && check_for_errors
@@ -156,6 +158,8 @@ launch_maker_repl(){
     PROJECT_FILE=${scala_files[0]}
   fi
 
+  # echo "Maker script DEBUG: $EXTRA_REPL_ARGS"
+
   $JAVA_HOME/bin/java $JAVA_OPTS \
     -classpath "$(maker_classpath):$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
@@ -164,6 +168,7 @@ launch_maker_repl(){
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
+    $EXTRA_REPL_ARGS \
     scala.tools.nsc.MainGenericRunner \
     -Yrepl-sync -nc \
     -i $PROJECT_FILE \
@@ -230,7 +235,7 @@ process_options() {
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -j | --use-jrebel ) MAKER_JAVA_OPTS="$MAKER_JAVA_OPTS -javaagent:/usr/local/jrebel/jrebel.jar "; shift 1;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
-      -- ) shift; EXTRA_REPL_ARGS=$*; break;;
+      -args | -- ) shift; EXTRA_REPL_ARGS=$*; break;;
       *  ) break;;
     esac
   done
@@ -285,7 +290,7 @@ cat << EOF
     --mem-permgen-space <space in MB>
       default is 1/10th of heap space
 
-    -- <any>* 
+    -args, -- <any>* 
       all subsequent arguments passed directly to repl
 
 EOF
