@@ -14,6 +14,15 @@
 # in the options. The project definition file is the single scala file in PWD, unless
 # a file is passed in as a parameter
 
+if [ "$OSTYPE" = "msys" ]
+then
+  PSEP=';'
+  FIXCP="sed -e s/^\/\([A-Za-z]\)\//\1:\//;s/\([\x20;]\)\/\([A-Za-z]\)\//\1\2:\//g"
+else
+  PSEP=':'
+  FIXCP='cat -'
+fi
+
 MAKER_ROOT_DIR="$( cd "$(dirname $( dirname "${BASH_SOURCE[0]}" ))" && pwd )"
 PROJECT_ROOT_DIR=`pwd`
 
@@ -35,12 +44,14 @@ check_for_errors(){
   fi
 }
 main() {
-  if [ -z $JAVA_HOME ];
+  if [ -z "$JAVA_HOME" ];
   then
     echo "JAVA_HOME not defined"
     exit -1
   fi
-  process_options $*
+  MAKER_OPTIONS=$*
+  echo "maker; processing options: $MAKER_OPTIONS"
+  process_options $MAKER_OPTIONS
   saveStty
 
   update_external_jars && check_for_errors
@@ -88,15 +99,22 @@ HERE
 
 build_jar(){
   read jar_name src_files <<<$(echo $*)
+  src_files=$( echo "$src_files" | $FIXCP )
 
   # Not sure why it's necessary to go to the maker root directory. Get 
   # strange compilation errors otherwise
-  pushd $MAKER_ROOT_DIR
+  local saved_dir=$(pwd)
+  cd $MAKER_ROOT_DIR
 
   echo "Building $jar_name"
   rm -f $jar_name
-  TEMP_OUTPUT_DIR=`mktemp -d maker-tmp-XXXXXXXXXX`
 
+  if test -x /bin/mktemp; then
+    TEMP_OUTPUT_DIR=`mktemp -d maker-tmp-XXXXXXXXXX`
+  else
+    TEMP_OUTPUT_DIR=maker-tmp-$$-$USER-$RANDOM
+    mkdir -p $TEMP_OUTPUT_DIR
+  fi
 
   java -classpath $(external_jars) \
     -Dscala.usejavacp=true \
@@ -105,9 +123,9 @@ build_jar(){
     $src_files 2>&1 \
     | tee $MAKER_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
 
-  run_command "$JAVA_HOME/bin/jar cf $jar_name -C $TEMP_OUTPUT_DIR . " || exit -1
+  run_command "\"$JAVA_HOME/bin/jar\" cf $jar_name -C $TEMP_OUTPUT_DIR . " || exit -1
   rm -rf $TEMP_OUTPUT_DIR
-  popd
+  cd "$saved_dir"
 }
 
 bootstrap_maker_if_required() {
@@ -156,14 +174,15 @@ launch_maker_repl(){
     PROJECT_FILE=${scala_files[0]}
   fi
 
-  $JAVA_HOME/bin/java $JAVA_OPTS \
-    -classpath "$(maker_classpath):$PROJECT_DEFINITION_CLASS_DIR" \
+  "$JAVA_HOME/bin/java" $JAVA_OPTS \
+    -classpath "$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
+    $EXTRA_REPL_ARGS \
     scala.tools.nsc.MainGenericRunner \
     -Yrepl-sync -nc \
     -i $PROJECT_FILE \
@@ -192,25 +211,24 @@ maker_classpath(){
   if [ $MAKER_DEVELOPER_MODE ];
   then
     for module in utils maker test-reporter; do
-      cp="$cp:$MAKER_ROOT_DIR/$module/target-maker/classes:$MAKER_ROOT_DIR/$module/target-maker/test-classes/"
+      cp="$cp${PSEP}$MAKER_ROOT_DIR/$module/target-maker/classes${PSEP}$MAKER_ROOT_DIR/$module/target-maker/test-classes/"
     done
   else
-    cp="$cp:$MAKER_JAR:$MAKER_SCALATEST_REPORTER_JAR"
+    cp="$cp${PSEP}$MAKER_JAR${PSEP}$MAKER_SCALATEST_REPORTER_JAR"
   fi
-  echo $cp
+  echo $cp | $FIXCP
 }
 
 
 run_command(){
-  command="$1"
-  $command || (echo "failed to run $command " && exit -1)
+  eval "$1" || (echo "failed to run $1 " && exit -1)
 }
 
 external_jars() {
   ls $MAKER_ROOT_DIR/utils/lib_managed/*.jar \
      $MAKER_ROOT_DIR/test-reporter/lib_managed/*.jar \
      $MAKER_ROOT_DIR/scala-libs/*.jar \
-    | xargs | sed 's/ /:/g'
+    | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
 }
 
 
@@ -230,7 +248,7 @@ process_options() {
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -j | --use-jrebel ) MAKER_JAVA_OPTS="$MAKER_JAVA_OPTS -javaagent:/usr/local/jrebel/jrebel.jar "; shift 1;;
       --mem-permgen-space ) MAKER_PERM_GEN_SPACE=$2; shift 2;;
-      -- ) shift; EXTRA_REPL_ARGS=$*; break;;
+      -args | -- ) shift; EXTRA_REPL_ARGS=$*; break;;
       *  ) break;;
     esac
   done
@@ -279,13 +297,13 @@ cat << EOF
 
     -z, --developer-mode
       For maker development
-      Sets the maker classpath to maker/classes:utils/classes etc rather than 
+      Sets the maker classpath to maker/classes${PSEP}utils/classes etc rather than 
       maker.jar. Allows work on maker and another project to be done simultaneously.
 
     --mem-permgen-space <space in MB>
       default is 1/10th of heap space
 
-    -- <any>* 
+    -args, -- <any>* 
       all subsequent arguments passed directly to repl
 
 EOF
@@ -309,10 +327,11 @@ trap onExit INT SIGTERM EXIT
 
 # save terminal settings
 function saveStty() {
-  if tty -s; then
-    saved_stty=$(stty -g 2>/dev/null)
-  else
-    saved_stty=""
+  saved_stty=""
+  if test -x /usr/bin/tty; then
+    if tty -s; then
+      saved_stty=$(stty -g 2>/dev/null)
+    fi
   fi
 }
 
