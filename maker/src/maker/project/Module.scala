@@ -201,6 +201,7 @@ class Module(
 
   def makerDirectory = mkdirs(rootAbsoluteFile, ".maker")
   def cacheDirectory = mkdirs(makerDirectory, "cache")
+  def testResultDirectory = file(makerDirectory, "test-results")
 
   def managedJars = findJars(managedLibDir)
   def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() 

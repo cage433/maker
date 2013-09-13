@@ -80,13 +80,13 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false"
     ) ::: systemProperties
-    val args = List("-P", "-C", "maker.utils.MakerTestReporter") ++ suiteParameters
+    val args = List("-P", "-C", props.TestReporter()) ++ suiteParameters
     val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 
       props.Java().getAbsolutePath, 
       opts,
-      baseProject.testClasspath + ":" + props.MakerTestReporterJar(),
+      baseProject.testClasspath + ":" + props.MakerTestReporterClasspath(),
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 

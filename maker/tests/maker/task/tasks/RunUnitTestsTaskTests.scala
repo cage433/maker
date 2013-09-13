@@ -8,7 +8,7 @@ import maker.project.Module
 import maker.MakerProps
 
 class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
-  test("Test reports picks up failure"){
+  ignore("Test reports picks up failure"){
     withTempDir{
       dir ⇒ 
         val proj = new TestModule(dir, "RunUnitTestsTaskTests")
@@ -32,7 +32,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
   }
 
 
-  test("Unit test runs"){
+  ignore("Unit test runs"){
     withTempDir{
       root ⇒ 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
@@ -65,7 +65,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
     }
   }
 
-  test("Failing test fails again"){
+  ignore("Failing test fails again"){
     withTempDir{
       root ⇒ 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
@@ -99,7 +99,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
     }
   }
 
-  test("Can re-run failing tests"){
+  ignore("Can re-run failing tests"){
     withTempDir{
       root ⇒ 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
@@ -167,6 +167,40 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
         assert(proj.testResults.failedTests.size === 0)
         assert(proj.testResults.passedTests.size === 2)
 
+    }
+  }
+
+  test("Test Reporter does its thing"){
+    withTempDir{
+      root ⇒ 
+        val overrideProps = Some(TestModule.makeTestProps(root) ++ ("TestReporter","maker.scalatest.MakerTestReporter2"))
+        val proj = new TestModule(root, "RunUnitTestsTaskTests", Nil, Nil, overrideProps)
+        proj.writeTest(
+          "foo/GoodTest.scala",
+          """
+          package foo
+          import org.scalatest.FunSuite
+          class GoodTest extends FunSuite{
+            test("test foo"){
+              assert(1 === 1)
+            }
+          }
+          """
+        )
+        proj.writeTest( 
+          "foo/BadTest.scala",
+          """
+          package foo
+          import org.scalatest.FunSuite
+          class BadTest extends FunSuite{
+            test("test foo"){
+              assert(1 === 2)
+            }
+          }
+          """
+        )
+        proj.test
+        assert(file(proj.testResultDirectory).exists)
     }
   }
 

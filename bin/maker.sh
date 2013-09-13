@@ -147,14 +147,7 @@ bootstrap_maker_if_required() {
   fi
 }
 
-launch_maker_repl(){
-  if [ ! -z $MAKER_CMD ];
-  then
-    CMDS="-e $MAKER_CMD"
-    RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
-    echo "setting cmd as $CMDS"
-  fi
- 
+java_opts(){
   JAVA_OPTS=" -Xmx$MAKER_HEAP_SPACE \
     -XX:MaxPermSize=$MAKER_PERM_GEN_SPACE \
     $MAKER_JAVA_OPTS \
@@ -163,6 +156,21 @@ launch_maker_repl(){
     -XX:ReservedCodeCacheSize=256m \
     -XX:+CMSClassUnloadingEnabled \
     $JAVA_OPTS"
+  if [ $MAKER_DEVELOPER_MODE ];
+  then
+    JAVA_OPTS="$JAVA_OPTS -Dmaker.test.reporter.classpath=$MAKER_ROOT_DIR/test-reporter/target-maker/classes"
+  fi
+  echo $JAVA_OPTS
+}
+
+launch_maker_repl(){
+  if [ ! -z $MAKER_CMD ];
+  then
+    CMDS="-e $MAKER_CMD"
+    RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
+    echo "setting cmd as $CMDS"
+  fi
+ 
 
   if [ -z $PROJECT_FILE ];
   then
@@ -174,7 +182,7 @@ launch_maker_repl(){
     PROJECT_FILE=${scala_files[0]}
   fi
 
-  "$JAVA_HOME/bin/java" $JAVA_OPTS \
+  "$JAVA_HOME/bin/java" $(java_opts) \
     -classpath "$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
@@ -210,7 +218,7 @@ maker_classpath(){
   cp=$(external_jars)
   if [ $MAKER_DEVELOPER_MODE ];
   then
-    for module in utils maker test-reporter; do
+    for module in utils maker ; do
       cp="$cp${PSEP}$MAKER_ROOT_DIR/$module/target-maker/classes${PSEP}$MAKER_ROOT_DIR/$module/target-maker/test-classes/"
     done
   else
