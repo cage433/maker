@@ -87,7 +87,7 @@ object FileUtils extends Asserting{
 
     def relativeTo(dir: File) : File = {
       def pathComponents(f : File) = {
-        f.getAbsolutePath.split("/").filterNot{component ⇒  component == "" || component == "."}.toList
+        f.getAbsolutePath.split(File.separator.replace("\\", "\\\\")).filterNot{component ⇒  component == "" || component == "."}.toList
       }
       val dirComponents = pathComponents(dir)
       val fileComponents = pathComponents(plainFile)
@@ -96,10 +96,10 @@ object FileUtils extends Asserting{
       }.map(_._1)
       val directoriesUp = List.fill(dirComponents.size - commonComponents.size)("..")
       val relativeComponents = directoriesUp ::: fileComponents.drop(commonComponents.size)
-      file(relativeComponents.mkString("/"))
+      file(relativeComponents.mkString(File.separator))
     }
     def className(classDirectory : File) : String = {
-      relativeTo(classDirectory).getPath.split('.').head.replace("/", ".")
+      relativeTo(classDirectory).getPath.split('.').head.replace(File.separator, ".")
     }
     def basename : String = plainFile.getName
     def basenameSansExtension : String = basename.split('.').head

@@ -86,7 +86,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       CommandOutputHandler(), 
       props.Java().getAbsolutePath, 
       opts,
-      baseProject.testClasspath + ":" + props.MakerTestReporterJar(),
+      baseProject.testClasspath + java.io.File.pathSeparator + props.MakerTestReporterJar(),
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 
