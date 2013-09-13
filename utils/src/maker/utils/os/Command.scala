@@ -27,8 +27,8 @@ package maker.utils.os
 
 import java.lang.ProcessBuilder
 import java.io.{File, InputStreamReader, BufferedReader, PrintWriter}
-import actors.Future
-import actors.Futures._
+import scala.actors.Future
+import scala.actors.Futures._
 import java.io.FileWriter
 import scalaz.syntax.std.option._
 import java.io.IOException
