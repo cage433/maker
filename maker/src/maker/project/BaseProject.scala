@@ -199,6 +199,7 @@ trait BaseProject {
   def test = Test.execute
   def testNoCompile = TestSansCompile.execute
   def testClass(className : String) = TestClass.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))).execute
+  def testClassContinuously(className : String) = continuously(TestClass.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))))
   def testFailedSuites = TestFailedSuites.execute
   def pack = PackageJars.execute
   def update = Update.execute
