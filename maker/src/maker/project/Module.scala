@@ -244,7 +244,7 @@ object Module{
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
 
-  def asClasspathStr(files : Iterable[File], sep : String = ":") =
+  def asClasspathStr(files : Iterable[File], sep : String = java.io.File.pathSeparator) =
     files.toList.distinct.toList.map(_.getAbsolutePath).sortWith(_.toString < _.toString).mkString(sep)
 
   def warnOfUnnecessaryDependencies(proj : Module){

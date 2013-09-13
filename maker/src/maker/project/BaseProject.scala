@@ -122,7 +122,7 @@ trait BaseProject {
     "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". No compilation at all is done before running tests"
   )
 
-  lazy val TestClass = Build(
+  lazy val TestClassBuild = Build(
     "Test single class ",
     () ⇒ throw new Exception("Placeholder graph only - should never be called"),
     this,
@@ -154,7 +154,7 @@ trait BaseProject {
     "Update libraries for " + name
   )
 
-  lazy val PublishLocal = Build(
+  lazy val PublishLocalBuild = Build(
     "Publish " + name + " locally",
     () ⇒ throw new Exception("Placeholder graph only - should never be called"),
     this,
@@ -162,7 +162,7 @@ trait BaseProject {
     "Publish " + name + " to ~/.ivy2"
   )
 
-  lazy val Publish = Build(
+  lazy val PublishBuild = Build(
     "Publish " + name,
     () ⇒ throw new Exception("Placeholder graph only - should never be called"),
     this,
@@ -170,7 +170,7 @@ trait BaseProject {
     "Publish " + name 
   )
 
-  lazy val RunMain = Build(
+  lazy val RunMainBuild = Build(
     "Run single class",
     () ⇒ throw new Exception("Placeholder graph only - should never be called"),
     this,
@@ -198,19 +198,19 @@ trait BaseProject {
   def testCompileContinuously = continuously(TestCompile)
   def test = Test.execute
   def testNoCompile = TestSansCompile.execute
-  def testClass(className : String) = TestClass.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))).execute
+  def testClass(className : String) = TestClassBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))).execute
   def testFailedSuites = TestFailedSuites.execute
   def pack = PackageJars.execute
   def update = Update.execute
   def publishLocal(version : String) = {
-    PublishLocal.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version))).execute
+    PublishLocalBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version))).execute
   }
   def publish(version : String, resolver : String = props.defaultResolver()) = {
-    Publish.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version))).execute
+    PublishBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version))).execute
   }
 
   def runMain(className : String)(opts : String*)(args : String*) = {
-    RunMain.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList))).execute
+    RunMainBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList))).execute
   }
 
   def doc = Doc.execute
