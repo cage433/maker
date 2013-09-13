@@ -46,7 +46,7 @@ object MakerTestResults{
     val delimiter = s.head
     s.tail.split(delimiter).toList.mkString("\n")
   }
-  def apply(props : MakerProps, file : File) : MakerTestResults = {
+  def apply(props : MakerProps, file : File, output : String) : MakerTestResults = {
 
     val startTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
     val endTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
@@ -109,7 +109,8 @@ case class MakerTestResults (
 
   startTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
   endTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
-  failures : List[(TestIdentifier, TestFailure)] = Nil
+  failures : List[(TestIdentifier, TestFailure)] = Nil,
+  output : String = ""
 ) extends TaskInfo {
   import MakerTestResults._
 
@@ -123,19 +124,19 @@ case class MakerTestResults (
   def ++ (rhs : MakerTestResults) = MakerTestResults(
     startTimeInNanos ++ rhs.startTimeInNanos,
     endTimeInNanos ++ rhs.endTimeInNanos,
-    (failures ::: rhs.failures).sortWith(_._1 < _._1)
+    (failures ::: rhs.failures).sortWith(_._1 < _._1),
+    output ++ rhs.output
   )
 
   def succeeded = failures.isEmpty && startTimeInNanos.size == endTimeInNanos.size
   def failed = !succeeded
-  def unfinished = startTimeInNanos.keySet -- (endTimeInNanos.keySet ++ failures.map(_._1)) 
   def suites = startTimeInNanos.keySet.map(_.suiteClass)
   def tests = startTimeInNanos.keySet.map(_.test)
   def endTime :Long = endTimeInNanos.values.toList.sortWith(_>_).headOption.getOrElse(0L)
   def startTime :Long = endTimeInNanos.values.toList.sortWith(_<_).headOption.getOrElse(0L)
   def time = (endTime - startTime) / 1.0e9
   def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
-  def unfinishedTests = startTimeInNanos.keySet -- endTimeInNanos.keySet
+  def unfinishedTests = startTimeInNanos.keySet -- (endTimeInNanos.keySet ++ failures.map(_._1))
 
   def testsOrderedByTime : List[(TestIdentifier, Long)] = endTimeInNanos.map{
     case (id, endTime) ⇒ 
