@@ -54,7 +54,7 @@ trait BaseProject {
   def testResults = {
     // Test results may either be in a top level project's directory, or else in
     // module directoriy(s)
-    (testOutputFile::allUpstreamModules.map(_.testOutputFile)).toList.distinct.map(MakerTestResults(props, _)).reduce(_++_)
+    (testOutputFile::allUpstreamModules.map(_.testOutputFile)).toList.distinct.map(MakerTestResults(props, _, "")).reduce(_++_)
   }
 
   def testClasspath = Module.asClasspathStr(

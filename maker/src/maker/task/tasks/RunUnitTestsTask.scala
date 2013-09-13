@@ -77,13 +77,15 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m", 
       "-Dmaker.test.output=" + baseProject.testOutputFile,
+      "-Dmaker.test.project.root=" + baseProject.rootAbsoluteFile,
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false"
     ) ::: systemProperties
     val args = List("-P", "-C", props.TestReporter()) ++ suiteParameters
+    val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
       props,
-      CommandOutputHandler(), 
+      outputHandler,
       props.Java().getAbsolutePath, 
       opts,
       baseProject.testClasspath + ":" + props.MakerTestReporterClasspath(),
@@ -92,7 +94,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       args 
     )
     val res = cmd.exec
-    val results = MakerTestResults(baseProject.props, baseProject.testOutputFile)
+    val results = MakerTestResults(baseProject.props, baseProject.testOutputFile, outputHandler.savedOutput)
     val result = if (results.failures.isEmpty){
       TaskResult.success(this, sw)
     } else {
@@ -144,7 +146,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () ⇒ MakerTestResults(module.props, module.testOutputFile).failingSuiteClasses
+      () ⇒ MakerTestResults(module.props, module.testOutputFile, "").failingSuiteClasses
     )
   }
 }

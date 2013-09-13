@@ -7,7 +7,7 @@ import org.scalatest.ParallelTestExecution
 import maker.project.Module
 import maker.MakerProps
 
-class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
+class RunUnitTestsTaskTests extends FunSuite {
   ignore("Test reports picks up failure"){
     withTempDir{
       dir ⇒ 
@@ -173,7 +173,9 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
   test("Test Reporter does its thing"){
     withTempDir{
       root ⇒ 
-        val overrideProps = Some(TestModule.makeTestProps(root) ++ ("TestReporter","maker.scalatest.MakerTestReporter2"))
+        val overrideProps = Some(TestModule.makeTestProps(root) ++ 
+          ("TestReporter","maker.scalatest.MakerTestReporter2", 
+          "MakerTestReporterClasspath", "test-reporter/target-maker/classes/"))
         val proj = new TestModule(root, "RunUnitTestsTaskTests", Nil, Nil, overrideProps)
         proj.writeTest(
           "foo/GoodTest.scala",
@@ -183,6 +185,9 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
           class GoodTest extends FunSuite{
             test("test foo"){
               assert(1 === 1)
+            }
+            test("test bar"){
+              assert(2 == 2)
             }
           }
           """
@@ -200,7 +205,43 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
           """
         )
         proj.test
-        assert(file(proj.testResultDirectory).exists)
+        val testResultDir = file(proj.testResultDirectory)
+        assert(testResultDir.exists)
+        assert(file(testResultDir, "starttime").exists, "Test run start time file should exist")
+        val goodSuiteDir = file(testResultDir, "foo.GoodTest")
+        val badSuiteDir = file(testResultDir, "foo.BadTest")
+        val suiteDirs = List(goodSuiteDir, badSuiteDir)
+        suiteDirs.foreach{
+          dir => 
+            assert(dir.exists, dir + " should exist")
+            assert(file(dir, "starttime").exists, "start time should exist")
+            assert(file(dir, "state").readLines.head === "complete")
+        }
+        
+        val goodTestDirs = List(
+          file(goodSuiteDir, "test foo"),
+          file(goodSuiteDir, "test bar")
+        )
+        val badTestDirs = List(
+          file(badSuiteDir, "test foo")
+        )
+        (goodTestDirs ::: badTestDirs).foreach{
+          dir =>
+            assert(dir.exists, dir + " should exist")
+            assert(file(dir, "starttime").exists, "start time should exist")
+        }
+        goodTestDirs.foreach{
+          dir =>
+            val stateFile = file(dir, "state")
+            assert(stateFile.exists)
+            assert(stateFile.readLines.head === "succeeded")
+        }
+        badTestDirs.foreach{
+          dir =>
+            val stateFile = file(dir, "state")
+            assert(stateFile.exists)
+            assert(stateFile.readLines.head === "failed")
+        }
     }
   }
 
