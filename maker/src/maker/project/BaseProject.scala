@@ -15,11 +15,11 @@ import maker.task.tasks._
 import maker.utils.RichString._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
-import maker.utils.MakerTestResults
 import maker.Resource
 import maker.ivy.IvyUtils
 import scala.xml.Elem
 import maker.Help
+import maker.MakerTestResults2
 
 trait BaseProject {
   protected def root : File
@@ -52,9 +52,7 @@ trait BaseProject {
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 
   def testResults = {
-    // Test results may either be in a top level project's directory, or else in
-    // module directoriy(s)
-    (testOutputFile::allUpstreamModules.map(_.testOutputFile)).toList.distinct.map(MakerTestResults.apply(props, _, "")).reduce(_++_)
+    allUpstreamModules.map(MakerTestResults2(_)).reduce(_++_)
   }
 
   def testClasspath = Module.asClasspathStr(

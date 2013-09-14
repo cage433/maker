@@ -7,7 +7,7 @@ import maker.MakerProps
 
 class ProjectTests extends FunSuite {
   test("Project can write its own definition file"){
-    withTestDir{
+    withTempDir{
       dir =>{
         val a = new TestModule(
           mkdir(file(dir, "a")),

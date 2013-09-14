@@ -34,7 +34,7 @@ class TestModule(
   root.mkdirs
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
-    """val %s = new TestModule(file("%s"), "%s", %s, %s)""" % (name, root.getAbsolutePath, name, 
+    """val %s = new Module(file("%s"), "%s", %s, %s)""" % (name, root.getAbsolutePath, name, 
       upstreamProjects.mkString("List(", ", ", ")"),
       upstreamTestProjects.mkString("List(", ", ", ")")
     )

@@ -7,102 +7,18 @@ import org.scalatest.ParallelTestExecution
 import maker.project.Module
 import maker.MakerProps
 
-class RunUnitTestsTaskTests extends FunSuite {
-  ignore("Test reports picks up failure"){
+class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
+
+  test("Can re-run failing tests"){
     withTempDir{
-      dir ⇒ 
-        val proj = new TestModule(dir, "RunUnitTestsTaskTests")
-        proj.writeTest(
-          "foo/Test.scala",
-          """
-            package foo
-
-            import org.scalatest.FunSuite
-
-            class Test extends FunSuite{
-              test("This should fail"){
-                assert(1 === 2)
-              }
-            }
-          """
-        )
-        proj.test
-        assert(proj.testOutputFile.exists, "Test output should exist")
-    }
-  }
-
-
-  ignore("Unit test runs"){
-    withTempDir{
-      root ⇒ 
+      root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
-
-        proj.writeSrc(
-          "foo/Foo.scala", 
-          """
-          package foo
-          case class Foo(x : Double){
-            val fred = 10
-            def double() = x + x
-          }
-          """
+        file("resource-resolvers").copyTo(root)
+        file("resource-versions").copyTo(root)
+        writeToFile(
+          file(root, "external-resources"),
+          "org.scalatest scalatest_{scala_version} {scalatest_version}"
         )
-        proj.writeTest(
-          "foo/FooTest.scala",
-          """
-          package foo
-          import org.scalatest.FunSuite
-          class FooTest extends FunSuite{
-            test("test foo"){
-              val foo1 = Foo(1.0)
-              val foo2 = Foo(1.0)
-              assert(foo1 === foo2)
-            }
-          }
-          """
-        )
-        assert(proj.test.succeeded)
-    }
-  }
-
-  ignore("Failing test fails again"){
-    withTempDir{
-      root ⇒ 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests")
-        proj.writeSrc(
-          "foo/Foo.scala", 
-          """
-          package foo
-          case class Foo(x : Double){
-            val fred = 10
-            def double() = x + x
-          }
-          """
-        )
-        val testFile = proj.writeTest(
-          "foo/FooTest.scala",
-          """
-          package foo
-          import org.scalatest.FunSuite
-          import java.io._
-          class FooTest extends FunSuite{
-            val f = new File(".")
-            test("test foo"){
-              assert(1 === 2)
-            }
-          }
-          """
-        )
-        assert(proj.testCompile.succeeded, "Expected compilation to succeed")
-
-        assert(proj.test.failed, "Expected test to fail")
-    }
-  }
-
-  ignore("Can re-run failing tests"){
-    withTempDir{
-      root ⇒ 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests")
 
         proj.writeTest(
           "foo/GoodTest.scala",
@@ -171,12 +87,23 @@ class RunUnitTestsTaskTests extends FunSuite {
   }
 
   test("Test Reporter does its thing"){
-    withTestDir{
-      root ⇒ 
+    withTempDir{
+      root => 
         val overrideProps = Some(TestModule.makeTestProps(root) ++ 
           ("TestReporter","maker.scalatest.MakerTestReporter2", 
           "MakerTestReporterClasspath", "test-reporter/target-maker/classes/"))
+
         val proj = new TestModule(root, "RunUnitTestsTaskTests", Nil, Nil, overrideProps)
+        file("resource-resolvers").copyTo(root)
+        file("resource-versions").copyTo(root)
+        writeToFile(
+          file(root, "external-resources"),
+          """|org.scalatest scalatest_{scala_version} {scalatest_version}
+             |org.testng testng 6.2.1
+             |com.beust jcommander 1.12
+             |org.beanshell bsh 2.0b4
+             |com.google.inject guice 2.0""".stripMargin
+        )
         proj.writeTest(
           "foo/GoodTest.scala",
           """
@@ -204,58 +131,89 @@ class RunUnitTestsTaskTests extends FunSuite {
           }
           """
         )
-//        proj.writeTest(
-//          "foo/TestNGTest.scala",
-//          """
-//          package foo
-//          import org.scalatest.testng.TestNGSuite
-//          import org.testng.annotations.Test
-//          class TestNGTest extends TestNGSuite {
-//            @Test
-//            def testAnything{
-//              assert(1 == 1)
-//            }
-//          }
-//          """
-//        )
+
+        proj.writeTest(
+          "foo/TestNGTest.scala",
+          """
+          package foo
+          import org.scalatest.testng.TestNGSuite
+          import org.testng.annotations.Test
+          class TestNGTest extends TestNGSuite {
+            @Test
+            def testAnything{
+              assert(1 == 1)
+            }
+          }
+          """
+        )
+
+        proj.writeTest(
+          "foo/ExceptionThrowingTest.scala",
+          """
+          package foo
+          import org.scalatest.FunSuite
+          class ExceptionThrowingTest extends FunSuite{
+            test("test throwing exception"){
+              throw(new RuntimeException("error"))
+            }
+          }
+          """
+        )
+
 
         proj.test
         val testResultDir = file(proj.testResultDirectory)
-        assert(testResultDir.exists)
+        assert(testResultDir.exists, testResultDir.absPath + " should exist")
         assert(file(testResultDir, "starttime").exists, "Test run start time file should exist")
-        val goodSuiteDir = file(testResultDir, "foo.GoodTest")
-        val badSuiteDir = file(testResultDir, "foo.BadTest")
-        val suiteDirs = List(goodSuiteDir, badSuiteDir)
+        val goodSuiteDir = file(testResultDir, "suites/foo.GoodTest")
+        val goodTestNGSuiteDir = file(testResultDir, "suites/foo.TestNGTest")
+        val exceptionSuiteDir = file(testResultDir, "suites/foo.ExceptionThrowingTest")
+        val badSuiteDir = file(testResultDir, "suites/foo.BadTest")
+        val suiteDirs = List(goodSuiteDir, goodTestNGSuiteDir, badSuiteDir, exceptionSuiteDir)
+
         suiteDirs.foreach{
           dir => 
             assert(dir.exists, dir + " should exist")
             assert(file(dir, "starttime").exists, "start time should exist")
-            assert(file(dir, "state").readLines.head === "complete")
+            assert(file(dir, "endtime").exists, "end time should exist")
         }
         
         val goodTestDirs = List(
-          file(goodSuiteDir, "test foo"),
-          file(goodSuiteDir, "test bar")
+          file(goodSuiteDir, "tests/test foo"),
+          file(goodSuiteDir, "tests/test bar"),
+          file(goodTestNGSuiteDir, "tests/testAnything")
         )
         val badTestDirs = List(
-          file(badSuiteDir, "test foo")
+          file(badSuiteDir, "tests/test foo"),
+          file(exceptionSuiteDir, "tests/test throwing exception")
         )
         (goodTestDirs ::: badTestDirs).foreach{
           dir =>
             assert(dir.exists, dir + " should exist")
             assert(file(dir, "starttime").exists, "start time should exist")
         }
+
         goodTestDirs.foreach{
           dir =>
-            val stateFile = file(dir, "state")
+            val stateFile = file(dir, "status")
             assert(stateFile.exists)
             assert(stateFile.readLines.head === "succeeded")
+            val exceptionFile = file(dir, "exception")
+            assert(! exceptionFile.exists)
+            val messageFile = file(dir, "message")
+            assert(! messageFile.exists)
         }
+
         badTestDirs.foreach{
           dir =>
-            val stateFile = file(dir, "state")
+            val stateFile = file(dir, "status")
             assert(stateFile.exists)
             assert(stateFile.readLines.head === "failed")
+
+            val exceptionFile = file(dir, "exception")
+            assert(exceptionFile.exists)
+            val messageFile = file(dir, "message")
+            assert(messageFile.exists)
         }
     }
   }

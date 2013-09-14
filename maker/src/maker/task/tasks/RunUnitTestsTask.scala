@@ -42,12 +42,12 @@ import maker.task.compile.TestCompileTask
 import maker.task.compile.TestCompilePhase
 import maker.task.compile.ModuleCompilePhase
 import maker.project.BaseProject
-import maker.utils.MakerTestResults
 import maker.task.compile.CompileTask
 import maker.task.compile.TestCompileTask
 import maker.utils.StringUtils
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
+import maker.MakerTestResults2
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String])  extends Task {
@@ -94,11 +94,11 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       args 
     )
     val res = cmd.exec
-    val results = MakerTestResults(baseProject.props, baseProject.testOutputFile, outputHandler.savedOutput)
-    val result = if (results.failures.isEmpty){
+    val results = baseProject.testResults
+    val result = if (results.failedTests.isEmpty){
       TaskResult.success(this, sw)
     } else {
-      val failingSuiteClassesText = results.failingSuiteClasses.indented()
+      val failingSuiteClassesText = results.failedTestSuites.indented()
       TaskResult.failure(this, sw, "Test failed in " + baseProject + failingSuiteClassesText)
     }
     result.withInfo(results)
@@ -146,7 +146,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () ⇒ MakerTestResults(module.props, module.testOutputFile, "").failingSuiteClasses
+      () ⇒ MakerTestResults2(module).failedTestSuites
     )
   }
 }

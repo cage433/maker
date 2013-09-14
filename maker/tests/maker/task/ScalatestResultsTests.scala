@@ -47,22 +47,12 @@ class ScalatestResultsTests extends FunSuite{
     withTempDir{
       dir ⇒
         val proj = new TestModule(dir, "ScalatestResultsTests")
-        val fooTestContent = 
-          """
-          package foo
-          import org.scalatest.FunSuite
-          class FooTest extends FunSuite{
-            test("test 1 == 1"){
-              assert(1 === 1)
-            }
-            test("test 5 == 5"){
-              assert(1 === 1)
-            }
-            test("test 1 == 2"){
-              assert(1 === 2)
-            }
-          }
-          """
+        file("resource-resolvers").copyTo(dir)
+        file("resource-versions").copyTo(dir)
+        writeToFile(
+          file(dir, "external-resources"),
+          "org.scalatest scalatest_{scala_version} {scalatest_version}"
+        )
         proj.writeTest(
           "foo/FooTest.scala",
           """

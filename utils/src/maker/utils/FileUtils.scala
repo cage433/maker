@@ -34,8 +34,18 @@ import maker.utils.os.Command
 import maker.MakerProps
 import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
+import java.io.InputStreamReader
+import java.io.FileInputStream
 
 object FileUtils extends Asserting{
+
+  def maybeFile(dir : File, basename : String) : Option[File] = {
+    val f = file(dir, basename)
+    if (f.exists)
+      Some(f)
+    else
+      None
+  }
 
   def file(f : String) : File = {
     assert(f != null)
@@ -74,6 +84,19 @@ object FileUtils extends Asserting{
     }
 
     def readLines : List[String] = if (plainFile.exists) io.Source.fromFile(plainFile).getLines().toList else Nil
+
+    def read : String = {
+      val buffer = new StringBuffer
+      val iStream = new InputStreamReader(new FileInputStream(plainFile))
+      val tmp = new Array[Char](4096)
+      while(iStream.ready) {
+        val read: Int = iStream.read(tmp)
+        buffer.append(tmp, 0, read)
+      }
+      iStream.close
+      buffer.toString
+    }
+
     def append(s:String) {
       val stringToWrite = {
         readLines.toList.lastOption match {

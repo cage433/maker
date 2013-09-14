@@ -17,7 +17,8 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   }
 
   object MakerHome extends SystemProperty("maker.home") with IsString
-  object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", MakerHome() + "/maker-scalatest-reporter.jar") with IsString
+  //object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", MakerHome() + "/maker-scalatest-reporter.jar") with IsString
+  object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath",  file(MakerHome(), "test-reporter/target-maker/classes/").absPath) with IsString
 
 
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
@@ -95,7 +96,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
-  object TestReporter extends Default("maker.utils.MakerTestReporter") with IsString
+  object TestReporter extends Default("maker.scalatest.MakerTestReporter2") with IsString
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
