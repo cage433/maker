@@ -48,7 +48,7 @@ trait TmuxIntegration{
     }
 
     private def tmuxReportResult(result : BuildResult){
-      tmux("set", "-g", "status-bg", "default")
+      tmux("set", "-g", "status-bg", "black")
       if (result.failed){
         tmuxReportTaskFailed(result.name + " failed ")
       }
