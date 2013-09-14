@@ -30,9 +30,10 @@ import java.io.FileWriter
 import java.io.BufferedWriter
 import java.io.BufferedReader
 import java.io.FileReader
-import os.Command
+import maker.utils.os.Command
 import maker.MakerProps
 import java.util.concurrent.atomic.AtomicBoolean
+import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 
 object FileUtils extends Asserting{
 
@@ -132,6 +133,13 @@ object FileUtils extends Asserting{
       recursiveDelete(plainFile)
       plainFile.mkdir
       plainFile
+    }
+
+    def copyTo(file : File){
+      if (file.isDirectory)
+        ApacheFileUtils.copyFileToDirectory(plainFile, file)
+      else
+        ApacheFileUtils.copyFile(plainFile, file)
     }
 
     def makeDir() : File = FileUtils.mkdir(plainFile)

@@ -107,13 +107,20 @@ case class Command(props : MakerProps, outputHandler : CommandOutputHandler, wor
 
   def withSavedOutput = withOutput(outputHandler.withSavedOutput)
   def withNoOutput = withOutput(CommandOutputHandler.NULL)
+  def withWorkingDirectory(dir : File) = new Command(
+    props,
+    outputHandler,
+    Some(dir),
+    args : _*
+  )
+
 
   private def startProc() : Process = {
     if (args.exists(_.trim == ""))
       log.debug("Passed an empty argument in '" + this + "' you probably didn't wan't this")
     val procBuilder = new ProcessBuilder(args : _*)
     procBuilder.redirectErrorStream(true)
-    workingDirectory.map(procBuilder.directory(_))
+    workingDirectory.foreach(procBuilder.directory(_))
     log.debug("cwd set to " + workingDirectory.map(_.getAbsolutePath))
     procBuilder.start
   }

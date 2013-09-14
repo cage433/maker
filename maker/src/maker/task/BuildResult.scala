@@ -16,7 +16,8 @@ case class BuildResult(
   name : String,
   results : List[TaskResult],
   graph : Dependency.Graph,
-  props : MakerProps
+  props : MakerProps,
+  clockTime : Long
 ) {
 
   self =>
@@ -26,11 +27,6 @@ case class BuildResult(
 
   def linearTime : Long = results.map(_.timeTaken(EXEC_COMPLETE)).toList.sum
   def taskCompletedTimes = results.map(r => (r, Stopwatch.milliToHumanString(r.timeTaken(TaskResult.TASK_COMPLETE) / 1000 * 1000))).sortWith(_._2 > _._2)
-
-  //def result : TaskResult = if (succeeded)
-  //results.find(r => r.task == originalTask).get
-  //else
-  //results.find(!_.succeeded).get
 
   def maybeFirstFailure : Option[TaskResult] = results.reverse.find(_.failed)
   def toString_ = {
@@ -43,11 +39,11 @@ case class BuildResult(
     }
 
     if (succeeded){
-      buffer.append(name + " succeeded")
+      buffer.append(name + " succeeded in " + Stopwatch.milliToHumanString(clockTime))
       buffer.toString inBlue
     } else {
       val firstFailure : TaskResult = maybeFirstFailure.get
-      buffer.append(name + " failed. First failing upstream task is\n\n")
+      buffer.append(name + " failed in " + Stopwatch.milliToHumanString(clockTime) + ".\nFirst failing upstream task is\n\n")
       buffer.append(firstFailure + "")
       reportNumberOfScalaFilesCompiled
       buffer.toString inRed

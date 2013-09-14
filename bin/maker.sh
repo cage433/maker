@@ -50,7 +50,6 @@ main() {
     exit -1
   fi
   MAKER_OPTIONS=$*
-  echo "maker; processing options: $MAKER_OPTIONS"
   process_options $MAKER_OPTIONS
   saveStty
 
@@ -64,7 +63,6 @@ main() {
 }
 
 update_external_jars(){
-  echo "Updating external jars"
 
   mkdir -p $GLOBAL_RESOURCE_CACHE
   GLOBAL_RESOURCE_RESOLVERS="$MAKER_ROOT_DIR/resource-resolvers" 
@@ -130,10 +128,10 @@ build_jar(){
 
 bootstrap_maker_if_required() {
   if [ ! -e $MAKER_JAR ]  || \
-     [ ! -e $MAKER_SCALATEST_REPORTER_JAR ] || \
-     has_newer_src_files $MAKER_ROOT_DIR/maker/src $MAKER_JAR || \
-     has_newer_src_files $MAKER_ROOT_DIR/utils/src $MAKER_JAR || \
-     has_newer_src_files $MAKER_ROOT_DIR/test-reporter/src $MAKER_SCALATEST_REPORTER_JAR;
+    [ ! -e $MAKER_SCALATEST_REPORTER_JAR ] || \
+    has_newer_src_files $MAKER_ROOT_DIR/maker/src $MAKER_JAR || \
+    has_newer_src_files $MAKER_ROOT_DIR/utils/src $MAKER_JAR || \
+    has_newer_src_files $MAKER_ROOT_DIR/test-reporter/src $MAKER_SCALATEST_REPORTER_JAR;
   then
     echo "Building maker"
     build_jar $MAKER_SCALATEST_REPORTER_JAR "$MAKER_ROOT_DIR/test-reporter/src/maker/scalatest/MakerTestReporter.scala"
@@ -168,19 +166,8 @@ launch_maker_repl(){
   then
     CMDS="-e $MAKER_CMD"
     RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
-    echo "setting cmd as $CMDS"
   fi
  
-
-  if [ -z $PROJECT_FILE ];
-  then
-    scala_files=( `ls *.scala` )
-    if [ ${#scala_files[@]} -ne 1 ]; then
-      echo "Either specify project file or have a single Scala file in the top level"
-      exit -1
-    fi
-    PROJECT_FILE=${scala_files[0]}
-  fi
 
   "$JAVA_HOME/bin/java" $(java_opts) \
     -classpath "$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
@@ -199,10 +186,9 @@ launch_maker_repl(){
 }
 
 recompile_project_if_required(){
-
   if [ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
-     has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
-     [ ! -z $MAKER_RECOMPILE_PROJECT ]; 
+    has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
+    [ ! -z $MAKER_RECOMPILE_PROJECT ]; 
   then
     echo "Recompiling project"
     PROJECT_DEFINITION_SRC_FILES=`ls $PROJECT_DEFINITION_SRC_DIR/*.scala | xargs`
@@ -260,8 +246,20 @@ process_options() {
       *  ) break;;
     esac
   done
+
   PROJECT_DEFINITION_SRC_DIR=${PROJECT_DEFINITION_SRC_DIR-$PROJECT_ROOT_DIR/project-src}
   PROJECT_DEFINITION_CLASS_DIR=`dirname $PROJECT_DEFINITION_SRC_DIR`/project-classes
+
+  if [ -z $PROJECT_FILE ];
+  then
+    scala_files=( `ls *.scala` )
+    if [ ${#scala_files[@]} -ne 1 ]; then
+      echo "Either specify project file or have a single Scala file in the top level"
+      exit -1
+    fi
+    PROJECT_FILE=${scala_files[0]}
+  fi
+
 }
 
 display_usage() {

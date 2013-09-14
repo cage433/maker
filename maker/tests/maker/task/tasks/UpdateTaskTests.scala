@@ -31,7 +31,11 @@ class UpdateTaskTests extends FreeSpec {
         )
         val resolverDir = file(dir, "RESOLVER").makeDir
 
-        val props = TestModule.makeTestProps(dir) ++ ("VersionsFile", versionsFile.getAbsolutePath, "ResolversFile", resolversFile.getAbsolutePath)
+        val props = TestModule.makeTestProps(dir) ++ (
+          "VersionsFile", versionsFile.getAbsolutePath, 
+          "ResolversFile", resolversFile.getAbsolutePath,
+          "ResourceCacheDirectory", file(dir, ".maker-resource-cache").makeDirs().getPath
+        )
 
         val module = new TestModule(dir, "testResources", overrideProps = Some(props))
 

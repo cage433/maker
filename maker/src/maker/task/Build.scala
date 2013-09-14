@@ -39,6 +39,7 @@ import ch.qos.logback.classic.Level
 import maker.task.compile.CompileTask
 import maker.utils.RichString._
 import maker.project.BaseProject
+import java.util.Date
 
 case class Build(
   name : String,
@@ -95,6 +96,7 @@ case class Build(
 
     def execute : BuildResult = {
 
+      val clock = Stopwatch()
       val taskResults = log.infoWithTime("" + this){
         module.setUp(graph)
         execTasksInGraph()
@@ -103,7 +105,8 @@ case class Build(
         name,
         taskResults.toList,
         graph,
-        props
+        props,
+        clock.ms()
       )
       module.tearDown(graph, buildResult)
       if (buildResult.failed && props.ExecMode()){

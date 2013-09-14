@@ -17,6 +17,7 @@ import maker.utils.CompilationCache
 import maker.task.Build
 import sbt.compiler.CompileFailed
 import maker.utils.TaskInfo
+import java.util.Date
 
 abstract class CompileTask extends Task{
   

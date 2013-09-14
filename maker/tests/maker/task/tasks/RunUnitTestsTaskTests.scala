@@ -171,7 +171,7 @@ class RunUnitTestsTaskTests extends FunSuite {
   }
 
   test("Test Reporter does its thing"){
-    withTempDir{
+    withTestDir{
       root ⇒ 
         val overrideProps = Some(TestModule.makeTestProps(root) ++ 
           ("TestReporter","maker.scalatest.MakerTestReporter2", 
@@ -204,6 +204,21 @@ class RunUnitTestsTaskTests extends FunSuite {
           }
           """
         )
+//        proj.writeTest(
+//          "foo/TestNGTest.scala",
+//          """
+//          package foo
+//          import org.scalatest.testng.TestNGSuite
+//          import org.testng.annotations.Test
+//          class TestNGTest extends TestNGSuite {
+//            @Test
+//            def testAnything{
+//              assert(1 == 1)
+//            }
+//          }
+//          """
+//        )
+
         proj.test
         val testResultDir = file(proj.testResultDirectory)
         assert(testResultDir.exists)
