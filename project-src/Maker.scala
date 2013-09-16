@@ -46,15 +46,15 @@ import maker.task.compile._
  */
 object Maker {
 
-  private val props = MakerProps() ++ ("GroupId", "com.google.code.maker")
+  private val props = MakerProps(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
 
   def module(name : String, upstreamProjects : Module*) = {
     val root = file(name).asAbsoluteFile
     new Module(
       root,
       name,
-      immediateUpstreamModules = upstreamProjects.toList,
-      props = props
+      props,
+      immediateUpstreamModules = upstreamProjects.toList
     ) 
   }
 

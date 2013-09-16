@@ -53,11 +53,12 @@ class BuildResultTests extends FunSuite {
   }
   test("buildResultsShouldCompose") {
     withTempDir { root =>
+      val props = MakerProps.initialiseTestProps(root)
       val emptyGraph = Dependency.Graph.empty
 
-      val p1 = new TestModule(file(root, "p1"), "p1")
-      val p2 = new TestModule(file(root, "p2"), "p2")
-      val p3 = new TestModule(file(root, "p3"), "p3")
+      val p1 = new TestModule(file(root, "p1"), "p1", props)
+      val p2 = new TestModule(file(root, "p2"), "p2", props)
+      val p3 = new TestModule(file(root, "p3"), "p3", props)
 
       val pt1 = CleanTask(p1)
       val pt2 = SourceCompileTask(p2)

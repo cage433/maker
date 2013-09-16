@@ -9,9 +9,7 @@ case class Project(
   name : String,
   root : File,
   immediateUpstreamModules:List[Module],
-  props : MakerProps = MakerProps(
-    "ShowCompilerOutput", "false"
-  ),
+  props : MakerProps,
   topLevelExcludedFolders:List[String] = Nil
 ) extends BaseProject  with TmuxIntegration{
   
@@ -23,7 +21,13 @@ case class Project(
       m => 
         b.addLine(m.constructorCodeAsString)
     }
-    b.addLine("""val %s = maker.project.Project("%s", new java.io.File("%s"), %s)""" % (name, name, root.getAbsolutePath.toString, allUpstreamModules.mkString("List(", ", ", ")")))
+    b.addLine("""val %s = maker.project.Project("%s", new java.io.File("%s"), %s, maker.MakerProps(new java.io.File("%s")))""" % (
+      name, 
+      name, 
+      root.getAbsolutePath.toString, 
+      allUpstreamModules.mkString("List(", ", ", ")"),
+      props.root.getAbsolutePath + "/Maker.conf"
+    ))
     b.toString
   }
   def docOutputDir = file(rootAbsoluteFile, "docs")

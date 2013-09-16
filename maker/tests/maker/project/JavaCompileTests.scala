@@ -13,7 +13,8 @@ class JavaCompileTests extends FunSuite with TestUtils {
   test("Java module fails when expected and stays failed"){
     withTempDir{
       root => 
-        val proj = new TestModule(root, "JavaCompileTests")
+        val props = MakerProps.initialiseTestProps(root)
+        val proj = new TestModule(root, "JavaCompileTests", props)
         proj.writeSrc(
           "src/foo/Foo.java", 
           """

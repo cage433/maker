@@ -5,18 +5,20 @@ import maker.utils.FileUtils._
 import maker.project.TestModule
 import maker.utils.RichString._
 import maker.project.Project
+import maker.MakerProps
 
 class IvyUtilsTests extends FreeSpec {
   "test dynamic ivy file" in {
     withTempDir{
       dir => 
-        val a = new TestModule(file(dir, "a").makeDir, "a"){
+        val props = MakerProps.initialiseTestProps(dir)
+        val a = new TestModule(file(dir, "a").makeDir, "a", props){
           override def ivySettingsFile = file(dir, "ivysettings.xml")
         }
-        val b = new TestModule(file(dir, "b").makeDir, "b", List(a)){
+        val b = new TestModule(file(dir, "b").makeDir, "b", props, List(a)){
           override def ivySettingsFile = file(dir, "ivysettings.xml")
         }
-        val c = new Project("c", dir, List(a, b), TestModule.makeTestProps(dir)){
+        val c = new Project("c", dir, List(a, b), props){
           override def ivySettingsFile = file(dir, "ivysettings.xml")
         }
 

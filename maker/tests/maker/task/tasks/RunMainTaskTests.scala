@@ -29,6 +29,7 @@ import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.RichString._
 import maker.project.{TestModule, Module}
+import maker.MakerProps
 
 class RunMainTaskTests extends FunSuite {
 
@@ -39,11 +40,12 @@ class RunMainTaskTests extends FunSuite {
   test("Can run task run-main with correct upstream tasks run first") {
     withTempDir{
       dir =>
+        val props = MakerProps.initialiseTestProps(dir)
         val p1Dir = file(dir, "p1")
         val p2Dir = file(dir, "p2")
 
-        val proj1 = new TestModule(p1Dir, "p1")
-        val proj2 = new TestModule(p2Dir, "p2", upstreamProjects = List(proj1))
+        val proj1 = new TestModule(p1Dir, "p1", props)
+        val proj2 = new TestModule(p2Dir, "p2", props, upstreamProjects = List(proj1))
 
         val outputFile = file(p1Dir, "output.txt")
         assert(! outputFile.exists)

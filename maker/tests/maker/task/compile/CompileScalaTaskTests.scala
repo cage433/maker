@@ -45,7 +45,8 @@ import maker.utils.FileUtils
 class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
-    val proj : TestModule = new TestModule(root, "CompileScalaTaskTests")
+    val props = MakerProps.initialiseTestProps(root)
+    val proj : TestModule = new TestModule(root, "CompileScalaTaskTests", props)
     val outputDir = proj.compilePhase.outputDir
     val files = new {
 
@@ -130,7 +131,8 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Generated class files are deleted before compilation of source"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val props = MakerProps.initialiseTestProps(dir)
+        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
         val fooSrc = file(dir, "src/foo/Foo.scala")
         writeToFile(
           fooSrc,
@@ -163,10 +165,11 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Recompilation of test source is done if signature of dependent source file changes"){
     withTempDir{
       tempDir => 
+        val props = MakerProps.initialiseTestProps(tempDir)
         val dir : File = file(tempDir, "proj")
         dir.mkdirs
         
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
 
         proj.writeSrc(
           "foo/Foo.scala",
@@ -210,9 +213,10 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Compilation across dependent modules works"){
     withTempDir{
       dir => 
+        val props = MakerProps.initialiseTestProps(dir)
         val analyses = new ConcurrentHashMap[File, Analysis]()
-        val one = new TestModule(file(dir, "one"), "CompileScalaTaskTests - one", analyses = analyses)
-        val two = new TestModule(file(dir, "two"), "CompileScalaTaskTests - two", upstreamProjects = List(one), analyses = analyses)
+        val one = new TestModule(file(dir, "one"), "CompileScalaTaskTests - one", props, analyses = analyses)
+        val two = new TestModule(file(dir, "two"), "CompileScalaTaskTests - two", props, upstreamProjects = List(one), analyses = analyses)
         
         val fooSrc = one.writeSrc(
           "foo/Foo.scala",
@@ -249,7 +253,8 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val props = MakerProps.initialiseTestProps(dir)
+        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
         
         val fooSrc = file(dir, "src/foo/Foo.scala")
         val barSrc = file(dir, "src/foo/Bar.scala")
@@ -306,10 +311,11 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Compilation across dependent modules and scopes works correctly"){
     withTempDir{
       dir =>
+        val props = MakerProps.initialiseTestProps(dir)
         val analyses = new ConcurrentHashMap[File, Analysis]()
-        val one = new TestModule(file(dir, "one"), "one", analyses = analyses)
-        val two = new TestModule(file(dir, "two"), "two", upstreamProjects = List(one), analyses = analyses)
-        val three = new TestModule(file(dir, "three"), "three", upstreamProjects = List(two), analyses = analyses)
+        val one = new TestModule(file(dir, "one"), "one", props, analyses = analyses)
+        val two = new TestModule(file(dir, "two"), "two", props, upstreamProjects = List(one), analyses = analyses)
+        val three = new TestModule(file(dir, "three"), "three", props, upstreamProjects = List(two), analyses = analyses)
 
 
         val fooSrc = one.writeSrc( 
@@ -376,7 +382,8 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Compilation of mutually dependent classes works"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val props = MakerProps.initialiseTestProps(dir)
+        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
         val traitSrc = proj.writeSrc(
           "foo/SomeTrait.scala",
           """
@@ -406,7 +413,8 @@ class SomeClass extends SomeTrait{
   test("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val props = MakerProps.initialiseTestProps(dir)
+        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
         proj.writeSrc(
           "foo/Foo.scala",
           """
@@ -475,9 +483,10 @@ class SomeClass extends SomeTrait{
   test("Adding parameter to constructor causes recompilation of downstream file"){
     withTempDir{
       dir => 
+        val props = MakerProps.initialiseTestProps(dir)
         val analyses = new ConcurrentHashMap[File, Analysis]()
-        val A = new TestModule(file(dir, "A"), "A", analyses = analyses)
-        val B = new TestModule(file(dir, "B"), "B", List(A), analyses = analyses)
+        val A = new TestModule(file(dir, "A"), "A", props, analyses = analyses)
+        val B = new TestModule(file(dir, "B"), "B", props, List(A), analyses = analyses)
         A.writeSrc(
           "foo/Foo.scala",
           """

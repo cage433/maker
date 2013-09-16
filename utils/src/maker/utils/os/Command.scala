@@ -157,7 +157,6 @@ object ScalaCommand {
   def apply(props : MakerProps, outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
     val allArgs : List[String] = java :: opts ::: List[String](
       "-Dscala.usejavacp=true", 
-      props.MakerHome.toCommandLine,
       "-classpath",
       classpath) ::: 
       List("scala.tools.nsc.MainGenericRunner",

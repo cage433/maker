@@ -9,9 +9,11 @@ class ProjectTests extends FunSuite {
   test("Project can write its own definition file"){
     withTempDir{
       dir =>{
+        val props = MakerProps.initialiseTestProps(dir)
         val a = new TestModule(
           mkdir(file(dir, "a")),
-          "a"
+          "a",
+          props
         )
         a.writeSrc(
           "foo/Foo.scala",
@@ -25,6 +27,7 @@ class ProjectTests extends FunSuite {
         val b = new TestModule(
           mkdir(file(dir, "b")),
           "b",
+          props,
           List(a)
         )
         b.writeTest(
@@ -43,7 +46,8 @@ class ProjectTests extends FunSuite {
         val proj = Project(
           "TestProject",
           dir,
-          List(a, b)
+          List(a, b),
+          props
         )
         proj.writeMakerProjectDefinitionFile
         val makerDotSh = file("bin/maker.sh").absPath

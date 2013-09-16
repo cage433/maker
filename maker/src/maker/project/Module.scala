@@ -77,9 +77,9 @@ import maker.PomUtils
 class Module(
     protected val root : File,
     val name : String,
+    val props : MakerProps,
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
-    val props : MakerProps = MakerProps(),
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
   extends BaseProject
@@ -231,7 +231,7 @@ object Module{
  
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
-  val props = MakerProps()
+  val props = MakerProps(file(".").asAbsoluteFile)
   private val setup = Setup.create(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),

@@ -27,7 +27,7 @@ class PublishLocalTaskTests extends FreeSpec{
         val proj : TestModule = new TestModule(
           dir,
           "testPublishLocal",
-          overrideProps = Some(TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler"))
+          MakerProps.initialiseTestProps(dir, "Compiler", "dummy-test-compiler")
         ){
           override def resources() = resourcesList
         }
@@ -109,7 +109,8 @@ class PublishLocalTaskTests extends FreeSpec{
   "Top level project should publish as expected" in {
     withTempDir {
       dir => 
-        val props = TestModule.makeTestProps(dir) ++ (
+        val props = MakerProps.initialiseTestProps(
+          dir,
           "GroupId", "PublishLocalTaskTestsGroup",
           "Compiler", "dummy-test-compiler"
         )
@@ -117,13 +118,13 @@ class PublishLocalTaskTests extends FreeSpec{
         val a = new TestModule(
           file(dir, "a").makeDir,
           "a",
-          overrideProps = Some(props)
+          props
         )
         val b = new TestModule(
           file(dir, "b").makeDir,
           "b",
-          List(a),
-          overrideProps = Some(props)
+          props,
+          List(a)
         )
         val topLevel = Project("TopLevelProject", dir, List(b), props)
 

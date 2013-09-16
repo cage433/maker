@@ -9,9 +9,10 @@ class PomUtilsTests extends FreeSpec {
   "test generated file for module" in {
     withTempDir{
       dir => 
-        val a = new TestModule(file(dir, "a"), "a")
-        val b = new TestModule(file(dir, "b"), "b", List(a))
-        val c = new Project("c", dir, List(b), props = TestModule.makeTestProps(dir) ++ ("GroupId", "PomUtilsTests"))
+        val props = MakerProps.initialiseTestProps(dir)
+        val a = new TestModule(file(dir, "a"), "a", props)
+        val b = new TestModule(file(dir, "b"), "b", props, List(a))
+        val c = new Project("c", dir, List(b), props ++ ("GroupId", "PomUtilsTests"))
 
         assert(
           PomUtils.pomXml(c, "42") ===

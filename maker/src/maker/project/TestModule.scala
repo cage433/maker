@@ -15,26 +15,29 @@ import maker.utils.Stopwatch
 import maker.task.tasks.UpdateTask
 import maker.task.Build
 import maker.task.Dependency
+import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 
 class TestModule(
   root : File, 
   name : String,
+  override val props : MakerProps,
   upstreamProjects : List[Module] = Nil,
   upstreamTestProjects : List[Module] = Nil,
-  overrideProps : Option[MakerProps] = None,
   analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis]()
 ) extends Module(
   root, 
   name,
+  props,
   upstreamProjects, 
   upstreamTestProjects, 
-  props = overrideProps.getOrElse(TestModule.makeTestProps(root)),
   analyses
 ){
   root.mkdirs
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
-    """val %s = new maker.project.Module(new java.io.File("%s"), "%s", %s, %s)""" % (name, root.getAbsolutePath, name, 
+    """val %s = new maker.project.Module(new java.io.File("%s"), "%s", maker.MakerProps(new java.io.File("%s")), %s, %s)""" % (name, root.getAbsolutePath, 
+      name, 
+      props.root.getAbsolutePath + "/Maker.conf",
       upstreamProjects.mkString("List(", ", ", ")"),
       upstreamTestProjects.mkString("List(", ", ", ")")
     )
@@ -71,22 +74,4 @@ class TestModule(
     """ % (logFile.getAbsolutePath, patternLine)).stripMargin
   )
   writeMakerProjectDefinitionFile
-}
-
-object TestModule{
-  def makeTestProps(root : File) : MakerProps = {
-    lazy val props = MakerProps()
-    MakerProps(
-      "ShowCompilerOutput", "false", 
-      "GroupId", "MakerTestGroupID",
-      "MakerHome", props.MakerHome(),
-      "ProjectScalaCompilerJar", props.ProjectScalaCompilerJar().getPath,
-      "ProjectScalaLibraryJar", props.ProjectScalaLibraryJar().getPath,
-      "SbtInterfaceJar", props.SbtInterfaceJar().getPath,
-      "CompilerInterfaceSourcesJar", props.CompilerInterfaceSourcesJar().getPath,
-      "TmuxMessaging", "false",
-      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath
-    )
-  }
-
 }

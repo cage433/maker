@@ -5,10 +5,11 @@ import maker.utils.FileUtils._
 import maker.utils.RichString._
 import maker.project.TestModule
 import maker.Resource
+import maker.MakerProps
 
 class UpdateTaskTests extends FreeSpec {
   "test resources" in {
-    withTempDir{
+    withTestDir{
       dir => 
         writeToFile(
           file(dir, "external-resources"),
@@ -31,13 +32,14 @@ class UpdateTaskTests extends FreeSpec {
         )
         val resolverDir = file(dir, "RESOLVER").makeDir
 
-        val props = TestModule.makeTestProps(dir) ++ (
+        val props = MakerProps.initialiseTestProps(
+          dir,
           "VersionsFile", versionsFile.getAbsolutePath, 
           "ResolversFile", resolversFile.getAbsolutePath,
           "ResourceCacheDirectory", file(dir, ".maker-resource-cache").makeDirs().getPath
         )
 
-        val module = new TestModule(dir, "testResources", overrideProps = Some(props))
+        val module = new TestModule(dir, "testResources", props)
 
         assert(
           module.resources().toSet === Set(

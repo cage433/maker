@@ -15,6 +15,7 @@ import maker.task.compile._
 import maker.task.Build
 
 class ProjectTaskDependenciesTests extends FunSuite{
+
   case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task{
     def name = "Write class count "
     def copy_(p : Module) = copy(module = p)
@@ -29,16 +30,19 @@ class ProjectTaskDependenciesTests extends FunSuite{
   }
 
   test("Can add custom task to run before standard task"){
-    def moduleWithCustomTaskAfterClean(root : File, name : String) = new TestModule(root,name){
-      self =>  
-      val extraUpstreamTask = WriteClassCountToFile(this)
-      override def extraUpstreamTasks(task : Task) = task match {
-        case _ : CleanTask => Set(WriteClassCountToFile(self, "BeforeClean"))
-        case _ => Set.empty
-      }
-      override def extraDownstreamTasks(task : Task) = task match {
-        case _ : CleanTask => Set(WriteClassCountToFile(self, "AfterClean"))
-        case _ => Set.empty
+    def moduleWithCustomTaskAfterClean(root : File, name : String) = {
+      val props = MakerProps.initialiseTestProps(root)
+      new TestModule(root, name, props){
+        self =>  
+        val extraUpstreamTask = WriteClassCountToFile(this)
+        override def extraUpstreamTasks(task : Task) = task match {
+          case _ : CleanTask => Set(WriteClassCountToFile(self, "BeforeClean"))
+          case _ => Set.empty
+        }
+        override def extraDownstreamTasks(task : Task) = task match {
+          case _ : CleanTask => Set(WriteClassCountToFile(self, "AfterClean"))
+          case _ => Set.empty
+        }
       }
     }
 
@@ -75,35 +79,35 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
 
   test("Module setUp and tearDown can be overriden"){
-    def moduleWithSetupAndTeardowns(root : File, upstreamProjects : Module*) = new TestModule(
-      root = root, 
-      name = "With setup",
-      upstreamProjects = upstreamProjects.toList
-    ) {
-      val setUpClassCountFile = file(rootAbsoluteFile, "setup")
-      val tearDownClassCountFile= file(rootAbsoluteFile, "teardown")
-      def graphContainsClean(graph : Dependency.Graph) = {
-        graph.nodes.exists {
-          case _ : CleanTask => true
-          case _ => false
+    def setUpClassCountFile(module : Module) = file(module.rootAbsoluteFile, "setup")
+    def tearDownClassCountFile(module : Module) = file(module.rootAbsoluteFile, "teardown")
+
+    def moduleWithSetupAndTeardowns(root : File, upstreamProjects : Module*) : TestModule = {
+
+      val props = MakerProps.initialiseTestProps(root)
+      new TestModule(
+        root = root, 
+        name = "With setup",
+        props = props,
+        upstreamProjects = upstreamProjects.toList
+      ) {
+        def graphContainsClean(graph : Dependency.Graph) = {
+          graph.nodes.exists {
+            case _ : CleanTask => true
+            case _ => false
+          }
+        }
+        override def setUp(graph : Dependency.Graph){
+          if (graphContainsClean(graph))
+            WriteClassCountToFile(this, "setup").exec
+          super.setUp(graph)
+        }
+        override def tearDown(graph : Dependency.Graph, result : BuildResult){
+          if (graphContainsClean(graph))
+            WriteClassCountToFile(this, "teardown").exec
+          super.tearDown(graph, result)
         }
       }
-      override def setUp(graph : Dependency.Graph){
-        if (graphContainsClean(graph))
-          WriteClassCountToFile(this, "setup").exec
-        super.setUp(graph)
-      }
-      override def tearDown(graph : Dependency.Graph, result : BuildResult){
-        if (graphContainsClean(graph))
-          WriteClassCountToFile(this, "teardown").exec
-        super.tearDown(graph, result)
-      }
-      def deleteClassCountFiles{
-        setUpClassCountFile.delete
-        tearDownClassCountFile.delete
-      }
-      def setUpClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
-      def tearDownClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
     }
     withTempDir{
       dir => 
@@ -129,25 +133,26 @@ class ProjectTaskDependenciesTests extends FunSuite{
         // Initially there should be no class count files
         List(upstreamModule, downstreamModule).foreach{
           proj => 
-            assert(!proj.setUpClassCountFile.exists)
-            assert(!proj.tearDownClassCountFile.exists)
+            assert(!setUpClassCountFile(proj).exists)
+            assert(!tearDownClassCountFile(proj).exists)
         }
 
         // After cleaning downstream its class count files only should exist
         downstreamModule.clean
-        assert(!upstreamModule.setUpClassCountFile.exists)
-        assert(!upstreamModule.tearDownClassCountFile.exists)
-        assert(downstreamModule.setUpClassCountFile.exists)
-        assert(downstreamModule.tearDownClassCountFile.exists)
+        assert(!setUpClassCountFile(upstreamModule).exists)
+        assert(!tearDownClassCountFile(upstreamModule).exists)
+        assert(setUpClassCountFile(downstreamModule).exists)
+        assert(tearDownClassCountFile(downstreamModule).exists)
     }
   }
 
   test("TestCompile by default doesn't depend on upstream modules TestCompile"){
     withTempDir{
       dir => 
-        val A = new TestModule(file(dir, "upstream"), "A")
-        val B = new TestModule(file(dir, "downstream"), "B", List(A))
-        val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
+        val props = MakerProps.initialiseTestProps(dir)
+        val A = new TestModule(file(dir, "upstream"), "A", props)
+        val B = new TestModule(file(dir, "downstream"), "B", props, List(A))
+        val C = new TestModule(file(dir, "downstream2"), "C", props, List(A), List(A))
 
         assert(
           !B.TestCompile.graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
@@ -168,10 +173,11 @@ class ProjectTaskDependenciesTests extends FunSuite{
   test("test dependencies are observed in classpaths"){
     withTempDir{
       dir => 
-        val A = new TestModule(file(dir, "A"), "A")
-        val B = new TestModule(file(dir, "B"), "B", List(A))
-        val C = new TestModule(file(dir, "C"), "C", List(A), List(A))
-        val D = new TestModule(file(dir, "D"), "D", List(C))
+        val props = MakerProps.initialiseTestProps(dir)
+        val A = new TestModule(file(dir, "A"), "A", props)
+        val B = new TestModule(file(dir, "B"), "B", props, List(A))
+        val C = new TestModule(file(dir, "C"), "C", props, List(A), List(A))
+        val D = new TestModule(file(dir, "D"), "D", props, List(C))
 
         assert(
           ! B.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.testOutputDir), 
@@ -191,8 +197,9 @@ class ProjectTaskDependenciesTests extends FunSuite{
   test("Upstream module tests are associated tasks"){
     withTempDir{
       dir => 
+        val props = MakerProps.initialiseTestProps(dir)
         def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {
-          new TestModule(file(dir, name), name, upstreams, testUpstreams)
+          new TestModule(file(dir, name), name, props, upstreams, testUpstreams)
         }
         val A = module("A")
         val B = module("B", List(A))

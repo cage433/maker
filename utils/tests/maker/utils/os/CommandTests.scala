@@ -32,10 +32,10 @@ import maker.MakerProps
 
 class CommandTests extends FunSuite{
 
-  val props = MakerProps()
   test("synchronous command runs"){
     withTempDir{
       dir =>
+        val props = MakerProps(dir)
         val f = file(dir, "foo")
         assert(! f.exists)
         val cmd = Command(props, CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
@@ -47,6 +47,7 @@ class CommandTests extends FunSuite{
   test("asynchronous command runs"){
     withTempDir{
       dir =>
+        val props = MakerProps(dir)
         val f = file(dir, "foo")
         assert(! f.exists)
         val cmd = Command(props, CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
@@ -60,6 +61,7 @@ class CommandTests extends FunSuite{
   test("Output is written to file"){
     withTempDir{
       dir =>
+        val props = MakerProps(dir)
         val outputFile = file(dir, "output")
         assert(! outputFile.exists)
         val cmd = Command(props, CommandOutputHandler(outputFile), None, "echo", "HELLO")
@@ -73,6 +75,7 @@ class CommandTests extends FunSuite{
   test("Output is saved"){
     withTempDir{
       dir =>
+        val props = MakerProps(dir)
         val cmd = Command(props, CommandOutputHandler.NULL.withSavedOutput, None, "echo", "HELLO")
         cmd.exec
         assert(cmd.savedOutput === "HELLO\n")
@@ -82,6 +85,7 @@ class CommandTests extends FunSuite{
   test("Can kill process whose output is being redirected"){
     withTempDir{
       dir => 
+        val props = MakerProps(dir)
         writeToFile(
           file(dir, "main.sh"),
           """
@@ -110,6 +114,7 @@ class CommandTests extends FunSuite{
   test("Can kill process even if its output is not consumed"){
     withTempDir{
       dir => 
+        val props = MakerProps(dir)
         writeToFile(
           file(dir, "main.sh"),
           """

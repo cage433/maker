@@ -50,7 +50,7 @@ class PropsTests extends FunSuite{
     withTempFile{
       file => 
         writeToFile(file, "#InvalidPropKey=jfsfksjfks")
-        assert(MakerProps(file) === MakerProps(MMap[String, String]()))
+        assert(MakerProps(file) === MakerProps(file.getParentFile, MMap[String, String]()))
     }
   }
 
@@ -59,15 +59,18 @@ class PropsTests extends FunSuite{
       file => 
         writeToFile(file, "ProjectScalaVersion=Fred")
         assert(MakerProps(file).ProjectScalaVersion() === "Fred")
-        assert(MakerProps().ProjectScalaVersion() === "2.9.2")
+        assert(MakerProps(file.getParentFile).ProjectScalaVersion() === "2.9.2")
     }
   }
 
   test("Can override a maker property"){
-    val props = MakerProps()
-    assert(props.VimErrorFile() != file("fred"))
-    props.VimErrorFile := "fred"
-    assert(props.VimErrorFile() === file("fred"))
+    withTempDir{
+      dir => 
+        val props = MakerProps(dir)
+        assert(props.VimErrorFile() != file("fred"))
+        props.VimErrorFile := "fred"
+        assert(props.VimErrorFile() === file("fred"))
+    }
   }
 
   test("Optional property"){
@@ -92,7 +95,10 @@ class PropsTests extends FunSuite{
       object SP extends SystemProperty("no-such-property") with IsString
     }
     Foo.toString
-    MakerProps().toString
+    withTempDir{
+      dir => 
+        MakerProps(dir).toString
+    }
   }
 
   test("Command lines correct"){

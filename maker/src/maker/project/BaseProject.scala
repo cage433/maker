@@ -310,7 +310,6 @@ trait BaseProject {
     val cp = Module.asClasspathStr(dirsAndJars)
     val cpFile : File = file(name + "-classpath.sh")
     writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
-    appendToFile(cpFile, "export JAVA_OPTS=\" " + props.MakerHome.toCommandLine + " \"\n")
   }
 
   def constructorCodeAsString : String

@@ -54,7 +54,6 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
   private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
 
     val props : MakerProps = baseProject.props
-    val homeDir = props.HomeDir()
 
     val ivyFile = baseProject.ivyFile
     try {

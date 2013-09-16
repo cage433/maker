@@ -9,16 +9,17 @@ import java.io.FileInputStream
 import maker.utils.FileUtils._
 
 
-case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
+case class MakerProps (private val root_ : File, overrides : MMap[String, String]) extends PropsTrait{
+
+  val root = root_.asAbsoluteFile
   
   lazy val log = {
     val log = MakerLog()
     log
   }
 
-  object MakerHome extends SystemProperty("maker.home") with IsString
-  //object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", MakerHome() + "/maker-scalatest-reporter.jar") with IsString
-  object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", MakerHome() + "/test-reporter/target-maker/classes/") with IsString
+  //object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", file(root, "maker-scalatest-reporter.jar")) with IsString
+  object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", file(root, "test-reporter/target-maker/classes/")) with IsFile
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
@@ -26,12 +27,11 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object Jar extends Default(JavaHome() + "/bin/jar") with IsFile
   object MakerScalaVersion extends Default("2.9.2") with IsString
   object ProjectScalaVersion extends Default("2.9.2") with IsString
-  object HomeDir extends SystemProperty("user.home") with IsFile
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
   object Compiler extends Default("scalac") with IsString
-  object ResolversFile extends Default(file("resource-resolvers")) with IsFile
-  object VersionsFile extends Default(file("resource-versions")) with IsFile
+  object ResolversFile extends Default(file(root, "resource-resolvers")) with IsFile
+  object VersionsFile extends Default(file(root, "resource-versions")) with IsFile
   def resourceVersions() = MakerProps.propsFileToMap(VersionsFile())
   def resourceResolvers() : Map[String, String] = MakerProps.propsFileToMap(ResolversFile())
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
@@ -40,13 +40,13 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
    * Maker has its own logback file which applies during compilation, 
    * this is the one that is used when running tests and main methods
    */
-  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
+  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file(root, "logback-unit-tests.xml")) with IsFile
 
-  object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
-  object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
-  object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
-  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-0.12.1.jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-0.12.1-sources.jar")) with IsFile
+  object ProjectScalaLibraryJar extends Default(file(root, "scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaLibrarySourceJar extends Default(file(root, "scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
+  object ProjectScalaCompilerJar extends Default(file(root, "scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
+  object SbtInterfaceJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-sbt-interface-0.12.1.jar")) with IsFile
+  object CompilerInterfaceSourcesJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-compiler-interface-0.12.1-sources.jar")) with IsFile
 
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {
@@ -86,7 +86,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object LogCompilerClasspath extends SystemPropertyWithDefault("maker.show.compiler.output", false) with IsBoolean
 
   object LogCommands extends Default(true) with IsBoolean
-  object LogCommandFile extends Default(file("maker-commands.log")) with IsFile
+  object LogCommandFile extends Default(file(root, "maker-commands.log")) with IsFile
 
   object TmuxMessaging extends Default(true) with IsBoolean
 
@@ -104,19 +104,50 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
     copy(overrides = overrides ++  moreOverridesAsMap)
   }
 
-  def ++(rhs : MakerProps) = MakerProps(overrides ++ rhs.overrides)
+  def ++(rhs : MakerProps) = MakerProps(root, overrides ++ rhs.overrides)
   // DelayedInit should maker this unnecessary - scala bug?
   checkForInvalidProperties
+
+  def initialiseTestProps(root : File, moreProps : String*) : MakerProps = {
+    val makerDotConf = file(root, "Maker.conf")
+    def writeProperty(key : String, value : String){
+      appendToFile(makerDotConf, key + "=" + value + "\n")
+    }
+    writeProperty("ShowCompilerOutput", "false")
+    writeProperty("GroupId", "MakerTestGroupID")
+    writeProperty("TmuxMessaging", "false")
+    writeProperty("PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().absPath)
+    List(
+      ProjectScalaLibraryJar, 
+      ProjectScalaLibrarySourceJar, 
+      ProjectScalaCompilerJar, 
+      SbtInterfaceJar, 
+      CompilerInterfaceSourcesJar, 
+      ResolversFile, 
+      VersionsFile,
+      MakerTestReporterClasspath,
+      LogbackTestConfigFile,
+      LogCommandFile
+    ).foreach{
+      prop => 
+        writeProperty(prop.name, prop().absPath)
+    }
+    moreProps.toList.grouped(2).foreach{
+      case List(key, value) => writeProperty(key, value)
+      case _ => throw new RuntimeException("Need even number for key/value pairs")
+    }
+    MakerProps(makerDotConf)
+  }
 }
 
 object MakerProps {
-  def apply(file : File) : MakerProps = {
-    new MakerProps(MMap() ++ propsFileToMap(file))
+  def apply(file : File, moreKeysAndValues : String*) : MakerProps = {
+    val (root, propsMap) : (File, MMap[String, String]) = if (file.isDirectory) 
+      (file, MMap.empty) 
+    else 
+      (file.getParentFile, MMap() ++ propsFileToMap(file))
+    MakerProps(root, propsMap) ++ (moreKeysAndValues.toList :_*)
   }
-  def apply(key1 : String, value1 : String, moreKeysAndValues : String*) : MakerProps = {
-    MakerProps().++(key1 :: value1 :: moreKeysAndValues.toList : _*)
-  }
-  def apply() : MakerProps = apply(file("Maker.conf"))
 
   def propsFileToMap(file : File) : Map[String, String] = {
     val p = new Properties()
@@ -126,6 +157,10 @@ object MakerProps {
 			fis.close
     }
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
+  }
+
+  def initialiseTestProps(root : File, moreProps : String*) : MakerProps = {
+    MakerProps(file(".").asAbsoluteFile).initialiseTestProps(root, moreProps : _*)
   }
 }
 

@@ -12,11 +12,11 @@ class RunUnitTestsTaskTests extends FunSuite {
   test("Test Reporter does its thing"){
     withTempDir{
       root => 
-        val overrideProps = Some(TestModule.makeTestProps(root) ++ 
-          ("TestReporter","maker.scalatest.MakerTestReporter", 
-          "MakerTestReporterClasspath", "test-reporter/target-maker/classes/"))
+        val props = MakerProps.initialiseTestProps(root,
+          "TestReporter","maker.scalatest.MakerTestReporter", 
+          "MakerTestReporterClasspath", "test-reporter/target-maker/classes/")
 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests", Nil, Nil, overrideProps)
+        val proj = new TestModule(root, "RunUnitTestsTaskTests", props)
         file("resource-resolvers").copyTo(root)
         file("resource-versions").copyTo(root)
         writeToFile(
