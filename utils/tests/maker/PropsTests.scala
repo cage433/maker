@@ -26,7 +26,7 @@
 package maker
 
 import org.scalatest.FunSuite
-import scala.collection.mutable.{Map ⇒ MMap}
+import scala.collection.mutable.{Map => MMap}
 import maker.utils.FileUtils._
 import java.io.File
 
@@ -35,20 +35,20 @@ class PropsTests extends FunSuite{
 
   test("Can't have invalid properties in props file"){
     withTempFile{
-      file ⇒ 
+      file => 
         writeToFile(file, "InvalidPropKey=jfsfksjfks")
         try{
           MakerProps(file)
           fail("expected exception to be thrown")
         } catch {
-          case e : AssertionError ⇒ 
+          case e : AssertionError => 
         }
     }
   }
 
   test("Comments are ignored"){
     withTempFile{
-      file ⇒ 
+      file => 
         writeToFile(file, "#InvalidPropKey=jfsfksjfks")
         assert(MakerProps(file) === MakerProps(MMap[String, String]()))
     }
@@ -56,7 +56,7 @@ class PropsTests extends FunSuite{
 
   test("Properties are overriden"){
     withTempFile{
-      file ⇒ 
+      file => 
         writeToFile(file, "ProjectScalaVersion=Fred")
         assert(MakerProps(file).ProjectScalaVersion() === "Fred")
         assert(MakerProps().ProjectScalaVersion() === "2.9.2")

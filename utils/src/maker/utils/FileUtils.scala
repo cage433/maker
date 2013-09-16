@@ -54,8 +54,8 @@ object FileUtils extends Asserting{
   def file(f : File, d : String*) : File = {
     assert(f != null)  // Because Java will happily ignore a null f 
     d.toList match {
-      case Nil ⇒ f
-      case x::rest ⇒ file(new File(f, x), rest : _*)
+      case Nil => f
+      case x::rest => file(new File(f, x), rest : _*)
     }
   }
   def file(base : String, file : String) : File = {
@@ -111,7 +111,7 @@ object FileUtils extends Asserting{
 
     def relativeTo(dir: File) : File = {
       def pathComponents(f : File) = {
-        f.getAbsolutePath.split("/").filterNot{component ⇒  component == "" || component == "."}.toList
+        f.getAbsolutePath.split("/").filterNot{component =>  component == "" || component == "."}.toList
       }
       val dirComponents = pathComponents(dir)
       val fileComponents = pathComponents(plainFile)
@@ -188,7 +188,7 @@ object FileUtils extends Asserting{
       else
         Nil
     }
-    dirs.flatMap(rec).map{f : File ⇒ f.asAbsoluteFile}
+    dirs.flatMap(rec).map{f : File => f.asAbsoluteFile}
   }
 
   def findFilesWithExtension(ext : String, dirs : Iterable[File]) : Iterable[File] =
@@ -319,7 +319,7 @@ object FileUtils extends Asserting{
     var res : List[A] = Nil
     if (file.exists()) {
       withFileReader(file){
-        in : BufferedReader ⇒ 
+        in : BufferedReader => 
           var line = in.readLine
           while (line != null) {
             res = f(line) :: res
@@ -397,7 +397,7 @@ object FileUtils extends Asserting{
     * when analysing broken unit testa
     */
   private val testDirBeingUsed = new AtomicBoolean(false)
-  def withTestDir[A](f : File ⇒ A) = {
+  def withTestDir[A](f : File => A) = {
     assert(testDirBeingUsed.compareAndSet(false, true), "Test directory used by another test - this will end badly")
     val dir = file("/tmp/makerTestDir")
     dir.mkdir
@@ -409,7 +409,7 @@ object FileUtils extends Asserting{
     var map = Map[K, V]()
     if (file.exists) {
       withFileLineReader(file) {
-        line : String ⇒ 
+        line : String => 
           map += extractor(line)
       }
     }

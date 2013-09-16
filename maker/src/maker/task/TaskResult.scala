@@ -31,8 +31,8 @@ trait TaskResult {
   def withTask(newTask : Task) : TaskResult = copy_(task = newTask)
   def snapshot(name : String) = copy_(sw = sw.snapshot(name))
   def compilationInfo : Option[CompilationInfo] = info match {
-    case Some(x) if x.isInstanceOf[CompilationInfo] ⇒ Some(x.asInstanceOf[CompilationInfo])
-    case _ ⇒ None
+    case Some(x) if x.isInstanceOf[CompilationInfo] => Some(x.asInstanceOf[CompilationInfo])
+    case _ => None
   }
 
   override def toString = task + " " + status
@@ -40,13 +40,13 @@ trait TaskResult {
   override def hashCode = task.hashCode
   override def equals(rhs : Any) = {
     rhs match {
-      case p : TaskResult if task == p.task && (succeeded == p.succeeded) ⇒ {
+      case p : TaskResult if task == p.task && (succeeded == p.succeeded) => {
         //I believe this assertion should always hold. It's really here so that
         //this overriden equals method never returns true on differing TaskResults
         assert(this eq p, "Shouldn't have two task results pointing to the same task")
         true
       }
-      case _ ⇒ false
+      case _ => false
     }
   }
 }
@@ -96,13 +96,13 @@ case class TaskFailed(
     b.append(super.toString + reasonForFailure.map(". " + _).getOrElse(""))
     
     (task, exception) match {
-      case (_, Some(e)) ⇒ 
+      case (_, Some(e)) => 
         b.addLine("Exception message")
         b.addLine(Option(e.getMessage).getOrElse("").indent(2))
         b.addLine("Stack trace")
         b.addLine(Utils.stackTraceAsString(e).indent(2))
-      case (_ : RunUnitTestsTask, _) ⇒ info.foreach(b.append)
-      case _ ⇒ 
+      case (_ : RunUnitTestsTask, _) => info.foreach(b.append)
+      case _ => 
     }
     b.toString
   }

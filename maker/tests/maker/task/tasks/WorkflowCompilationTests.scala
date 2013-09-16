@@ -45,7 +45,7 @@ class WorkflowCompilationTests extends FunSuite{
       case class Klass%s(%s){
         %s
       }
-      """ % (n, upstream.map{i ⇒ "x%s : Klass%s" % (i, i)}.mkString(", "), extraLines.mkString("\n"))
+      """ % (n, upstream.map{i => "x%s : Klass%s" % (i, i)}.mkString(", "), extraLines.mkString("\n"))
     )
   }
   def writeTestWithDependencies(p : TestModule, n : Int, upstream : List[Int] = Nil) = {
@@ -60,13 +60,13 @@ class WorkflowCompilationTests extends FunSuite{
           %s
         }
       }
-      """ % (n, upstream.map{i ⇒ "val x%s : Klass%s = null" % (i, i)}.mkString("\n"))
+      """ % (n, upstream.map{i => "val x%s : Klass%s = null" % (i, i)}.mkString("\n"))
     )
   }
 
   test("A developer's workflow"){
     withTempDir{
-      dir ⇒ 
+      dir => 
 
       info("given a module with two source dirs")
 

@@ -38,14 +38,14 @@ import ch.qos.logback.classic.Level._
 class ScalatestResultsTests extends FunSuite{
   def metadataToMap(md : MetaData, acc : Map[String, String] = Map[String, String]()) : Map[String, String] = {
     md match {
-      case scala.xml.Null ⇒ acc
-      case a : Attribute ⇒ metadataToMap(md.next, acc ++ Map(a.key → a.value.toString))
+      case scala.xml.Null => acc
+      case a : Attribute => metadataToMap(md.next, acc ++ Map(a.key -> a.value.toString))
     }
   }
 
   test("Errors are correctly counted"){
     withTempDir{
-      dir ⇒
+      dir =>
         val proj = new TestModule(dir, "ScalatestResultsTests")
         file("resource-resolvers").copyTo(dir)
         file("resource-versions").copyTo(dir)

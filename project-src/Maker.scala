@@ -38,7 +38,7 @@ import task.BuildResult
 import maker.task.Task
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
-import scala.collection.mutable.{Map ⇒ MMap}
+import scala.collection.mutable.{Map => MMap}
 import maker.task.compile._
 
 /**

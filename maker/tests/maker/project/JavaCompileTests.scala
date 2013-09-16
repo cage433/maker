@@ -12,7 +12,7 @@ class JavaCompileTests extends FunSuite with TestUtils {
 
   test("Java module fails when expected and stays failed"){
     withTempDir{
-      root ⇒ 
+      root => 
         val proj = new TestModule(root, "JavaCompileTests")
         proj.writeSrc(
           "src/foo/Foo.java", 

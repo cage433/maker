@@ -21,8 +21,8 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase){
     val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ModuleCompilePhase ⇒
-        upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
+      case pp : ModuleCompilePhase =>
+        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
     }
     
     val cp : Seq[File] = modulePhase.classpathDirectoriesAndJars.toList
@@ -31,7 +31,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase){
     val scalacOptions : Seq[String] = Nil
     val javacOptions : Seq[String] = Nil
     val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
-    val definesClass: File ⇒ String ⇒ Boolean = Locate.definesClass _
+    val definesClass: File => String => Boolean = Locate.definesClass _
         
     val inputs = Inputs(
       cp.map(_.getCanonicalFile),
@@ -56,8 +56,8 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase){
     val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ModuleCompilePhase ⇒
-        upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
+      case pp : ModuleCompilePhase =>
+        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
     }
     
     val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
@@ -67,7 +67,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase){
     val scalacOptions : Seq[String] = Nil
     val javacOptions : Seq[String] = Nil
     val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
-    val definesClass: File ⇒ String ⇒ Boolean = Locate.definesClass _
+    val definesClass: File => String => Boolean = Locate.definesClass _
         
     val inputs = Inputs(
       cp.map(_.getCanonicalFile),

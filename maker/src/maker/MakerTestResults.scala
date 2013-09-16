@@ -32,7 +32,7 @@ case class TestFailed(module : Module, suiteClass : String, test : String, start
       buffer.append("No stack trace")
     } else {
       val highlightedThrowable = exception.map{
-        line ⇒ if (line.contains(classToHighlight)) line.inReverseRed else line.inRed
+        line => if (line.contains(classToHighlight)) line.inReverseRed else line.inRed
       }
       buffer.append("\nStack trace:\n")
       buffer.append(highlightedThrowable.mkString("\n\t", "\n\t", "\n"))

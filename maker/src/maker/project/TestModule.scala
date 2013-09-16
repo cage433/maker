@@ -41,8 +41,8 @@ class TestModule(
   }
   def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {
     val dir = phase match {
-      case SourceCompilePhase ⇒ sourceDir
-      case TestCompilePhase ⇒ testSourceDir
+      case SourceCompilePhase => sourceDir
+      case TestCompilePhase => testSourceDir
     }
     writeToFile(file(dir, relativeSrcPath), code.stripMargin)
   }

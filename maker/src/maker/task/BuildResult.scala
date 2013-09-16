@@ -108,7 +108,7 @@ case class LastResult(result : BuildResult){
   def list {
     implicit val b = new StringBuffer
     result.results.zipWithIndex.foreach{
-      case (taskResult, i) ⇒ 
+      case (taskResult, i) => 
         addLine("  " + i + ": " + taskResult.status + " " + taskResult.task)
     }
     println(b.toString)
@@ -123,14 +123,14 @@ case class LastResult(result : BuildResult){
   def result(i : Int) : TaskResult = result.results(i)
   def info(i : Int){
     result(i).info match {
-      case Some(info) ⇒ println(info.toShortString)
-      case None ⇒ println("No info available")
+      case Some(info) => println(info.toShortString)
+      case None => println("No info available")
     }
   }
   def info{
     result.maybeFirstFailure.flatMap(_.info) match {
-      case Some(info) ⇒ println(info.toShortString)
-      case None ⇒ println("No info available")
+      case Some(info) => println(info.toShortString)
+      case None => println("No info available")
     }
   }
 
@@ -143,8 +143,8 @@ object BuildResult{
   def recordCompiledFiles(files : Set[File]){
     synchronized{
       files.foreach{
-        f ⇒ 
-          compiledFiles += (f → (compiledFiles.getOrElse(f, 0) + 1))
+        f => 
+          compiledFiles += (f -> (compiledFiles.getOrElse(f, 0) + 1))
       }
     }
   }
@@ -158,7 +158,7 @@ object BuildResult{
     b.addLine("Compiled File Count")
     val byCount = compiledFiles.keySet.groupBy(compiledFiles(_))
     val counts = byCount.keySet.toList.sortWith(_>_).foreach{
-      c ⇒ 
+      c => 
         b.addLine("  " + c)
         b.addLine(byCount(c).map(_.getName).toList.sortWith(_<_).asTable(3).indent("    "))
     }
@@ -173,14 +173,14 @@ object BuildResult{
     val keysAsSet = keys.toSet
     synchronized{
       val newTime : Long = timings.getOrElse(keysAsSet, 0L) + time
-      timings += (keysAsSet → newTime)
+      timings += (keysAsSet -> newTime)
     }
   }
   def printTimings{
    timingKeys.toList.map{
-     k ⇒ (k, totalTiming(k))
+     k => (k, totalTiming(k))
    }.sortWith(_._2 < _._2).foreach{
-      case (k, t) ⇒ 
+      case (k, t) => 
         val indent = (50 - k.size) max 2
         println(k + (" " * indent) + t)
     }

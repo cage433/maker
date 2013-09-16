@@ -10,7 +10,7 @@ import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
 
 trait TmuxIntegration{
-  self : BaseProject ⇒ 
+  self : BaseProject => 
 
     private lazy val hasTmux = (Command(props, CommandOutputHandler.NULL, None, "which", "tmux").withNoOutput.exec == 0)
     def tmux(args : String*){
@@ -38,12 +38,12 @@ trait TmuxIntegration{
     private def outputCompilationToVimErrorFile(result : BuildResult){
       props.VimErrorFile().delete
       result.results.map(_.task).foreach{
-        case t : CompileTask ⇒ 
+        case t : CompileTask => 
           withFileAppender(props.VimErrorFile()){
-            writer : BufferedWriter ⇒ 
+            writer : BufferedWriter => 
               t.modulePhase.vimCompileOutputFile.readLines.foreach(writer.println)
           }
-        case _ ⇒ 
+        case _ => 
       }
     }
 

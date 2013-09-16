@@ -45,7 +45,7 @@ abstract class CompileTask extends Task{
 
   private def cachedCompilation(sw : Stopwatch) : Option[TaskResult] = {
     classesCache collect {
-      case cache if cache.contains(inputsHash) ⇒ {
+      case cache if cache.contains(inputsHash) => {
         val files = CompilationCache.lookup(cache, inputsHash).get
         files.copyTo(modulePhase.module.rootAbsoluteFile, modulePhase.outputDir, modulePhase.phaseDirectory)
         success(this, sw).withInfo(CompilationInfo(this, CachedCompilation))
@@ -57,8 +57,8 @@ abstract class CompileTask extends Task{
     def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation.nonEmpty
     def upstreamCompilation = upstreamTaskResults.flatMap(_.compilationInfo).exists(_.state != CompilationNotRequired)
     def modificationSinceLastCompilation = (modulePhase.lastSourceModifcationTime, modulePhase.lastCompilationTime) match {
-      case (Some(t1), Some(t2)) ⇒ t1 > t2
-      case _ ⇒ true
+      case (Some(t1), Some(t2)) => t1 > t2
+      case _ => true
     }
     hasDeletedSourceFiles ||  upstreamCompilation || modificationSinceLastCompilation
   }
@@ -83,10 +83,10 @@ abstract class CompileTask extends Task{
               failure(this, sw, "compilation failure")
           case "scalac" => 
             CompileScalaTask(modulePhase).exec match {
-              case Left(e) ⇒ {
+              case Left(e) => {
                 failure(this, sw, "compilation failure").withInfo(CompilationFailedInfo(e))
               }
-              case Right(a) ⇒ {
+              case Right(a) => {
                 success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
               }
             }
@@ -100,7 +100,7 @@ abstract class CompileTask extends Task{
       }
     }
     classesCache.foreach{
-      cache ⇒  CompilationCache.save(cache, module.rootAbsoluteFile, inputsHash, modulePhase.outputDir, modulePhase.phaseDirectory)
+      cache =>  CompilationCache.save(cache, module.rootAbsoluteFile, inputsHash, modulePhase.outputDir, modulePhase.phaseDirectory)
     }
     result
   }
@@ -148,8 +148,8 @@ case class TestCompileTask(module : Module) extends CompileTask{
 object CompileTask{
   def apply(module : Module, phase : CompilePhase) : CompileTask = {
     phase match{
-      case SourceCompilePhase ⇒ SourceCompileTask(module)
-      case TestCompilePhase ⇒ TestCompileTask(module)
+      case SourceCompilePhase => SourceCompileTask(module)
+      case TestCompilePhase => TestCompileTask(module)
     }
   }
 }

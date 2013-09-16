@@ -20,7 +20,7 @@ case class Project(
   def constructorCodeAsString : String = {
     val b = new StringBuffer
     allUpstreamModules.foreach{
-      m ⇒ 
+      m => 
         b.addLine(m.constructorCodeAsString)
     }
     b.addLine("""val %s = maker.project.Project("%s", new java.io.File("%s"), %s)""" % (name, name, root.getAbsolutePath.toString, allUpstreamModules.mkString("List(", ", ", ")")))

@@ -13,17 +13,17 @@ object ZincCompile{
     val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ModuleCompilePhase ⇒
-        upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
+      case pp : ModuleCompilePhase =>
+        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
     }
 
     val analysisMapArguments = upstreamCaches.filter{
-      case (_, f) ⇒ f.exists
+      case (_, f) => f.exists
     }.map{
-      case (key, value) ⇒ key.getAbsolutePath + File.pathSeparator + value.getAbsolutePath
+      case (key, value) => key.getAbsolutePath + File.pathSeparator + value.getAbsolutePath
     }.toList match {
-      case Nil ⇒ Nil
-      case list ⇒ List("-analysis-map", list.mkString(","))
+      case Nil => Nil
+      case list => List("-analysis-map", list.mkString(","))
     }
 
     val arguments = List[String](
@@ -57,7 +57,7 @@ object ZincCompile{
     val setup = Setup(settings)
 
     settings.sources.foreach{
-      case sf ⇒ 
+      case sf => 
         assert(sf.isScalaFile || sf.isJavaFile, "file " + sf + " in source files")
     }
     if (errors.size > 0){
@@ -73,7 +73,7 @@ object ZincCompile{
       projectPhase.module.analyses.put(projectPhase.outputDir, analysis)
       result
     } catch {
-      case e : Throwable ⇒ 
+      case e : Throwable => 
         println("Debug: Module: bad things")
         println(settings)
         throw e

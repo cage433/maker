@@ -50,7 +50,7 @@ import maker.task.NullTask
 import maker.MakerTestResults
 
 
-case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String])  extends Task {
+case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () => Iterable[String])  extends Task {
 
 
   override def failureHaltsTaskManager = false
@@ -69,8 +69,8 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     }
 
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
-    val systemProperties = (props.JavaSystemProperties.asMap + "scala.usejavacp" → "true").map{
-      case (key, value) ⇒ "-D" + key + "=" + value
+    val systemProperties = (props.JavaSystemProperties.asMap + ("scala.usejavacp" -> "true")).map{
+      case (key, value) => "-D" + key + "=" + value
     }.toList
     baseProject.testOutputFile.delete
     val opts = List(
@@ -111,7 +111,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       module.name + " test all",
       module,
-      () ⇒ module.testClassNames()
+      () => module.testClassNames()
     )
   }
   
@@ -146,7 +146,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () ⇒ MakerTestResults(module).failedTestSuites
+      () => MakerTestResults(module).failedTestSuites
     )
   }
 }

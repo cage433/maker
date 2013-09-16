@@ -105,13 +105,13 @@ class Module(
    */
    override def equals(rhs : Any) = {
      rhs match {
-       case p : Module if p.root == root ⇒ {
+       case p : Module if p.root == root => {
          //I believe this assertion should always hold. It's really here so that
          //this overriden equals method never returns true on differing modules.
          assert(this eq p, "Shouldn't have two modules pointing to the same root")
          true
        }
-       case _ ⇒ false
+       case _ => false
      }
    }
 
@@ -119,12 +119,12 @@ class Module(
 
   private def warnOfRedundantDependencies() {
     immediateUpstreamModules.foreach{
-      module ⇒
+      module =>
         val otherUpstreamModules = immediateUpstreamModules.filterNot(_ == module)
         otherUpstreamModules.find(_.allUpstreamModules.contains(module)) match {
-          case Some(otherUpstreamModule) ⇒
+          case Some(otherUpstreamModule) =>
           log.warn(name + " shouldn't depend on " + module.name + " as it is inherited via " + otherUpstreamModule.name)
-          case None ⇒
+          case None =>
         }
     }
   }
@@ -148,7 +148,7 @@ class Module(
 
   lazy val CleanOnly = Build(
     "Clean only " + name, 
-    () ⇒ Dependency.Graph(CleanTask(this)), 
+    () => Dependency.Graph(CleanTask(this)), 
     this,
     "cleanOnly",
     "Deletes classes (source and test) for module " + name + ", leaving upstream module untouched"
@@ -156,7 +156,7 @@ class Module(
 
   lazy val TestOnly = Build(
     "Test " + name + " only", 
-    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)), 
+    () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)), 
     this,
     "testOnly",
     "Runs all tests in the module " + name + ". Tests from upstream modules are _not_ run."
@@ -164,7 +164,7 @@ class Module(
 
   lazy val TestFailedSuitesOnly = Build(
     "Run failing test suites for " + name + " only", 
-    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this)), 
+    () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this)), 
     this,
     "testFailuresOnly",
     "Runs all failed tests in the module " + name
@@ -172,7 +172,7 @@ class Module(
 
   lazy val UpdateOnly =  Build(
     "Update libraries for " + name + " only",
-    () ⇒ Dependency.Graph(UpdateTask(this)),
+    () => Dependency.Graph(UpdateTask(this)),
     this,
     "updateOnly",
     "Update libraries for " + name + " only"
@@ -252,25 +252,25 @@ object Module{
     val log = proj.log
 
     proj.immediateUpstreamModules.foreach{
-      p ⇒ 
+      p => 
         proj.immediateUpstreamModules.filterNot(_ == p).find(_.allUpstreamModules.contains(p)).foreach{
-          p1 ⇒ 
+          p1 => 
             log.warn("Module " + proj.name + " doesn't need to depend on " + p.name + " as it is already inherited from " + p1.name)
         }
     }
 
 
     proj.immediateUpstreamTestModules.foreach{
-      p ⇒ 
+      p => 
         proj.immediateUpstreamTestModules.filterNot(_ == p).find(_.allUpstreamTestModules.contains(p)).foreach{
-          p1 ⇒ 
+          p1 => 
             log.warn("Module " + proj.name + " doesn't need a test dependency on " + p.name + " as it is already inherited from " + p1.name)
         }
     }
 
     val jarNames = proj.managedJars.map(_.getName).toSet
     proj.immediateUpstreamModules.foreach{
-      upstreamModule ⇒
+      upstreamModule =>
         val upstreamJarNames = upstreamModule.allUpstreamModules.flatMap(_.managedJars).map(_.getName).toSet
         val redundantJarNames = upstreamJarNames intersect jarNames
         if (redundantJarNames.nonEmpty)

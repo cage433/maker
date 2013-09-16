@@ -52,7 +52,7 @@ class BuildResultTests extends FunSuite {
     }
   }
   test("buildResultsShouldCompose") {
-    withTempDir { root ⇒
+    withTempDir { root =>
       val emptyGraph = Dependency.Graph.empty
 
       val p1 = new TestModule(file(root, "p1"), "p1")
