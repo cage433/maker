@@ -24,7 +24,7 @@ import java.io._
   *                                   /suites/<suite 2>endtime
   *                                   /suites/<suite 2>/tests/......
   */
-class MakerTestReporter2 extends Reporter{
+class MakerTestReporter extends Reporter{
   val projectRootDirectory = Option(System.getProperty("maker.test.project.root")).getOrElse(throw new RuntimeException("Property maker.test.project.root not set"))
   private def recursiveDelete(file : File){
     if (file.exists && file.isDirectory){

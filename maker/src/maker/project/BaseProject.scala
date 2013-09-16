@@ -19,7 +19,7 @@ import maker.Resource
 import maker.ivy.IvyUtils
 import scala.xml.Elem
 import maker.Help
-import maker.MakerTestResults2
+import maker.MakerTestResults
 
 trait BaseProject {
   protected def root : File
@@ -52,7 +52,7 @@ trait BaseProject {
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 
   def testResults = {
-    allUpstreamModules.map(MakerTestResults2(_)).reduce(_++_)
+    allUpstreamModules.map(MakerTestResults(_)).reduce(_++_)
   }
 
   def testClasspath = Module.asClasspathStr(

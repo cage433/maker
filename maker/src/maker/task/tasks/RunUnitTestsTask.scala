@@ -47,7 +47,7 @@ import maker.task.compile.TestCompileTask
 import maker.utils.StringUtils
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
-import maker.MakerTestResults2
+import maker.MakerTestResults
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String])  extends Task {
@@ -146,7 +146,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () ⇒ MakerTestResults2(module).failedTestSuites
+      () ⇒ MakerTestResults(module).failedTestSuites
     )
   }
 }

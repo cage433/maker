@@ -90,7 +90,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
     withTempDir{
       root => 
         val overrideProps = Some(TestModule.makeTestProps(root) ++ 
-          ("TestReporter","maker.scalatest.MakerTestReporter2", 
+          ("TestReporter","maker.scalatest.MakerTestReporter", 
           "MakerTestReporterClasspath", "test-reporter/target-maker/classes/"))
 
         val proj = new TestModule(root, "RunUnitTestsTaskTests", Nil, Nil, overrideProps)

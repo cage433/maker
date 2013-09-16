@@ -50,9 +50,9 @@ case class SuiteTestResult(suiteClass : String, startTime : Long, endTime : Opti
   }
 }
 
-case class MakerTestResults2(startTime : Option[Long], endTime : Option[Long], suiteResults : List[SuiteTestResult]) extends TaskInfo{
+case class MakerTestResults(startTime : Option[Long], endTime : Option[Long], suiteResults : List[SuiteTestResult]) extends TaskInfo{
   def succeeded = suiteResults.forall(_.succeeded)
-  def ++ (rhs : MakerTestResults2) = {
+  def ++ (rhs : MakerTestResults) = {
     val mergedStartTime = (startTime, rhs.startTime) match {
       case (Some(t1), Some(t2)) => Some(t1 min t2)
       case (Some(t1), _) => Some(t1)
@@ -63,7 +63,7 @@ case class MakerTestResults2(startTime : Option[Long], endTime : Option[Long], s
       case (Some(t1), Some(t2)) => Some(t1 max t2)
       case _ => None
     }
-    MakerTestResults2(
+    MakerTestResults(
       mergedStartTime,
       mergedEndTime,
       suiteResults ::: rhs.suiteResults
@@ -139,13 +139,13 @@ case class MakerTestResults2(startTime : Option[Long], endTime : Option[Long], s
   def toLongString = toString_
 }
 
-object MakerTestResults2{
+object MakerTestResults{
 
-  def apply(modules : List[Module]) : MakerTestResults2 = modules.map(MakerTestResults2(_)).reduce(_++_)
-  def apply(module : Module) : MakerTestResults2 = {
+  def apply(modules : List[Module]) : MakerTestResults = modules.map(MakerTestResults(_)).reduce(_++_)
+  def apply(module : Module) : MakerTestResults = {
 
     if (! module.testResultDirectory.exists)
-      return MakerTestResults2(None, None, Nil)
+      return MakerTestResults(None, None, Nil)
     
     def startTime(dir : File) = maybeFile(dir, "starttime").map(_.read.toLong)
     def endTime(dir : File) = maybeFile(dir, "endtime").map(_.read.toLong)
@@ -173,6 +173,6 @@ object MakerTestResults2{
         SuiteTestResult(suiteClass, startTime(suiteResultsDir).get, endTime(suiteResultsDir), testResults)
 
     }
-    MakerTestResults2(startTime(module.testResultDirectory), endTime(module.testResultDirectory), suiteResults)
+    MakerTestResults(startTime(module.testResultDirectory), endTime(module.testResultDirectory), suiteResults)
   }
 }
