@@ -319,13 +319,6 @@ trait BaseProject {
     val makerFile = file(rootAbsoluteFile, "Maker.scala")
 
     val buffer = new StringBuffer
-    buffer.addLine("import maker.project.Module._")
-    buffer.addLine("import maker.task.tasks._")
-    buffer.addLine("import maker.task._")
-    buffer.addLine("import maker.task.Dependency._")
-    buffer.addLine("import maker.project._")
-    buffer.addLine("import maker.utils.FileUtils._")
-    buffer.addLine("import java.io.File")
     buffer.addLine(constructorCodeAsString)
     writeToFile(makerFile, buffer.toString)
   }

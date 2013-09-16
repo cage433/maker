@@ -52,7 +52,12 @@ case class SuiteTestResult(suiteClass : String, startTime : Long, endTime : Opti
 
 case class MakerTestResults(startTime : Option[Long], endTime : Option[Long], suiteResults : List[SuiteTestResult]) extends TaskInfo{
   def succeeded = suiteResults.forall(_.succeeded)
-  def ++ (rhs : MakerTestResults) = {
+  def ++ (rhs : MakerTestResults) : MakerTestResults = {
+    if (rhs == MakerTestResults.EMPTY)
+      return this
+    if (this == MakerTestResults.EMPTY)
+      return rhs
+
     val mergedStartTime = (startTime, rhs.startTime) match {
       case (Some(t1), Some(t2)) => Some(t1 min t2)
       case (Some(t1), _) => Some(t1)
@@ -145,7 +150,7 @@ object MakerTestResults{
   def apply(module : Module) : MakerTestResults = {
 
     if (! module.testResultDirectory.exists)
-      return MakerTestResults(None, None, Nil)
+      return EMPTY
     
     def startTime(dir : File) = maybeFile(dir, "starttime").map(_.read.toLong)
     def endTime(dir : File) = maybeFile(dir, "endtime").map(_.read.toLong)
@@ -175,4 +180,6 @@ object MakerTestResults{
     }
     MakerTestResults(startTime(module.testResultDirectory), endTime(module.testResultDirectory), suiteResults)
   }
+
+  val EMPTY = MakerTestResults(None, None, Nil)
 }

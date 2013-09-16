@@ -23,7 +23,7 @@ case class Project(
       m ⇒ 
         b.addLine(m.constructorCodeAsString)
     }
-    b.addLine("""val %s = Project("%s", file("%s"), %s)""" % (name, name, root.getAbsolutePath.toString, allUpstreamModules.mkString("List(", ", ", ")")))
+    b.addLine("""val %s = maker.project.Project("%s", new java.io.File("%s"), %s)""" % (name, name, root.getAbsolutePath.toString, allUpstreamModules.mkString("List(", ", ", ")")))
     b.toString
   }
   def docOutputDir = file(rootAbsoluteFile, "docs")

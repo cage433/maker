@@ -7,84 +7,7 @@ import org.scalatest.ParallelTestExecution
 import maker.project.Module
 import maker.MakerProps
 
-class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
-
-  test("Can re-run failing tests"){
-    withTempDir{
-      root => 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests")
-        file("resource-resolvers").copyTo(root)
-        file("resource-versions").copyTo(root)
-        writeToFile(
-          file(root, "external-resources"),
-          "org.scalatest scalatest_{scala_version} {scalatest_version}"
-        )
-
-        proj.writeTest(
-          "foo/GoodTest.scala",
-          """
-          package foo
-          import org.scalatest.FunSuite
-          class GoodTest extends FunSuite{
-            test("test foo"){
-              assert(1 === 1)
-            }
-          }
-          """
-        )
-        proj.writeTest( 
-          "foo/BadTest.scala",
-          """
-          package foo
-          import org.scalatest.FunSuite
-          class BadTest extends FunSuite{
-            test("test foo"){
-              assert(1 === 2)
-            }
-          }
-          """
-        )
-
-        proj.test
-        assert(proj.testResults.failedTests.size === 1, "Expecting exactly one failure")
-        assert(proj.testResults.passedTests.size === 1, "Expecting exactly one pass")
-
-        //This time we should only run the failed test
-        //so there should be no passing tests
-        proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 1)
-        assert(proj.testResults.passedTests.size === 0)
-
-        //Repair the broken test, check there is one passing test
-        proj.writeTest( 
-          "foo/BadTest.scala",
-          """
-          package foo
-          import org.scalatest.FunSuite
-          class BadTest extends FunSuite{
-            test("test foo"){
-              assert(1 === 1)
-            }
-          }
-          """
-        )
-        proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 0)
-        assert(proj.testResults.passedTests.size === 1)
-
-        //Re-run failed tests - should do nothing
-        proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 0)
-        assert(proj.testResults.passedTests.size === 1)
-
-
-        //Run all tests - should have two passes
-        proj.test
-        assert(proj.testResults.failedTests.size === 0)
-        assert(proj.testResults.passedTests.size === 2)
-
-    }
-  }
+class RunUnitTestsTaskTests extends FunSuite {
 
   test("Test Reporter does its thing"){
     withTempDir{
@@ -162,6 +85,9 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
 
 
         proj.test
+        assert(proj.testResults.failedTests.size === 2, "Expecting exactly two failures")
+        assert(proj.testResults.passedTests.size === 3, "Expecting exactly three passes")
+
         val testResultDir = file(proj.testResultDirectory)
         assert(testResultDir.exists, testResultDir.absPath + " should exist")
         assert(file(testResultDir, "starttime").exists, "Test run start time file should exist")
@@ -215,6 +141,40 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
             val messageFile = file(dir, "message")
             assert(messageFile.exists)
         }
+
+        // Running failed tests should pass over passed tests
+        proj.testFailedSuites
+        assert(proj.testResults.failedTests.size === 2, "Expecting exactly two failures")
+        assert(proj.testResults.passedTests.size === 0, "Expecting zero passes")
+
+        // repair broken tests
+        proj.writeTest(
+          "foo/ExceptionThrowingTest.scala",
+          """
+          package foo
+          import org.scalatest.FunSuite
+          class ExceptionThrowingTest extends FunSuite{
+            test("test throwing exception"){
+              assert(1 === 1)
+            }
+          }
+          """
+        )
+        proj.writeTest( 
+          "foo/BadTest.scala",
+          """
+          package foo
+          import org.scalatest.FunSuite
+          class BadTest extends FunSuite{
+            test("test foo"){
+              assert(2 === 2)
+            }
+          }
+          """
+        )
+        proj.testFailedSuites
+        assert(proj.testResults.failedTests.size === 0, "Expecting zero failures")
+        assert(proj.testResults.passedTests.size === 2, "Expecting two passes")
     }
   }
 
