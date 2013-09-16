@@ -33,12 +33,12 @@ class CachedCompilationTests extends FunSuite {
       withTempDir{
       dir => {
         val props = MakerProps.initialiseTestProps(dir, "CompilationCache","file")
-        val projU = new TestModule(new File(dir, "u"), "CachedCompilationTests-u", props)
+        val projU = TestModule(new File(dir, "u"), "CachedCompilationTests-u", props)
         val v1 = "package foo\nobject Sample { def hello():Int = 1 }"
         val v2 = "package foo\nobject Sample { def hello():String = \"x\" }\nobject Bob"
         val sample = projU.writeSrc("foo/Sample.scala", v1)
 
-        val projA = new TestModule(new File(dir, "A"), "CachedCompilationTests-A", props, upstreamProjects = List(projU))
+        val projA = TestModule(new File(dir, "A"), "CachedCompilationTests-A", props, upstreamProjects = List(projU))
         val bar = projA.writeSrc("bar/Bar.scala", "package bar;\nobject Bar { def abc = foo.Sample.hello }")
 
         checkCompile(projA, CompilationSucceeded)

@@ -16,6 +16,7 @@ import org.scalatest.GivenWhenThen
 import org.scalatest.FunSpec
 import org.scalatest._
 import org.scalatest.FunSuite
+import maker.project.TestModule
 
 class WorkflowCompilationTests extends FunSuite{
 
@@ -24,8 +25,8 @@ class WorkflowCompilationTests extends FunSuite{
     */
   object Nouns {
     var result : BuildResult = null
-    var a : TestModule = null
-    var b : TestModule = null
+    var a : Module with TestModule = null
+    var b : Module with TestModule = null
     var topLevelProject : Project = null
     var src1 : File = null
     var src2 : File = null
@@ -36,7 +37,7 @@ class WorkflowCompilationTests extends FunSuite{
   }
   import Nouns._
 
-  def writeSrcWithDependencies(p : TestModule, n : Int, upstream : List[Int] = Nil, extraLines : List[String] = Nil) = {
+  def writeSrcWithDependencies(p : Module with TestModule, n : Int, upstream : List[Int] = Nil, extraLines : List[String] = Nil) = {
     p.writeSrc(
       "foo/Klass" + n + ".scala",
       """
@@ -48,7 +49,7 @@ class WorkflowCompilationTests extends FunSuite{
       """ % (n, upstream.map{i => "x%s : Klass%s" % (i, i)}.mkString(", "), extraLines.mkString("\n"))
     )
   }
-  def writeTestWithDependencies(p : TestModule, n : Int, upstream : List[Int] = Nil) = {
+  def writeTestWithDependencies(p : Module with TestModule, n : Int, upstream : List[Int] = Nil) = {
     p.writeTest(
       "foo/Test" + n + ".scala",
       """
@@ -71,7 +72,7 @@ class WorkflowCompilationTests extends FunSuite{
       info("given a module with two source dirs")
       val props = MakerProps.initialiseTestProps(dir)
 
-      a = new TestModule(file(dir, "a").makeDir(), "WorkflowCompilationTests", props)
+      a = TestModule(file(dir, "a").makeDir(), "WorkflowCompilationTests", props)
       info("Compilation should succeed") 
       src1 = writeSrcWithDependencies(a, 1)
       src2 = writeSrcWithDependencies(a, 2, List(1))
@@ -96,7 +97,7 @@ class WorkflowCompilationTests extends FunSuite{
       assert(result.succeeded)
 
       info("With a new module that has an upstream dependency on the first")
-      b = new TestModule(file(dir, "b").makeDir(), "WorkflowCompilationTests-b", props, List(a))
+      b = TestModule(file(dir, "b").makeDir(), "WorkflowCompilationTests-b", props, List(a))
       src3 = writeSrcWithDependencies(b, 3, List(1))
       topLevelProject = new Project("top", dir, List(b), props)
 

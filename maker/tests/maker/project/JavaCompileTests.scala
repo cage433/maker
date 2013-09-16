@@ -14,7 +14,7 @@ class JavaCompileTests extends FunSuite with TestUtils {
     withTempDir{
       root => 
         val props = MakerProps.initialiseTestProps(root)
-        val proj = new TestModule(root, "JavaCompileTests", props)
+        val proj = TestModule(root, "JavaCompileTests", props)
         proj.writeSrc(
           "src/foo/Foo.java", 
           """

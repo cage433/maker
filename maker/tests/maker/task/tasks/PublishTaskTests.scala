@@ -28,9 +28,11 @@ class PublishTaskTests extends FreeSpec {
               |  </resolvers>
               |</ivysettings>""".stripMargin % publishDir)
 
-        val proj = new TestModule(dir, "testPublish", MakerProps.initialiseTestProps(dir, "Compiler", "dummy-test-compiler")){
-          override def ivySettingsFile = ivySettingsFile_
-        }
+        val proj = TestModule(dir, "testPublish", 
+          MakerProps.initialiseTestProps(dir, 
+            "Compiler", "dummy-test-compiler",
+            "IvySettingsFile", ivySettingsFile_.absPath
+          ))
 
         proj.writeSrc(
           "testPublish/Foo.scala",

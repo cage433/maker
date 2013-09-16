@@ -44,8 +44,8 @@ class RunMainTaskTests extends FunSuite {
         val p1Dir = file(dir, "p1")
         val p2Dir = file(dir, "p2")
 
-        val proj1 = new TestModule(p1Dir, "p1", props)
-        val proj2 = new TestModule(p2Dir, "p2", props, upstreamProjects = List(proj1))
+        val proj1 = TestModule(p1Dir, "p1", props)
+        val proj2 = TestModule(p2Dir, "p2", props, upstreamProjects = List(proj1))
 
         val outputFile = file(p1Dir, "output.txt")
         assert(! outputFile.exists)

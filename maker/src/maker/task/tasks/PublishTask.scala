@@ -66,7 +66,7 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
       val settings = ivy.getSettings
 
       settings.addAllVariables(System.getProperties)
-      ivy.configure(baseProject.ivySettingsFile)
+      ivy.configure(props.IvySettingsFile())
 
       val report = ivy.resolve(ivyFile.toURI().toURL(), resolveOptions)
       val md = report.getModuleDescriptor

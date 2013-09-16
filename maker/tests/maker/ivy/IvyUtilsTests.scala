@@ -12,15 +12,9 @@ class IvyUtilsTests extends FreeSpec {
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val a = new TestModule(file(dir, "a").makeDir, "a", props){
-          override def ivySettingsFile = file(dir, "ivysettings.xml")
-        }
-        val b = new TestModule(file(dir, "b").makeDir, "b", props, List(a)){
-          override def ivySettingsFile = file(dir, "ivysettings.xml")
-        }
-        val c = new Project("c", dir, List(a, b), props){
-          override def ivySettingsFile = file(dir, "ivysettings.xml")
-        }
+        val a = TestModule(file(dir, "a").makeDir, "a", props)
+        val b = TestModule(file(dir, "b").makeDir, "b", props, List(a))
+        val c = new Project("c", dir, List(a, b), props)
 
         
         assert(

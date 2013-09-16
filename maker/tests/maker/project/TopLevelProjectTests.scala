@@ -21,7 +21,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir, "Compiler", "dummy-test-compiler")
-        val a = new TestModule(file(dir, "a"), "a", props)
+        val a = TestModule(file(dir, "a"), "a", props)
         a.writeSrc(
           "foo/Foo.scala", 
           """|package foo
@@ -42,8 +42,8 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir, "Compiler", "dummy-test-compiler")
-        val a = new TestModule(file(dir, "a"), "a", props)
-        val b = new TestModule(file(dir, "b"), "b", props, List(a))
+        val a = TestModule(file(dir, "a"), "a", props)
+        val b = TestModule(file(dir, "b"), "b", props, List(a))
         a.writeSrc(
           "foo/Foo.scala", 
           """|package foo

@@ -10,8 +10,8 @@ class PomUtilsTests extends FreeSpec {
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val a = new TestModule(file(dir, "a"), "a", props)
-        val b = new TestModule(file(dir, "b"), "b", props, List(a))
+        val a = TestModule(file(dir, "a"), "a", props)
+        val b = TestModule(file(dir, "b"), "b", props, List(a))
         val c = new Project("c", dir, List(b), props ++ ("GroupId", "PomUtilsTests"))
 
         assert(

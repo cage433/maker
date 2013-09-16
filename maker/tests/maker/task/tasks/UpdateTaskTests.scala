@@ -39,7 +39,7 @@ class UpdateTaskTests extends FreeSpec {
           "ResourceCacheDirectory", file(dir, ".maker-resource-cache").makeDirs().getPath
         )
 
-        val module = new TestModule(dir, "testResources", props)
+        val module = TestModule(dir, "testResources", props)
 
         assert(
           module.resources().toSet === Set(

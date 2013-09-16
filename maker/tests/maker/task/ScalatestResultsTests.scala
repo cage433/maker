@@ -48,7 +48,7 @@ class ScalatestResultsTests extends FunSuite{
     withTempDir{
       dir =>
         val props = MakerProps.initialiseTestProps(dir)
-        val proj = new TestModule(dir, "ScalatestResultsTests", props)
+        val proj = TestModule(dir, "ScalatestResultsTests", props)
         file("resource-resolvers").copyTo(dir)
         file("resource-versions").copyTo(dir)
         writeToFile(

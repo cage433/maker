@@ -46,7 +46,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
     val props = MakerProps.initialiseTestProps(root)
-    val proj : TestModule = new TestModule(root, "CompileScalaTaskTests", props)
+    val proj = TestModule(root, "CompileScalaTaskTests", props)
     val outputDir = proj.compilePhase.outputDir
     val files = new {
 
@@ -132,7 +132,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
+        val proj = TestModule(dir, "CompileScalaTaskTests", props)
         val fooSrc = file(dir, "src/foo/Foo.scala")
         writeToFile(
           fooSrc,
@@ -169,7 +169,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
         val dir : File = file(tempDir, "proj")
         dir.mkdirs
         
-        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
+        val proj = TestModule(dir, "CompileScalaTaskTests", props)
 
         proj.writeSrc(
           "foo/Foo.scala",
@@ -214,9 +214,8 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val analyses = new ConcurrentHashMap[File, Analysis]()
-        val one = new TestModule(file(dir, "one"), "CompileScalaTaskTests - one", props, analyses = analyses)
-        val two = new TestModule(file(dir, "two"), "CompileScalaTaskTests - two", props, upstreamProjects = List(one), analyses = analyses)
+        val one = TestModule(file(dir, "one"), "CompileScalaTaskTests - one", props)
+        val two = TestModule(file(dir, "two"), "CompileScalaTaskTests - two", props, upstreamProjects = List(one))
         
         val fooSrc = one.writeSrc(
           "foo/Foo.scala",
@@ -254,7 +253,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
+        val proj = TestModule(dir, "CompileScalaTaskTests", props)
         
         val fooSrc = file(dir, "src/foo/Foo.scala")
         val barSrc = file(dir, "src/foo/Bar.scala")
@@ -312,10 +311,9 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     withTempDir{
       dir =>
         val props = MakerProps.initialiseTestProps(dir)
-        val analyses = new ConcurrentHashMap[File, Analysis]()
-        val one = new TestModule(file(dir, "one"), "one", props, analyses = analyses)
-        val two = new TestModule(file(dir, "two"), "two", props, upstreamProjects = List(one), analyses = analyses)
-        val three = new TestModule(file(dir, "three"), "three", props, upstreamProjects = List(two), analyses = analyses)
+        val one = TestModule(file(dir, "one"), "one", props)
+        val two = TestModule(file(dir, "two"), "two", props, upstreamProjects = List(one))
+        val three = TestModule(file(dir, "three"), "three", props, upstreamProjects = List(two))
 
 
         val fooSrc = one.writeSrc( 
@@ -383,7 +381,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
+        val proj = TestModule(dir, "CompileScalaTaskTests", props)
         val traitSrc = proj.writeSrc(
           "foo/SomeTrait.scala",
           """
@@ -414,7 +412,7 @@ class SomeClass extends SomeTrait{
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val proj = new TestModule(dir, "CompileScalaTaskTests", props)
+        val proj = TestModule(dir, "CompileScalaTaskTests", props)
         proj.writeSrc(
           "foo/Foo.scala",
           """
@@ -484,9 +482,8 @@ class SomeClass extends SomeTrait{
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val analyses = new ConcurrentHashMap[File, Analysis]()
-        val A = new TestModule(file(dir, "A"), "A", props, analyses = analyses)
-        val B = new TestModule(file(dir, "B"), "B", props, List(A), analyses = analyses)
+        val A = TestModule(file(dir, "A"), "A", props)
+        val B = TestModule(file(dir, "B"), "B", props, List(A))
         A.writeSrc(
           "foo/Foo.scala",
           """

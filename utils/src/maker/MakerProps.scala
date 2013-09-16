@@ -32,6 +32,7 @@ case class MakerProps (private val root_ : File, overrides : MMap[String, String
   object Compiler extends Default("scalac") with IsString
   object ResolversFile extends Default(file(root, "resource-resolvers")) with IsFile
   object VersionsFile extends Default(file(root, "resource-versions")) with IsFile
+  object IvySettingsFile extends Default(file(root, "ivysettings.xml")) with IsFile
   def resourceVersions() = MakerProps.propsFileToMap(VersionsFile())
   def resourceResolvers() : Map[String, String] = MakerProps.propsFileToMap(ResolversFile())
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
@@ -127,7 +128,8 @@ case class MakerProps (private val root_ : File, overrides : MMap[String, String
       VersionsFile,
       MakerTestReporterClasspath,
       LogbackTestConfigFile,
-      LogCommandFile
+      LogCommandFile,
+      IvySettingsFile
     ).foreach{
       prop => 
         writeProperty(prop.name, prop().absPath)

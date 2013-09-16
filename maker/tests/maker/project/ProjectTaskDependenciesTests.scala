@@ -32,7 +32,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
   test("Can add custom task to run before standard task"){
     def moduleWithCustomTaskAfterClean(root : File, name : String) = {
       val props = MakerProps.initialiseTestProps(root)
-      new TestModule(root, name, props){
+      new Module(root, name, props) with TestModule{
         self =>  
         val extraUpstreamTask = WriteClassCountToFile(this)
         override def extraUpstreamTasks(task : Task) = task match {
@@ -82,15 +82,15 @@ class ProjectTaskDependenciesTests extends FunSuite{
     def setUpClassCountFile(module : Module) = file(module.rootAbsoluteFile, "setup")
     def tearDownClassCountFile(module : Module) = file(module.rootAbsoluteFile, "teardown")
 
-    def moduleWithSetupAndTeardowns(root : File, upstreamProjects : Module*) : TestModule = {
+    def moduleWithSetupAndTeardowns(root : File, upstreamProjects : Module*) = {
 
       val props = MakerProps.initialiseTestProps(root)
-      new TestModule(
+      new Module(
         root = root, 
         name = "With setup",
         props = props,
-        upstreamProjects = upstreamProjects.toList
-      ) {
+        immediateUpstreamModules = upstreamProjects.toList
+      ) with TestModule {
         def graphContainsClean(graph : Dependency.Graph) = {
           graph.nodes.exists {
             case _ : CleanTask => true
@@ -150,9 +150,9 @@ class ProjectTaskDependenciesTests extends FunSuite{
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val A = new TestModule(file(dir, "upstream"), "A", props)
-        val B = new TestModule(file(dir, "downstream"), "B", props, List(A))
-        val C = new TestModule(file(dir, "downstream2"), "C", props, List(A), List(A))
+        val A = TestModule(file(dir, "upstream"), "A", props)
+        val B = TestModule(file(dir, "downstream"), "B", props, List(A))
+        val C = TestModule(file(dir, "downstream2"), "C", props, List(A), List(A))
 
         assert(
           !B.TestCompile.graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
@@ -174,10 +174,10 @@ class ProjectTaskDependenciesTests extends FunSuite{
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val A = new TestModule(file(dir, "A"), "A", props)
-        val B = new TestModule(file(dir, "B"), "B", props, List(A))
-        val C = new TestModule(file(dir, "C"), "C", props, List(A), List(A))
-        val D = new TestModule(file(dir, "D"), "D", props, List(C))
+        val A = TestModule(file(dir, "A"), "A", props)
+        val B = TestModule(file(dir, "B"), "B", props, List(A))
+        val C = TestModule(file(dir, "C"), "C", props, List(A), List(A))
+        val D = TestModule(file(dir, "D"), "D", props, List(C))
 
         assert(
           ! B.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.testOutputDir), 
@@ -199,7 +199,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
         def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {
-          new TestModule(file(dir, name), name, props, upstreams, testUpstreams)
+          TestModule(file(dir, name), name, props, upstreams, testUpstreams)
         }
         val A = module("A")
         val B = module("B", List(A))

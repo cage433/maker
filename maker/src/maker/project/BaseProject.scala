@@ -47,7 +47,6 @@ trait BaseProject {
   def publishLocalDir = file(props.PublishLocalRootDir(), groupId, artifactId).makeDirs
   def publishLocalPomFile = file(file(publishLocalDir, "/poms/").makeDir, "pom.xml")
 
-  def ivySettingsFile = file("ivysettings.xml") // Note that this is relative to CWD
   def ivyFile = IvyUtils.generateIvyFile(this)
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 

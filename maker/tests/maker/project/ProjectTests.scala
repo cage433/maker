@@ -10,7 +10,7 @@ class ProjectTests extends FunSuite {
     withTempDir{
       dir =>{
         val props = MakerProps.initialiseTestProps(dir)
-        val a = new TestModule(
+        val a = TestModule(
           mkdir(file(dir, "a")),
           "a",
           props
@@ -24,7 +24,7 @@ class ProjectTests extends FunSuite {
           """
         )
 
-        val b = new TestModule(
+        val b = TestModule(
           mkdir(file(dir, "b")),
           "b",
           props,

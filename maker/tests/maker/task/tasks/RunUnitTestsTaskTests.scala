@@ -16,7 +16,7 @@ class RunUnitTestsTaskTests extends FunSuite {
           "TestReporter","maker.scalatest.MakerTestReporter", 
           "MakerTestReporterClasspath", "test-reporter/target-maker/classes/")
 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests", props)
+        val proj = TestModule(root, "RunUnitTestsTaskTests", props)
         file("resource-resolvers").copyTo(root)
         file("resource-versions").copyTo(root)
         writeToFile(

@@ -193,7 +193,14 @@ class Module(
     testCompilePhase.classFiles.map(_.className(testOutputDir)).filterNot(_.contains("$")).filter(isAccessibleScalaTestSuite).toList
   }
 
-  def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
+  def constructorCodeAsString : String = {
+    """val %s = new maker.project.Module(new java.io.File("%s"), "%s", maker.MakerProps(new java.io.File("%s")), %s, %s)""" % (name, root.getAbsolutePath, 
+      name, 
+      props.root.getAbsolutePath + "/Maker.conf",
+      immediateUpstreamModules.mkString("List(", ", ", ")"),
+      immediateUpstreamTestModules.mkString("List(", ", ", ")")
+    )
+  }
 
   /********************
   *     Paths and files

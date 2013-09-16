@@ -10,6 +10,11 @@ import maker.Resource
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.project.Project
 import maker.MakerProps
+import maker.project.Module
+import maker.project.TestModule
+import java.util.concurrent.ConcurrentHashMap
+import java.io.File
+import sbt.inc.Analysis
 
 class PublishLocalTaskTests extends FreeSpec{
   
@@ -24,11 +29,12 @@ class PublishLocalTaskTests extends FreeSpec{
         val anyJar = file("utils/lib_managed/commons-io-commons-io-2.1.jar") 
 
         var resourcesList : List[Resource] = Nil
-        val proj : TestModule = new TestModule(
+        val proj = new Module(
           dir,
           "testPublishLocal",
-          MakerProps.initialiseTestProps(dir, "Compiler", "dummy-test-compiler")
-        ){
+          MakerProps.initialiseTestProps(dir, "Compiler", "dummy-test-compiler"),
+          analyses = new ConcurrentHashMap[File, Analysis]()
+        )with TestModule {
           override def resources() = resourcesList
         }
         resourcesList = List(Resource.build(proj, "commons-io commons-io 2.1"))
@@ -115,12 +121,12 @@ class PublishLocalTaskTests extends FreeSpec{
           "Compiler", "dummy-test-compiler"
         )
         
-        val a = new TestModule(
+        val a = TestModule(
           file(dir, "a").makeDir,
           "a",
           props
         )
-        val b = new TestModule(
+        val b = TestModule(
           file(dir, "b").makeDir,
           "b",
           props,

@@ -11,7 +11,7 @@ class TestModuleTests extends FunSuite{
     withTempDir{
       dir => 
         val props = MakerProps.initialiseTestProps(dir)
-        val proj = new TestModule(dir, "TestTestModule", props)
+        val proj = TestModule(dir, "TestTestModule", props)
         proj.writeSrc(
           "foo/Foo.scala",
           """
