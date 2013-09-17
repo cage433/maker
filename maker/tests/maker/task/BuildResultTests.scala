@@ -72,7 +72,7 @@ class BuildResultTests extends FunSuite {
       val br2 = BuildResult("foo", List(success(SourceCompileTask(p2), sw)), emptyGraph, p1.props, clockTime = 0)
 
       // and some failures
-      val fr1 = BuildResult("foo", List(failure(SourceCompileTask(p2), Stopwatch(), "was broke")), emptyGraph, p1.props, clockTime = 0)
+      val fr1 = BuildResult("foo", List(failure(SourceCompileTask(p2), Stopwatch(), message = Some("was broke"))), emptyGraph, p1.props, clockTime = 0)
 
       val r1 = for {
         w <- br1

@@ -16,7 +16,6 @@ import maker.utils.HashCache
 import maker.utils.CompilationCache
 import maker.task.Build
 import sbt.compiler.CompileFailed
-import maker.utils.TaskInfo
 import java.util.Date
 
 abstract class CompileTask extends Task{
@@ -48,7 +47,7 @@ abstract class CompileTask extends Task{
       case cache if cache.contains(inputsHash) => {
         val files = CompilationCache.lookup(cache, inputsHash).get
         files.copyTo(modulePhase.module.rootAbsoluteFile, modulePhase.outputDir, modulePhase.phaseDirectory)
-        success(this, sw).withInfo(CompilationInfo(this, CachedCompilation))
+        TaskResult(this, sw, succeeded = true, info = Some(CompilationInfo(this, CachedCompilation)))
       }
     }
   }
@@ -69,7 +68,7 @@ abstract class CompileTask extends Task{
     if (modulePhase.sourceFiles.isEmpty){
       cleanRegularFilesLeavingDirectories(modulePhase.outputDir)
       modulePhase.compilationCacheFile.delete
-      return success(this, sw).withInfo(CompilationInfo(this, CompilationNotRequired))
+      return success(this, sw, Some(CompilationInfo(this, CompilationNotRequired)))
     }
     copyResourcesToTargetDirIfNecessary()
     val result = cachedCompilation(sw).getOrElse{
@@ -78,16 +77,16 @@ abstract class CompileTask extends Task{
           case "zinc" => 
             val exitCode = ZincCompile(modulePhase)
             if (exitCode == 0)
-              success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
+              success(this, sw, Some(CompilationInfo(this, CompilationSucceeded)))
             else 
-              failure(this, sw, "compilation failure")
+              failure(this, sw, message = Some("zinc compilation failure"))
           case "scalac" => 
             CompileScalaTask(modulePhase).exec match {
               case Left(e) => {
-                failure(this, sw, "compilation failure").withInfo(CompilationFailedInfo(e))
+                failure(this, sw, message = Some("compilation failure"), info = Some(CompilationFailedInfo(e)))
               }
               case Right(a) => {
-                success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
+                success(this, sw, Some(CompilationInfo(this, CompilationSucceeded)))
               }
             }
           case "dummy-test-compiler" =>
@@ -96,7 +95,7 @@ abstract class CompileTask extends Task{
 
         }
       } else {
-        success(this, sw).withInfo(CompilationInfo(this, CompilationNotRequired))
+        success(this, sw, Some(CompilationInfo(this, CompilationNotRequired)))
       }
     }
     classesCache.foreach{
@@ -110,7 +109,7 @@ abstract class CompileTask extends Task{
 
 }
 
-case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
+case class CompilationFailedInfo(e : CompileFailed) {
   def failingFiles = e.problems.toList.map(_.position.sourceFile).filter(_.isDefined).map(_.get).distinct
   private def toString_(files : List[String]) = {
     val b = new StringBuffer
@@ -118,11 +117,8 @@ case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
     b.append(files.mkString("\n"))
     b.toString
   }
-  def toShortString = {
+  override def toString = {
     toString_(failingFiles.map(_.getName))
-  }
-  def toLongString = {
-    toString_(failingFiles.map(_.getPath))
   }
 }
 
@@ -132,7 +128,7 @@ case class SourceCompileTask(module :Module) extends CompileTask{
     module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module))
   }
   def phase = SourceCompilePhase
-  override def toShortString = module + ":SC"
+  override def toString = module + ":SC"
 }
 
 case class TestCompileTask(module : Module) extends CompileTask{
@@ -142,7 +138,7 @@ case class TestCompileTask(module : Module) extends CompileTask{
   }
 
   def phase = TestCompilePhase
-  override def toShortString = module + ":TC"
+  override def toString = module + ":TC"
 }
 
 object CompileTask{

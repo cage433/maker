@@ -139,7 +139,7 @@ case class Build(
                 case e =>
                   log.warn("exception thrown:" + e + " when running task " + pt)
                   e.printStackTrace
-                  TaskResult.failure(pt, sw, e)
+                  TaskResult(pt, sw, succeeded = false, exception = Some(e))
               }
               sw.snapshot(TaskResult.TASK_COMPLETE)
               monitor.addResult(pt, result)

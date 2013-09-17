@@ -85,7 +85,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
 
       cmd.exec() match {
         case 0 => TaskResult.success(this, sw)
-        case _ => TaskResult.failure(this, sw, cmd.savedOutput)
+        case _ => TaskResult.failure(this, sw, message = Some(cmd.savedOutput))
       }
     }
     else {

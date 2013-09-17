@@ -91,7 +91,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
       else {
         procHandle._2() match {
           case 0 => TaskResult.success(this, sw)
-          case code => TaskResult.failure(this, sw, "Run Main failed in " + baseProject)
+          case code => TaskResult.failure(this, sw, message = Some("Run Main failed in " + baseProject))
         }
       }
     }

@@ -122,16 +122,10 @@ case class LastResult(result : BuildResult){
 
   def result(i : Int) : TaskResult = result.results(i)
   def info(i : Int){
-    result(i).info match {
-      case Some(info) => println(info.toShortString)
-      case None => println("No info available")
-    }
+    result(i).info.foreach(println)
   }
   def info{
-    result.maybeFirstFailure.flatMap(_.info) match {
-      case Some(info) => println(info.toShortString)
-      case None => println("No info available")
-    }
+    result.maybeFirstFailure.foreach(_.info.foreach(println))
   }
 
 }

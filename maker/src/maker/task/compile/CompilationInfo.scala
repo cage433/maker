@@ -7,7 +7,6 @@ import maker.utils.RichIterable._
 import maker.utils.RichString._
 import maker.task.TaskResult
 import sbt.inc.Analysis
-import maker.utils.TaskInfo
 
 trait CompilationState
 case object CachedCompilation extends CompilationState 
@@ -16,7 +15,7 @@ case object CompilationNotRequired extends CompilationState
 
 case class CompilationFailed(error : String) extends CompilationState
 
-case class CompilationInfo(task : CompileTask, state : CompilationState) extends TaskInfo{
+case class CompilationInfo(task : CompileTask, state : CompilationState) {
   def module = task.module
   def phase = task.phase
 
@@ -27,8 +26,6 @@ case class CompilationInfo(task : CompileTask, state : CompilationState) extends
     b.addLine("  State : " + state)
     b.toString
   }
-  def toShortString = toString
-  def toLongString = toString
 }
 
 

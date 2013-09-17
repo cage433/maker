@@ -47,7 +47,7 @@ import maker.task.compile.TestCompileTask
 import maker.utils.StringUtils
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
-import maker.MakerTestResults
+import maker.TestResults
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () => Iterable[String])  extends Task {
@@ -96,12 +96,12 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val res = cmd.exec
     val results = baseProject.testResults
     val result = if (results.failedTests.isEmpty){
-      TaskResult.success(this, sw)
+      TaskResult.success(this, sw, info = Some(results))
     } else {
       val failingSuiteClassesText = results.failedTestSuites.indented()
-      TaskResult.failure(this, sw, "Test failed in " + baseProject + failingSuiteClassesText)
+      TaskResult.failure(this, sw, message = Some("Test failed in " + baseProject + failingSuiteClassesText), info = Some(results))
     }
-    result.withInfo(results)
+    result
   }
 
 }
@@ -146,7 +146,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () => MakerTestResults(module).failedTestSuites
+      () => TestResults(module).failedTestSuites
     )
   }
 }

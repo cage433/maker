@@ -63,7 +63,7 @@ case class UpdateTask(module : Module) extends Task {
       case Nil => 
         TaskResult.success(this, sw)
       case _ => 
-        TaskResult.failure(this, sw, "Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t"))
+        TaskResult.failure(this, sw, message = Some("Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t")))
     }
   }
 

@@ -35,7 +35,6 @@ import maker.MakerProps
 
 trait Task {
   def name : String
-  def toShortString = toString
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
   def failureHaltsTaskManager : Boolean = true
 
@@ -48,7 +47,7 @@ trait Task {
 
 object NullTask extends Task{
   def name = "Null Task"
-  def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = TaskResult.success(this, sw)
+  def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = TaskResult(this, sw, succeeded = true)
   def upstreamTasks = Nil
 }
 

@@ -94,7 +94,7 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
     catch {
       case e =>
         e.printStackTrace
-        TaskResult.failure(this, sw, e)
+        TaskResult.failure(this, sw, exception = Some(e))
     }
   }
 }

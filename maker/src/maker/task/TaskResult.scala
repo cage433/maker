@@ -8,34 +8,42 @@ import maker.utils.Stopwatch
 import maker.utils.Utils
 import maker.task.compile.CompilationInfo
 import maker.task.tasks.RunUnitTestsTask
-import maker.utils.TaskInfo
 
 
-trait TaskResult {
-  def task : Task
-  def sw : Stopwatch
-  def succeeded : Boolean
+case class TaskResult(task : Task, sw : Stopwatch, succeeded : Boolean, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None){
   def failed = !succeeded
   def status = if (succeeded) "succeeded" else "failed"
   def timeTaken(name : String) = (timeAt(name) - sw.startTime) / 1000000
   def timeAt(name : String) = sw.snapshotTime(name).get
-  def info : Option[TaskInfo]
 
-  protected def copy_(
-    task : Task = task, 
-    sw : Stopwatch = sw,
-    info : Option[TaskInfo] = info
-  ) : TaskResult
-  def withInfo(info : TaskInfo) = copy_(info = Some(info))
-  def withoutInfo = copy_(info = None)
-  def withTask(newTask : Task) : TaskResult = copy_(task = newTask)
-  def snapshot(name : String) = copy_(sw = sw.snapshot(name))
+  def snapshot(name : String) = {
+    sw.snapshot(name)
+    this
+  }
   def compilationInfo : Option[CompilationInfo] = info match {
     case Some(x) if x.isInstanceOf[CompilationInfo] => Some(x.asInstanceOf[CompilationInfo])
     case _ => None
   }
 
-  override def toString = task + " " + status
+  override def toString = {
+    if (succeeded)
+      task + " " + status
+    else {
+      val b = new StringBuffer
+      b.append(super.toString + message.map(". " + _).getOrElse(""))
+      
+      (task, exception) match {
+        case (_, Some(e)) => 
+          b.addLine("Exception message")
+          b.addLine(Option(e.getMessage).getOrElse("").indent(2))
+          b.addLine("Stack trace")
+          b.addLine(Utils.stackTraceAsString(e).indent(2))
+        case (_ : RunUnitTestsTask, _) => info.foreach(b.append)
+        case _ => 
+      }
+      b.toString
+    }
+  }
 
   override def hashCode = task.hashCode
   override def equals(rhs : Any) = {
@@ -51,82 +59,21 @@ trait TaskResult {
   }
 }
 
-case class TaskSucceeded(
-  task : Task,
-  sw : Stopwatch,
-  info : Option[TaskInfo] = None	  
-) extends TaskResult {
-
-  val succeeded = true
-
-  protected def copy_(
-    task : Task = task, 
-    sw : Stopwatch = sw,
-    info : Option[TaskInfo] = info
-  ) : TaskResult = copy(
-    task = task, 
-    sw = sw,
-    info = info
-  )
-
-}
-
-case class TaskFailed(
-  task : Task,
-  sw : Stopwatch,
-  reasonForFailure : Option[String] = None,
-  exception : Option[Throwable] = None,
-  info : Option[TaskInfo] = None
-) extends TaskResult {
-
-  protected def copy_(
-    task : Task = task, 
-    sw : Stopwatch = sw,
-    info : Option[TaskInfo] = info
-  ) : TaskResult = copy(
-    task = task, 
-    sw = sw,
-    info = info
-  )
-
-  val succeeded = false
-
-  override def toString = {
-    val b = new StringBuffer
-    b.append(super.toString + reasonForFailure.map(". " + _).getOrElse(""))
-    
-    (task, exception) match {
-      case (_, Some(e)) => 
-        b.addLine("Exception message")
-        b.addLine(Option(e.getMessage).getOrElse("").indent(2))
-        b.addLine("Stack trace")
-        b.addLine(Utils.stackTraceAsString(e).indent(2))
-      case (_ : RunUnitTestsTask, _) => info.foreach(b.append)
-      case _ => 
-    }
-    b.toString
-  }
-
-  def filesWithChangedSigs : Set[File] = Set[File]()
-}
-
 object TaskResult{
-  def success(task : Task, sw : Stopwatch) : TaskResult = TaskSucceeded(
-    task,
-    sw
-  ).snapshot(EXEC_COMPLETE)
-
-  def failure(task : Task, sw : Stopwatch, reason : String) : TaskResult = TaskFailed(
+  def success(task : Task, sw : Stopwatch, info : Option[Any] = None) : TaskResult = TaskResult(
     task,
     sw,
-    reasonForFailure = Some(reason)
-  ).snapshot(EXEC_COMPLETE)
-
-  def failure(task : Task, sw : Stopwatch, exception : Throwable) : TaskResult = TaskFailed(
+    succeeded = true,
+    info = info
+    ).snapshot(EXEC_COMPLETE)
+  
+  def failure(task : Task, sw : Stopwatch, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None) : TaskResult = TaskResult(
     task,
     sw,
-    reasonForFailure = Some(exception.getMessage),
-    exception = Some(exception)
+    succeeded = false,
+    info = info,
+    message = message,
+    exception = exception
   ).snapshot(EXEC_COMPLETE)
 
   val EXEC_START = "Exec start"

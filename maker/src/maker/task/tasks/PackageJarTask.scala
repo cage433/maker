@@ -61,7 +61,7 @@ case class PackageJarTask(module : Module) extends Task {
     var cmds : List[WrappedCommand] = createJarCommand(dirsToPack.head) :: dirsToPack.tail.map(updateJarCommand)
 
     cmds.find(_.exec != 0) match {
-      case Some(failingCommand) => TaskResult.failure(this, sw, failingCommand.cmd.savedOutput)
+      case Some(failingCommand) => TaskResult.failure(this, sw, message = Some(failingCommand.cmd.savedOutput))
       case None => TaskResult.success(this, sw)
     }
   }
