@@ -13,77 +13,24 @@ import maker.utils.FileUtils._
 
 case class CompileScalaTask(modulePhase : ModuleCompilePhase){
 
-  val log = modulePhase.log
-
-  val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
-
-  //val inputs : Unit = {
-    //val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
-    //var upstreamCaches = Map[File, File]()
-    //upstreamProjectPhases.foreach{
-      //case pp : ModuleCompilePhase =>
-      //upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
-      //}
-      // 
-      //val cp : Seq[File] = modulePhase.classpathDirectoriesAndJars.toList
-      //val outputDir = modulePhase.outputDir
-      //val cacheFile = modulePhase.compilationCacheFile
-      //val scalacOptions : Seq[String] = Nil
-      //val javacOptions : Seq[String] = Nil
-      //val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
-      //val definesClass: File => String => Boolean = Locate.definesClass _
-      // 
-      //val inputs = Inputs(
-        //cp.map(_.getCanonicalFile),
-        //sourceFiles.map(_.getCanonicalFile),
-        //outputDir.getCanonicalFile,
-        //scalacOptions,
-        //javacOptions,
-        //cacheFile,
-        //analyses,
-        //false,
-        //definesClass,
-        //false,
-        //CompileOrder.Mixed,
-        //None,
-        //None,
-        //mirrorAnalysis = true
-        //)
-      //
-      //}
-
   def exec : Either[CompileFailed, Analysis] = {
-    val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
-    var upstreamCaches = Map[File, File]()
-    upstreamProjectPhases.foreach{
-      case pp : ModuleCompilePhase =>
-        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
-    }
-    
-    val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
-    val cp : Seq[File] = modulePhase.classpathDirectoriesAndJars.toList
-    val outputDir = modulePhase.outputDir
-    val cacheFile = modulePhase.compilationCacheFile
-    val scalacOptions : Seq[String] = Nil
-    val javacOptions : Seq[String] = Nil
-    val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
-    val definesClass: File => String => Boolean = Locate.definesClass _
+    val outputDir = modulePhase.outputDir.getCanonicalFile
         
     val inputs = Inputs(
-      cp.map(_.getCanonicalFile),
-      sourceFiles.map(_.getCanonicalFile),
-      outputDir.getCanonicalFile,
-      scalacOptions,
-      javacOptions,
-      cacheFile,
-      analyses,
-      false,
-      definesClass,
-      false,
-      CompileOrder.Mixed,
-      None,
-      None,
-      mirrorAnalysis = true
+      classpath         = modulePhase.classpathDirectoriesAndJars.toList.map(_.getCanonicalFile),
+      sources           = modulePhase.sourceFiles.toList.map(_.getCanonicalFile),
+      classesDirectory  = outputDir,
+      scalacOptions     = Nil,
+      javacOptions      = Nil,
+      cacheFile         = modulePhase.compilationCacheFile,
+      analysisMap       = Map[File, Analysis]() ++ modulePhase.module.analyses,
+      forceClean        = false,
+      definesClass      = Locate.definesClass _,
+      javaOnly          = false,
+      compileOrder      = CompileOrder.Mixed,
+      outputRelations   = None,
+      outputProducts    = None,
+      mirrorAnalysis    = true
     )
 
 
