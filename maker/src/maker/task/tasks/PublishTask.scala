@@ -39,6 +39,8 @@ import maker.MakerProps
 import maker.utils.maven.IvyLock
 import org.apache.ivy.core.module.id.ModuleRevisionId
 import org.apache.ivy.core.module.id.ModuleId
+import org.apache.ivy.util.DefaultMessageLogger
+import org.apache.ivy.util.Message
 
 
 case class PublishTask(baseProject : BaseProject, resolverName : String, version : String) extends Task {
@@ -62,11 +64,20 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
       val resolveOptions = new ResolveOptions().setConfs(confs)
         .setValidate(true)
         .setArtifactFilter(artifactFilter)
+
       val ivy = Ivy.newInstance
+
+      // Stop maker unit tests being noisy
+      if (baseProject.props.RunningInUserMode())
+        ivy.getLoggerEngine().pushLogger(new DefaultMessageLogger(Message.MSG_INFO));
+      else
+        ivy.getLoggerEngine().pushLogger(new DefaultMessageLogger(Message.MSG_ERR));
+
       val settings = ivy.getSettings
 
       settings.addAllVariables(System.getProperties)
       ivy.configure(props.IvySettingsFile())
+
 
       val report = ivy.resolve(ivyFile.toURI().toURL(), resolveOptions)
       val md = report.getModuleDescriptor
