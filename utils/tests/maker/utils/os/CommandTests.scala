@@ -28,14 +28,14 @@ package maker.utils.os
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import scala.actors.Futures
-import maker.MakerProps
+import maker.Props
 
 class CommandTests extends FunSuite{
 
   test("synchronous command runs"){
     withTempDir{
       dir =>
-        val props = MakerProps(dir)
+        val props = Props(dir)
         val f = file(dir, "foo")
         assert(! f.exists)
         val cmd = Command(props, CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
@@ -47,7 +47,7 @@ class CommandTests extends FunSuite{
   test("asynchronous command runs"){
     withTempDir{
       dir =>
-        val props = MakerProps(dir)
+        val props = Props(dir)
         val f = file(dir, "foo")
         assert(! f.exists)
         val cmd = Command(props, CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
@@ -61,7 +61,7 @@ class CommandTests extends FunSuite{
   test("Output is written to file"){
     withTempDir{
       dir =>
-        val props = MakerProps(dir)
+        val props = Props(dir)
         val outputFile = file(dir, "output")
         assert(! outputFile.exists)
         val cmd = Command(props, CommandOutputHandler(outputFile), None, "echo", "HELLO")
@@ -75,7 +75,7 @@ class CommandTests extends FunSuite{
   test("Output is saved"){
     withTempDir{
       dir =>
-        val props = MakerProps(dir)
+        val props = Props(dir)
         val cmd = Command(props, CommandOutputHandler.NULL.withSavedOutput, None, "echo", "HELLO")
         cmd.exec
         assert(cmd.savedOutput === "HELLO\n")
@@ -85,7 +85,7 @@ class CommandTests extends FunSuite{
   test("Can kill process whose output is being redirected"){
     withTempDir{
       dir => 
-        val props = MakerProps(dir)
+        val props = Props(dir)
         writeToFile(
           file(dir, "main.sh"),
           """
@@ -114,7 +114,7 @@ class CommandTests extends FunSuite{
   test("Can kill process even if its output is not consumed"){
     withTempDir{
       dir => 
-        val props = MakerProps(dir)
+        val props = Props(dir)
         writeToFile(
           file(dir, "main.sh"),
           """
@@ -136,4 +136,38 @@ class CommandTests extends FunSuite{
     }
   }
 
+  test("Can construct a process id"){
+    val p = ProcessID()
+      assert(p.id > 0)
+  }
+
+  case class ProcessID(id : Int){
+    def isRunning(props : Props) = {
+      val status = Command(props, "kill", "-0", id.toString).withNoOutput.exec()
+      status == 0
+    }
+
+    def kill(props : Props){
+      val status = Command(props, "kill", "-9", id.toString).withNoOutput.exec()
+      assert(status == 0, "Failed to kill process " + id + ", ")
+    }
+  }
+
+  object ProcessID{
+    import java.lang.management.ManagementFactory
+    /**
+    * Returns the process ID of the current process
+    * Not certain this would work any anything other than Linux, but 
+    * is only used in tests
+    */
+    def apply() : ProcessID = {
+      val List(idString, host) = ManagementFactory.getRuntimeMXBean().getName().split("@").toList
+      ProcessID(idString.toInt)
+    }
+    def apply(proc : Process) : ProcessID = {
+      val f = proc.getClass().getDeclaredField("pid")
+      f.setAccessible(true)
+      ProcessID(f.getInt(proc))
+    }
+  }
 }

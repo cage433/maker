@@ -30,5 +30,4 @@ System.setProperty("log4j.ignoreTCL", "true")
 import maker.Maker._
 
 
-def pid = maker.utils.os.ProcessID().id
 import topLevel._

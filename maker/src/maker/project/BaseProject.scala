@@ -1,10 +1,10 @@
 package maker.project
-import maker.task.Dependency
-import maker.task.Dependency.Graph
-import maker.task.BuildResult
+import maker.build.Dependency
+import maker.build.Dependency.Graph
+import maker.build.BuildResult
 import maker.task.Task
-import maker.MakerProps
-import maker.task.Build
+import maker.Props
+import maker.build.Build
 import maker.task.compile.SourceCompileTask
 import maker.task.tasks.CleanTask
 import java.io.File
@@ -12,14 +12,17 @@ import maker.utils.FileUtils
 import maker.utils.FileUtils._
 import maker.task.compile.TestCompileTask
 import maker.task.tasks._
-import maker.utils.RichString._
+import maker.task.test.RunUnitTestsTask
+import maker.utils.Implicits.RichString._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
-import maker.Resource
-import maker.ivy.IvyUtils
+import maker.task.update.Resource
 import scala.xml.Elem
 import maker.Help
-import maker.TestResults
+import maker.task.test.TestResults
+import maker.task.publish.IvyUtils
+import maker.task.publish.PublishLocalTask
+import maker.task.publish.PublishTask
 
 trait BaseProject {
   protected def root : File
@@ -29,7 +32,7 @@ trait BaseProject {
   def tearDown(graph : Dependency.Graph, result : BuildResult) : Unit
   def extraUpstreamTasks(task : Task) : Set[Task] = Set.empty
   def extraDownstreamTasks(task : Task) : Set[Task] = Set.empty
-  def props : MakerProps
+  def props : Props
   def log = props.log
 
   lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)
@@ -213,7 +216,7 @@ trait BaseProject {
   def doc = Doc.execute
 
   def builds = {
-    val buildFields = this.getClass.getDeclaredFields.filter{f => classOf[maker.task.Build].isAssignableFrom(f.getType)}.map(_.getName)
+    val buildFields = this.getClass.getDeclaredFields.filter{f => classOf[maker.build.Build].isAssignableFrom(f.getType)}.map(_.getName)
     val helpText = """
       |Builds are directed graphs of tasks, such as Update, Clean, Compile, TestCompile and Test.
       |

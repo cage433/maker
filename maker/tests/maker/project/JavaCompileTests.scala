@@ -4,7 +4,7 @@ import org.scalatest.FunSuite
 import java.io.File
 import maker.utils.FileUtils._
 import maker.project.Module._
-import maker.MakerProps
+import maker.Props
 import maker.task.compile._
 
 
@@ -13,7 +13,7 @@ class JavaCompileTests extends FunSuite with TestUtils {
   test("Java module fails when expected and stays failed"){
     withTempDir{
       root => 
-        val props = MakerProps.initialiseTestProps(root)
+        val props = Props.initialiseTestProps(root)
         val proj = TestModule(root, "JavaCompileTests", props)
         proj.writeSrc(
           "src/foo/Foo.java", 

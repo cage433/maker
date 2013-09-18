@@ -1,7 +1,7 @@
 package maker.task.compile
 
 import java.io.File
-import maker.task.Dependency
+import maker.build.Dependency
 import maker.utils.FileUtils._
 import java.io.BufferedWriter
 import maker.project.Module
@@ -12,6 +12,10 @@ import org.apache.commons.io.output.NullOutputStream
 import java.io.FileOutputStream
 import com.typesafe.zinc.Compiler
 
+/**
+  * A combination of a module and a compilation phase.
+  * For convenience
+  */
 case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   import ModuleCompilePhase._
   val log = module.log
@@ -119,13 +123,13 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     }
   }
   def compilationOutputStream : PrintStream = {
-    val outputStream = if (module.props.ShowCompilerOutput()){
+    val outputStream = if (module.props.RunningInMakerTest()){
+      new NullOutputStream
+    } else {
       new TeeOutputStream(
         Console.err,
         new FileOutputStream(vimCompileOutputFile)
       )
-    } else {
-      new NullOutputStream
     }
     new PrintStream(outputStream)
   }
@@ -153,3 +157,28 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
 }
 
+
+trait CompilePhase {
+  def name : String
+}
+
+case object SourceCompilePhase extends CompilePhase {
+  def name = "source-compile"
+  override def toString = "Source compile"
+}
+
+case object TestCompilePhase extends CompilePhase {
+  def name = "test-compile"
+  override def toString = "Test compile"
+}
+
+object CompilePhase{
+  def apply(name : String) : CompilePhase = {
+    if (name == SourceCompilePhase.toString)
+      SourceCompilePhase
+    else if (name == TestCompilePhase.toString)
+      TestCompilePhase
+    else
+      throw new RuntimeException("Unrecognosed phase name " + name)
+  }
+}

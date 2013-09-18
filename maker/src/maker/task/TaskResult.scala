@@ -1,13 +1,13 @@
 package maker.task
 
 import java.io.File
-import maker.utils.RichString._
-import maker.utils.RichIterable._
+import maker.utils.Implicits.RichString._
+import maker.utils.Implicits.RichIterable._
+import maker.utils.Implicits.RichThrowable._
 import maker.project.Module
 import maker.utils.Stopwatch
-import maker.utils.Utils
 import maker.task.compile.CompilationInfo
-import maker.task.tasks.RunUnitTestsTask
+import maker.task.test.RunUnitTestsTask
 
 
 case class TaskResult(task : Task, sw : Stopwatch, succeeded : Boolean, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None){
@@ -37,7 +37,7 @@ case class TaskResult(task : Task, sw : Stopwatch, succeeded : Boolean, info : O
           b.addLine("Exception message")
           b.addLine(Option(e.getMessage).getOrElse("").indent(2))
           b.addLine("Stack trace")
-          b.addLine(Utils.stackTraceAsString(e).indent(2))
+          b.addLine(e.stackTraceAsString.indent(2))
         case (_ : RunUnitTestsTask, _) => info.foreach(b.append)
         case _ => 
       }

@@ -6,7 +6,6 @@ import maker.task.TaskResult
 import maker.utils.Stopwatch
 import maker.utils.os.Command
 import maker.utils.FileUtils._
-import maker.utils.Utils._
 import java.io.File
 import maker.task.compile.SourceCompileTask
 import maker.task.compile._
@@ -34,7 +33,7 @@ case class PackageJarTask(module : Module) extends Task {
   }
 
   private def doPackage(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val jar = props.Jar().getAbsolutePath
+    val jar = props.Jar
 
     case class WrappedCommand(cmd : Command, ignoreFailure : Boolean){
       def exec : Int = {

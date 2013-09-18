@@ -1,13 +1,14 @@
 package maker.project
 import maker.task.Task
-import maker.task.Dependency
-import maker.task.BuildResult
+import maker.build.Dependency
+import maker.build.BuildResult
 import maker.task.compile.CompileTask
 import maker.utils.FileUtils._
 import java.io.BufferedWriter
-import maker.utils.RichString._
+import maker.utils.Implicits.RichString._
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
+import maker.build.Dependency
 
 trait TmuxIntegration{
   self : BaseProject => 

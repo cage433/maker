@@ -3,13 +3,13 @@ package maker.project
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.os.Command
-import maker.MakerProps
+import maker.Props
 
 class ProjectTests extends FunSuite {
   test("Project can write its own definition file"){
     withTempDir{
       dir =>{
-        val props = MakerProps.initialiseTestProps(dir)
+        val props = Props.initialiseTestProps(dir)
         val a = TestModule(
           mkdir(file(dir, "a")),
           "a",
@@ -59,7 +59,7 @@ class ProjectTests extends FunSuite {
         )
 
         val cmd = Command(
-          MakerProps(file(dir, "props.conf")),
+          Props(file(dir, "props.conf")),
           makerDotSh,
           "-z",      // Developer mode prevents maker bootstrapping 
           "-e", "TestProject.test"

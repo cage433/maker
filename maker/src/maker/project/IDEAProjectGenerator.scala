@@ -30,10 +30,10 @@ import java.io.File
 import maker.utils.FileUtils
 import collection.mutable.ListBuffer
 import maker.task.compile._
-import maker.utils.RichString._
-import maker.MakerProps
+import maker.utils.Implicits.RichString._
+import maker.Props
 
-case class IDEAProjectGenerator(props : MakerProps) {
+case class IDEAProjectGenerator(props : Props) {
   val scalaVersion = props.ProjectScalaVersion()
 
   def generateTopLevelModule(rootDir:File, name:String, excludedFolders:List[String]) {

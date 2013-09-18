@@ -3,14 +3,14 @@ package maker.project
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.os.Command
-import maker.MakerProps
+import maker.Props
 
 
 class TestModuleTests extends FunSuite{
   test("Can build test module from itself"){
     withTempDir{
       dir => 
-        val props = MakerProps.initialiseTestProps(dir)
+        val props = Props.initialiseTestProps(dir)
         val proj = TestModule(dir, "TestTestModule", props)
         proj.writeSrc(
           "foo/Foo.scala",
@@ -42,7 +42,7 @@ class TestModuleTests extends FunSuite{
         )
 
         val cmd = Command(
-          MakerProps(file(dir, "props.conf")),
+          Props(file(dir, "props.conf")),
           makerDotSh,
           "-z",      // Developer mode prevents maker bootstrapping 
           "-e", "TestTestModule.test"

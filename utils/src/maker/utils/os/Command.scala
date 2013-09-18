@@ -32,8 +32,8 @@ import scala.actors.Futures._
 import java.io.FileWriter
 import scalaz.syntax.std.option._
 import java.io.IOException
-import maker.MakerProps._
-import maker.MakerProps
+import maker.Props._
+import maker.Props
 import maker.utils.MakerLog
 import maker.utils.FileUtils._
 
@@ -94,7 +94,7 @@ object CommandOutputHandler{
   }
 }
 
-case class Command(props : MakerProps, outputHandler : CommandOutputHandler, workingDirectory : Option[File], args : String*) {
+case class Command(props : Props, outputHandler : CommandOutputHandler, workingDirectory : Option[File], args : String*) {
 
   private lazy val log = props.log
   def savedOutput = outputHandler.savedOutput
@@ -149,12 +149,12 @@ case class Command(props : MakerProps, outputHandler : CommandOutputHandler, wor
 }
 
 object Command{
-  def apply(props : MakerProps, args : String*) : Command = new Command(props, CommandOutputHandler(), None, args : _*)
-  def apply(props : MakerProps, workingDirectory : Option[File], args : String*) : Command = new Command(props, CommandOutputHandler(), workingDirectory, args : _*)
+  def apply(props : Props, args : String*) : Command = new Command(props, CommandOutputHandler(), None, args : _*)
+  def apply(props : Props, workingDirectory : Option[File], args : String*) : Command = new Command(props, CommandOutputHandler(), workingDirectory, args : _*)
 }
 
 object ScalaCommand {
-  def apply(props : MakerProps, outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
+  def apply(props : Props, outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
     val allArgs : List[String] = java :: opts ::: List[String](
       "-Dscala.usejavacp=true", 
       "-classpath",
@@ -166,7 +166,7 @@ object ScalaCommand {
 }
 
 object ScalaDocCmd {
-  def apply(props : MakerProps, outputHandler : CommandOutputHandler, outputDir : File, java : String, classpath : String, opts : List[String], files : File*) : Command = {
+  def apply(props : Props, outputHandler : CommandOutputHandler, outputDir : File, java : String, classpath : String, opts : List[String], files : File*) : Command = {
     val allArgs : List[String] = List(
       java,
       "-Dscala.usejavacp=true",
@@ -175,7 +175,7 @@ object ScalaDocCmd {
       "scala.tools.nsc.ScalaDoc" :: files.map(_.getAbsolutePath).toList
     Command(props, outputHandler, Some(outputDir), allArgs :_*)
   }
-  def apply(props : MakerProps, outputHandler : CommandOutputHandler, outputDir : File, java : String, classpath : String, opts : List[String], optsFile : File) : Command = {
+  def apply(props : Props, outputHandler : CommandOutputHandler, outputDir : File, java : String, classpath : String, opts : List[String], optsFile : File) : Command = {
     val allArgs : List[String] = List(
       java,
       "-Dscala.usejavacp=true",

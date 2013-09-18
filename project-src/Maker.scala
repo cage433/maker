@@ -34,7 +34,7 @@ import org.apache.commons.lang3.StringUtils
 import maker.task.TaskResult._
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Level._
-import task.BuildResult
+import maker.build.BuildResult
 import maker.task.Task
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
@@ -46,7 +46,7 @@ import maker.task.compile._
  */
 object Maker {
 
-  private val props = MakerProps(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
+  private val props = Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
 
   def module(name : String, upstreamProjects : Module*) = {
     val root = file(name).asAbsoluteFile

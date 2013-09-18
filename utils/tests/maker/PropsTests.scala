@@ -38,7 +38,7 @@ class PropsTests extends FunSuite{
       file => 
         writeToFile(file, "InvalidPropKey=jfsfksjfks")
         try{
-          MakerProps(file)
+          Props(file)
           fail("expected exception to be thrown")
         } catch {
           case e : AssertionError => 
@@ -50,7 +50,7 @@ class PropsTests extends FunSuite{
     withTempFile{
       file => 
         writeToFile(file, "#InvalidPropKey=jfsfksjfks")
-        assert(MakerProps(file) === MakerProps(file.getParentFile, MMap[String, String]()))
+        assert(Props(file) === Props(file.getParentFile, MMap[String, String]()))
     }
   }
 
@@ -58,15 +58,15 @@ class PropsTests extends FunSuite{
     withTempFile{
       file => 
         writeToFile(file, "ProjectScalaVersion=Fred")
-        assert(MakerProps(file).ProjectScalaVersion() === "Fred")
-        assert(MakerProps(file.getParentFile).ProjectScalaVersion() === "2.9.2")
+        assert(Props(file).ProjectScalaVersion() === "Fred")
+        assert(Props(file.getParentFile).ProjectScalaVersion() === "2.9.2")
     }
   }
 
   test("Can override a maker property"){
     withTempDir{
       dir => 
-        val props = MakerProps(dir)
+        val props = Props(dir)
         assert(props.VimErrorFile() != file("fred"))
         props.VimErrorFile := "fred"
         assert(props.VimErrorFile() === file("fred"))
@@ -97,7 +97,7 @@ class PropsTests extends FunSuite{
     Foo.toString
     withTempDir{
       dir => 
-        MakerProps(dir).toString
+        Props(dir).toString
     }
   }
 

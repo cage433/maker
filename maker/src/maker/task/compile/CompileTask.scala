@@ -7,14 +7,14 @@ import maker.utils.FileUtils._
 import maker.utils.Stopwatch
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
-import maker.MakerProps
-import maker.task.tasks.UpdateTask
+import maker.Props
+import maker.task.update.UpdateTask
 import maker.utils.PersistentCache
 import maker.utils.FileSysyemPersistentCache
 import maker.utils.RedisPersistentCache
 import maker.utils.HashCache
 import maker.utils.CompilationCache
-import maker.task.Build
+import maker.build.Build
 import sbt.compiler.CompileFailed
 import java.util.Date
 
@@ -81,7 +81,7 @@ abstract class CompileTask extends Task{
             else 
               failure(this, sw, message = Some("zinc compilation failure"))
           case "scalac" => 
-            CompileScalaTask(modulePhase).exec match {
+            ScalacCompile(modulePhase) match {
               case Left(e) => {
                 failure(this, sw, message = Some("compilation failure"), info = Some(CompilationFailedInfo(e)))
               }
@@ -90,7 +90,7 @@ abstract class CompileTask extends Task{
               }
             }
           case "dummy-test-compiler" =>
-            DummyCompileTask(modulePhase).exec
+            DummyScalaCompile(modulePhase)
             success(this, sw)
 
         }

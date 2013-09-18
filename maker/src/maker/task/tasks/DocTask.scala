@@ -33,7 +33,7 @@ import maker.utils.os.{ScalaDocCmd, CommandOutputHandler}
 import maker.task.Task
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
+import maker.Props
 import maker.task.compile.SourceCompileTask
 import maker.task.compile._
 import maker.project.BaseProject
@@ -78,7 +78,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
         props,
         new CommandOutputHandler(Some(writer)).withSavedOutput,
         docDir,
-        props.Java().getAbsolutePath,
+        props.Java,
         scalaToolsClasspath,
         Nil,
         optsFile)

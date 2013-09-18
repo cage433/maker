@@ -31,7 +31,7 @@ import java.io.BufferedWriter
 import java.io.BufferedReader
 import java.io.FileReader
 import maker.utils.os.Command
-import maker.MakerProps
+import maker.Props
 import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import java.io.InputStreamReader
@@ -205,7 +205,7 @@ object FileUtils extends Asserting{
     root.subDirs.foreach(traverseDirectories(_, fn))
   }
 
-  def findInPaths(props : MakerProps, paths : List[File], predicate : String => Boolean) : List[File] = {
+  def findInPaths(props : Props, paths : List[File], predicate : String => Boolean) : List[File] = {
     def find(p : List[File]) : List[File] = {
       p match {
         case Nil | null => Nil
@@ -222,10 +222,10 @@ object FileUtils extends Asserting{
     find(paths)
   }
   /// extracts the table of contents for the archive and looks for a matching line
-  def findInArchive(props : MakerProps, file : File, predicate : String => Boolean) : Boolean = {
+  def findInArchive(props : Props, file : File, predicate : String => Boolean) : Boolean = {
     import maker.utils.os._
     val coh = new CommandOutputHandler(None, Some(new StringBuffer()), false)
-    val cmd = new Command(props, coh, None, props.Jar().getAbsolutePath, "-tf", file.getAbsolutePath)
+    val cmd = new Command(props, coh, None, props.Jar, "-tf", file.getAbsolutePath)
     cmd.exec() match {
       case 0 => cmd.savedOutput.split('\r').exists(predicate)
       case _ => false

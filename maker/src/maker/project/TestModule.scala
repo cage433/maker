@@ -2,21 +2,24 @@ package maker.project
 
 import java.io.File
 import maker.utils.FileUtils._
-import maker.MakerProps
+import maker.Props
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
-import maker.utils.RichString._
-import maker.utils.RichIterable._
-import maker.Resource
+import maker.utils.Implicits.RichString._
+import maker.utils.Implicits.RichIterable._
+import maker.task.update.Resource
 import maker.task.Task
 import maker.task.TaskResult
 import maker.utils.Stopwatch
-import maker.task.tasks.UpdateTask
-import maker.task.Build
-import maker.task.Dependency
+import maker.task.update.UpdateTask
+import maker.build.Build
+import maker.build.Dependency
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 
+/**
+  * Mixin with helper methods for maker unit tests
+  */
 trait TestModule{
   self : Module => 
 
@@ -57,7 +60,7 @@ object TestModule{
   def apply(
     root : File, 
     name : String,
-    props : MakerProps,
+    props : Props,
     upstreamProjects : List[Module] = Nil,
     upstreamTestProjects : List[Module] = Nil
   ) : Module with TestModule = {

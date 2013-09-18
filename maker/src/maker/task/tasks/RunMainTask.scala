@@ -35,7 +35,7 @@ import maker.utils.os.CommandOutputHandler
 import maker.utils.os.ScalaCommand
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
+import maker.Props
 import maker.task.compile.TestCompileTask
 import maker.project.BaseProject
 
@@ -64,7 +64,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     val cmd = ScalaCommand(
       props,
       new CommandOutputHandler(Some(writer)),
-      props.Java().getAbsolutePath,
+      props.Java,
       optsToUse,
       baseProject.testClasspath,
       className,

@@ -2,14 +2,14 @@ package maker.project
 
 import maker.utils.FileUtils._
 import java.io.File
-import maker.MakerProps
-import maker.utils.RichString._
+import maker.Props
+import maker.utils.Implicits.RichString._
 
 case class Project(
   name : String,
   root : File,
   immediateUpstreamModules:List[Module],
-  props : MakerProps,
+  props : Props,
   topLevelExcludedFolders:List[String] = Nil
 ) extends BaseProject  with TmuxIntegration{
   
@@ -21,7 +21,7 @@ case class Project(
       m => 
         b.addLine(m.constructorCodeAsString)
     }
-    b.addLine("""val %s = maker.project.Project("%s", new java.io.File("%s"), %s, maker.MakerProps(new java.io.File("%s")))""" % (
+    b.addLine("""val %s = maker.project.Project("%s", new java.io.File("%s"), %s, maker.Props(new java.io.File("%s")))""" % (
       name, 
       name, 
       root.getAbsolutePath.toString, 

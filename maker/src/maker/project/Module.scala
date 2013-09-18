@@ -26,7 +26,6 @@ package maker.project
 
 import java.io.File
 import maker.utils._
-import maker.utils.Utils._
 import os.Command
 import org.apache.commons.io.FileUtils._
 import xml.NodeSeq
@@ -37,8 +36,7 @@ import java.io.PrintWriter
 import scala.tools.nsc.io.PlainDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.io.Directory
-import maker.utils.maven._
-import maker.MakerProps
+import maker.Props
 import org.apache.commons.io.output.TeeOutputStream
 import org.apache.commons.io.output.NullOutputStream
 import java.io.PrintStream
@@ -50,7 +48,7 @@ import scala.collection.JavaConversions._
 import com.typesafe.zinc.Compiler
 import maker.task.compile.CompileTask
 import maker.task.compile.CompileTask
-import maker.task.Dependency
+import maker.build.Dependency
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
@@ -60,15 +58,14 @@ import com.typesafe.zinc.Parsed
 import com.typesafe.zinc.Settings
 import com.typesafe.zinc.Inputs
 import com.typesafe.zinc.Setup
-import maker.task.Build
+import maker.build.Build
 import maker.task.tasks.CleanTask
-import maker.task.tasks.RunUnitTestsTask
-import maker.task.tasks.UpdateTask
-import maker.Resource
-import maker.utils.RichString._
+import maker.task.test.RunUnitTestsTask
+import maker.task.update.UpdateTask
+import maker.task.update.Resource
+import maker.utils.Implicits.RichString._
 import scala.xml.Elem
-import maker.ivy.IvyUtils
-import maker.PomUtils
+import maker.task.publish.PomUtils
 
 /**
   * Corresponds to a module in IntelliJ
@@ -77,7 +74,7 @@ import maker.PomUtils
 class Module(
     protected val root : File,
     val name : String,
-    val props : MakerProps,
+    val props : Props,
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
@@ -194,7 +191,7 @@ class Module(
   }
 
   def constructorCodeAsString : String = {
-    """val %s = new maker.project.Module(new java.io.File("%s"), "%s", maker.MakerProps(new java.io.File("%s")), %s, %s)""" % (name, root.getAbsolutePath, 
+    """val %s = new maker.project.Module(new java.io.File("%s"), "%s", maker.Props(new java.io.File("%s")), %s, %s)""" % (name, root.getAbsolutePath, 
       name, 
       props.root.getAbsolutePath + "/Maker.conf",
       immediateUpstreamModules.mkString("List(", ", ", ")"),
@@ -238,7 +235,7 @@ object Module{
  
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
-  val props = MakerProps(file(".").asAbsoluteFile)
+  val props = Props(file(".").asAbsoluteFile)
   private val setup = Setup.create(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),
