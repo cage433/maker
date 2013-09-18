@@ -96,6 +96,8 @@ case class MakerProps (private val root_ : File, overrides : MMap[String, String
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
   object TestReporter extends Default("maker.scalatest.MakerTestReporter") with IsString
+  
+  object RunningInUserMode extends Default(true) with IsBoolean
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
@@ -117,6 +119,7 @@ case class MakerProps (private val root_ : File, overrides : MMap[String, String
     writeProperty("ShowCompilerOutput", "false")
     writeProperty("GroupId", "MakerTestGroupID")
     writeProperty("TmuxMessaging", "false")
+    writeProperty("RunningInUserMode", "false")
     writeProperty("PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().absPath)
     List(
       ProjectScalaLibraryJar, 

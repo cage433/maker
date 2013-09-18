@@ -25,6 +25,12 @@ case class TestState(
   def succeeded = (result == Some(true))
   def failed = (result == Some(false))
   def unfinished = (result == None)
+  def runningTime = endTime match {
+    case Some(t) => 
+      t - startTime
+    case None => 
+      System.currentTimeMillis - startTime
+  }
 
   def formattedFailedTest = {
     val buffer = new StringBuffer
@@ -40,6 +46,7 @@ case class TestState(
     }
     buffer.toString
   }
+
 }
 
 case class SuiteTestResult(suiteClass : String, startTime : Long, endTime : Option[Long], testResults : List[TestState]){
@@ -138,7 +145,7 @@ case class TestResults(startTime : Option[Long], endTime : Option[Long], suiteRe
 
 object TestResults{
 
-  def apply(modules : List[Module]) : TestResults = modules.map(TestResults(_)).reduce(_++_)
+  def apply(modules : List[Module]) : TestResults = modules.map(TestResults(_)).foldLeft(EMPTY)(_++_)
   def apply(module : Module) : TestResults = {
 
     if (! module.testResultDirectory.exists)

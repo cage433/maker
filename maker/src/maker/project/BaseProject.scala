@@ -24,7 +24,6 @@ import maker.TestResults
 trait BaseProject {
   protected def root : File
   val rootAbsoluteFile = root.asAbsoluteFile
-  lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
   def setUp(graph : Dependency.Graph) : Unit
   def tearDown(graph : Dependency.Graph, result : BuildResult) : Unit

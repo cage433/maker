@@ -9,7 +9,7 @@ import maker.MakerProps
 
 class UpdateTaskTests extends FreeSpec {
   "test resources" in {
-    withTestDir{
+    withTempDir{
       dir => 
         writeToFile(
           file(dir, "external-resources"),

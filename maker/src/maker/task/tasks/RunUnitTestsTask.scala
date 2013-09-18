@@ -72,12 +72,12 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val systemProperties = (props.JavaSystemProperties.asMap + ("scala.usejavacp" -> "true")).map{
       case (key, value) => "-D" + key + "=" + value
     }.toList
-    baseProject.testOutputFile.delete
+
     val opts = List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m", 
-      "-Dmaker.test.output=" + baseProject.testOutputFile,
       "-Dmaker.test.project.root=" + baseProject.rootAbsoluteFile,
+      "-Dmaker.props.root=" + baseProject.props.root,
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false"
     ) ::: systemProperties

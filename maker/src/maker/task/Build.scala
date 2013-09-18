@@ -34,12 +34,20 @@ import maker.utils.MakerLog
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
-import maker.utils.FileUtils
+import maker.utils.FileUtils._
 import ch.qos.logback.classic.Level
 import maker.task.compile.CompileTask
 import maker.utils.RichString._
 import maker.project.BaseProject
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
+import maker.TestResults
+import maker.task.tasks.RunUnitTestsTask
+import maker.utils.CollectionUtils
+import java.io.File
+import maker.TestState
+import maker.utils.ScreenUtils
+import maker.project.Module
 
 case class Build(
   name : String,
@@ -93,14 +101,34 @@ case class Build(
     }
 
     val monitor = new Build.TaskMonitor(log, graph, executor)
+    val maybeTestMonitor = {
+      val testTasks = CollectionUtils.filterOnType[RunUnitTestsTask](graph.nodes).toList
+      if (testTasks.nonEmpty && props.RunningInUserMode())
+        Some(Build.TestMonitor(props, testTasks))
+      else 
+        None
+    }
 
     def execute : BuildResult = {
 
+      if (props.RunningInUserMode()){
+        ScreenUtils.clear
+        println("Executing " + name)
+      }
+      maybeTestMonitor.foreach{
+        tm => 
+          if (props.RunningInUserMode()){
+            tm.printHelp
+          }
+          tm.start
+      }
+        
       val clock = Stopwatch()
       val taskResults = log.infoWithTime("" + this){
         module.setUp(graph)
         execTasksInGraph()
       }
+      maybeTestMonitor.foreach(_.stop)
       val buildResult = BuildResult(
         name,
         taskResults.toList,
@@ -196,6 +224,124 @@ case class Build(
 object Build{
   val taskCount = new AtomicInteger(0)
 
+  case class TestMonitor(props : MakerProps, tasks : List[RunUnitTestsTask]){
+
+    val messageDir = new File(props.root, ".maker/messages")
+    messageDir.mkdirs
+    val requestFile = new File(messageDir, "request")
+    val requestSignalFile = new File(messageDir, "request_sent")
+    val answerFile = new File(messageDir, "answer")
+    val answerSignalFile = new File(messageDir, "answer_sent")
+
+    private val deathMessage = new AtomicBoolean(false)
+
+    def printHelp(){
+      println("""
+              |Interactive methods
+              |
+              |  'u'   -  Report on unfinished tests
+              |  'd'   -  Dump stack trace for thread of oldest unfinished test
+              |  'D'   -  Dump all stack traces for JVM of oldest unfinished test
+              """.stripMargin)
+    }
+    def start(){
+      thread.start
+    }
+
+    def stop(){
+      deathMessage.set(true)
+      thread.join
+    }
+
+    val thread = new Thread(
+      new Runnable{
+        def outputAnswer(){
+          if (answerSignalFile.exists && answerFile.exists){
+            println(answerFile.read)
+            answerFile.delete
+            answerSignalFile.delete
+          }
+        }
+
+        def unfinishedTests() : List[TestState] = {
+          val results = {
+            val modules = tasks.flatMap(_.baseProject.allUpstreamTestModules).distinct
+            TestResults(modules)
+          }
+          results.unfinishedTests.sortWith(_.startTime < _.startTime)
+        }
+
+        def reportSlowRunningTests(){
+          val unfinishedTests_ = unfinishedTests()
+          if (unfinishedTests_.nonEmpty){
+            println("\nUnfinished tests")
+            println(unfinishedTests_.map(_.testName).mkString("\n").indent("  "))
+          } else {
+            println("No unfinished tests")
+          }
+          println
+        }
+
+        def writeRequestToModule(module : Module, req : String){
+          val requestDir = file(module.rootAbsoluteFile, ".maker/messages")
+          requestDir.mkdirs
+          writeToFile(file(requestDir, "request"), req)
+          writeToFile(file(requestDir, "request_sent"), "")
+        }
+
+        def sendAnyRequest(){
+          try {
+            if (System.in.available > 0){
+              val r = System.in.read
+              r match {
+                case 'D' =>  
+                  unfinishedTests().headOption match {
+                    case Some(test) => 
+                      println("\nSending request to dump all to " + test.module)
+                      writeRequestToModule(test.module, "threaddump")
+                    case None => 
+                      println("\nNo unfinished tests")
+                  }
+                  writeToFile(requestFile, "threaddump")
+                  writeToFile(requestSignalFile, "")
+                case 'd' =>
+                  unfinishedTests().headOption match {
+                    case Some(test) => 
+                      println("\nSending request to dump just for " + test.suiteClass + " , in " + test.module)
+                      writeRequestToModule(test.module, "threaddumpsingleclass:" + test.suiteClass)
+                    case None =>
+                      println("\nNo unfinished tests")
+                  }
+                case 'u' =>  
+                  reportSlowRunningTests()
+              }
+              println
+            }
+          } catch {
+            case e =>
+          }
+        }
+
+      
+        def run{
+
+          while(! deathMessage.get){
+            try {
+              
+              sendAnyRequest
+              outputAnswer
+
+              Thread.sleep(1000)
+            } catch {
+              case e => 
+                println("Debug: Build: error in TestMonitor" + e)
+            }
+          }
+        }
+      }
+    )
+  }
+
   class TaskMonitor(log : MakerLog, graph : Dependency.Graph, executor : ThreadPoolExecutor){
     private val lock = new Object
     var results = List[TaskResult]()
@@ -205,6 +351,7 @@ object Build{
     private var unacknowledged = Set[Task]()
     private var remaining = graph
     private var taskLaunchCounter = 0
+
 
     def isComplete = lock.synchronized{
       completed.size == graph.size || results.exists{r => r.failed && r.task.failureHaltsTaskManager}
