@@ -1,7 +1,14 @@
 ---
 layout: default
 ---
-#Heading
+#Maker - a build tool for Scala projects   
 
-Some words go here - again
+
+####(How hard can it be to replace SBT....?)    
+  
+
+
+Rationale
+
+
 
