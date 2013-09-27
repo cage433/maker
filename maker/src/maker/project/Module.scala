@@ -25,49 +25,21 @@
 package maker.project
 
 import java.io.File
-import maker.utils._
-import maker.utils.Utils._
-import os.Command
-import org.apache.commons.io.FileUtils._
-import xml.NodeSeq
 import maker.utils.FileUtils._
-import scala.tools.nsc.Settings
-import scala.tools.nsc.reporters.ConsoleReporter
-import java.io.PrintWriter
-import scala.tools.nsc.io.PlainDirectory
-import scala.tools.nsc.Global
-import scala.tools.nsc.io.Directory
-import maker.utils.maven._
 import maker.MakerProps
-import org.apache.commons.io.output.TeeOutputStream
-import org.apache.commons.io.output.NullOutputStream
-import java.io.PrintStream
-import java.io.FileOutputStream
-import java.io.PrintStream
 import sbt.ConsoleLogger
-import com.typesafe.zinc.Setup
 import scala.collection.JavaConversions._
 import com.typesafe.zinc.Compiler
-import maker.task.compile.CompileTask
-import maker.task.compile.CompileTask
 import maker.task.Dependency
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
-import com.typesafe.zinc.ZincClient
-import xsbti.compile.CompileOrder
-import com.typesafe.zinc.Parsed
-import com.typesafe.zinc.Settings
-import com.typesafe.zinc.Inputs
 import com.typesafe.zinc.Setup
 import maker.task.Build
 import maker.task.tasks.CleanTask
 import maker.task.tasks.RunUnitTestsTask
 import maker.task.tasks.UpdateTask
 import maker.Resource
-import maker.utils.RichString._
-import scala.xml.Elem
-import maker.ivy.IvyUtils
 import maker.PomUtils
 
 /**
@@ -245,7 +217,7 @@ object Module{
   val analyses = new ConcurrentHashMap[File, Analysis]()
 
   def asClasspathStr(files : Iterable[File], sep : String = java.io.File.pathSeparator) =
-    files.toList.distinct.toList.map(_.getAbsolutePath).sortWith(_.toString < _.toString).mkString(sep)
+    files.toList.distinct.toList.map(_.getAbsolutePath).sortWith(_ < _).mkString(sep)
 
   def warnOfUnnecessaryDependencies(proj : Module){
     val log = proj.log

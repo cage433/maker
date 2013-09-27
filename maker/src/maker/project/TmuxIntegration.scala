@@ -1,5 +1,5 @@
 package maker.project
-import maker.task.Task
+
 import maker.task.Dependency
 import maker.task.BuildResult
 import maker.task.compile.CompileTask
@@ -12,7 +12,7 @@ import maker.utils.os.CommandOutputHandler
 trait TmuxIntegration{
   self : BaseProject ⇒ 
 
-    private lazy val hasTmux = (Command(props, CommandOutputHandler.NULL, None, "which", "tmux").withNoOutput.exec == 0)
+    private lazy val hasTmux = Command(props, CommandOutputHandler.NULL, None, "which", "tmux").withNoOutput.exec == 0
     def tmux(args : String*){
       if (props.TmuxMessaging() && hasTmux)
         new Command(props, CommandOutputHandler.NULL, None, ("tmux"::args.toList) : _*).withNoOutput.execAsync

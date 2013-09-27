@@ -24,7 +24,7 @@ object CompilePhase{
     else if (name == TestCompilePhase.toString)
       TestCompilePhase
     else
-      throw new RuntimeException("Unrecognosed phase name " + name)
+      throw new RuntimeException("Unrecognised phase name " + name)
   }
 }
 case object Run extends Phase

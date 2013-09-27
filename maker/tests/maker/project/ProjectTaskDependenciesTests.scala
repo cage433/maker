@@ -8,11 +8,9 @@ import maker.task.Dependency
 import java.io.File
 import maker.task.tasks.CleanTask
 import maker.utils.FileUtils._
-import maker.MakerProps
 import maker.task.BuildResult
 import maker.task.tasks.RunUnitTestsTask
 import maker.task.compile._
-import maker.task.Build
 
 class ProjectTaskDependenciesTests extends FunSuite{
   case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task{

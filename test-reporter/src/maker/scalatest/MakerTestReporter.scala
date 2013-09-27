@@ -1,7 +1,6 @@
 package maker.utils
 
 import org.scalatest.Reporter
-import org.scalatest.events.Event
 import java.io._
 import java.text.SimpleDateFormat
 import scala.Console
@@ -73,7 +72,7 @@ class MakerTestReporter extends Reporter{
       }
       case t : TestFailed ⇒ {
         val throwableAsList : List[String] = t.throwable.map(stackTraceAsList).getOrElse(List[String](" ")) // mkstring/split hack
-        appendToOutputFile(("FAILURE" :: t.suiteName :: t.suiteClassName.getOrElse("") :: t.testName :: t.message :: throwableAsList) : _*)
+        appendToOutputFile("FAILURE" :: t.suiteName :: t.suiteClassName.getOrElse("") :: t.testName :: t.message :: throwableAsList : _*)
       }
       case t : RunAborted ⇒ {
         Log.fatal("Run aborted" + t.message + t.throwable.map(stackTraceAsList).getOrElse(List[String]()).mkString("\n\t", "\n\t", ""))

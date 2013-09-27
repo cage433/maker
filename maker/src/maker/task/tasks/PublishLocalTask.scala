@@ -25,14 +25,10 @@
 
 package maker.task.tasks
 
-import maker.utils.FileUtils._
 import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
-import maker.MakerProps
-import java.io.IOException
 import maker.utils.maven.IvyLock
 import maker.utils.FileUtils
 import maker.PomUtils
@@ -42,8 +38,6 @@ import maker.PomUtils
  * publishes poms and packaged artifacts to the local filesystem at ~/.ivy2/maker-local - subject to change
  */
 case class PublishLocalTask(baseProject : BaseProject, version : String) extends Task {
-  private val configurations = List("default")
-
   def name = "Publish Local"
 
   def upstreamTasks = baseProject match {

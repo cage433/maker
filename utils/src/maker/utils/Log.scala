@@ -28,7 +28,6 @@ package maker.utils
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
-import maker.MakerProps
 
 object MakerLog{
   def apply() : MakerLog = {
@@ -83,13 +82,12 @@ case class MakerLog(logger: Logger) {
    }
 
    def withLevel[T](newLevel: Level)(thunk: => T) = {
-    val savedLevel = logger.getEffectiveLevel(); 
-    setLevel(newLevel); 
-    val thunkVal = {thunk}; 
-    setLevel(savedLevel); 
+    val savedLevel = logger.getEffectiveLevel()
+    setLevel(newLevel)
+    val thunkVal = thunk
+    setLevel(savedLevel)
     thunkVal 
   }
 
    def name = logger.getName
-
 }

@@ -25,13 +25,7 @@
 
 package maker.task
 
-import maker.project.Module
-import tasks._
-import maker.utils.RichString._
-import maker.task.TaskResult._
-import java.io.File
 import maker.utils.Stopwatch
-import maker.MakerProps
 
 trait Task {
   def name : String

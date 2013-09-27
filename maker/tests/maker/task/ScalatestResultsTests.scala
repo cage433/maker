@@ -26,13 +26,10 @@
 package maker.task
 
 import org.scalatest.FunSuite
-import scala.xml.XML
 import scala.xml.MetaData
 import scala.xml.Attribute
-import java.io.File
-import maker.project.{TestModule, Module}
+import maker.project.TestModule
 import maker.utils.FileUtils._
-import ch.qos.logback.classic.Level._
 
 
 class ScalatestResultsTests extends FunSuite{
@@ -47,22 +44,6 @@ class ScalatestResultsTests extends FunSuite{
     withTempDir{
       dir ⇒
         val proj = new TestModule(dir, "ScalatestResultsTests")
-        val fooTestContent = 
-          """
-          package foo
-          import org.scalatest.FunSuite
-          class FooTest extends FunSuite{
-            test("test 1 == 1"){
-              assert(1 === 1)
-            }
-            test("test 5 == 5"){
-              assert(1 === 1)
-            }
-            test("test 1 == 2"){
-              assert(1 === 2)
-            }
-          }
-          """
         proj.writeTest(
           "foo/FooTest.scala",
           """

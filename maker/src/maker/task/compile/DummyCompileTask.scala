@@ -1,6 +1,5 @@
 package maker.task.compile
 
-import maker.task.TaskResult
 import maker.utils.FileUtils._
 
 /**
@@ -8,7 +7,7 @@ import maker.utils.FileUtils._
   * for real class files to be produced. 
   */
 case class DummyCompileTask(mp : ModuleCompilePhase) {
-  def exec {
+  def exec() {
     mp.sourceFiles.foreach{
       sf =>   
         val relativeSrcFile = sf.relativeTo(mp.sourceDir)

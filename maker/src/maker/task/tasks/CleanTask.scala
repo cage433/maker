@@ -27,12 +27,8 @@ package maker.task.tasks
 
 import maker.project.Module
 import maker.utils.FileUtils._
-import maker.task.Task
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
-import maker.task.compile._
-import maker.utils.FileUtils
 
 
 /** Clean task - cleans up all build artifacts from the classpath

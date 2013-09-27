@@ -1,6 +1,5 @@
 package maker.task
 
-import maker.project.Module
 import maker.project.BaseProject
 
 object Dependency{

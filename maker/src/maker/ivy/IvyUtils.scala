@@ -1,6 +1,5 @@
 package maker.ivy
 
-import java.io.File
 import maker.utils.FileUtils._
 import scala.xml.{PrettyPrinter, NodeSeq}
 import org.apache.commons.io.FileUtils._

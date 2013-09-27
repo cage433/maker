@@ -25,9 +25,7 @@
 
 package maker.task.tasks
 
-import maker.utils.FileUtils._
 import maker.project._
-import maker.task.Task
 import java.util.Date
 import org.apache.ivy.core.publish.PublishOptions
 import org.apache.ivy.util.filter.FilterHelper
@@ -37,8 +35,6 @@ import maker.task._
 import maker.utils.Stopwatch
 import maker.MakerProps
 import maker.utils.maven.IvyLock
-import org.apache.ivy.core.module.id.ModuleRevisionId
-import org.apache.ivy.core.module.id.ModuleId
 
 
 case class PublishTask(baseProject : BaseProject, resolverName : String, version : String) extends Task {
@@ -54,7 +50,6 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
   private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
 
     val props : MakerProps = baseProject.props
-    val homeDir = props.HomeDir()
 
     val ivyFile = baseProject.ivyFile
     try {

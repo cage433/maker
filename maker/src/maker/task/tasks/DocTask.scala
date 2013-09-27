@@ -25,16 +25,12 @@
 
 package maker.task.tasks
 
-import maker.project.Module
 import maker.utils.FileUtils._
 import java.io.PrintWriter
 import maker.utils.TeeToFileOutputStream
 import maker.utils.os.{ScalaDocCmd, CommandOutputHandler}
-import maker.task.Task
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
-import maker.task.compile.SourceCompileTask
 import maker.task.compile._
 import maker.project.BaseProject
 
@@ -46,7 +42,7 @@ import maker.project.BaseProject
 case class DocTask(baseProject : BaseProject) extends Task {
   
   def name = "Doc " + baseProject.name
-  def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask(_)).toList
+  def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask).toList
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
     val log = props.log

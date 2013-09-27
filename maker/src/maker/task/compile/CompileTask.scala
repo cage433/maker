@@ -4,19 +4,14 @@ import maker.project._
 import maker.task.Task
 import maker.task.TaskResult
 import maker.utils.FileUtils._
-import maker.utils.Stopwatch
+import maker.utils._
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
-import maker.MakerProps
-import maker.task.tasks.UpdateTask
-import maker.utils.PersistentCache
-import maker.utils.FileSysyemPersistentCache
-import maker.utils.RedisPersistentCache
-import maker.utils.HashCache
-import maker.utils.CompilationCache
-import maker.task.Build
 import sbt.compiler.CompileFailed
-import maker.utils.TaskInfo
+import scala.Left
+import maker.task.tasks.UpdateTask
+import scala.Some
+import scala.Right
 
 abstract class CompileTask extends Task{
   
@@ -25,8 +20,6 @@ abstract class CompileTask extends Task{
   val props = module.props
 
   val modulePhase = ModuleCompilePhase(module, phase)
-
-  private val log = module.log
 
   private def copyResourcesToTargetDirIfNecessary(){
     if (props.CopyResourcesBeforeCompiling()) {
@@ -37,7 +30,7 @@ abstract class CompileTask extends Task{
 
   private val classesCache:Option[PersistentCache] = module.props.CompilationCache() match {
     case ""|"None"|"No"|"Off" => None
-    case "file" => Some(new FileSysyemPersistentCache(module.cacheDirectory))
+    case "file" => Some(new FileSystemPersistentCache(module.cacheDirectory))
     case hostname => Some(RedisPersistentCache.instance(hostname))
   }
   def inputsHash = HashCache.hash(modulePhase.compilationDependencies())
@@ -136,7 +129,7 @@ case class SourceCompileTask(module :Module) extends CompileTask{
 
 case class TestCompileTask(module : Module) extends CompileTask{
   def upstreamTasks = {
-    var tasks : List[Task] = SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
+    val tasks : List[Task] = SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
     tasks
   }
 

@@ -1,12 +1,7 @@
 package maker.project
 
 import org.scalatest.FunSuite
-import java.io.File
 import maker.utils.FileUtils._
-import maker.project.Module._
-import maker.MakerProps
-import maker.task.compile._
-
 
 class JavaCompileTests extends FunSuite with TestUtils {
 

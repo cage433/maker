@@ -31,18 +31,18 @@ object ZincCompile{
       "error",
       "-no-color",
       "-scala-compiler",
-      props.ProjectScalaCompilerJar().getAbsolutePath(),
+      props.ProjectScalaCompilerJar().getAbsolutePath,
       "-scala-library",
-      props.ProjectScalaLibraryJar().getAbsolutePath(),
+      props.ProjectScalaLibraryJar().getAbsolutePath,
       //"-scala-extra",
       "-classpath",
       projectPhase.classpathDirectoriesAndJars.filterNot(_ == projectPhase.outputDir).toList.map(_.getCanonicalFile.getAbsolutePath).mkString(File.pathSeparator),
       "-d",
-      projectPhase.outputDir.getAbsolutePath(),
+      projectPhase.outputDir.getAbsolutePath,
       "-compile-order",
       CompileOrder.Mixed.toString,
       "-analysis-cache",
-      projectPhase.compilationCacheFile.getAbsolutePath()
+      projectPhase.compilationCacheFile.getAbsolutePath
     ) :::
     analysisMapArguments ::: 
     projectPhase.sourceFiles.toList.map(_.getAbsolutePath)

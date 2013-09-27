@@ -26,8 +26,6 @@
 package maker.task.tasks
 
 import annotation.tailrec
-import maker.project.Module
-import maker.task.Task
 import maker.utils.FileUtils._
 import java.io.PrintWriter
 import maker.utils.TeeToFileOutputStream
@@ -35,7 +33,6 @@ import maker.utils.os.CommandOutputHandler
 import maker.utils.os.ScalaCommand
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
 import maker.task.compile.TestCompileTask
 import maker.project.BaseProject
 
