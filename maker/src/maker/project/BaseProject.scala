@@ -1,12 +1,11 @@
 package maker.project
+
 import maker.task.Dependency
-import maker.task.Dependency.Graph
 import maker.task.BuildResult
 import maker.task.Task
 import maker.MakerProps
 import maker.task.Build
 import maker.task.compile.SourceCompileTask
-import maker.task.tasks.CleanTask
 import java.io.File
 import maker.utils.FileUtils
 import maker.utils.FileUtils._
@@ -16,10 +15,8 @@ import maker.utils.RichString._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
 import maker.utils.MakerTestResults
-import maker.Resource
 import maker.ivy.IvyUtils
 import scala.xml.Elem
-import maker.Help
 
 trait BaseProject {
   protected def root : File
@@ -92,7 +89,7 @@ trait BaseProject {
 
   lazy val Compile = Build(
     "Compile " + name, 
-    () ⇒ Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask(_))),
+    () ⇒ Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask)),
     this,
     "compile",
     "Compile module(s) " + allUpstreamModules.map(_.name).mkString(", ") + " after compiling any upstream modules"
@@ -100,7 +97,7 @@ trait BaseProject {
 
   lazy val TestCompile = Build(
     "Test Compile " + name, 
-    () ⇒ Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask(_))),
+    () ⇒ Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask)),
     this,
     "testCompile",
     "Compile tests in module(s) " + allUpstreamTestModules.map(_.name).mkString(", ") + " after compiling any upstream source (and also tests in the case of upstreamTestProjects"
@@ -140,7 +137,7 @@ trait BaseProject {
 
   lazy val PackageJars = Build(
     "Package jar(s) for " + name + " and upstream ", 
-    () ⇒ Dependency.Graph(allUpstreamModules.map(PackageJarTask(_))),
+    () ⇒ Dependency.Graph(allUpstreamModules.map(PackageJarTask)),
     this,
     "pack",
     "Packages jars for " + name + " and upstream. Output jars will be " + allUpstreamModules.map(_.outputArtifact).mkString("\n\t")

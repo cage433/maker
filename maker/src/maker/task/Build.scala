@@ -29,15 +29,10 @@ import maker.utils.Stopwatch
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.LinkedBlockingQueue
-import maker.MakerProps
 import maker.utils.MakerLog
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
-import maker.utils.FileUtils
-import ch.qos.logback.classic.Level
-import maker.task.compile.CompileTask
-import maker.utils.RichString._
 import maker.project.BaseProject
 
 case class Build(
@@ -48,7 +43,7 @@ case class Build(
   helpText : String
 ) {
 
-  def help{
+  def help() {
     println(name + " - (Executed with method " + invokingMethod + ")\n")
     println(helpText)
   }

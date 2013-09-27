@@ -3,7 +3,6 @@ package maker.ivy
 import org.scalatest.FreeSpec
 import maker.utils.FileUtils._
 import maker.project.TestModule
-import maker.utils.RichString._
 import maker.project.Project
 
 class IvyUtilsTests extends FreeSpec {

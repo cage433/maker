@@ -26,28 +26,16 @@
 package maker.task.tasks
 
 import maker.project.Module
-import java.lang.reflect.Modifier
-import maker.utils.FileUtils
-import maker.utils.os.{ScalaCommand, Command}
+import maker.utils.os.ScalaCommand
 import maker.task.Task
 import maker.utils.os.CommandOutputHandler
-import maker.utils.FileUtils._
 import maker.task.TaskResult
 import maker.utils.Stopwatch
 import maker.utils.RichIterable._
-import maker.MakerProps
-import maker.task.Dependency
-import java.io.File
-import maker.task.compile.TestCompileTask
-import maker.task.compile.TestCompilePhase
-import maker.task.compile.ModuleCompilePhase
 import maker.project.BaseProject
 import maker.utils.MakerTestResults
-import maker.task.compile.CompileTask
 import maker.task.compile.TestCompileTask
 import maker.utils.StringUtils
-import maker.task.compile.SourceCompileTask
-import maker.task.NullTask
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String])  extends Task {
@@ -57,10 +45,9 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   val props = baseProject.props
 
 
-  def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
+  def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask)
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    val log = props.log
 
     val classOrSuiteNames = classOrSuiteNames_()
 

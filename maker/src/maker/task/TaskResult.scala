@@ -2,8 +2,6 @@ package maker.task
 
 import java.io.File
 import maker.utils.RichString._
-import maker.utils.RichIterable._
-import maker.project.Module
 import maker.utils.Stopwatch
 import maker.utils.Utils
 import maker.task.compile.CompilationInfo
@@ -26,6 +24,7 @@ trait TaskResult {
     sw : Stopwatch = sw,
     info : Option[TaskInfo] = info
   ) : TaskResult
+
   def withInfo(info : TaskInfo) = copy_(info = Some(info))
   def withoutInfo = copy_(info = None)
   def withTask(newTask : Task) : TaskResult = copy_(task = newTask)

@@ -27,26 +27,13 @@ package maker.task.tasks
 
 import maker.project.Module
 import maker.utils.FileUtils._
-import maker.task.Task
-import org.apache.commons.io.FileUtils._
-import org.apache.ivy.core.resolve.ResolveOptions
-import org.apache.ivy.util.filter.FilterHelper
-import org.apache.ivy.Ivy
-import org.apache.ivy.core.retrieve.RetrieveOptions
-import xml.NodeSeq
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
-import maker.utils.maven.IvyLock
-import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.Resource
-import maker.utils.os.Command
 
 case class UpdateTask(module : Module) extends Task {
   def name = "Update " + module
-  private val props = module.props
-  private lazy val log = props.log
-  
+
   def upstreamTasks : List[Task] = Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {

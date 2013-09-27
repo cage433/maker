@@ -31,9 +31,7 @@ import maker.utils.FileUtils._
 import maker.project.Module
 import tasks.CleanTask
 import maker.utils.Stopwatch
-import maker.task.compile.CompileTask
 import maker.project.TestModule
-import maker.MakerProps
 import maker.task.compile._
 
 
@@ -58,9 +56,6 @@ class BuildResultTests extends FunSuite {
       val p1 = new TestModule(file(root, "p1"), "p1")
       val p2 = new TestModule(file(root, "p2"), "p2")
       val p3 = new TestModule(file(root, "p3"), "p3")
-
-      val pt1 = CleanTask(p1)
-      val pt2 = SourceCompileTask(p2)
 
       import TaskResult._
 

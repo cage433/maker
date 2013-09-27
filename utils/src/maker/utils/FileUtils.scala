@@ -30,7 +30,6 @@ import java.io.FileWriter
 import java.io.BufferedWriter
 import java.io.BufferedReader
 import java.io.FileReader
-import os.Command
 import maker.MakerProps
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -243,7 +242,7 @@ object FileUtils extends Asserting{
   case class RichBufferedWriter(writer : BufferedWriter){
     def println(text : String){
       writer.write(text)
-      writer.newLine
+      writer.newLine()
     }
   }
   implicit def toRichBufferedWriter(writer : BufferedWriter) = RichBufferedWriter(writer)

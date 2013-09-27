@@ -6,9 +6,7 @@ import maker.task.TaskResult
 import maker.utils.Stopwatch
 import maker.utils.os.Command
 import maker.utils.FileUtils._
-import maker.utils.Utils._
 import java.io.File
-import maker.task.compile.SourceCompileTask
 import maker.task.compile._
 
 case class PackageJarTask(module : Module) extends Task {
@@ -58,7 +56,7 @@ case class PackageJarTask(module : Module) extends Task {
     if (!module.packageDir.exists)
       module.packageDir.mkdirs
 
-    var cmds : List[WrappedCommand] = createJarCommand(dirsToPack.head) :: dirsToPack.tail.map(updateJarCommand)
+    val cmds : List[WrappedCommand] = createJarCommand(dirsToPack.head) :: dirsToPack.tail.map(updateJarCommand)
 
     cmds.find(_.exec != 0) match {
       case Some(failingCommand) ⇒ TaskResult.failure(this, sw, failingCommand.cmd.savedOutput)

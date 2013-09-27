@@ -7,14 +7,6 @@ import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
 import maker.utils.RichString._
-import maker.utils.RichIterable._
-import maker.Resource
-import maker.task.Task
-import maker.task.TaskResult
-import maker.utils.Stopwatch
-import maker.task.tasks.UpdateTask
-import maker.task.Build
-import maker.task.Dependency
 
 class TestModule(
   root : File, 

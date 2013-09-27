@@ -1,7 +1,6 @@
 package maker
 
 import org.scalatest.FreeSpec
-import maker.utils.FileUtils._
 
 class ResourceTests extends FreeSpec {
   "test url" in {

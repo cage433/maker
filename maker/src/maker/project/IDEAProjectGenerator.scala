@@ -27,8 +27,6 @@ package maker.project
 
 import maker.utils.FileUtils._
 import java.io.File
-import maker.utils.FileUtils
-import collection.mutable.ListBuffer
 import maker.task.compile._
 import maker.utils.RichString._
 import maker.MakerProps
@@ -181,9 +179,9 @@ case class IDEAProjectGenerator(props : MakerProps) {
         """      <sourceFolder url="file://$MODULE_DIR$/%s" isTestSource="%s" />""".format(relDir, test.toString)
       }
       val sourcesAndResources = (Set(projComp.sourceDir).filter(_.exists)
-              ++ Set(module.resourceDir).filter(_.exists)).map(sourceFolder(_, false))
+              ++ Set(module.resourceDir).filter(_.exists)).map(sourceFolder(_, test = false))
       val testSourcesAndResources = (Set(projTestComp.sourceDir).filter(_.exists)
-              ++ Set(module.testResourceDir).filter(_.exists)).map(sourceFolder(_, true))
+              ++ Set(module.testResourceDir).filter(_.exists)).map(sourceFolder(_, test = true))
       val outputDirectoryToExclude = module.targetDir.relativeTo(module.rootAbsoluteFile).getPath
       val allSources = (sourcesAndResources ++ testSourcesAndResources).toList.mkString("\n")
       """    <content url="file://$MODULE_DIR$">

@@ -16,7 +16,7 @@ trait PersistentCache {
   def put(hash:Hash, inputStream:InputStream)
   def put(requests:Seq[CacheRequest])
 }
-class FileSysyemPersistentCache(cacheDir:File) extends PersistentCache {
+class FileSystemPersistentCache(cacheDir:File) extends PersistentCache {
   def contains(hash : Hash) : Boolean = fileForHash(cacheDir, hash).exists
   def get(hash: Hash):Option[List[String]] = {
     val listingFile = fileForHash(cacheDir, hash)

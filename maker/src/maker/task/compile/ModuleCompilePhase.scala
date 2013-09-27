@@ -3,17 +3,14 @@ package maker.task.compile
 import java.io.File
 import maker.task.Dependency
 import maker.utils.FileUtils._
-import java.io.BufferedWriter
 import maker.project.Module
 import sbt.ConsoleLogger
 import java.io.PrintStream
 import org.apache.commons.io.output.TeeOutputStream
 import org.apache.commons.io.output.NullOutputStream
 import java.io.FileOutputStream
-import com.typesafe.zinc.Compiler
 
 case class ModuleCompilePhase(module : Module, phase : CompilePhase){
-  import ModuleCompilePhase._
   val log = module.log
 
   def sourceDir = phase match {
@@ -108,7 +105,6 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def compilerLogger = {
     val lgr = ConsoleLogger(compilationOutputStream)
-      //lgr.setLevel(sbt.Level.Debug)
     lgr
   }
 
