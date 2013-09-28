@@ -23,11 +23,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-System.setProperty("scala.usejavacp", "false")
-System.setProperty("log4j.ignoreTCL", "true")
 
 // All maker settings are compiled. This improves startup time consideably.
 import maker.Maker._
 
 
-import topLevel._
+import project._

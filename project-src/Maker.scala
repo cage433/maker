@@ -60,9 +60,9 @@ object Maker {
 
   lazy val testReporter = module("test-reporter")
   lazy val utils = module("utils", testReporter)
-  lazy val mkr = module("maker", utils)
+  lazy val maker_ = module("maker", utils)
 
-  lazy val topLevel = new Project("top-level", file("."), List(mkr), props)
+  lazy val project = new Project("project", file("."), List(maker_), props)
 
   // Used to disambiguate which maker is running in the repl.
   def pwd = println(System.getProperty("user.dir"))
