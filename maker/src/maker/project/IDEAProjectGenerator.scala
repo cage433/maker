@@ -139,7 +139,7 @@ case class IDEAProjectGenerator(props : Props) {
       val relDirectory = {
         val rd = gitDir.relativeTo(rootDir).toString
         if (rd.isEmpty) {
-          ""
+          "$PROJECT_DIR$"
         } else {
           "$PROJECT_DIR$/" + rd
         }
