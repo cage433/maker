@@ -15,18 +15,18 @@ import maker.utils.FileUtils._
     Defines a resource held at some maven/nexus repository
       Maven      / Ivy
       groupId    / org      org.scalacheck
-      artifactId / name     scalacheck_2.9.2
+      artifactId / name     scalacheck_2.10.2
       version    / rev      1.9
 
     might be found at the URL
 
-      http://repo1.maven.org/maven2/org/scalacheck/scalacheck_2.9.2/1.9/scalacheck_2.9.2-1.9.jar
+      http://repo1.maven.org/maven2/org/scalacheck/scalacheck_2.10.2/1.9/scalacheck_2.10.2-1.9.jar
       http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/starling/test/resources/bookmark-test-db/1.2/bookmark-test-db-1.2.gz
 
 
     It would be stored locally at 
 
-    ./<project-dir>/lib_managed/org.scalacheck-scalacheck_2.9.2-1.9.jar
+    ./<project-dir>/lib_managed/org.scalacheck-scalacheck_2.10.2-1.9.jar
 */
 case class Resource(
   module : Module,

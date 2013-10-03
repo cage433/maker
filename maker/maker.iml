@@ -4,7 +4,7 @@
     <facet type="scala" name="Scala">
       <configuration>
         <option name="compilerLibraryLevel" value="Project" />
-        <option name="compilerLibraryName" value="scala-compiler-2.9.2" />
+        <option name="compilerLibraryName" value="scala-compiler-2.10.2" />
         <option name="deprecationWarnings" value="true" />
         <option name="fsc" value="true" />
         <option name="uncheckedWarnings" value="true" />
@@ -25,7 +25,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="scala-library-2.9.2" level="project" />
+    <orderEntry type="library" name="scala-library-2.10.2" level="project" />
     <orderEntry type="module" module-name="utils" exported="" />
     <orderEntry type="module-library" exported="">
       <library>

@@ -32,7 +32,7 @@ class MakerTestReporter extends Reporter{
 
   private def recursiveDelete(file : File){
     if (file.exists && file.isDirectory){
-      Option(file.listFiles).flatten.foreach(recursiveDelete)
+      Option(file.listFiles).getOrElse(Array()).foreach(recursiveDelete)
       file.delete
     } else
       file.delete
@@ -190,8 +190,8 @@ case class ThreadDumper(propsRoot : File, moduleRoot : File){
             }
             
           } catch {
-            case e =>
-              println("Debug: MakerTestReporter: thread dumper error " + e)
+            case t: Throwable =>
+              println("Debug: MakerTestReporter: thread dumper error " + t)
           } finally {
             Thread.sleep(500)
           }

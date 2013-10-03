@@ -339,7 +339,7 @@ object FileUtils extends Asserting{
 
   def cleanRegularFilesLeavingDirectories(file : File){
     if (file.exists && file.isDirectory){
-      Option(file.listFiles).flatten.foreach(cleanRegularFilesLeavingDirectories)
+      Option(file.listFiles).getOrElse(Array()).foreach(cleanRegularFilesLeavingDirectories)
     } else {
       file.delete
     }
@@ -347,7 +347,7 @@ object FileUtils extends Asserting{
 
   def recursiveDelete(file : File){
     if (file.exists && file.isDirectory){
-      Option(file.listFiles).flatten.foreach(recursiveDelete)
+      Option(file.listFiles).getOrElse(Array()).foreach(recursiveDelete)
       file.delete
     } else
       file.delete

@@ -306,8 +306,9 @@ trait BaseProject {
     */
   def writeVimClasspath {
     var dirsAndJars = allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars).toList.distinct
-    dirsAndJars ::= props.ProjectScalaCompilerJar()
-    dirsAndJars ::= props.ProjectScalaLibraryJar()
+    dirsAndJars :::= props.compilerJars()
+    // dirsAndJars ::= props.ProjectScalaCompilerJar()
+    // dirsAndJars ::= props.ProjectScalaLibraryJar()
     val cp = Module.asClasspathStr(dirsAndJars)
     val cpFile : File = file(name + "-classpath.sh")
     writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")

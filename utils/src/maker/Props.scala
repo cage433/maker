@@ -28,8 +28,8 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
   val Java = file(JavaHome() + "/bin/java").absPath
   val Javac = file(JavaHome() + "/bin/javac").absPath
   val Jar = file(JavaHome() + "/bin/jar").absPath
-  object MakerScalaVersion extends Default("2.9.2") with IsString
-  object ProjectScalaVersion extends Default("2.9.2") with IsString
+  object MakerScalaVersion extends Default("2.10.2") with IsString
+  object ProjectScalaVersion extends Default("2.10.2") with IsString
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
   object Compiler extends Default("scalac") with IsString
@@ -49,8 +49,22 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
   object ProjectScalaLibraryJar extends Default(file(root, "scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file(root, "scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
   object ProjectScalaCompilerJar extends Default(file(root, "scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
-  object SbtInterfaceJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-sbt-interface-0.12.1.jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-compiler-interface-0.12.1-sources.jar")) with IsFile
+  object ProjectScalaCompilerSourceJar extends Default(file(root, "scala-libs/scala-compiler-" + MakerScalaVersion() + "-sources.jar")) with IsFile
+  object ProjectScalaReflectJar extends Default(file(root, "scala-libs/scala-reflect-" + MakerScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaReflectSourceJar extends Default(file(root, "scala-libs/scala-reflect-" + MakerScalaVersion() + "-sources.jar")) with IsFile
+  object ProjectScalaActorsJar extends Default(file(root, "scala-libs/scala-actors-" + MakerScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaActorsSourceJar extends Default(file(root, "scala-libs/scala-actors-" + MakerScalaVersion() + "-sources.jar")) with IsFile
+  object ProjectJlineJar extends Default(file(root, "scala-libs/jline-" + MakerScalaVersion() + ".jar")) with IsFile
+  object ProjectJlineSourceJar extends Default(file(root, "scala-libs/jline-" + MakerScalaVersion() + "-sources.jar")) with IsFile
+
+  def compilerJars() = List(
+    ProjectScalaCompilerJar(), ProjectScalaLibraryJar(), ProjectScalaReflectJar(), ProjectScalaActorsJar(), ProjectJlineJar())
+
+  def extraJars() = List( ProjectScalaReflectJar(), ProjectScalaActorsJar(), ProjectJlineJar())
+  
+
+  object SbtInterfaceJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-sbt-interface-0.13.0.jar")) with IsFile
+  object CompilerInterfaceSourcesJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-compiler-interface-0.13.0-sources.jar")) with IsFile
 
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {
@@ -144,6 +158,13 @@ object Props {
       cwdProps.ProjectScalaLibraryJar,
       cwdProps.ProjectScalaLibrarySourceJar,
       cwdProps.ProjectScalaCompilerJar,
+      cwdProps.ProjectScalaCompilerSourceJar,
+      cwdProps.ProjectScalaReflectJar,
+      cwdProps.ProjectScalaReflectSourceJar,
+      cwdProps.ProjectScalaActorsJar,
+      cwdProps.ProjectScalaActorsSourceJar,
+      cwdProps.ProjectJlineJar,
+      cwdProps.ProjectJlineSourceJar,
       cwdProps.SbtInterfaceJar,
       cwdProps.CompilerInterfaceSourcesJar,
       cwdProps.ResolversFile,
@@ -196,8 +217,8 @@ trait PropsTrait extends DelayedInit{
         try {
           buffer.append(m.invoke(this) + "\n")
         } catch {
-          case e => 
-            buffer.append(m.getName + " threw " + e + "\n")
+          case t: Throwable => 
+            buffer.append(m.getName + " threw " + t + "\n")
         }
       )
     buffer.toString

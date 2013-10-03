@@ -166,18 +166,18 @@ case class Build(
                 log.debug("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
                 pt.exec(resultsSoFar.toList, sw)
               } catch {
-                case e =>
-                  log.warn("exception thrown:" + e + " when running task " + pt)
-                  e.printStackTrace
-                  TaskResult(pt, sw, succeeded = false, exception = Some(e))
+                case t: Throwable =>
+                  log.warn("exception thrown:" + t + " when running task " + pt)
+                  t.printStackTrace
+                  TaskResult(pt, sw, succeeded = false, exception = Some(t))
               }
               sw.snapshot(TaskResult.TASK_COMPLETE)
               monitor.addResult(pt, result)
               log.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
             } catch {
-              case e => 
-                log.warn("Exception " + e + " thrown during " + pt)
-                e.printStackTrace
+              case t: Throwable => 
+                log.warn("Exception " + t + " thrown during " + pt)
+                t.printStackTrace
                 System.exit(-1)
             }
             finally {
@@ -320,7 +320,7 @@ object Build{
               println
             }
           } catch {
-            case e =>
+            case t: Throwable =>
           }
         }
 
@@ -335,8 +335,8 @@ object Build{
 
               Thread.sleep(1000)
             } catch {
-              case e => 
-                println("Debug: Build: error in TestMonitor" + e)
+              case t: Throwable => 
+                println("Debug: Build: error in TestMonitor" + t)
             }
           }
         }

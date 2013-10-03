@@ -98,7 +98,7 @@ class BuildResultTests extends FunSuite {
         assert(false, "should have run task and didnt")
       }
       catch {
-        case _ =>
+        case _: Throwable =>
       }
 
       // assert that subsequent tasks do not run if an earlier task failed and that final outcome is a failure

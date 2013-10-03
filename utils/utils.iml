@@ -4,7 +4,7 @@
     <facet type="scala" name="Scala">
       <configuration>
         <option name="compilerLibraryLevel" value="Project" />
-        <option name="compilerLibraryName" value="scala-compiler-2.9.2" />
+        <option name="compilerLibraryName" value="scala-compiler-2.10.2" />
         <option name="deprecationWarnings" value="true" />
         <option name="fsc" value="true" />
         <option name="uncheckedWarnings" value="true" />
@@ -25,7 +25,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="scala-library-2.9.2" level="project" />
+    <orderEntry type="library" name="scala-library-2.10.2" level="project" />
     <orderEntry type="module" module-name="test-reporter" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
@@ -120,7 +120,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/net.debasishg-sjson_2.9.2-0.19.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/net.debasishg-sjson_2.10.2-0.19.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -264,7 +264,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/org.scala-lang-jline-2.9.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/org.scala-lang-jline-2.10.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -273,7 +273,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/org.scala-lang-scala-compiler-2.9.2.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/org.scala-lang-scala-compiler-2.10.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -282,7 +282,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/org.scalacheck-scalacheck_2.9.2-1.9.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/org.scalacheck-scalacheck_2.10.2-1.9.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -291,7 +291,7 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/org.scalaz-scalaz-core_2.9.2-6.0.4.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/org.scalaz-scalaz-core_2.10.2-6.0.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

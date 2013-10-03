@@ -72,7 +72,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
       val optsFile = file(docDir, "docopts")
       writeToFile(optsFile, "-classpath " + classpath + " " + inputFiles.mkString(" "))
 
-      val scalaToolsClasspath = baseProject.props.ProjectScalaCompilerJar().getAbsolutePath + ":" + baseProject.props.ProjectScalaLibraryJar().getAbsolutePath
+      val scalaToolsClasspath = baseProject.props.compilerJars().map(_.getAbsolutePath).mkString(":")
 
       val cmd = ScalaDocCmd(
         props,

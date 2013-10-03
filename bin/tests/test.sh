@@ -89,12 +89,12 @@ test_update_downloads_non_cached_resource()
 test_can_resolve_versions(){
   GLOBAL_RESOURCE_VERSIONS=versions
   cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
-scala_version 2.9.2
+scala_version 2.10.2
 jetty_version 7.6.3.v20120416
 HERE
 
-  assertEquals "foo2.9.2" $(resolve_version "foo{scala_version}")
-  assertEquals "foo2.9.2-7.6.3.v20120416-x" $(resolve_version "foo{scala_version}-{jetty_version}-x")
+  assertEquals "foo2.10.2" $(resolve_version "foo{scala_version}")
+  assertEquals "foo2.10.2-7.6.3.v20120416-x" $(resolve_version "foo{scala_version}-{jetty_version}-x")
 }
 
 test_can_parse_resolver_list()
@@ -118,7 +118,7 @@ test_update_resources()
 
   GLOBAL_RESOURCE_VERSIONS=versions
   cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
-scala_version 2.9.2
+scala_version 2.10.2
 jetty_version 7.6.3.v20120416
 HERE
 
@@ -132,8 +132,8 @@ HERE
   mkdir CACHE
   mkdir LIB
 
-  mkdir -p RESOLVER/org/scalacheck/scalacheck_2.9.2/1.9
-  echo > RESOLVER/org/scalacheck/scalacheck_2.9.2/1.9/scalacheck_2.9.2-1.9.jar
+  mkdir -p RESOLVER/org/scalacheck/scalacheck_2.10.2/1.9
+  echo > RESOLVER/org/scalacheck/scalacheck_2.10.2/1.9/scalacheck_2.10.2-1.9.jar
   mkdir -p RESOLVER/org/apache/commons/commons-lang3/3.1
   echo > RESOLVER/org/apache/commons/commons-lang3/3.1/commons-lang3-3.1.jar
   echo > RESOLVER/org/apache/commons/commons-lang3/3.1/commons-lang3-3.1-sources.jar
@@ -142,7 +142,7 @@ HERE
 
   assertTrue "commons source jar should exist" "[ -e LIB/org.apache.commons-commons-lang3-3.1-sources.jar ]"
   assertTrue "commons jar should exist" "[ -e LIB/org.apache.commons-commons-lang3-3.1.jar ]"
-  assertTrue "scalacheck jar should exist" "[ -e LIB/org.scalacheck-scalacheck_2.9.2-1.9.jar ]"
+  assertTrue "scalacheck jar should exist" "[ -e LIB/org.scalacheck-scalacheck_2.10.2-1.9.jar ]"
 
 }
 

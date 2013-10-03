@@ -33,7 +33,6 @@ import maker.utils.FileUtils._
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.ConsoleReporter
 import java.io.PrintWriter
-import scala.tools.nsc.io.PlainDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.io.Directory
 import maker.Props
@@ -208,7 +207,7 @@ class Module(
   def testResultDirectory = file(makerDirectory, "test-results")
 
   def managedJars = findJars(managedLibDir)
-  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() 
+  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet ++ props.compilerJars().toSet
 
   def outputArtifact = file(packageDir.getAbsolutePath, name + ".jar")
 
@@ -239,10 +238,11 @@ object Module{
   private val setup = Setup.create(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),
-    Nil, 
+    props.extraJars(),
     props.SbtInterfaceJar(),
     props.CompilerInterfaceSourcesJar(),
-    props.JavaHome()
+    props.JavaHome(),
+    forkJava = false
   )
 
   val compiler = Compiler.create(setup, logger)

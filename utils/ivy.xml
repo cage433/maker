@@ -46,6 +46,7 @@
     <dependency org="com.typesafe.sbt" name="incremental-compiler" rev="${sbt_version}"/>
     <dependency org="org.scala-lang" name="jline" rev="${scala_version}" />
     <dependency org="org.scala-lang" name="scala-compiler" rev="${scala_version}" />
+    <dependency org="org.scala-lang" name="scala-reflect" rev="${scala_version}" />
   </dependencies>
 </ivy-module>
 
