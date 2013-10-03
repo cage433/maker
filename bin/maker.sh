@@ -94,10 +94,21 @@ org.scala-lang scala-actors {scala_version} classifier:sources path:scala-actors
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
+  cat > dynamic-akka-resource-list <<HERE
+com.typesafe.akka akka-actor_{scala_version_base} {akka_version} path:akka-actor_{scala_version_base}-{akka_version}.jar
+com.typesafe.akka akka-actor_{scala_version_base} {akka_version} classifier:sources path:akka-actor_{scala_version_base}-{akka_version}-sources.jar
+com.typesafe.akka akka-remote_{scala_version_base} {akka_version} path:akka-remote_{scala_version_base}-{akka_version}.jar
+com.typesafe.akka akka-remote_{scala_version_base} {akka_version} classifier:sources path:akka-remote_{scala_version_base}-{akka_version}.jar
+HERE
+
+#  update_resources $MAKER_ROOT_DIR/scala-libs dynamic-akka-resource-list 
+
   GLOBAL_RESOURCE_RESOLVERS="$PROJECT_ROOT_DIR/resource-resolvers" 
   GLOBAL_RESOURCE_VERSIONS="$PROJECT_ROOT_DIR/resource-versions" 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
+#  update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-akka-resource-list 
   rm dynamic-scala-resource-list
+  rm dynamic-akka-resource-list
   rm dynamic-zinc-resource-list
 }
 

@@ -1,6 +1,7 @@
 ch.qos.logback logback-classic 1.0.6
 ch.qos.logback logback-core 1.0.6
 com.google.protobuf protobuf-java 2.4.1
+com.typesafe.akka akka-remote_{scala_version_base} {akka_version}
 commons-codec commons-codec 1.6
 commons-io commons-io 2.1
 commons-pool commons-pool 1.5.5
