@@ -456,8 +456,9 @@ class SomeClass extends SomeTrait{
         var changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
         val fooClass = file(proj.compilePhase.outputDir, "foo", "Foo.class")
         val barClass = file(proj.compilePhase.outputDir, "foo", "bar", "Bar.class")
-        // Apparently the new incremental compiler doesn't create class files if there is any failure
-        assert(changedClassFiles === Set()) 
+        // With the 2.9 compiler this would have produced no classes, 2.10 appears to, even if some
+        // source files fail to compile
+        assert(changedClassFiles === Set(fooClass)) 
 
         // now put a matching implementation in and all should be ok again
         proj.writeSrc(

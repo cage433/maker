@@ -55,7 +55,7 @@ class ProjectTests extends FunSuite {
         file("resource-versions").copyTo(dir)
         writeToFile(
           a.resourcesFile,
-          "org.scalatest scalatest_{scala_version} {scalatest_version}"
+          "org.scalatest scalatest_{scala_version_base} {scalatest_version}"
         )
 
         val cmd = Command(

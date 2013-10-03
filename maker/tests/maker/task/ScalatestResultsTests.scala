@@ -53,7 +53,7 @@ class ScalatestResultsTests extends FunSuite{
         file("resource-versions").copyTo(dir)
         writeToFile(
           file(dir, "external-resources"),
-          "org.scalatest scalatest_{scala_version} {scalatest_version}"
+          "org.scalatest scalatest_{scala_version_base} {scalatest_version}"
         )
         proj.writeTest(
           "foo/FooTest.scala",
