@@ -57,6 +57,7 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
   object ProjectJlineJar extends Default(file(root, "scala-libs/jline-" + MakerScalaVersion() + ".jar")) with IsFile
   object ProjectJlineSourceJar extends Default(file(root, "scala-libs/jline-" + MakerScalaVersion() + "-sources.jar")) with IsFile
 
+  def scalaLibs() = findJars(file(ScalaHome(), "lib"))
   def compilerJars() = List(
     ProjectScalaCompilerJar(), ProjectScalaLibraryJar(), ProjectScalaReflectJar(), ProjectScalaActorsJar(), ProjectJlineJar())
 

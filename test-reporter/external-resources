@@ -1,3 +1,5 @@
 org.scalatest scalatest_{scala_version_base} {scalatest_version}
-com.typesafe.akka akka-actor_{scala_version_base} {akka_version} 
-com.typesafe.akka akka-remote_{scala_version_base} {akka_version} 
+org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
+com.typesafe.akka akka-actor_{scala_version_base} {akka_version} path:akka-actor_{scala_version_base}-{akka_version}.jar
+com.typesafe.akka akka-remote_{scala_version_base} {akka_version} path:akka-remote_{scala_version_base}-{akka_version}.jar
+com.twitter util-core {twitter_version}
