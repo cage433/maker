@@ -1,0 +1,40 @@
+# Configures where external resources are obtained from, and what versions
+# are used. Note that a project will have its own resource config file, 
+# distinct from maker's own. Both can be overridden independently when launching 
+# maker
+#
+# Only lines that begin with one of 'resolver:', 'version:' or 'scala_url' 
+# matter - all others are treated as comments
+
+
+#----------------------------------------------------------------------------
+# resolver:
+# 'default' is used for all resources that don't specify a particular resolver
+#----------------------------------------------------------------------------
+resolver: default http://repo1.maven.org/maven2/
+
+
+
+#----------------------------------------------------------------------------
+# version:
+# Used in each module's external-resources file, and also this file
+# (see scala_url below). versions _can_ be hard coded in external-resources if
+# there is a good reason
+#----------------------------------------------------------------------------
+version: scala_version 2.10.2
+version: scala_version_base 2.10
+version: sbt_version 0.13.0
+version: scalatest_version 1.9.2
+version: jetty_version 7.6.3.v20120416
+version: akka_version 2.2.1
+version: twitter_version 6.3.6
+
+
+#----------------------------------------------------------------------------
+# scala_url:
+# URL of the scala zip. Used to extract the scala libs (of which 2.10 has many)
+# These will be put into the project's scala-libs/ directory and added to the
+# classpath
+#----------------------------------------------------------------------------
+scala_url: http://www.scala-lang.org/files/archive/scala-{scala_version}.tgz
+
