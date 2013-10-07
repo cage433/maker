@@ -24,19 +24,6 @@ test_lookup_value(){
   assertEquals "lookup(fred) in empty line empty" "$(lookup_value "fred" "")" ""
   assertEquals "lookup(bill) in non matching line empty" "$(lookup_value "bill" $line)" ""
   assertEquals "lookup("") empty" "$(lookup_value "" $line)" ""
-
-}
-
-test_eval_file_variable(){
-  touch dummy-file
-
-  DUMMY_FILE="dummy-file"
-  file=$(eval_file_variable DUMMY_FILE)
-  assertEquals "dummy-file" "$file"
-
-  DUMMY_FILE="non-existant-file"
-  file=$(eval_file_variable DUMMY_FILE)
-  assertNotEquals "Should fail to find file" $? 0
 }
 
 test_relative_url(){

@@ -57,21 +57,6 @@ relative_url(){
   echo `echo $groupId | sed 's/\./\//g'`/$artifactId/$version/$artifactId-$version${classifier:=""}.${type:="jar"}
 }
 
-eval_file_variable(){
-  # indirect references - http://tldp.org/LDP/abs/html/ivr.html
-  file=$(eval "echo \$$1")
-  if [ -z $file ]; then
-    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO: Variable $1 not initialised"
-    echo "$1"
-  else
-    if [ ! -e $file ]; then 
-      add_error "$(basename ${BASH_SOURCE[0]}) $LINENO: File $file not found"
-    fi
-    echo $file
-  fi
-  [ -e $file ]
-}
-
 update_resource(){
   declare local lib line resourceId resource cached_resource resource_cache resolver relativeURL
   read lib line <<<$(echo $*)
@@ -79,7 +64,7 @@ update_resource(){
   resourceId=$(resolve_version $line) 
   resource=$(resource_path $lib $resourceId)
   if [ ! -e $resource ]; then
-    resource_cache=$(eval_file_variable GLOBAL_RESOURCE_CACHE) 
+    resource_cache=${GLOBAL_RESOURCE_CACHE-:"$HOME/.maker-resource-cache"} 
     cached_resource=$(resource_path $resource_cache $resourceId)
     # copy from cache if it exists
     if [ -e $cached_resource ]; then
@@ -134,11 +119,10 @@ update_resources(){
 
 resolve_version(){
   line=$*
-  version_file=$(eval_file_variable GLOBAL_RESOURCE_VERSIONS) 
-  cat $version_file 2>/dev/null | ( while read key version; do
+  while read key version; do
     line=`echo $line | sed "s/{$key}/$version/g"`
-  done
-  echo $line )
+  done < <(sed -n '/^[^# \t]/p' ${GLOBAL_RESOURCE_VERSIONS-:"NO_RESOURCE_FILE"} 2>/dev/null) # remove comments and lines beginning with whitespace 
+  echo $line 
 }
 
 find_resolver(){
@@ -150,7 +134,7 @@ find_resolver(){
       echo $long_name
       return 0
     fi
-  done < <(sed -n '/^[^# \t]/p' $(eval_file_variable GLOBAL_RESOURCE_RESOLVERS)) # remove comments and lines beginning with whitespace 
+  done < <(sed -n '/^[^# \t]/p' ${GLOBAL_RESOURCE_RESOLVERS-:"NO_RESOLVER_FILE"} 2>/dev/null) # remove comments and lines beginning with whitespace 
 
   add_error "$(basename ${BASH_SOURCE[0]}) $LINENO: Unable to find resolver"
   return 1
