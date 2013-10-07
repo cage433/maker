@@ -34,3 +34,6 @@ props.conf
 Maker.conf
 *vim*compile-output
 proj-compile-output
+*.log
+scala-libs
+zinc-libs
