@@ -130,8 +130,7 @@ build_jar(){
   fi
 
   java \
-    -classpath $(external_jars) \
-    -Xbootclasspath/a:$(external_scala_jars) \
+    -classpath $(external_scala_jars):$(external_jars) \
     -Dscala.usejavacp=true \
     scala.tools.nsc.Main \
     -d $TEMP_OUTPUT_DIR \
@@ -187,8 +186,7 @@ launch_maker_repl(){
  
 
   "$JAVA_HOME/bin/java" $(java_opts) \
-    -classpath "$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
-    -Xbootclasspath/a:"$(external_scala_jars)" \
+    -classpath "$(external_scala_jars):$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
@@ -214,8 +212,7 @@ recompile_project_if_required(){
     rm -rf $PROJECT_DEFINITION_CLASS_DIR
     mkdir -p $PROJECT_DEFINITION_CLASS_DIR
 
-    java -classpath "$(maker_classpath)" \
-         -Xbootclasspath/a:"$(external_scala_jars)" \
+    java -classpath "$(external_scala_jars):$(maker_classpath)" \
          -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
   fi
 }
@@ -244,7 +241,6 @@ external_jars() {
     | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
 }
 
-# Separate from external_jars because they need to go into the bootclasspath
 external_scala_jars() {
   ls $MAKER_ROOT_DIR/scala-libs/*.jar \
     | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
