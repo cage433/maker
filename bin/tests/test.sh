@@ -4,17 +4,24 @@ ABS_SCRIPT_PATH=`pwd`/$0
 . bin/src/utils.sh
 
 setUp() {
+  clearSandbox
+  mkdir sandbox
+  cd sandbox
+  ln -s $ABS_SCRIPT_PATH .
+  rm -f /home/alex/foo.log
+
+}
+
+clearSandbox(){
   if [[ `pwd` == *sandbox ]]; then
     cd ..
   fi
   if [ -e sandbox ]; then
     rm -rf sandbox
   fi
-  mkdir sandbox
-  cd sandbox
-  ln -s $ABS_SCRIPT_PATH .
-  rm -f /home/alex/foo.log
-
+}
+tearDown() {
+  clearSandbox
 }
 
 test_lookup_value(){
