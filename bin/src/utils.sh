@@ -18,6 +18,11 @@ has_newer_src_files(){
   return $?
 }
 
+strip_comments(){
+  filename=$1
+  sed -n '/^[^# \t]/p' $filename 2>/dev/null
+}
+
 resource_basename(){
   declare local default type path classifier groupId artifactId version others 
   read groupId artifactId version others <<<$(echo $*)
@@ -112,7 +117,7 @@ update_resources(){
 
   while read line && ! has_error; do
     update_resource $lib $cache $line
-  done < $resourceIdFile
+  done < <(strip_comments $resourceIdFile)
   has_error
   return $?
 }
@@ -121,7 +126,7 @@ resolve_version(){
   line=$*
   while read key version; do
     line=`echo $line | sed "s/{$key}/$version/g"`
-  done < <(sed -n '/^[^# \t]/p' ${GLOBAL_RESOURCE_VERSIONS-:"NO_RESOURCE_FILE"} 2>/dev/null) # remove comments and lines beginning with whitespace 
+  done < <(strip_comments ${GLOBAL_RESOURCE_VERSIONS-:"NO_RESOURCE_FILE"})
   echo $line 
 }
 
@@ -134,7 +139,7 @@ find_resolver(){
       echo $long_name
       return 0
     fi
-  done < <(sed -n '/^[^# \t]/p' ${GLOBAL_RESOURCE_RESOLVERS-:"NO_RESOLVER_FILE"} 2>/dev/null) # remove comments and lines beginning with whitespace 
+  done < <(strip_comments ${GLOBAL_RESOURCE_RESOLVERS-:"NO_RESOLVER_FILE"}) 
 
   add_error "$(basename ${BASH_SOURCE[0]}) $LINENO: Unable to find resolver"
   return 1
