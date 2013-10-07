@@ -15,26 +15,21 @@ class UpdateTaskTests extends FreeSpec {
           """|org.foo bar {sbt_version}
              |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
         )
-        val versionsFile = file(dir, "versions")
+        val resourceConfigFile = file(dir, "maker-resource-config")
         writeToFile(
-          versionsFile,
-          """|scala_version 2.10.2
-             |sbt_version 0.12.1
-             |scalatest_version 1.8""".stripMargin
-        )
-        val resolversFile = file(dir, "resolvers")
-
-        writeToFile(
-          resolversFile, 
-          ("""|default file://%s/RESOLVER/
-             |second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
+          resourceConfigFile,
+          """|version: scala_version 2.10.2
+             |version: sbt_version 0.12.1
+             |version: scalatest_version 1.8
+             |resolver: default file://%s/RESOLVER/
+             |resolver: second file://%s/RESOLVER2/
+             """.stripMargin % (dir.getAbsolutePath, dir.getAbsolutePath)
         )
         val resolverDir = file(dir, "RESOLVER").makeDir
 
         val props = Props.initialiseTestProps(
           dir,
-          "VersionsFile", versionsFile.getAbsolutePath, 
-          "ResolversFile", resolversFile.getAbsolutePath,
+          "ResourceConfigFile", resourceConfigFile.getAbsolutePath, 
           "ResourceCacheDirectory", file(dir, ".maker-resource-cache").makeDirs().getPath
         )
 

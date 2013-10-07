@@ -51,8 +51,7 @@ class ProjectTests extends FunSuite {
         )
         proj.writeMakerProjectDefinitionFile
         val makerDotSh = file("bin/maker.sh").absPath
-        file("resource-resolvers").copyTo(dir)
-        file("resource-versions").copyTo(dir)
+        file("maker-resource-config").copyTo(dir)
         writeToFile(
           a.resourcesFile,
           "org.scalatest scalatest_{scala_version_base} {scalatest_version}"
