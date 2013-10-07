@@ -34,7 +34,13 @@ MAKER_PERM_GEN_SPACE=1000m
 GLOBAL_RESOURCE_CACHE=$HOME/.maker-resource-cache
 
 mkdir -p .maker
+
+# Can't echo errors to STDOUT (as some functions in utils.sh use echo to return values),
+# any errors will be output to this file
 rm -f .maker/maker-shell-errors
+
+# Everything that is testable was moved into this script
+# Tested by executing $MAKER_ROOT_DIR/bin/tests/test.sh
 source $MAKER_ROOT_DIR/bin/src/utils.sh
 
 check_for_errors(){
@@ -43,12 +49,30 @@ check_for_errors(){
     exit -1
   fi
 }
+
+determine_maker_scala_version(){
+  GLOBAL_RESOURCE_CONFIG="$MAKER_ROOT_DIR/maker-resource-config"
+  MAKER_SCALA_VERSION=$(resolve_version "{scala_version}")
+  if [ $MAKER_SCALA_VERSION == "{scala_version}" ]; then
+    echo "scala_version not specified in $GLOBAL_RESOURCE_CONFIG"
+    exit -1
+  fi
+}
+
+download_scala_libs(){
+  scala_version=$1
+  dir=$2
+  resolver=$3
+}
+
 main() {
   if [ -z "$JAVA_HOME" ];
   then
     echo "JAVA_HOME not defined"
     exit -1
   fi
+  determine_maker_scala_version
+
   MAKER_OPTIONS=$*
   process_options $MAKER_OPTIONS
   saveStty
@@ -65,8 +89,7 @@ main() {
 update_external_jars(){
 
   mkdir -p $GLOBAL_RESOURCE_CACHE
-  GLOBAL_RESOURCE_RESOLVERS="$MAKER_ROOT_DIR/resource-resolvers" 
-  GLOBAL_RESOURCE_VERSIONS="$MAKER_ROOT_DIR/resource-versions" 
+  GLOBAL_RESOURCE_CONFIG="$MAKER_ROOT_DIR/maker-resource-config" 
 
   for dir in "test-reporter" "utils"; do 
     update_resources $MAKER_ROOT_DIR/$dir/lib_managed $MAKER_ROOT_DIR/$dir/external-resources
@@ -101,8 +124,7 @@ HERE
 
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-akka-resource-list 
 
-  GLOBAL_RESOURCE_RESOLVERS="$PROJECT_ROOT_DIR/resource-resolvers" 
-  GLOBAL_RESOURCE_VERSIONS="$PROJECT_ROOT_DIR/resource-versions" 
+  GLOBAL_RESOURCE_CONFIG="$PROJECT_ROOT_DIR/maker-resource-config" 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-akka-resource-list 
   rm dynamic-scala-resource-list

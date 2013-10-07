@@ -62,6 +62,12 @@ relative_url(){
   echo `echo $groupId | sed 's/\./\//g'`/$artifactId/$version/$artifactId-$version${classifier:=""}.${type:="jar"}
 }
 
+lines_beginning_with(){
+  key=$1
+  filename=$2
+  sed -n "s/^$key \+\(.*\)/\1/p" $filename 2>/dev/null
+}
+
 update_resource(){
   declare local lib line resourceId resource cached_resource resource_cache resolver relativeURL
   read lib line <<<$(echo $*)
@@ -87,7 +93,7 @@ update_resource(){
   fi
 
   if [ ! -e $resource ]; then
-    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO Failed to update $line (resource attempted: $relativeURL)"
+    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO Failed to update $line (resource attempted: $url)"
     return 1
   fi
 }
@@ -126,7 +132,7 @@ resolve_version(){
   line=$*
   while read key version; do
     line=`echo $line | sed "s/{$key}/$version/g"`
-  done < <(strip_comments ${GLOBAL_RESOURCE_VERSIONS-:"NO_RESOURCE_FILE"})
+  done < <(lines_beginning_with "version:" ${GLOBAL_RESOURCE_CONFIG-:"NO_RESOURCE_CONFIG_FILE"})
   echo $line 
 }
 
@@ -139,7 +145,7 @@ find_resolver(){
       echo $long_name
       return 0
     fi
-  done < <(strip_comments ${GLOBAL_RESOURCE_RESOLVERS-:"NO_RESOLVER_FILE"}) 
+  done < <(lines_beginning_with "resolver:" ${GLOBAL_RESOURCE_CONFIG-:"NO_RESOURCE_CONFIG_FILE"})
 
   add_error "$(basename ${BASH_SOURCE[0]}) $LINENO: Unable to find resolver"
   return 1

@@ -66,8 +66,8 @@ test_update_downloads_non_cached_resource()
   GLOBAL_RESOURCE_CACHE="CACHE"
   mkdir $GLOBAL_RESOURCE_CACHE
 
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  echo "default file://`pwd`/RESOLVER" > $GLOBAL_RESOURCE_RESOLVERS
+  GLOBAL_RESOURCE_CONFIG=resource_config
+  echo "resolver: default file://`pwd`/RESOLVER" > $GLOBAL_RESOURCE_CONFIG
 
   mkdir LIB
   resourceId="org.apache.commons commons-lang3 3.1"
@@ -81,10 +81,10 @@ test_update_downloads_non_cached_resource()
 }
 
 test_can_resolve_versions(){
-  GLOBAL_RESOURCE_VERSIONS=versions
-  cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
-scala_version 2.10.2
-jetty_version 7.6.3.v20120416
+  GLOBAL_RESOURCE_CONFIG=resource_config
+  cat > $GLOBAL_RESOURCE_CONFIG <<HERE
+version: scala_version 2.10.2
+version: jetty_version 7.6.3.v20120416
 HERE
 
   assertEquals "foo2.10.2" $(resolve_version "foo{scala_version}")
@@ -94,15 +94,13 @@ HERE
 test_can_parse_resolver_list()
 {
 
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  cat > $GLOBAL_RESOURCE_RESOLVERS <<HERE
-default file://RESOLVER
+  GLOBAL_RESOURCE_CONFIG=resource_config
+  cat > $GLOBAL_RESOURCE_CONFIG <<HERE
+resolver: default file://RESOLVER
 # some random comment
 
 # blank line above will be ignored
-  this will be ignored cause it starts with a tab
-other file://OTHER-RESOLVER
-  this will be ignored cause it starts with a space
+resolver: other file://OTHER-RESOLVER
 HERE
 
   assertEquals "file://RESOLVER" "$(find_resolver "")"
@@ -112,13 +110,12 @@ HERE
 
 test_update_resources()
 {
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  echo "default file://`pwd`/RESOLVER" >> $GLOBAL_RESOURCE_RESOLVERS
+  GLOBAL_RESOURCE_CONFIG=resource_config
+  echo "resolver: default file://`pwd`/RESOLVER" >> $GLOBAL_RESOURCE_CONFIG
 
-  GLOBAL_RESOURCE_VERSIONS=versions
-  cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
-scala_version 2.10.2
-jetty_version 7.6.3.v20120416
+  cat >> $GLOBAL_RESOURCE_CONFIG <<HERE
+version: scala_version 2.10.2
+version: jetty_version 7.6.3.v20120416
 HERE
 
    cat > resources <<HERE
@@ -146,8 +143,8 @@ HERE
 }
 
 test_jar_not_created_when_update_fails(){
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  echo "default file://`pwd`/MISSING-RESOLVER" >> $GLOBAL_RESOURCE_RESOLVERS
+  GLOBAL_RESOURCE_CONFIG=resource_config
+  echo "resolver: default file://`pwd`/MISSING-RESOLVER" >> $GLOBAL_RESOURCE_CONFIG
   mkdir CACHE
   mkdir LIB
   resourceId="org.apache.commons commons-lang3 3.1"
@@ -178,9 +175,9 @@ test_has_src_files_one_newer()
 
 test_can_download_scala()
 {
-  GLOBAL_RESOURCE_VERSIONS=versions
-  cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
-scala_version 2.10.3
+  GLOBAL_RESOURCE_CONFIG=resource_config
+  cat > $GLOBAL_RESOURCE_CONFIG <<HERE
+version: scala_version 2.10.3
 HERE
   mkdir dummy_resolver
   echo "not really scala" > "dummy_resolver/scala-2.10.3.tgz"
@@ -189,6 +186,21 @@ HERE
   download_scala "file://`pwd`/dummy_resolver/" "`pwd`/dummy_cache" 
   assertTrue "scala zip should have downloaded" "[ -e dummy_cache/scala-2.10.3.tgz ]"
 
+}
+
+test_lines_beginning_with()
+{
+  cat > "temp_file" <<HERE
+key1 fred
+key2 mike
+key1 bill
+
+# comment
+
+key1 dave
+HERE
+  res=$(lines_beginning_with "key1" "temp_file" | xargs)
+  assertTrue "Expected 'fred bill dave' got $res." "[ \"fred bill dave\" == \"$res\" ]"
 }
 
 . /usr/bin/shunit2

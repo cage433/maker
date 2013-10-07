@@ -33,11 +33,10 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
   object Compiler extends Default("scalac") with IsString
-  object ResolversFile extends Default(file(root, "resource-resolvers")) with IsFile
-  object VersionsFile extends Default(file(root, "resource-versions")) with IsFile
+  object ResourceConfigFile extends Default(file(root, "maker-resource-config")) with IsFile
   object IvySettingsFile extends Default(file(root, "ivysettings.xml")) with IsFile
-  def resourceVersions() = Props.propsFileToMap(VersionsFile())
-  def resourceResolvers() : Map[String, String] = Props.propsFileToMap(ResolversFile())
+  def resourceVersions() = Props.ResourceSettings(ResourceConfigFile()).versions
+  def resourceResolvers() : Map[String, String] = Props.ResourceSettings(ResourceConfigFile()).resolvers
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
 
   /**
@@ -168,8 +167,7 @@ object Props {
       cwdProps.ProjectJlineSourceJar,
       cwdProps.SbtInterfaceJar,
       cwdProps.CompilerInterfaceSourcesJar,
-      cwdProps.ResolversFile,
-      cwdProps.VersionsFile,
+      cwdProps.ResourceConfigFile,
       cwdProps.MakerTestReporterClasspath,
       cwdProps.LogbackTestConfigFile,
       cwdProps.LogCommandFile,
@@ -183,6 +181,23 @@ object Props {
       case _ => throw new RuntimeException("Need even number for key/value pairs")
     }
     Props(makerDotConf)
+  }
+
+  case class ResourceSettings(resolvers : Map[String, String], versions : Map[String, String])
+  object ResourceSettings{
+    def apply(settingsFile : File) : ResourceSettings = {
+      def buildMap(key : String) : Map[String, String] = {
+        settingsFile.readLines.filter(_.startsWith(key)).map{
+          line => 
+            val List(x, y) = line.split(" ").toList.filterNot(_ == "").tail
+            x -> y
+        }.toMap
+      }
+      ResourceSettings(
+        buildMap("resolver:"),
+        buildMap("version:")
+      )
+    }
   }
 }
 
