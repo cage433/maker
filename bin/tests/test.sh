@@ -103,7 +103,12 @@ test_can_parse_resolver_list()
   GLOBAL_RESOURCE_RESOLVERS=resolvers
   cat > $GLOBAL_RESOURCE_RESOLVERS <<HERE
 default file://RESOLVER
+# some random comment
+
+# blank line above will be ignored
+  this will be ignored cause it starts with a tab
 other file://OTHER-RESOLVER
+  this will be ignored cause it starts with a space
 HERE
 
   assertEquals "file://RESOLVER" "$(find_resolver "")"

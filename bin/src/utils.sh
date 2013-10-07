@@ -150,7 +150,8 @@ find_resolver(){
       echo $long_name
       return 0
     fi
-  done < $(eval_file_variable GLOBAL_RESOURCE_RESOLVERS)
+  done < <(sed -n '/^[^# \t]/p' $(eval_file_variable GLOBAL_RESOURCE_RESOLVERS)) # remove comments and lines beginning with whitespace 
+
   add_error "$(basename ${BASH_SOURCE[0]}) $LINENO: Unable to find resolver"
   return 1
 }
