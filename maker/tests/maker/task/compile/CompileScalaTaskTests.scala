@@ -453,12 +453,10 @@ class SomeClass extends SomeTrait{
 
         assert(proj.compile.failed, "compilation succeeded when should have failed")
 
-        var changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
         val fooClass = file(proj.compilePhase.outputDir, "foo", "Foo.class")
         val barClass = file(proj.compilePhase.outputDir, "foo", "bar", "Bar.class")
-        // With the 2.9 compiler this would have produced no classes, 2.10 appears to, even if some
-        // source files fail to compile
-        assert(changedClassFiles === Set(fooClass)) 
+
+        assert(!barClass.exists)
 
         // now put a matching implementation in and all should be ok again
         proj.writeSrc(
@@ -474,7 +472,7 @@ class SomeClass extends SomeTrait{
 
         assert(proj.compile.succeeded, "compilation failed when should have succeeded")
 
-        changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
+        val changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
         assert(changedClassFiles === Set(fooClass, barClass))
     }
   }

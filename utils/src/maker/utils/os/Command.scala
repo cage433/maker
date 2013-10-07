@@ -157,9 +157,8 @@ object ScalaCommand {
   def apply(props : Props, outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
     val allArgs : List[String] = java :: opts ::: List[String](
       "-Dscala.usejavacp=true", 
-      "-Xbootclasspath:" + System.getProperty("sun.boot.class.path"),
       "-classpath",
-      classpath) ::: 
+      classpath + ":" + System.getProperty("sun.boot.class.path")) ::: 
       List("scala.tools.nsc.MainGenericRunner",
       klass) ::: args.toList
     Command(props, outputHandler, None, allArgs :_*)
