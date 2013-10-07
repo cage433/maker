@@ -102,6 +102,25 @@ update_resource(){
   fi
 }
 
+download_scala(){
+  read resolver resource_cache <<<$(echo $*)
+  add_error "Looking for scala version "
+  scala_version=$(resolve_version "{scala_version}") 
+  add_error "Scala version "$scala_version
+  resourceId="scala-"$scala_version".tgz"
+  cached_resource=$resource_cache"/"$resourceId
+
+  #url="http://www.scala-lang.org/files/archive/"$resourceId
+  url=$resolver/$resourceId
+  curl $url -s -H "Pragma: no-cache" -f -o $cached_resource
+  if [ ! -e $cached_resource ]; then
+    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO Failed to download $url to $cached_resource"
+    add_error "CMD was 'curl $url -s -H \"Pragma: no-cache\" -f -o $cached_resource'"
+    return 1
+  fi
+  return 0
+}
+
 update_resources(){
   read lib resourceIdFile <<<$(echo $*)
   mkdir -p $lib

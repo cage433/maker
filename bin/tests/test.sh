@@ -177,5 +177,20 @@ test_has_src_files_one_newer()
   fi
 }
 
+test_can_download_scala()
+{
+  GLOBAL_RESOURCE_VERSIONS=versions
+  cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
+scala_version 2.10.3
+HERE
+  mkdir dummy_resolver
+  echo "not really scala" > "dummy_resolver/scala-2.10.3.tgz"
+  mkdir dummy_cache
+
+  download_scala "file://`pwd`/dummy_resolver/" "`pwd`/dummy_cache" 
+  assertTrue "scala zip should have downloaded" "[ -e dummy_cache/scala-2.10.3.tgz ]"
+
+}
+
 . /usr/bin/shunit2
 
