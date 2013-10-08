@@ -41,8 +41,8 @@ test_relative_url(){
   assertEquals "org/apache/commons/commons-lang3/3.1/commons-lang3-3.1.jar" "$url"
 }
 
-test_resource_path(){
-  path=$(resource_path cache/dir "org.apache.commons" "commons-lang3" "3.1")
+test_resource_basename(){
+  path=cache/dir/$(resource_basename "org.apache.commons" "commons-lang3" "3.1")
   assertEquals "cache/dir/org.apache.commons-commons-lang3-3.1.jar" "$path"
 }
 
@@ -52,12 +52,13 @@ test_update_copies_cached_resource()
   mkdir $GLOBAL_RESOURCE_CACHE
   mkdir LIB
   resourceId="org.apache.commons commons-lang3 3.1"
+  echo $resourceId > resources
   resourceBasename=$(resource_basename $resourceId)
 
   echo "" > $GLOBAL_RESOURCE_CACHE/$resourceBasename
   resolver="dummy-resolver"
 
-  update_resource "LIB" $resourceId
+  update_resources "LIB" resources
   assertTrue "Resource should have been copied from cache" "[ -e LIB/$resourceBasename ]"
 }
 
@@ -71,11 +72,12 @@ test_update_downloads_non_cached_resource()
 
   mkdir LIB
   resourceId="org.apache.commons commons-lang3 3.1"
+  echo $resourceId > resources
   resourceBasename=$(resource_basename $resourceId)
   resolverPath=RESOLVER/$(relative_url $resourceId)
   mkdir -p $(dirname $resolverPath)
   echo "" > $resolverPath
-  update_resource "LIB" $resourceId
+  update_resources "LIB" resources
   assertTrue "Resource should have been downloaded by curl" "[ -e LIB/$resourceBasename ]"
   assertTrue "Downloaded resource should have been cached" "[ -e CACHE/$resourceBasename ]"
 }
@@ -148,7 +150,8 @@ test_jar_not_created_when_update_fails(){
   mkdir CACHE
   mkdir LIB
   resourceId="org.apache.commons commons-lang3 3.1"
-  update_resource "LIB" $resourceId
+  echo $resourceId > resources
+  update_resources "LIB" resources
   resourceBasename=$(resource_basename $resourceId)
   assertTrue "Resource should not have been downloaded by curl" "[ ! -e LIB/$resourceBasename ]"
   assertTrue "resource should not have been cached" "[ ! -e CACHE/$resourceBasename ]"
@@ -180,12 +183,19 @@ test_can_download_scala()
 version: scala_version 2.10.3
 HERE
   mkdir dummy_resolver
-  echo "not really scala" > "dummy_resolver/scala-2.10.3.tgz"
-  mkdir dummy_cache
-
-  download_scala "file://`pwd`/dummy_resolver/" "`pwd`/dummy_cache" 
-  assertTrue "scala zip should have downloaded" "[ -e dummy_cache/scala-2.10.3.tgz ]"
-
+  mkdir -p dummy_scala/lib
+  mkdir -p dummy_scala/src
+  touch dummy_scala/lib/one.jar
+  touch dummy_scala/lib/two.jar
+  touch dummy_scala/src/three.jar
+  tar czf dummy_resolver/scala-2.10.3.tgz dummy_scala
+  GLOBAL_RESOURCE_CACHE="CACHE"
+  mkdir $GLOBAL_RESOURCE_CACHE
+  download_scala_jars "file://`pwd`/dummy_resolver/scala-2.10.3.tgz" lib
+  assertTrue "scala jars should have downloaded" "[ -e lib/one.jar ]"
+  assertTrue "scala jars should have downloaded" "[ -e lib/two.jar ]"
+  assertTrue "scala jars should have downloaded" "[ -e lib/three.jar ]"
+  assertTrue "scala zip should have been cached" "[ -e CACHE/scala-2.10.3.tgz ]"
 }
 
 test_lines_beginning_with()

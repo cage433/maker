@@ -34,13 +34,6 @@ resource_basename(){
   echo ${path:-"$default"}
 }
 
-resource_path(){
-  dir=$1
-  shift
-
-  echo $dir/$(resource_basename $*)
-}
-
 lookup_value(){
   lookup_key=$1
   shift
@@ -68,23 +61,17 @@ lines_beginning_with(){
   sed -n "s/^$key \+\(.*\)/\1/p" $filename 2>/dev/null
 }
 
-update_resource(){
-  declare local lib line resourceId resource cached_resource resource_cache resolver relativeURL
-  read lib line <<<$(echo $*)
-  
-  resourceId=$(resolve_version $line) 
-  resource=$(resource_path $lib $resourceId)
+update_resource_with_url(){
+  declare local url resource
+  read url resource <<<$(echo $*)
+
   if [ ! -e $resource ]; then
     resource_cache=${GLOBAL_RESOURCE_CACHE-:"$HOME/.maker-resource-cache"} 
-    cached_resource=$(resource_path $resource_cache $resourceId)
+    cached_resource=$resource_cache/`basename $resource`
     # copy from cache if it exists
     if [ -e $cached_resource ]; then
       cp $cached_resource $resource
     else
-      # try to download from one of the resolvers
-      resolver=$(find_resolver $resourceId)
-      relativeURL=$(relative_url "$resourceId")
-      url="$resolver"/"$relativeURL"
       curl $url -s -H "Pragma: no-cache" -f -o $resource
       if [ -e $resource ]; then
         cp $resource $cached_resource
@@ -98,22 +85,21 @@ update_resource(){
   fi
 }
 
-download_scala(){
-  read resolver resource_cache <<<$(echo $*)
-  add_error "Looking for scala version "
-  scala_version=$(resolve_version "{scala_version}") 
-  add_error "Scala version "$scala_version
-  resourceId="scala-"$scala_version".tgz"
-  cached_resource=$resource_cache"/"$resourceId
-
-  #url="http://www.scala-lang.org/files/archive/"$resourceId
-  url=$resolver/$resourceId
-  curl $url -s -H "Pragma: no-cache" -f -o $cached_resource
-  if [ ! -e $cached_resource ]; then
-    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO Failed to download $url to $cached_resource"
-    add_error "CMD was 'curl $url -s -H \"Pragma: no-cache\" -f -o $cached_resource'"
+download_scala_jars(){
+  read url lib <<<$(echo $*)
+  tmp_dir=`mktemp -d temp-scala-dir-XXXX`
+  scala_version=$(resolve_version {scala_version})
+  tmp_zip=$tmp_dir/scala-$scala_version.tgz
+  update_resource_with_url $url $tmp_zip
+  if [ ! -e $tmp_zip ]; then
+    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO Failed to download $url"
     return 1
   fi
+  tar xzf $tmp_zip -C $tmp_dir
+  mkdir -p $lib
+  cp $tmp_dir/*/lib/*.jar $lib/
+  cp $tmp_dir/*/src/*.jar $lib/
+  rm -rf $tmp_dir
   return 0
 }
 
@@ -122,7 +108,10 @@ update_resources(){
   mkdir -p $lib
 
   while read line && ! has_error; do
-    update_resource $lib $cache $line
+    line=$(resolve_version $line)
+    resource=$lib/$(resource_basename $line)
+    url=$(find_resolver $line)/$(relative_url "$line")
+    update_resource_with_url $url $resource
   done < <(strip_comments $resourceIdFile)
   has_error
   return $?

@@ -60,9 +60,14 @@ determine_maker_scala_version(){
 }
 
 download_scala_libs(){
-  scala_version=$1
-  dir=$2
-  resolver=$3
+  config_file=$1
+  GLOBAL_RESOURCE_CONFIG="$config_file"
+  lib_dir=`dirname $config_file`/scala-libs-$(resolve_version "{scala_version}")
+  if [ ! -e $lib_dir ]; then
+    mkdir $lib_dir
+    temp_dir=`mktmp -d scala-download-XXXXX`
+    scala_url=`lines_beginning_with "scala_url" $config_file`
+  fi
 }
 
 main() {
@@ -109,11 +114,7 @@ org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.
 org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version}.jar
 org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
 org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
-org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
-org.scala-lang jline {scala_version} path:jline-{scala_version}.jar
-org.scala-lang jline {scala_version} classifier:sources path:jline-sources-{scala_version}.jar
-org.scala-lang scala-actors {scala_version} path:scala-actors-{scala_version}.jar
-org.scala-lang scala-actors {scala_version} classifier:sources path:scala-actors-sources-{scala_version}.jar
+org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-{scala_version}.jar
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
