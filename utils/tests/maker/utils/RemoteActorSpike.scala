@@ -1,7 +1,8 @@
 package maker.utils
+import akka.actor.Actor
 
 object RemoteActorSpike extends App{
-  class HelloWorld extends Actor{
+  class HelloWorld {
   }
   println("hi")
 }
