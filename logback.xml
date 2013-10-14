@@ -18,7 +18,7 @@
       <immediateFlush>true</immediateFlush>
     </encoder>
     <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>WARN</level>
+      <level>DEBUG</level>
     </filter>
   </appender>
 
