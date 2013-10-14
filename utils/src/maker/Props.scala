@@ -51,16 +51,18 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
   object ProjectScalaCompilerSourceJar extends Default(file(root, "scala-libs/scala-compiler-" + MakerScalaVersion() + "-sources.jar")) with IsFile
   object ProjectScalaReflectJar extends Default(file(root, "scala-libs/scala-reflect-" + MakerScalaVersion() + ".jar")) with IsFile
   object ProjectScalaReflectSourceJar extends Default(file(root, "scala-libs/scala-reflect-" + MakerScalaVersion() + "-sources.jar")) with IsFile
-  object ProjectScalaActorsJar extends Default(file(root, "scala-libs/scala-actors-" + MakerScalaVersion() + ".jar")) with IsFile
-  object ProjectScalaActorsSourceJar extends Default(file(root, "scala-libs/scala-actors-" + MakerScalaVersion() + "-sources.jar")) with IsFile
+  //object ProjectScalaActorsJar extends Default(file(root, "scala-libs/scala-actors-" + MakerScalaVersion() + ".jar")) with IsFile
+  //object ProjectScalaActorsSourceJar extends Default(file(root, "scala-libs/scala-actors-" + MakerScalaVersion() + "-sources.jar")) with IsFile
   object ProjectJlineJar extends Default(file(root, "scala-libs/jline-" + MakerScalaVersion() + ".jar")) with IsFile
   object ProjectJlineSourceJar extends Default(file(root, "scala-libs/jline-" + MakerScalaVersion() + "-sources.jar")) with IsFile
 
-  def scalaLibs() = findJars(file(ScalaHome(), "lib"))
+  //def scalaLibs() = findJars(file(ScalaHome(), "lib"))
   def compilerJars() = List(
-    ProjectScalaCompilerJar(), ProjectScalaLibraryJar(), ProjectScalaReflectJar(), ProjectScalaActorsJar(), ProjectJlineJar())
+    ProjectScalaCompilerJar(), ProjectScalaLibraryJar(), ProjectScalaReflectJar(), ProjectJlineJar())
 
-  def extraJars() = List( ProjectScalaReflectJar(), ProjectScalaActorsJar(), ProjectJlineJar())
+  def extraJars() = List( ProjectScalaReflectJar(), 
+    //ProjectScalaActorsJar(), 
+    ProjectJlineJar())
   
 
   object SbtInterfaceJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-sbt-interface-0.13.0.jar")) with IsFile
@@ -161,8 +163,8 @@ object Props {
       cwdProps.ProjectScalaCompilerSourceJar,
       cwdProps.ProjectScalaReflectJar,
       cwdProps.ProjectScalaReflectSourceJar,
-      cwdProps.ProjectScalaActorsJar,
-      cwdProps.ProjectScalaActorsSourceJar,
+      //cwdProps.ProjectScalaActorsJar,
+      //cwdProps.ProjectScalaActorsSourceJar,
       cwdProps.ProjectJlineJar,
       cwdProps.ProjectJlineSourceJar,
       cwdProps.SbtInterfaceJar,

@@ -207,7 +207,7 @@ class Module(
   def testResultDirectory = file(makerDirectory, "test-results")
 
   def managedJars = findJars(managedLibDir)
-  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet ++ props.scalaLibs().toSet 
+  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet ++ props.compilerJars().toSet 
 
   def outputArtifact = file(packageDir.getAbsolutePath, name + ".jar")
 
