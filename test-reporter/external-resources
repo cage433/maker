@@ -3,3 +3,6 @@ com.typesafe.akka akka-actor_{scala_version_base} {akka_version}
 com.typesafe.akka akka-remote_{scala_version_base} {akka_version} 
 com.twitter util-core_{scala_version_base} {twitter_version}
 org.scala-lang scala-reflect {scala_version} 
+com.typesafe config {typesafe_config_version}
+com.google.protobuf protobuf-java {protobuf_version}
+io.netty netty {netty_version}

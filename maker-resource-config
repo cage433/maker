@@ -28,6 +28,10 @@ version: scalatest_version 1.9.2
 version: jetty_version 7.6.3.v20120416
 version: akka_version 2.2.1
 version: twitter_version 6.3.6
+version: typesafe_config_version 1.0.2
+version: protobuf_version 2.4.1
+version: netty_version 3.6.6.Final
+
 
 
 #----------------------------------------------------------------------------
