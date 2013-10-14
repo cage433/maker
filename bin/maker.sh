@@ -123,11 +123,11 @@ com.typesafe.akka akka-remote_{scala_version_base} {akka_version} path:akka-remo
 com.typesafe.akka akka-remote_{scala_version_base} {akka_version} classifier:sources path:akka-remote_{scala_version_base}-{akka_version}.jar
 HERE
 
-  update_resources $MAKER_ROOT_DIR/scala-libs dynamic-akka-resource-list 
+  #update_resources $MAKER_ROOT_DIR/scala-libs dynamic-akka-resource-list 
 
   GLOBAL_RESOURCE_CONFIG="$PROJECT_ROOT_DIR/maker-resource-config" 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
-  update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-akka-resource-list 
+  #update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-akka-resource-list 
   rm dynamic-scala-resource-list
   rm dynamic-akka-resource-list
   rm dynamic-zinc-resource-list
