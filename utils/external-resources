@@ -17,3 +17,4 @@ org.scala-lang scala-compiler {scala_version}
 org.scalaz scalaz-core_{scala_version_base} 7.0.1
 org.slf4j slf4j-api 1.6.1
 redis.clients jedis 2.0.0
+org.scala-lang scala-actors {scala_version}
