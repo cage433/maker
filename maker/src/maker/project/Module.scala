@@ -150,9 +150,9 @@ class Module(
     "Deletes classes (source and test) for module " + name + ", leaving upstream module untouched"
   )
 
-  def TestOnly(reporter : MakerTestReporter = makerTestReporter) = Build(
+  lazy val TestOnly = Build(
     "Test " + name + " only", 
-    () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, reporter)), 
+    () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)), 
     this,
     "testOnly",
     "Runs all tests in the module " + name + ". Tests from upstream modules are _not_ run."
@@ -175,7 +175,7 @@ class Module(
   )
 
   def cleanOnly = CleanOnly.execute
-  def testOnly = TestOnly(makerTestReporter).execute
+  def testOnly = TestOnly.execute
   def testFailuredSuitesOnly = TestFailedSuitesOnly.execute
   def updateOnly = UpdateOnly.execute
 

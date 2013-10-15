@@ -50,8 +50,9 @@ import maker.task.NullTask
 import maker.project.MakerTestReporter
 
 
-case class RunUnitTestsTask(name : String, baseProject : BaseProject, reporter : MakerTestReporter, classOrSuiteNames_ : () => Iterable[String])  extends Task {
+case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () => Iterable[String])  extends Task {
 
+  val reporter = baseProject.makerTestReporter
 
   override def failureHaltsTaskManager = false
   val props = baseProject.props
@@ -103,16 +104,15 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, reporter :
 }
 
 object RunUnitTestsTask{
-  def apply(module : Module, reporter : MakerTestReporter) : RunUnitTestsTask = {
+  def apply(module : Module) : RunUnitTestsTask = {
     RunUnitTestsTask(
       module.name + " test all",
       module,
-      reporter,
       () => module.testClassNames()
     )
   }
   
-  def apply(baseProject : BaseProject, reporter : MakerTestReporter, classNameOrAbbreviation : String) : Task  = {
+  def apply(baseProject : BaseProject, classNameOrAbbreviation : String) : Task  = {
     def resolveClassName() = {
       if (classNameOrAbbreviation.contains('.'))
         List(classNameOrAbbreviation)
@@ -134,7 +134,6 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Test class " + classNameOrAbbreviation, 
       baseProject,
-      reporter,
       resolveClassName
     )
   }
@@ -144,7 +143,6 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      module.makerTestReporter,
       () => TestResults(module).failedTestSuites
     )
   }

@@ -124,7 +124,7 @@ trait BaseProject {
     val reporter = makerTestReporter
     Build(
       "Test " + name, 
-      () => Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(reporter).graph)),
+      () => Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly.graph)),
       this,
       "test",
       "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". After any module fails, all currently running modules will continue till completion, however no tests for any downstream modules will be launched"
@@ -206,8 +206,8 @@ trait BaseProject {
   def testCompile = TestCompile.execute
   def testCompileContinuously = continuously(TestCompile)
   def test = Test.execute
-  def testClass(className : String) = TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, makerTestReporter, className))).execute
-  def testClassContinuously(className : String) = continuously(TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, makerTestReporter, className))))
+  def testClass(className : String) = TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))).execute
+  def testClassContinuously(className : String) = continuously(TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))))
   def testFailedSuites = TestFailedSuites.execute
   def pack = PackageJars.execute
   def update = Update.execute
