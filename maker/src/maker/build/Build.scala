@@ -59,7 +59,6 @@ case class Build(
   helpText : String
 ) {
 
-println("Debug: " + (new java.util.Date()) + " Build: constructed")
   def help{
     println(name + " - (Executed with method " + invokingMethod + ")\n")
     println(helpText)
@@ -165,7 +164,6 @@ println("Debug: " + (new java.util.Date()) + " Build: constructed")
                 print(".")
                 monitor.addLaunch(pt)
                 log.debug("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
-                println("Debug: " + (new java.util.Date()) + " Build: launching " + pt)
                 pt.exec(resultsSoFar.toList, sw)
               } catch {
                 case t: Throwable =>

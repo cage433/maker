@@ -11,6 +11,7 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import akka.pattern.ask
 import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
 
 object Config{
   def apply(port : Int) = {
@@ -38,9 +39,10 @@ object Config{
 
 object TestRunner extends App{
   println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: making system")
+  val masterPort = System.getProperty("maker.test.manager.port").toInt
   val system = ActorSystem.create("REMOTE", Config(2553))
   implicit val timeout = Timeout(60000 * 30) // 30 minutes
-  val managerPath = "akka.tcp://Test-Manager@127.0.0.1:2552/user/manager"
+  val managerPath = s"akka.tcp://Test-Manager@127.0.0.1:$masterPort/user/manager"
   val manager = system.actorSelection(managerPath)
 
   class TestRunnerActor extends Actor{
@@ -58,7 +60,9 @@ object TestRunner extends App{
 
 object RemoteActorSpike extends App{
 
-  val system = ActorSystem.create("Test-Manager", Config(2552))
+  val system = ActorSystem.create("Test-Manager", Config(0))
+  val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
+  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: address " + port)
   println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: " + system.getClass)
 
   class Manager extends Actor{
@@ -81,7 +85,7 @@ object RemoteActorSpike extends App{
     props,
     CommandOutputHandler(),
     props.Java,
-    Nil,
+    List(s"-Dmaker.test.manager.port=$port"),
     System.getProperty("java.class.path"),
     "maker.utils.TestRunner",
     "Launch slave",

@@ -54,8 +54,6 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 
   override def failureHaltsTaskManager = false
   val props = baseProject.props
-
-
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
@@ -92,7 +90,6 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "Running tests in " + name,
       args 
     )
-    println("Debug: " + (new java.util.Date()) + " RunUnitTestsTask: " + cmd)
     val res = cmd.exec
     val results = baseProject.testResults
     val result = if (results.failedTests.isEmpty){
