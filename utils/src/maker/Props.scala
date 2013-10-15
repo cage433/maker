@@ -23,7 +23,7 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
 
   object MakerTestReporterClasspath extends Default(file(root, "maker-scalatest-reporter.jar").absPath) with IsString
 
-  object MakerTestReporterClass extends Default("maker.scalatest.MakerTestReporter") with IsString
+  object MakerTestReporterClass extends Default("maker.scalatest.FileBasedMakerTestReporter") with IsString
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   val Java = file(JavaHome() + "/bin/java").absPath

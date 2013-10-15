@@ -173,7 +173,7 @@ bootstrap_maker_if_required() {
     has_newer_src_files $MAKER_ROOT_DIR/test-reporter/src $MAKER_SCALATEST_REPORTER_JAR;
   then
     echo "Building maker"
-    build_jar $MAKER_SCALATEST_REPORTER_JAR "$MAKER_ROOT_DIR/test-reporter/src/maker/scalatest/MakerTestReporter.scala"
+    build_jar $MAKER_SCALATEST_REPORTER_JAR $(find "$MAKER_ROOT_DIR/test-reporter/src" -name '*.scala' | xargs)
 
     for module in utils maker; do
       SRC_FILES="$SRC_FILES $(find $MAKER_ROOT_DIR/$module/src -name '*.scala' | xargs)"

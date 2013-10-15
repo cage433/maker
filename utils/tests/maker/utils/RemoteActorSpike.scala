@@ -40,7 +40,7 @@ object Config{
 object TestRunner extends App{
   println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: making system")
   val masterPort = System.getProperty("maker.test.manager.port").toInt
-  val system = ActorSystem.create("REMOTE", Config(2553))
+  val system = ActorSystem.create("REMOTE", Config(0))
   implicit val timeout = Timeout(60000 * 30) // 30 minutes
   val managerPath = s"akka.tcp://Test-Manager@127.0.0.1:$masterPort/user/manager"
   val manager = system.actorSelection(managerPath)
@@ -62,8 +62,6 @@ object RemoteActorSpike extends App{
 
   val system = ActorSystem.create("Test-Manager", Config(0))
   val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
-  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: address " + port)
-  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: " + system.getClass)
 
   class Manager extends Actor{
     var reporters : List[ActorRef] = Nil

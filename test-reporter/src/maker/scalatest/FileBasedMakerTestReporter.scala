@@ -5,6 +5,7 @@ import org.scalatest.events._
 import java.io._
 import java.util.concurrent.atomic.AtomicBoolean
 
+
 /**
   * Test results are written thus - with the understanding that end times will not exist until the associated
   * test run/suite/test is complete.
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
   *                                   /suites/<suite 2>endtime
   *                                   /suites/<suite 2>/tests/......
   */
-class MakerTestReporter extends Reporter{
+class FileBasedMakerTestReporter extends Reporter{
   import FileUtils._
   val projectRootDirectory = Option(System.getProperty("maker.test.project.root")).getOrElse(throw new RuntimeException("Property maker.test.project.root not set"))
   val propsRootDirectory = Option(System.getProperty("maker.props.root")).getOrElse(throw new RuntimeException("Property maker.props.root not set"))
@@ -191,7 +192,7 @@ case class ThreadDumper(propsRoot : File, moduleRoot : File){
             
           } catch {
             case t: Throwable =>
-              println("Debug: MakerTestReporter: thread dumper error " + t)
+              println("Debug: FileBasedMakerTestReporter: thread dumper error " + t)
           } finally {
             Thread.sleep(500)
           }
