@@ -34,19 +34,23 @@ akka {
     ConfigFactory.parseString(confText)
   }
 }
+
 object RemoteSender extends App{
-  implicit val timeout = Timeout(60000 * 30) // 30 minutes
   val system = ActorSystem.create("REMOTE", Config(2553))
-  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: launched slave")
+  implicit val timeout = Timeout(60000 * 30) // 30 minutes
   val doublerPath = "akka.tcp://LOCAL@127.0.0.1:2552/user/doubler"
-  val doublerFuture = system.actorSelection(doublerPath).resolveOne(timeout.duration)
-  val doubler = Await.result(doublerFuture, timeout.duration)
- 
-  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: sending messages from remote")
-  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: " + doubler)
-  val promise1 = (doubler ? "hello from remote")
-  val result1 = Await.result(promise1, timeout.duration)
-  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: " + result1)
+  val doublerFuture = system.actorSelection(doublerPath)
+
+  class TestRunnerActor extends Actor{
+    override def preStart(){
+      doublerFuture ! "REGISTER"
+    }
+    def receive = {
+      case any =>
+        println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: Test Runner received " + any)
+    }
+  }
+  val myTestRunner = system.actorOf(Props[TestRunnerActor], "runner")
 }
 
 object RemoteActorSpike extends App{
