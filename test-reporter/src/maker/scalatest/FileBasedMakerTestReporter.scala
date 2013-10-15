@@ -5,6 +5,12 @@ import org.scalatest.events._
 import java.io._
 import java.util.concurrent.atomic.AtomicBoolean
 
+trait MakerTestReporter{
+  def scalatestReporterClass : String
+  def systemProperties : List[String]
+  def scalatestClasspah : String
+}
+
 
 /**
   * Test results are written thus - with the understanding that end times will not exist until the associated

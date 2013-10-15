@@ -23,6 +23,7 @@ import maker.task.test.TestResults
 import maker.task.publish.IvyUtils
 import maker.task.publish.PublishLocalTask
 import maker.task.publish.PublishTask
+import maker.scalatest.MakerTestReporter
 
 trait BaseProject {
   protected def root : File
@@ -69,6 +70,15 @@ trait BaseProject {
     text + " " + getClass.getSimpleName.toLowerCase + " " + name
   }
 
+  def makerTestReporter = new MakerTestReporter{
+    def scalatestReporterClass = "maker.test.FileBasedMakerTestReporter"
+    def scalatestClasspah = file(root, "maker-scalatest-reporter.jar").absPath
+    def systemProperties : List[String]  = List(
+      "-Dmaker.test.project.root=" + rootAbsoluteFile,
+      "-Dmaker.props.root=" + props.root
+    )
+  }
+
   lazy val Clean = Build(
     buildName("Clean"),
     () => Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_))),
@@ -105,22 +115,17 @@ trait BaseProject {
     "Compile tests in module(s) " + allUpstreamTestModules.map(_.name).mkString(", ") + " after compiling any upstream source (and also tests in the case of upstreamTestProjects"
   )
 
-  lazy val Test = Build(
-    "Test " + name, 
-    () => Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly.graph)),
-    this,
-    "test",
-    "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". After any module fails, all currently running modules will continue till completion, however no tests for any downstream modules will be launched"
-  )
+  lazy val Test = {
+    val reporter = makerTestReporter
+    Build(
+      "Test " + name, 
+      () => Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(reporter).graph)),
+      this,
+      "test",
+      "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". After any module fails, all currently running modules will continue till completion, however no tests for any downstream modules will be launched"
+    )
+  }
   
-  lazy val TestSansCompile = Build(
-    "Test without compiling " + name,
-    () => Dependency.Graph(allUpstreamModules.map(RunUnitTestsTask(_))),
-    this,
-    "testNoCompile",
-    "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". No compilation at all is done before running tests"
-  )
-
   lazy val TestClass = Build(
     "Test single class ",
     () => throw new Exception("Placeholder graph only - should never be called"),
@@ -196,9 +201,8 @@ trait BaseProject {
   def testCompile = TestCompile.execute
   def testCompileContinuously = continuously(TestCompile)
   def test = Test.execute
-  def testNoCompile = TestSansCompile.execute
-  def testClass(className : String) = TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))).execute
-  def testClassContinuously(className : String) = continuously(TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))))
+  def testClass(className : String) = TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, makerTestReporter, className))).execute
+  def testClassContinuously(className : String) = continuously(TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, makerTestReporter, className))))
   def testFailedSuites = TestFailedSuites.execute
   def pack = PackageJars.execute
   def update = Update.execute

@@ -65,6 +65,7 @@ import maker.task.update.Resource
 import maker.utils.Implicits.RichString._
 import scala.xml.Elem
 import maker.task.publish.PomUtils
+import maker.scalatest.MakerTestReporter
 
 /**
   * Corresponds to a module in IntelliJ
@@ -150,9 +151,9 @@ class Module(
     "Deletes classes (source and test) for module " + name + ", leaving upstream module untouched"
   )
 
-  lazy val TestOnly = Build(
+  def TestOnly(reporter : MakerTestReporter = makerTestReporter) = Build(
     "Test " + name + " only", 
-    () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)), 
+    () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, reporter)), 
     this,
     "testOnly",
     "Runs all tests in the module " + name + ". Tests from upstream modules are _not_ run."
@@ -175,7 +176,7 @@ class Module(
   )
 
   def cleanOnly = CleanOnly.execute
-  def testOnly = TestOnly.execute
+  def testOnly = TestOnly(makerTestReporter).execute
   def testFailuredSuitesOnly = TestFailedSuitesOnly.execute
   def updateOnly = UpdateOnly.execute
 

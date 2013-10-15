@@ -47,9 +47,10 @@ import maker.task.compile.TestCompileTask
 import maker.utils.IntellijStringDistance
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
+import maker.scalatest.MakerTestReporter
 
 
-case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () => Iterable[String])  extends Task {
+case class RunUnitTestsTask(name : String, baseProject : BaseProject, reporter : MakerTestReporter, classOrSuiteNames_ : () => Iterable[String])  extends Task {
 
 
   override def failureHaltsTaskManager = false
@@ -73,19 +74,17 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val opts = List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m", 
-      "-Dmaker.test.project.root=" + baseProject.rootAbsoluteFile,
-      "-Dmaker.props.root=" + baseProject.props.root,
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false"
-    ) ::: systemProperties
-    val args = List("-P", "-C", props.MakerTestReporterClass()) ++ suiteParameters
+    ) ::: reporter.systemProperties ::: systemProperties
+    val args = List("-P", "-C", reporter.scalatestReporterClass) ++ suiteParameters
     val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
       props,
       outputHandler,
       props.Java,
       opts,
-      baseProject.testClasspath + ":" + props.MakerTestReporterClasspath(),
+      baseProject.testClasspath + ":" + reporter.scalatestClasspah,
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 
@@ -104,15 +103,16 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 }
 
 object RunUnitTestsTask{
-  def apply(module : Module) : RunUnitTestsTask = {
+  def apply(module : Module, reporter : MakerTestReporter) : RunUnitTestsTask = {
     RunUnitTestsTask(
       module.name + " test all",
       module,
+      reporter,
       () => module.testClassNames()
     )
   }
   
-  def apply(baseProject : BaseProject, classNameOrAbbreviation : String) : Task  = {
+  def apply(baseProject : BaseProject, reporter : MakerTestReporter, classNameOrAbbreviation : String) : Task  = {
     def resolveClassName() = {
       if (classNameOrAbbreviation.contains('.'))
         List(classNameOrAbbreviation)
@@ -134,6 +134,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Test class " + classNameOrAbbreviation, 
       baseProject,
+      reporter,
       resolveClassName
     )
   }
@@ -143,6 +144,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
+      module.makerTestReporter,
       () => TestResults(module).failedTestSuites
     )
   }
