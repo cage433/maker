@@ -10,40 +10,43 @@ import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 import scala.concurrent.Await
 import akka.pattern.ask
+import akka.actor.ActorRef
 
 object Config{
-def apply(port : Int) = {
-  val confText = s"""
-akka {
-  loggers = ["akka.event.slf4j.Slf4jLogger"]
-  //loglevel = "DEBUG"
-  actor {
-    provider = "akka.remote.RemoteActorRefProvider"
-  }
-  remote {
-    enabled-transports = ["akka.remote.netty.tcp"]
-    netty.tcp {
-      hostname = "127.0.0.1"
-      port = $port
-    }
-    //log-received-messages = on
-    //log-sent-messages = on
- }
-}
-"""
+  def apply(port : Int) = {
+    val confText = s"""
+      akka {
+        loggers = ["akka.event.slf4j.Slf4jLogger"]
+        //loglevel = "DEBUG"
+        actor {
+          provider = "akka.remote.RemoteActorRefProvider"
+        }
+        remote {
+          enabled-transports = ["akka.remote.netty.tcp"]
+          netty.tcp {
+            hostname = "127.0.0.1"
+            port = $port
+          }
+          //log-received-messages = on
+          //log-sent-messages = on
+      }
+      }
+    """
     ConfigFactory.parseString(confText)
   }
 }
 
-object RemoteSender extends App{
+object TestRunner extends App{
+  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: making system")
   val system = ActorSystem.create("REMOTE", Config(2553))
   implicit val timeout = Timeout(60000 * 30) // 30 minutes
-  val doublerPath = "akka.tcp://LOCAL@127.0.0.1:2552/user/doubler"
-  val doublerFuture = system.actorSelection(doublerPath)
+  val managerPath = "akka.tcp://Test-Manager@127.0.0.1:2552/user/manager"
+  val manager = system.actorSelection(managerPath)
 
   class TestRunnerActor extends Actor{
     override def preStart(){
-      doublerFuture ! "REGISTER"
+      println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: registering")
+      manager ! "REGISTER"
     }
     def receive = {
       case any =>
@@ -55,10 +58,15 @@ object RemoteSender extends App{
 
 object RemoteActorSpike extends App{
 
-  val system = ActorSystem.create("LOCAL", Config(2552))
+  val system = ActorSystem.create("Test-Manager", Config(2552))
+  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: " + system.getClass)
 
-  class Doubler extends Actor{
+  class Manager extends Actor{
+    var reporters : List[ActorRef] = Nil
     def receive = {
+      case "REGISTER" =>
+        println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: adding reporter")
+        reporters = sender :: reporters
       case x : String =>
         sender ! (x + x)
       case x : Int =>
@@ -66,7 +74,7 @@ object RemoteActorSpike extends App{
     }
   }
 
-  val myDoubler = system.actorOf(Props[Doubler], "doubler")
+  val manager = system.actorOf(Props[Manager], "manager")
 
   val props = maker.Props.apply(file("."))
   val cmd = ScalaCommand(
@@ -75,29 +83,11 @@ object RemoteActorSpike extends App{
     props.Java,
     Nil,
     System.getProperty("java.class.path"),
-    "maker.utils.RemoteSender",
+    "maker.utils.TestRunner",
     "Launch slave",
     Nil
   )
   cmd.execAsync
 
-
-  class LocalSender extends Actor{
-    override def preStart(){
-      val doublerPath = "akka.tcp://LOCAL@127.0.0.1:2552/user/doubler"
-      val doubler = context.actorSelection(doublerPath)
-      doubler ! "hello from local"
-      doubler ! 34
-    }
-
-    def receive = {
-      case any =>
-        println("Debug: " + (new java.util.Date()) + " + RemoteActorSpike: received " + any)
-    }
-  }
-
-
-  val req = system.actorOf(Props[LocalSender], "requester")
-    //system.shutdown
 
 }
