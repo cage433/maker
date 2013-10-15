@@ -47,7 +47,7 @@ import maker.task.compile.TestCompileTask
 import maker.utils.IntellijStringDistance
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
-import maker.scalatest.MakerTestReporter
+import maker.project.MakerTestReporter
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, reporter : MakerTestReporter, classOrSuiteNames_ : () => Iterable[String])  extends Task {

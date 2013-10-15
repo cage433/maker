@@ -35,10 +35,7 @@ class TestModuleTests extends FunSuite{
         proj.writeMakerProjectDefinitionFile
         val makerDotSh = file("bin/maker.sh").absPath
         file("maker-resource-config").copyTo(dir)
-        writeToFile(
-          proj.resourcesFile,
-          "org.scalatest scalatest_{scala_version_base} {scalatest_version}"
-        )
+        file("test-reporter/external-resources").copyTo(proj.resourcesFile)
 
         val cmd = Command(
           Props(file(dir, "props.conf")),

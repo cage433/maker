@@ -21,9 +21,6 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
     log
   }
 
-  object MakerTestReporterClasspath extends Default(file(root, "maker-scalatest-reporter.jar").absPath) with IsString
-
-  object MakerTestReporterClass extends Default("maker.scalatest.FileBasedMakerTestReporter") with IsString
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   val Java = file(JavaHome() + "/bin/java").absPath
@@ -154,9 +151,8 @@ object Props {
     writeProperty("GroupId", "MakerTestGroupID")
     writeProperty("TmuxMessaging", "false")
     writeProperty("RunningInMakerTest", "true")
-    writeProperty("MakerTestReporterClasspath", cwdProps.MakerTestReporterClasspath())
-    writeProperty("MakerTestReporterClass", cwdProps.MakerTestReporterClass())
     writeProperty("PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().absPath)
+    file(cwdProps.root, "maker-scalatest-reporter.jar").copyTo(root)
     List(
       cwdProps.ProjectScalaLibraryJar,
       cwdProps.ProjectScalaLibrarySourceJar,

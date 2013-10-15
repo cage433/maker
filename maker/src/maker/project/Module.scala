@@ -65,7 +65,6 @@ import maker.task.update.Resource
 import maker.utils.Implicits.RichString._
 import scala.xml.Elem
 import maker.task.publish.PomUtils
-import maker.scalatest.MakerTestReporter
 
 /**
   * Corresponds to a module in IntelliJ

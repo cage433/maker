@@ -23,7 +23,12 @@ import maker.task.test.TestResults
 import maker.task.publish.IvyUtils
 import maker.task.publish.PublishLocalTask
 import maker.task.publish.PublishTask
-import maker.scalatest.MakerTestReporter
+
+trait MakerTestReporter{
+  def scalatestReporterClass : String
+  def systemProperties : List[String]
+  def scalatestClasspah : String
+}
 
 trait BaseProject {
   protected def root : File
@@ -71,8 +76,8 @@ trait BaseProject {
   }
 
   def makerTestReporter = new MakerTestReporter{
-    def scalatestReporterClass = "maker.test.FileBasedMakerTestReporter"
-    def scalatestClasspah = file(root, "maker-scalatest-reporter.jar").absPath
+    def scalatestReporterClass = "maker.scalatest.FileBasedMakerTestReporter"
+    def scalatestClasspah = file(props.root, "maker-scalatest-reporter.jar").absPath
     def systemProperties : List[String]  = List(
       "-Dmaker.test.project.root=" + rootAbsoluteFile,
       "-Dmaker.props.root=" + props.root
