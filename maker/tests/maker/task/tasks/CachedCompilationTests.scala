@@ -32,7 +32,7 @@ class CachedCompilationTests extends FunSuite {
 
       withTempDir{
       dir => {
-        val props = Props.initialiseTestProps(dir, "CompilationCache","file")
+        val props = Props.initialiseTestProps(dir) ++ ("CompilationCache","file")
         val projU = TestModule(new File(dir, "u"), "CachedCompilationTests-u", props)
         val v1 = "package foo\nobject Sample { def hello():Int = 1 }"
         val v2 = "package foo\nobject Sample { def hello():String = \"x\" }\nobject Bob"

@@ -29,7 +29,7 @@ class PublishTaskTests extends FreeSpec {
               |</ivysettings>""".stripMargin % publishDir)
 
         val proj = TestModule(dir, "testPublish", 
-          Props.initialiseTestProps(dir, 
+          Props.initialiseTestProps(dir) ++ (
             "Compiler", "dummy-test-compiler",
             "IvySettingsFile", ivySettingsFile_.absPath
           ))

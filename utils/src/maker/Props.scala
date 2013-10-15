@@ -21,8 +21,9 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
     log
   }
 
-  object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", file(root, "maker-scalatest-reporter.jar")) with IsFile
-  //object MakerTestReporterClasspath extends SystemPropertyWithDefault("maker.test.reporter.classpath", file(root, "test-reporter/target-maker/classes/")) with IsFile
+  object MakerTestReporterClasspath extends Default(file(root, "maker-scalatest-reporter.jar").absPath) with IsString
+
+  object MakerTestReporterClass extends Default("maker.scalatest.MakerTestReporter") with IsString
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   val Java = file(JavaHome() + "/bin/java").absPath
@@ -106,7 +107,6 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
 
   object ResourceCacheDirectory extends Default(file(System.getenv("HOME"), ".maker-resource-cache").makeDirs()) with IsFile
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
-  val TestReporter = "maker.scalatest.MakerTestReporter"
 
   /* 
    * Switches off sundry output with testing maker
@@ -146,7 +146,7 @@ object Props {
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 
-  def initialiseTestProps(root : File, moreProps : String*) : Props = {
+  def initialiseTestProps(root : File, cwdProps : Props = Props(file(".").asAbsoluteFile)) : Props = {
     val makerDotConf = file(root, "Maker.conf")
     def writeProperty(key : String, value : String){
       appendToFile(makerDotConf, key + "=" + value + "\n")
@@ -154,8 +154,9 @@ object Props {
     writeProperty("GroupId", "MakerTestGroupID")
     writeProperty("TmuxMessaging", "false")
     writeProperty("RunningInMakerTest", "true")
+    writeProperty("MakerTestReporterClasspath", cwdProps.MakerTestReporterClasspath())
+    writeProperty("MakerTestReporterClass", cwdProps.MakerTestReporterClass())
     writeProperty("PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().absPath)
-    val cwdProps = Props(file(".").asAbsoluteFile)
     List(
       cwdProps.ProjectScalaLibraryJar,
       cwdProps.ProjectScalaLibrarySourceJar,
@@ -163,24 +164,17 @@ object Props {
       cwdProps.ProjectScalaCompilerSourceJar,
       cwdProps.ProjectScalaReflectJar,
       cwdProps.ProjectScalaReflectSourceJar,
-      //cwdProps.ProjectScalaActorsJar,
-      //cwdProps.ProjectScalaActorsSourceJar,
       cwdProps.ProjectJlineJar,
       cwdProps.ProjectJlineSourceJar,
       cwdProps.SbtInterfaceJar,
       cwdProps.CompilerInterfaceSourcesJar,
       cwdProps.ResourceConfigFile,
-      cwdProps.MakerTestReporterClasspath,
       cwdProps.LogbackTestConfigFile,
       cwdProps.LogCommandFile,
       cwdProps.IvySettingsFile
     ).foreach{
       prop => 
         writeProperty(prop.name, prop().absPath)
-    }
-    moreProps.toList.grouped(2).foreach{
-      case List(key, value) => writeProperty(key, value)
-      case _ => throw new RuntimeException("Need even number for key/value pairs")
     }
     Props(makerDotConf)
   }

@@ -80,7 +80,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false"
     ) ::: systemProperties
-    val args = List("-P", "-C", props.TestReporter) ++ suiteParameters
+    val args = List("-P", "-C", props.MakerTestReporterClass()) ++ suiteParameters
     val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
       props,
@@ -92,6 +92,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "Running tests in " + name,
       args 
     )
+    println("Debug: " + (new java.util.Date()) + " RunUnitTestsTask: " + cmd)
     val res = cmd.exec
     val results = baseProject.testResults
     val result = if (results.failedTests.isEmpty){

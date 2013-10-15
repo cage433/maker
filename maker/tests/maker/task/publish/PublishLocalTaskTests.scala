@@ -32,7 +32,7 @@ class PublishLocalTaskTests extends FreeSpec{
         val proj = new Module(
           dir,
           "testPublishLocal",
-          Props.initialiseTestProps(dir, "Compiler", "dummy-test-compiler"),
+          Props.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler"),
           analyses = new ConcurrentHashMap[File, Analysis]()
         )with TestModule {
           override def resources() = resourcesList
@@ -114,8 +114,7 @@ class PublishLocalTaskTests extends FreeSpec{
   "Top level project should publish as expected" in {
     withTempDir {
       dir => 
-        val props = Props.initialiseTestProps(
-          dir,
+        val props = Props.initialiseTestProps(dir) ++ (
           "GroupId", "PublishLocalTaskTestsGroup",
           "Compiler", "dummy-test-compiler"
         )

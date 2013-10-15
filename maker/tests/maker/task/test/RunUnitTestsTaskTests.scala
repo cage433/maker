@@ -12,7 +12,7 @@ class RunUnitTestsTaskTests extends FunSuite {
   test("Test Reporter does its thing"){
     withTempDir{
       root => 
-        val props = Props.initialiseTestProps(root,
+        val props = Props.initialiseTestProps(root) ++ (
           "MakerTestReporterClasspath", "test-reporter/target-maker/classes/")
 
         val proj = TestModule(root, "RunUnitTestsTaskTests", props)
