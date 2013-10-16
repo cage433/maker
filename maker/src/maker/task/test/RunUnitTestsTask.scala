@@ -92,7 +92,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     )
     val res = cmd.exec
     val results = baseProject.testResults
-    val result = if (results.failedTests.isEmpty){
+    val result = if (results.numFailedTests == 0){
       TaskResult.success(this, sw, info = Some(results))
     } else {
       val failingSuiteClassesText = results.failedTestSuites.indented()

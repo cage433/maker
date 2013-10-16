@@ -74,8 +74,8 @@ class ScalatestResultsTests extends FunSuite{
         )
 
         proj.test
-        assert(proj.testResults.passedTests.size === 2)
-        assert(proj.testResults.failedTests.size === 1)
+        assert(proj.testResults.numPassedTests() === 2)
+        assert(proj.testResults.numFailedTests() === 1)
       }
   }
 }

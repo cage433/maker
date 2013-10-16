@@ -6,6 +6,8 @@ import maker.utils.Stopwatch
 import maker.utils.Implicits.RichString._
 import maker.utils.Implicits.RichIterable._
 import java.io.File
+import maker.project.BaseProject
+import maker.project.Project
 
 
 case class TestState(
@@ -52,9 +54,19 @@ case class SuiteTestResult(suiteClass : String, startTime : Long, endTime : Opti
   def succeeded = testResults.forall(_.succeeded)
 }
 
-case class TestResults(startTime : Option[Long], endTime : Option[Long], suiteResults : List[SuiteTestResult]) {
+trait TestResultsTrait{
+  def ++(rhs : TestResultsTrait) : TestResultsTrait
+  
+  def succeeded() : Boolean
+  def numPassedTests() : Int 
+  def numFailedTests() : Int
+  def failedTestSuites : List[String]
+}
+
+case class TestResults(startTime : Option[Long], endTime : Option[Long], suiteResults : List[SuiteTestResult])  extends TestResultsTrait{
   def succeeded = suiteResults.forall(_.succeeded)
-  def ++ (rhs : TestResults) : TestResults = {
+  def ++ (rhs_ : TestResultsTrait) : TestResultsTrait = {
+    val rhs = rhs_.asInstanceOf[TestResults]
     if (rhs == TestResults.EMPTY)
       return this
     if (this == TestResults.EMPTY)
@@ -76,13 +88,15 @@ case class TestResults(startTime : Option[Long], endTime : Option[Long], suiteRe
       suiteResults ::: rhs.suiteResults
     )
   }
-  lazy val testResults = suiteResults.flatMap(_.testResults).sortWith(_.testName < _.testName)
-  lazy val passedTests = testResults.filter(_.succeeded)
-  lazy val failedTests = testResults.filter(_.failed)
-  lazy val unfinishedTests = testResults.filter(_.unfinished)
-  lazy val failedTestSuites = suiteResults.filterNot(_.succeeded).map(_.suiteClass)
+  private lazy val testResults = suiteResults.flatMap(_.testResults).sortWith(_.testName < _.testName)
+  private lazy val passedTests = testResults.filter(_.succeeded)
+  private lazy val failedTests = testResults.filter(_.failed)
+  def numFailedTests() = failedTests.size
+  def numPassedTests() = passedTests.size
+  private lazy val unfinishedTests = testResults.filter(_.unfinished)
+  lazy val failedTestSuites : List[String] = suiteResults.filterNot(_.succeeded).map(_.suiteClass)
 
-  lazy val suites = suiteResults.map(_.suiteClass)
+  private lazy val suites = suiteResults.map(_.suiteClass)
 
   def toString_ = {
     val buffer = new StringBuffer
@@ -144,8 +158,19 @@ case class TestResults(startTime : Option[Long], endTime : Option[Long], suiteRe
 
 object TestResults{
 
-  def apply(modules : List[Module]) : TestResults = modules.map(TestResults(_)).foldLeft(EMPTY)(_++_)
-  def apply(module : Module) : TestResults = {
+  def apply(project : BaseProject) : TestResultsTrait = {
+    project match {
+      case m : Module => apply(m)
+      case p : Project => apply(p.allUpstreamModules)
+    }
+  }
+
+  def apply(modules : List[Module]) : TestResultsTrait = {
+    val moduleResults : List[TestResultsTrait] = EMPTY :: modules.map(TestResults(_))
+    moduleResults.reduce(_++_)
+  }
+
+  def apply(module : Module) : TestResultsTrait = {
 
     if (! module.testResultDirectory.exists)
       return EMPTY

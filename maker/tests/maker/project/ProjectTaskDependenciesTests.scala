@@ -209,7 +209,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
         List(A, B, C).foreach{
           proj => 
             assert(proj.Test.graph.nodes.exists{
-              case RunUnitTestsTask(_, `proj`, _, _) => true
+              case RunUnitTestsTask(_, `proj`, _) => true
               case _ => false
             })
         }

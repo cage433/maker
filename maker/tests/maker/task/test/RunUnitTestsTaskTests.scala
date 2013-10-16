@@ -12,8 +12,7 @@ class RunUnitTestsTaskTests extends FunSuite {
   test("Test Reporter does its thing"){
     withTempDir{
       root => 
-        val props = Props.initialiseTestProps(root) ++ (
-          "MakerTestReporterClasspath", "test-reporter/target-maker/classes/")
+        val props = Props.initialiseTestProps(root) 
 
         val proj = TestModule(root, "RunUnitTestsTaskTests", props)
         writeToFile(
@@ -82,8 +81,8 @@ class RunUnitTestsTaskTests extends FunSuite {
 
 
         proj.test
-        assert(proj.testResults.failedTests.size === 2, "Expecting exactly two failures")
-        assert(proj.testResults.passedTests.size === 3, "Expecting exactly three passes")
+        assert(proj.testResults.numFailedTests() === 2, "Expecting exactly two failures")
+        assert(proj.testResults.numPassedTests() === 3, "Expecting exactly three passes")
 
         val testResultDir = file(proj.testResultDirectory)
         assert(testResultDir.exists, testResultDir.absPath + " should exist")
@@ -141,8 +140,8 @@ class RunUnitTestsTaskTests extends FunSuite {
 
         // Running failed tests should pass over passed tests
         proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 2, "Expecting exactly two failures")
-        assert(proj.testResults.passedTests.size === 0, "Expecting zero passes")
+        assert(proj.testResults.numFailedTests() === 2, "Expecting exactly two failures")
+        assert(proj.testResults.numPassedTests() === 0, "Expecting zero passes")
 
         // repair broken tests
         proj.writeTest(
@@ -170,8 +169,8 @@ class RunUnitTestsTaskTests extends FunSuite {
           """
         )
         proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 0, "Expecting zero failures")
-        assert(proj.testResults.passedTests.size === 2, "Expecting two passes")
+        assert(proj.testResults.numFailedTests() === 0, "Expecting zero failures")
+        assert(proj.testResults.numPassedTests() === 2, "Expecting two passes")
     }
   }
 

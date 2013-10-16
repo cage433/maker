@@ -143,7 +143,7 @@ object Props {
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 
-  def initialiseTestProps(root : File, cwdProps : Props = Props(file(".").asAbsoluteFile)) : Props = {
+ def initialiseTestProps(root : File, cwdProps : Props = Props(file(".").asAbsoluteFile)) : Props = {
     val makerDotConf = file(root, "Maker.conf")
     def writeProperty(key : String, value : String){
       appendToFile(makerDotConf, key + "=" + value + "\n")

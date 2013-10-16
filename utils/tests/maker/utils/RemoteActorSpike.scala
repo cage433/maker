@@ -62,6 +62,8 @@ object RemoteActorSpike extends App{
 
   val system = ActorSystem.create("Test-Manager", Config(0))
   val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
+  val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  println("Debug: " + (new java.util.Date()) + " RemoteActorSpike: address " + address)
 
   class Manager extends Actor{
     var reporters : List[ActorRef] = Nil

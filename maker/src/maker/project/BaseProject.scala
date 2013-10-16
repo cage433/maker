@@ -23,11 +23,13 @@ import maker.task.test.TestResults
 import maker.task.publish.IvyUtils
 import maker.task.publish.PublishLocalTask
 import maker.task.publish.PublishTask
+import maker.task.test.TestResultsTrait
 
 trait MakerTestReporter{
   def scalatestReporterClass : String
   def systemProperties : List[String]
   def scalatestClasspah : String
+  def results : TestResultsTrait
 }
 
 trait BaseProject {
@@ -58,9 +60,7 @@ trait BaseProject {
   def ivyFile = IvyUtils.generateIvyFile(this)
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 
-  def testResults = {
-    allUpstreamModules.map(TestResults(_)).reduce(_++_)
-  }
+  def testResults = makerTestReporter.results()
 
   def testClasspath = Module.asClasspathStr(
     allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars)
@@ -82,7 +82,9 @@ trait BaseProject {
       "-Dmaker.test.project.root=" + rootAbsoluteFile,
       "-Dmaker.props.root=" + props.root
     )
+    def results() : TestResultsTrait = TestResults(BaseProject.this)
   }
+
 
   lazy val Clean = Build(
     buildName("Clean"),
@@ -121,7 +123,6 @@ trait BaseProject {
   )
 
   lazy val Test = {
-    val reporter = makerTestReporter
     Build(
       "Test " + name, 
       () => Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly.graph)),
