@@ -10,14 +10,12 @@ import maker.project.MakerTestReporter
 class AkkaTestManagerTests extends FunSuite {
   test("Dummy"){
   }
-  ignore("Can receive test events via akka"){
+  test("Can receive test events via akka"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)
         val moduleName = "AkkaTestReporterTest"
         val testManager = new AkkaTestManager()
-        println("Debug: " + (new java.util.Date()) + " AkkaTestManagerTests: test manager is on port " + testManager.port)
-        println("Debug: " + (new java.util.Date()) + " AkkaTestManagerTests: test manager is at address " + testManager.address)
         writeToFile(
           file(dir, "external-resources"),
           """|org.scalatest scalatest_{scala_version_base} {scalatest_version}
@@ -34,6 +32,9 @@ class AkkaTestManagerTests extends FunSuite {
              |com.typesafe config {typesafe_config_version}
              |com.google.protobuf protobuf-java {protobuf_version}
              |io.netty netty {netty_version}
+             |org.slf4j slf4j-api 1.6.1
+             |ch.qos.logback logback-classic 1.0.6
+             |ch.qos.logback logback-core 1.0.6
              """.stripMargin
         )
         val module = new Module(
@@ -42,12 +43,12 @@ class AkkaTestManagerTests extends FunSuite {
         ) with TestModule{
           override def makerTestReporter = new MakerTestReporter{
             def scalatestReporterClass = "maker.scalatest.AkkaTestReporter"
-            def scalatestClasspah = file(props.root, "maker-scalatest-reporter.jar").absPath
+            def scalatestClasspah = file("test-reporter/target-maker/classes").absPath
             def systemProperties : List[String]  = List(
               "-Dmaker.test.manager.port=" + testManager.port,
               "-Dmaker.test.module=" + moduleName
             )
-            def results() = TestResults.EMPTY
+            def results() = testManager
           }
         }
 
@@ -69,7 +70,7 @@ class AkkaTestManagerTests extends FunSuite {
       assert(module.testCompile.succeeded, "Should compile")
       assert(module.test.succeeded, "Tests should have passed")
 
-      assert(module.testResults.failedTestSuites.size === 1, "Ran one suite")
+      assert(module.testResults.numPassedTests === 1, "One successful test")
       
 
     }

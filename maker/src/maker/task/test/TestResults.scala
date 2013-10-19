@@ -54,6 +54,15 @@ case class SuiteTestResult(suiteClass : String, startTime : Long, endTime : Opti
   def succeeded = testResults.forall(_.succeeded)
 }
 
+case class CompositeTestResults(trs : List[TestResultsTrait]) extends TestResultsTrait{
+  
+  def ++(rhs : TestResultsTrait) = CompositeTestResults(rhs :: trs)
+  
+  def succeeded() : Boolean = trs.forall(_.succeeded)
+  def numPassedTests() : Int = trs.map(_.numPassedTests).sum
+  def numFailedTests() : Int = trs.map(_.numFailedTests).sum
+  def failedTestSuites : List[String] = trs.flatMap(_.failedTestSuites)
+}
 trait TestResultsTrait{
   def ++(rhs : TestResultsTrait) : TestResultsTrait
   

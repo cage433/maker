@@ -15,8 +15,9 @@ import akka.pattern.Patterns
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
+import org.scalatest.events.TestSucceeded
 
-class AkkaTestManager{
+class AkkaTestManager extends TestResultsTrait{
 
   import AkkaTestManager._
 
@@ -24,11 +25,6 @@ class AkkaTestManager{
     val text = """
       akka {
         loggers = ["akka.event.slf4j.Slf4jLogger"]
-        loglevel = "DEBUG"
-        log-dead-letters = 10
-        log-dead-letters-during-shutdown = on
-        log-sent-massages = on
-        log-received-massages = on
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
@@ -51,15 +47,27 @@ class AkkaTestManager{
   val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
   val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
-  def numCompleteSuites : Int = {
-    val fut = Patterns.ask(manager, NUM_COMPLETE_SUITES, 10 * 1000)
-    Await.result(fut, Duration(100, TimeUnit.SECONDS)).asInstanceOf[Int]
+  private def askActor[T](msg : AnyRef) : T = {
+    val fut = Patterns.ask(manager, msg, 10 * 1000)
+    Await.result(fut, Duration(100, TimeUnit.SECONDS)).asInstanceOf[T]
   }
+
+  def numCompleteSuites : Int = {
+    askActor[Int](NUM_COMPLETE_SUITES)
+  }
+
+  def ++(rhs : TestResultsTrait) = CompositeTestResults(List(this, rhs))
+  
+  def succeeded() : Boolean = false
+  def numPassedTests() : Int  = askActor(NUM_PASSED_TESTS)
+  def numFailedTests() : Int = 0
+  def failedTestSuites : List[String] = Nil
 }
 
 object AkkaTestManager{
   trait Message
   case object NUM_COMPLETE_SUITES
+  case object NUM_PASSED_TESTS
 
   class Manager extends Actor{
 
@@ -71,7 +79,6 @@ object AkkaTestManager{
       try {
         msg match {
           case ("REGISTER", module : String) =>
-            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received registration")
             reporters = sender :: reporters
 
           case e : RunCompleted =>
@@ -84,6 +91,11 @@ object AkkaTestManager{
           case NUM_COMPLETE_SUITES =>
             sender ! events.collect {
               case _ : SuiteCompleted => true
+            }.size
+
+          case NUM_PASSED_TESTS =>
+            sender ! events.collect {
+              case _ : TestSucceeded => true
             }.size
 
           case other =>

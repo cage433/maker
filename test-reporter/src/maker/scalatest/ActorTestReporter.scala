@@ -11,6 +11,11 @@ import akka.actor.ActorSelection
 import org.scalatest.events.RunCompleted
 import akka.pattern.Patterns
 import scala.concurrent.Await
+import scala.concurrent.duration._
+import akka.actor.ActorRef
+import akka.actor.Identify
+import akka.actor.ActorIdentity
+import akka.actor.ReceiveTimeout
 
 class TestReporterActor extends Actor{
 
@@ -20,23 +25,53 @@ class TestReporterActor extends Actor{
   val managerPath = s"akka.tcp://TestManager@127.0.0.1:$masterPort/user/manager"
   val manager = context.actorSelection(managerPath)
 
-  override def preStart(){
-    manager ! ("Name", "Started")
+  context.setReceiveTimeout(3.seconds)
+  sendIdentifyRequest()
+
+  private def sendIdentifyRequest(){
+    manager ! Identify(managerPath)
   }
+
+  override def preStart(){
+    context.actorSelection(managerPath) ! ("Name", "Started")
+  }
+
+  var runComplete = false
+  var events : List[(ActorRef, Event)] = Nil
 
   def receive = {
+    case ActorIdentity(`managerPath`, Some(manager)) =>
+      context.setReceiveTimeout(Duration.Undefined)
+      processEvents(manager)
+      context.become(active(manager))
+    case ActorIdentity(`managerPath`, None) => println(s"Remote actor not availible: $managerPath")
+    case ReceiveTimeout              => sendIdentifyRequest()
+    case event : Event                   => 
+      events = (sender, event) :: events
+  }
 
-    case event : RunCompleted =>
-      sender ! Patterns.ask(manager, event, 10 * 1000)
+  def processEvents(manager : ActorRef){
+    events.reverse.foreach{
+      case (sender, event : RunCompleted) =>
+        implicit val timeout = Timeout(10 seconds)
+        val future = Patterns.ask(manager, event, 10 * 1000)
+        val result = Await.result(future, timeout.duration)
+        sender ! result
+      case (_, event) =>
+        manager ! event
+    }
+    events = Nil
+  }
 
+  def active(manager : ActorRef) : Actor.Receive = {
     case event : Event =>
-      manager ! event
-
+      events = (sender, event) :: events
+      processEvents(manager)
     case other =>
-      println("Debug: " + (new java.util.Date()) + " ActorTestReporter: received " + other)
-
+      println("Debug: " + (new java.util.Date()) + " ActorTestReporter: unexpected event " + other)
   }
 }
+
 
 class AkkaTestReporter extends Reporter{
 
@@ -47,8 +82,6 @@ class AkkaTestReporter extends Reporter{
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
-        log-sent-massages = on
-        log-received-massages = on
         remote {
           enabled-transports = ["akka.remote.netty.tcp"]
           netty.tcp {
@@ -69,8 +102,11 @@ class AkkaTestReporter extends Reporter{
   def apply(event : Event){
     event match {
       case _ : RunCompleted =>
-        val future = Patterns.ask(actor, event, 10 * 1000)
-        Await.result(future, Timeout(30 * 60 * 1000).duration)
+        import scala.concurrent.duration._
+        import akka.pattern.ask
+        implicit val timeout = Timeout(10 seconds)
+        val future = actor ? event
+        val result = Await.result(future, timeout.duration)
         system.shutdown
       case _ =>
         actor ! event
