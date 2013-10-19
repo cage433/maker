@@ -7,10 +7,8 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.ExtendedActorSystem
-import org.scalatest.events.RunCompleted
+import org.scalatest.events._
 import maker.utils.MakerLog
-import org.scalatest.events.Event
-import org.scalatest.events.SuiteCompleted
 import akka.pattern.Patterns
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -58,16 +56,20 @@ class AkkaTestManager extends TestResultsTrait{
 
   def ++(rhs : TestResultsTrait) = CompositeTestResults(List(this, rhs))
   
-  def succeeded() : Boolean = false
+  def succeeded() : Boolean = isComplete() && numFailedTests() == 0
   def numPassedTests() : Int  = askActor(NUM_PASSED_TESTS)
-  def numFailedTests() : Int = 0
-  def failedTestSuites : List[String] = Nil
+  def numFailedTests() : Int = askActor(NUM_FAILED_TESTS)
+  def failedTestSuites() : List[String] = askActor(FAILED_TEST_SUITES)
+  def isComplete() : Boolean = askActor(IS_COMPLETE)
 }
 
 object AkkaTestManager{
   trait Message
   case object NUM_COMPLETE_SUITES
   case object NUM_PASSED_TESTS
+  case object NUM_FAILED_TESTS
+  case object FAILED_TEST_SUITES
+  case object IS_COMPLETE
 
   class Manager extends Actor{
 
@@ -97,6 +99,21 @@ object AkkaTestManager{
             sender ! events.collect {
               case _ : TestSucceeded => true
             }.size
+
+          case NUM_FAILED_TESTS =>
+            sender ! events.collect {
+              case _ : TestFailed => true
+            }.size
+
+          case FAILED_TEST_SUITES =>
+            sender ! events.collect {
+              case t : TestFailed => t.suiteClassName.get
+            }.toList
+
+          case IS_COMPLETE =>
+            sender ! events.collect {
+              case _ : RunCompleted => true
+            }.nonEmpty
 
           case other =>
             println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)

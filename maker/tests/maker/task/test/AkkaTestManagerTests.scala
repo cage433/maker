@@ -60,17 +60,22 @@ class AkkaTestManagerTests extends FunSuite {
             import org.scalatest.FunSuite
 
             class Test1 extends FunSuite{
-              test("a test"){
+              test("a passing test"){
                 assert(1 === 1)
+              }
+              test("a failing test"){
+                assert(1 === 2)
               }
             }
           """
         )
 
       assert(module.testCompile.succeeded, "Should compile")
-      assert(module.test.succeeded, "Tests should have passed")
+      assert(module.test.failed, "Tests should have failed")
 
       assert(module.testResults.numPassedTests === 1, "One successful test")
+      assert(module.testResults.numFailedTests === 1, "One failing test")
+      assert(module.testResults.failedTestSuites === List("foo.Test1"), "One suite failed")
       
 
     }
