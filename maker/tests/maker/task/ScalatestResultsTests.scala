@@ -50,10 +50,6 @@ class ScalatestResultsTests extends FunSuite{
         val props = Props.initialiseTestProps(dir)
         val proj = TestModule(dir, "ScalatestResultsTests", props)
         file("maker-resource-config").copyTo(dir)
-      //writeToFile(
-        //file(dir, "external-resources"),
-        //"org.scalatest scalatest_{scala_version_base} {scalatest_version}"
-        //)
         proj.writeTest(
           "foo/FooTest.scala",
           """

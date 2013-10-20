@@ -12,7 +12,7 @@ import maker.utils.Implicits.RichString._
 
 class PublishTaskTests extends FreeSpec {
   "test whether dynamic ivy is really needed" in {
-    withTestDir{
+    withTempDir{
       dir =>  
 
         val publishDir = file(dir, "publish").makeDir
