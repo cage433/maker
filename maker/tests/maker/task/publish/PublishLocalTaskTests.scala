@@ -130,6 +130,10 @@ class PublishLocalTaskTests extends FreeSpec{
           props,
           List(a)
         )
+        // Not needed as we aren't running tests - and ivy will just try to get them
+        file(dir, "a/external-resources").delete
+        file(dir, "b/external-resources").delete
+
         val topLevel = Project("TopLevelProject", dir, List(b), props)
 
         topLevel.publishLocal("42")

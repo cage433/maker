@@ -15,7 +15,7 @@ class RunUnitTestsTaskTests extends FunSuite {
         val props = Props.initialiseTestProps(root) 
 
         val proj = TestModule(root, "RunUnitTestsTaskTests", props)
-        writeToFile(
+        appendToFile(
           file(root, "external-resources"),
           """|org.scalatest scalatest_{scala_version_base} {scalatest_version}
              |org.testng testng 6.2.1
@@ -83,60 +83,6 @@ class RunUnitTestsTaskTests extends FunSuite {
         proj.test
         assert(proj.testResults.numFailedTests() === 2, "Expecting exactly two failures")
         assert(proj.testResults.numPassedTests() === 3, "Expecting exactly three passes")
-
-        val testResultDir = file(proj.testResultDirectory)
-        assert(testResultDir.exists, testResultDir.absPath + " should exist")
-        assert(file(testResultDir, "starttime").exists, "Test run start time file should exist")
-        val goodSuiteDir = file(testResultDir, "suites/foo.GoodTest")
-        val goodTestNGSuiteDir = file(testResultDir, "suites/foo.TestNGTest")
-        val exceptionSuiteDir = file(testResultDir, "suites/foo.ExceptionThrowingTest")
-        val badSuiteDir = file(testResultDir, "suites/foo.BadTest")
-        val suiteDirs = List(goodSuiteDir, goodTestNGSuiteDir, badSuiteDir, exceptionSuiteDir)
-
-        suiteDirs.foreach{
-          dir => 
-            assert(dir.exists, dir + " should exist")
-            assert(file(dir, "starttime").exists, "start time should exist")
-            assert(file(dir, "endtime").exists, "end time should exist")
-        }
-        
-        val goodTestDirs = List(
-          file(goodSuiteDir, "tests/test foo"),
-          file(goodSuiteDir, "tests/test bar"),
-          file(goodTestNGSuiteDir, "tests/testAnything")
-        )
-        val badTestDirs = List(
-          file(badSuiteDir, "tests/test foo"),
-          file(exceptionSuiteDir, "tests/test throwing exception")
-        )
-        (goodTestDirs ::: badTestDirs).foreach{
-          dir =>
-            assert(dir.exists, dir + " should exist")
-            assert(file(dir, "starttime").exists, "start time should exist")
-        }
-
-        goodTestDirs.foreach{
-          dir =>
-            val stateFile = file(dir, "status")
-            assert(stateFile.exists)
-            assert(stateFile.readLines.head === "succeeded")
-            val exceptionFile = file(dir, "exception")
-            assert(! exceptionFile.exists)
-            val messageFile = file(dir, "message")
-            assert(! messageFile.exists)
-        }
-
-        badTestDirs.foreach{
-          dir =>
-            val stateFile = file(dir, "status")
-            assert(stateFile.exists)
-            assert(stateFile.readLines.head === "failed")
-
-            val exceptionFile = file(dir, "exception")
-            assert(exceptionFile.exists)
-            val messageFile = file(dir, "message")
-            assert(messageFile.exists)
-        }
 
         // Running failed tests should pass over passed tests
         proj.testFailedSuites

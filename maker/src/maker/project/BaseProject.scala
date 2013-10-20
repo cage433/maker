@@ -30,6 +30,7 @@ trait MakerTestReporter{
   def systemProperties : List[String]
   def scalatestClasspah : String
   def results : TestResultsTrait
+  def reset() : Unit
 }
 
 trait BaseProject {
@@ -83,6 +84,7 @@ trait BaseProject {
       "-Dmaker.props.root=" + props.root
     )
     def results() : TestResultsTrait = TestResults(BaseProject.this)
+    def reset(){}
   }
 
 

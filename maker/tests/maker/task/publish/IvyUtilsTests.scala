@@ -16,6 +16,9 @@ class IvyUtilsTests extends FreeSpec {
         val b = TestModule(file(dir, "b").makeDir, "b", props, List(a))
         val c = new Project("c", dir, List(a, b), props)
 
+        // Not needed as we aren't running tests - and ivy will just try to get them
+        file(dir, "a/external-resources").delete
+        file(dir, "b/external-resources").delete
         
         assert(
           IvyUtils.generateIvyFile(b).readLines.mkString("\n") === 

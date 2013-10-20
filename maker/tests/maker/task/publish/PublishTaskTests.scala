@@ -11,8 +11,8 @@ import maker.Props
 import maker.utils.Implicits.RichString._
 
 class PublishTaskTests extends FreeSpec {
-  "test wether dynamic ivy is really needed" in {
-    withTempDir{
+  "test whether dynamic ivy is really needed" in {
+    withTestDir{
       dir =>  
 
         val publishDir = file(dir, "publish").makeDir
@@ -33,6 +33,8 @@ class PublishTaskTests extends FreeSpec {
             "Compiler", "dummy-test-compiler",
             "IvySettingsFile", ivySettingsFile_.absPath
           ))
+        // Not needed as we aren't running tests - and ivy will just try to get them
+        file(dir, "external-resources").delete
 
         proj.writeSrc(
           "testPublish/Foo.scala",

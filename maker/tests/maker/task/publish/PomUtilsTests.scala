@@ -15,6 +15,10 @@ class PomUtilsTests extends FreeSpec {
         val b = TestModule(file(dir, "b"), "b", props, List(a))
         val c = new Project("c", dir, List(b), props ++ ("GroupId", "PomUtilsTests"))
 
+        // Not needed as we aren't running tests - and ivy will just try to get them
+        file(dir, "a/external-resources").delete
+        file(dir, "b/external-resources").delete
+
         assert(
           PomUtils.pomXml(c, "42") ===
           """|<?xml version="1.0" encoding="UTF-8"?>

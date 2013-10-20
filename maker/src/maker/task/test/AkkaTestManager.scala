@@ -14,6 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
 import org.scalatest.events.TestSucceeded
+import akka.actor.Terminated
 
 class AkkaTestManager extends TestResultsTrait{
 
@@ -26,7 +27,9 @@ class AkkaTestManager extends TestResultsTrait{
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
+        loglevel = off
         remote {
+          log-remote-lifecycle-events = off
           enabled-transports = ["akka.remote.netty.tcp"]
           netty.tcp {
             hostname = "127.0.0.1"
@@ -61,6 +64,7 @@ class AkkaTestManager extends TestResultsTrait{
   def numFailedTests() : Int = askActor(NUM_FAILED_TESTS)
   def failedTestSuites() : List[String] = askActor(FAILED_TEST_SUITES)
   def isComplete() : Boolean = askActor(IS_COMPLETE)
+  def reset() {manager ! RESET}
 }
 
 object AkkaTestManager{
@@ -70,6 +74,7 @@ object AkkaTestManager{
   case object NUM_FAILED_TESTS
   case object FAILED_TEST_SUITES
   case object IS_COMPLETE
+  case object RESET
 
   class Manager extends Actor{
 
@@ -82,6 +87,10 @@ object AkkaTestManager{
         msg match {
           case ("REGISTER", module : String) =>
             reporters = sender :: reporters
+            context.watch(sender)
+
+          case Terminated(child) => 
+            reporters = reporters.filterNot(_ == child)
 
           case e : RunCompleted =>
             events ::= e 
@@ -108,12 +117,16 @@ object AkkaTestManager{
           case FAILED_TEST_SUITES =>
             sender ! events.collect {
               case t : TestFailed => t.suiteClassName.get
-            }.toList
+            }.toList.distinct
 
           case IS_COMPLETE =>
             sender ! events.collect {
               case _ : RunCompleted => true
             }.nonEmpty
+
+          case RESET =>
+            events = Nil
+            reporters = Nil
 
           case other =>
             println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)

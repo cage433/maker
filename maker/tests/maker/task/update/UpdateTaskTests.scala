@@ -10,12 +10,15 @@ class UpdateTaskTests extends FreeSpec {
   "test resources" in {
     withTempDir{
       dir => 
-        writeToFile(
-          file(dir, "external-resources"),
-          """|org.foo bar {sbt_version}
-             |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
-        )
+
         val resourceConfigFile = file(dir, "maker-resource-config")
+        val resolverDir = file(dir, "RESOLVER").makeDir
+
+        val props = Props.initialiseTestProps(dir) ++ (
+          "ResourceConfigFile", resourceConfigFile.getAbsolutePath, 
+          "ResourceCacheDirectory", file(dir, ".maker-resource-cache").makeDirs().getPath
+        )
+        val module = TestModule(dir, "testResources", props)
         writeToFile(
           resourceConfigFile,
           """|version: scala_version 2.10.2
@@ -25,14 +28,13 @@ class UpdateTaskTests extends FreeSpec {
              |resolver: second file://%s/RESOLVER2/
              """.stripMargin % (dir.getAbsolutePath, dir.getAbsolutePath)
         )
-        val resolverDir = file(dir, "RESOLVER").makeDir
 
-        val props = Props.initialiseTestProps(dir) ++ (
-          "ResourceConfigFile", resourceConfigFile.getAbsolutePath, 
-          "ResourceCacheDirectory", file(dir, ".maker-resource-cache").makeDirs().getPath
+
+        writeToFile(
+          file(dir, "external-resources"),
+          """|org.foo bar {sbt_version}
+             |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
         )
-
-        val module = TestModule(dir, "testResources", props)
 
         assert(
           module.resources().toSet === Set(

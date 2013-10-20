@@ -59,9 +59,10 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+    val classOrSuiteNames = classOrSuiteNames_()
+    reporter.reset()
     val log = props.log
 
-    val classOrSuiteNames = classOrSuiteNames_()
 
     if (classOrSuiteNames.isEmpty) {
       return TaskResult.success(this, sw)
@@ -143,7 +144,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () => TestResults(module).failedTestSuites
+      () => module.testResults.failedTestSuites
     )
   }
 }
