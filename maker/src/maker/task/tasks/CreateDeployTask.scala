@@ -32,9 +32,6 @@ import maker.utils.Stopwatch
 import maker.utils.maven.IvyLock
 import maker.utils.FileUtils._
 import maker.project.Project
-import maker.task.tasks.PackageTestJarTask
-import maker.task.tasks.PackageMainJarTask
-import maker.project.Project
 
 /**
  * publishes poms and packaged artifacts to the local filesystem at ~/.ivy2/maker-local - subject to change
