@@ -5,10 +5,7 @@ import maker.task.TaskResult._
 import maker.utils.Stopwatch
 import maker.utils.RichString._
 import maker.MakerProps
-import maker.task.compile.CompilationInfo
 import java.util.concurrent.atomic.AtomicReference
-import maker.task.compile.CompileTask
-import maker.task.tasks.RunUnitTestsTask
 import maker.utils.RichIterable._
 
 

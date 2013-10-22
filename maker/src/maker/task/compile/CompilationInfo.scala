@@ -1,12 +1,6 @@
 package maker.task.compile
 
-import maker.project.Module
-import java.io.File
-import maker.utils.FileUtils._
-import maker.utils.RichIterable._
 import maker.utils.RichString._
-import maker.task.TaskResult
-import sbt.inc.Analysis
 import maker.utils.TaskInfo
 
 trait CompilationState

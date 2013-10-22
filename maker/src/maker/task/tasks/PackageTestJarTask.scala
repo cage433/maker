@@ -7,8 +7,6 @@ import maker.utils.Stopwatch
 import maker.utils.os.Command
 import maker.utils.FileUtils._
 import java.io.File
-import maker.task.compile._
-import maker.task.tasks.PackageTestJarTask
 import scala.Some
 import maker.task.compile.TestCompileTask
 
