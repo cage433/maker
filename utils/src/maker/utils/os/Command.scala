@@ -32,9 +32,7 @@ import actors.Futures._
 import java.io.FileWriter
 import scalaz.syntax.std.option._
 import java.io.IOException
-import maker.MakerProps._
 import maker.MakerProps
-import maker.utils.MakerLog
 import maker.utils.FileUtils._
 
 
@@ -47,23 +45,23 @@ case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWri
     writer.foreach{
       w ⇒
         w.println(line)
-        w.flush
+        w.flush()
     }
     buffer.foreach(_.append(line + "\n"))
   }
-  def close {
+  def close() {
     writer.foreach{
       w =>
-        w.flush
+        w.flush()
         if (closeWriter)
-          w.close
+          w.close()
     }
   }
 
   def redirectOutputRunnable(proc : Process) = new Runnable(){
     def run(){
       val br = new BufferedReader(new InputStreamReader(proc.getInputStream))
-      var line : String = null;
+      var line : String = null
       def nextLine : String = try {
         br.readLine()
       } catch {
@@ -74,8 +72,8 @@ case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWri
         processLine(line)
         line = nextLine
       }
-      br.close
-      close
+      br.close()
+      close()
     }
   }
 }
@@ -113,27 +111,27 @@ case class Command(props : MakerProps, outputHandler : CommandOutputHandler, wor
       log.debug("Passed an empty argument in '" + this + "' you probably didn't wan't this")
     val procBuilder = new ProcessBuilder(args : _*)
     procBuilder.redirectErrorStream(true)
-    workingDirectory.map(procBuilder.directory(_))
+    workingDirectory.map(procBuilder.directory)
     log.debug("cwd set to " + workingDirectory.map(_.getAbsolutePath))
     procBuilder.start
   }
 
-  private def logCommand{
+  private def logCommand() {
     appendToFile(file("maker-commands.log"), this + "\n\n")
   }
 
   def execAsync() : (Process, Future[Int]) = {
-    logCommand
+    logCommand()
     val proc = startProc()
     val outputThread = new Thread(outputHandler.redirectOutputRunnable(proc))
-    outputThread.start
-    (proc, future {outputThread.join; proc.waitFor})
+    outputThread.start()
+    (proc, future {outputThread.join(); proc.waitFor})
   }
 
   def exec() : Int = {
-    logCommand
-    val proc = startProc
-    outputHandler.redirectOutputRunnable(proc).run
+    logCommand()
+    val proc = startProc()
+    outputHandler.redirectOutputRunnable(proc).run()
     proc.waitFor
   }
 

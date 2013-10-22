@@ -5,11 +5,9 @@ import maker.utils.FileUtils._
 import maker.project.TestModule
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
-import maker.Resource._
 import maker.Resource
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.project.Project
-import maker.MakerProps
 
 class PublishLocalTaskTests extends FreeSpec{
   
@@ -32,7 +30,7 @@ class PublishLocalTaskTests extends FreeSpec{
           override def resources() = resourcesList
         }
         resourcesList = List(Resource.build(proj, "commons-io commons-io 2.1"))
-        proj.managedLibDir.makeDir
+        proj.managedLibDir.makeDir()
         ApacheFileUtils.copyFileToDirectory(anyJar, proj.managedLibDir)
 
 
