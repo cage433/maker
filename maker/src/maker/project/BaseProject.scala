@@ -137,7 +137,7 @@ trait BaseProject {
 
   lazy val PackageJars = Build(
     "Package jar(s) for " + name + " and upstream ", 
-    () ⇒ Dependency.Graph(allUpstreamModules.map(PackageJarTask)),
+    () ⇒ Dependency.Graph(allUpstreamModules.map(PackageMainJarTask)),
     this,
     "pack",
     "Packages jars for " + name + " and upstream. Output jars will be " + allUpstreamModules.map(_.outputArtifact).mkString("\n\t")
@@ -158,6 +158,16 @@ trait BaseProject {
     "publishLocal version",
     "Publish " + name + " to ~/.ivy2"
   )
+
+
+  lazy val CreateDeployBuild = Build(
+  "Create a deployment package of " + name + " in target-maker/deploy",
+    () ⇒ Dependency.Graph.transitiveClosure(this, CreateDeployTask(this)),
+    this,
+    "createDeploy version",
+    "Create deployment " + name + " to target-maker/deploy"
+  )
+
 
   lazy val PublishBuild = Build(
     "Publish " + name,
@@ -199,6 +209,11 @@ trait BaseProject {
   def testFailedSuites = TestFailedSuites.execute
   def pack = PackageJars.execute
   def update = Update.execute
+
+  def createDeploy = {
+    CreateDeployBuild.execute
+  }
+
   def publishLocal(version : String) = {
     PublishLocalBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version))).execute
   }

@@ -175,9 +175,10 @@ class Module(
   def cacheDirectory = mkdirs(makerDirectory, "cache")
 
   def managedJars = findJars(managedLibDir)
-  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() 
+  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar()
 
   def outputArtifact = file(packageDir.getAbsolutePath, name + ".jar")
+  def testOutputArtifact = file(packageDir.getAbsolutePath, name + "-test.jar")
 
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
   def publishLocalJar = file(publishLocalJarDir, outputArtifact.getName)
