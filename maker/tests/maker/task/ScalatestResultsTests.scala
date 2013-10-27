@@ -34,6 +34,8 @@ import maker.project.{TestModule, Module}
 import maker.utils.FileUtils._
 import ch.qos.logback.classic.Level._
 import maker.Props
+import maker.task.test.TestResults
+import maker.build.BuildResult
 
 
 class ScalatestResultsTests extends FunSuite{
@@ -69,9 +71,10 @@ class ScalatestResultsTests extends FunSuite{
           """
         )
 
-        proj.test
-        assert(proj.testResults.numPassedTests() === 2)
-        assert(proj.testResults.numFailedTests() === 1)
+        val res : BuildResult = proj.test
+        val testResults = res.testResults()
+        assert(testResults.numPassedTests === 2)
+        assert(testResults.numFailedTests === 1)
       }
   }
 }

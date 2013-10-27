@@ -80,14 +80,15 @@ class RunUnitTestsTaskTests extends FunSuite {
         )
 
 
-        proj.test
-        assert(proj.testResults.numFailedTests() === 2, "Expecting exactly two failures")
-        assert(proj.testResults.numPassedTests() === 3, "Expecting exactly three passes")
+        var testResults = proj.test.testResults
+        assert(testResults.numFailedTests === 2, "Expecting exactly two failures")
+        assert(testResults.numPassedTests === 3, "Expecting exactly three passes")
 
         // Running failed tests should pass over passed tests
-        proj.testFailedSuites
-        assert(proj.testResults.numFailedTests() === 2, "Expecting exactly two failures")
-        assert(proj.testResults.numPassedTests() === 0, "Expecting zero passes")
+        testResults = proj.testFailedSuites.testResults
+
+        assert(testResults.numFailedTests === 2, "Expecting exactly two failures")
+        assert(testResults.numPassedTests === 0, "Expecting zero passes")
 
         // repair broken tests
         proj.writeTest(
@@ -114,9 +115,9 @@ class RunUnitTestsTaskTests extends FunSuite {
           }
           """
         )
-        proj.testFailedSuites
-        assert(proj.testResults.numFailedTests() === 0, "Expecting zero failures")
-        assert(proj.testResults.numPassedTests() === 2, "Expecting two passes")
+        testResults = proj.testFailedSuites.testResults
+        assert(testResults.numFailedTests === 0, "Expecting zero failures")
+        assert(testResults.numPassedTests === 2, "Expecting two passes")
     }
   }
 

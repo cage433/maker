@@ -23,15 +23,8 @@ import maker.task.test.TestResults
 import maker.task.publish.IvyUtils
 import maker.task.publish.PublishLocalTask
 import maker.task.publish.PublishTask
-import maker.task.test.TestResultsTrait
-
-trait MakerTestReporter{
-  def scalatestReporterClass : String
-  def systemProperties : List[String]
-  def scalatestClasspah : String
-  def results : TestResultsTrait
-  def reset() : Unit
-}
+import maker.task.test.AkkaTestManager
+import java.util.concurrent.atomic.AtomicReference
 
 trait BaseProject {
   protected def root : File
@@ -61,7 +54,7 @@ trait BaseProject {
   def ivyFile = IvyUtils.generateIvyFile(this)
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 
-  def testResults = makerTestReporter.results()
+  def buildTestManager() = new AkkaTestManager(this)
 
   def testClasspath = Module.asClasspathStr(
     allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars)
@@ -71,22 +64,11 @@ trait BaseProject {
 
   def docOutputDir : File
 
+  val lastTestResults : AtomicReference[Option[TestResults]] = new AtomicReference(None)
 
   private def buildName(text : String) = {
     text + " " + getClass.getSimpleName.toLowerCase + " " + name
   }
-
-  def makerTestReporter = new MakerTestReporter{
-    def scalatestReporterClass = "maker.scalatest.FileBasedMakerTestReporter"
-    def scalatestClasspah = file(props.root, "maker-scalatest-reporter.jar").absPath
-    def systemProperties : List[String]  = List(
-      "-Dmaker.test.project.root=" + rootAbsoluteFile,
-      "-Dmaker.props.root=" + props.root
-    )
-    def results() : TestResultsTrait = TestResults(BaseProject.this)
-    def reset(){}
-  }
-
 
   lazy val Clean = Build(
     buildName("Clean"),

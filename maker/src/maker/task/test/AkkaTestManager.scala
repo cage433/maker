@@ -1,7 +1,6 @@
 package maker.task.test
 
 import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -15,8 +14,10 @@ import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
 import org.scalatest.events.TestSucceeded
 import akka.actor.Terminated
+import maker.project.BaseProject
+import maker.akka.MakerActorSystem
 
-class AkkaTestManager extends TestResultsTrait{
+class AkkaTestManager(baseProject : BaseProject) {
 
   import AkkaTestManager._
 
@@ -41,30 +42,20 @@ class AkkaTestManager extends TestResultsTrait{
     ConfigFactory.parseString(text)
   }
 
-  val system = ActorSystem.create("TestManager", config)
+  val name = "manager-" + baseProject.name + "-" + MakerActorSystem.nextActorID()
+  val manager = MakerActorSystem.system.actorOf(Props[Manager], name)
+  val port = MakerActorSystem.port
 
-  val manager = system.actorOf(Props[Manager], "manager")
-
-  val port = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress.port.get
-  val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
   private def askActor[T](msg : AnyRef) : T = {
     val fut = Patterns.ask(manager, msg, 10 * 1000)
     Await.result(fut, Duration(100, TimeUnit.SECONDS)).asInstanceOf[T]
   }
 
-  def numCompleteSuites : Int = {
-    askActor[Int](NUM_COMPLETE_SUITES)
+  def testResults() = {
+    val events : List[Event] = askActor(EVENTS)
+    TestResults(Map[String, List[Event]](baseProject.name -> events))
   }
-
-  def ++(rhs : TestResultsTrait) = CompositeTestResults(List(this, rhs))
-  
-  def succeeded() : Boolean = isComplete() && numFailedTests() == 0
-  def numPassedTests() : Int  = askActor(NUM_PASSED_TESTS)
-  def numFailedTests() : Int = askActor(NUM_FAILED_TESTS)
-  def failedTestSuites() : List[String] = askActor(FAILED_TEST_SUITES)
-  def isComplete() : Boolean = askActor(IS_COMPLETE)
-  def reset() {manager ! RESET}
 }
 
 object AkkaTestManager{
@@ -75,6 +66,7 @@ object AkkaTestManager{
   case object FAILED_TEST_SUITES
   case object IS_COMPLETE
   case object RESET
+  case object EVENTS
 
   class Manager extends Actor{
 
@@ -85,12 +77,6 @@ object AkkaTestManager{
     private def processRequest(sender : ActorRef, msg : Any){
       try {
         msg match {
-          case ("REGISTER", module : String) =>
-            reporters = sender :: reporters
-            context.watch(sender)
-
-          case Terminated(child) => 
-            reporters = reporters.filterNot(_ == child)
 
           case e : RunCompleted =>
             events ::= e 
@@ -99,6 +85,9 @@ object AkkaTestManager{
           case e : Event =>
             events ::= e 
 
+          case EVENTS =>
+            sender ! events
+            
           case NUM_COMPLETE_SUITES =>
             sender ! events.collect {
               case _ : SuiteCompleted => true
@@ -140,10 +129,6 @@ object AkkaTestManager{
     def receive = {
       case msg : Any =>
         processRequest(sender, msg)
-    }
-
-    override def postStop(){
-      println("Debug: " + (new java.util.Date()) + " AkkaTestManager: stopping")
     }
   }
 

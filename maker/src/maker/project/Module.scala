@@ -234,7 +234,7 @@ class Module(
 object Module{
  
   private val logger = ConsoleLogger()
-  logger.setLevel(sbt.Level.Debug)
+  //logger.setLevel(sbt.Level.Debug)
   val props = Props(file(".").asAbsoluteFile)
   private val setup = Setup.create(
     props.ProjectScalaCompilerJar(),

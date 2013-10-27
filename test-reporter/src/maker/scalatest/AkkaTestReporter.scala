@@ -17,62 +17,6 @@ import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ReceiveTimeout
 
-class TestReporterActor extends Actor{
-
-  val masterPort = System.getProperty("maker.test.manager.port").toInt
-  val module = System.getProperty("maker.test.module")
-
-  val managerPath = s"akka.tcp://TestManager@127.0.0.1:$masterPort/user/manager"
-  val manager = context.actorSelection(managerPath)
-
-  context.setReceiveTimeout(3.seconds)
-  sendIdentifyRequest()
-
-  private def sendIdentifyRequest(){
-    manager ! Identify(managerPath)
-  }
-
-  override def preStart(){
-    context.actorSelection(managerPath) ! ("Name", "Started")
-  }
-
-  var runComplete = false
-  var events : List[(ActorRef, Event)] = Nil
-
-  def receive = {
-    case ActorIdentity(`managerPath`, Some(manager)) =>
-      context.setReceiveTimeout(Duration.Undefined)
-      processEvents(manager)
-      context.become(active(manager))
-    case ActorIdentity(`managerPath`, None) => println(s"Remote actor not availible: $managerPath")
-    case ReceiveTimeout              => sendIdentifyRequest()
-    case event : Event                   => 
-      events = (sender, event) :: events
-  }
-
-  def processEvents(manager : ActorRef){
-    events.reverse.foreach{
-      case (sender, event : RunCompleted) =>
-        implicit val timeout = Timeout(10 seconds)
-        val future = Patterns.ask(manager, event, 10 * 1000)
-        val result = Await.result(future, timeout.duration)
-        sender ! result
-      case (_, event) =>
-        manager ! event
-    }
-    events = Nil
-  }
-
-  def active(manager : ActorRef) : Actor.Receive = {
-    case event : Event =>
-      events = (sender, event) :: events
-      processEvents(manager)
-    case other =>
-      println("Debug: " + (new java.util.Date()) + " ActorTestReporter: unexpected event " + other)
-  }
-}
-
-
 class AkkaTestReporter extends Reporter{
 
   private val config = {
@@ -82,6 +26,7 @@ class AkkaTestReporter extends Reporter{
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
+        loglevel = off
         remote {
           log-remote-lifecycle-events = off
           enabled-transports = ["akka.remote.netty.tcp"]
@@ -114,4 +59,64 @@ class AkkaTestReporter extends Reporter{
     }
   }
 }
+
+class TestReporterActor extends Actor{
+
+  val masterPort = System.getProperty("maker.test.manager.port").toInt
+  val masterName = System.getProperty("maker.test.manager.name")
+  val module = System.getProperty("maker.test.module")
+
+  val managerPath = s"akka.tcp://MAKER-ACTOR-SYSTEM@127.0.0.1:$masterPort/user/$masterName"
+  val managerSelection = context.actorSelection(managerPath)
+
+  context.setReceiveTimeout(3.seconds)
+  sendIdentifyRequest()
+
+  private def sendIdentifyRequest(){
+    managerSelection ! Identify(managerPath)
+  }
+
+  var runComplete = false
+  var events : List[(ActorRef, Event)] = Nil
+
+  def receive = {
+    case ActorIdentity(`managerPath`, Some(manager)) =>
+      context.setReceiveTimeout(Duration.Undefined)
+      processEvents(manager)
+      context.become(active(manager))
+
+    case ActorIdentity(`managerPath`, None) => 
+      println(s"Remote actor not availible: $managerPath")
+
+    case ReceiveTimeout => 
+      sendIdentifyRequest()
+
+    case event : Event => 
+      events = (sender, event) :: events
+  }
+
+  def processEvents(manager : ActorRef){
+    events.reverse.foreach{
+      case (sender, event : RunCompleted) =>
+        implicit val timeout = Timeout(10 seconds)
+        val future = Patterns.ask(manager, event, 10 * 1000)
+        val result = Await.result(future, timeout.duration)
+        sender ! result
+
+      case (_, event) =>
+        manager ! event
+    }
+    events = Nil
+  }
+
+  def active(manager : ActorRef) : Actor.Receive = {
+    case event : Event =>
+      events = (sender, event) :: events
+      processEvents(manager)
+
+    case other =>
+      println("Debug: " + (new java.util.Date()) + " ActorTestReporter: unexpected event " + other)
+  }
+}
+
 

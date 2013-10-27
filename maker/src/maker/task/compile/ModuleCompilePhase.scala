@@ -112,7 +112,6 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def compilerLogger = {
     val lgr = ConsoleLogger(compilationOutputStream)
-      //lgr.setLevel(sbt.Level.Debug)
     lgr
   }
 

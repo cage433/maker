@@ -76,19 +76,9 @@ trait TestModule{
           """.stripMargin
     )
     file("maker-resource-config").copyTo(root)
+    file("maker-scalatest-reporter.jar").copyTo(root)
     self.writeMakerProjectDefinitionFile
 
-    val testManager = new AkkaTestManager()
-    override def makerTestReporter = new MakerTestReporter{
-      def scalatestReporterClass = "maker.scalatest.AkkaTestReporter"
-      def scalatestClasspah = file("test-reporter/target-maker/classes").absPath
-      def systemProperties : List[String]  = List(
-        "-Dmaker.test.manager.port=" + testManager.port,
-        "-Dmaker.test.module=" + self.name
-      )
-      def results() = testManager
-      def reset(){testManager.reset()}
-    }
 }
 
 object TestModule{

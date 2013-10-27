@@ -47,20 +47,19 @@ import maker.task.compile.TestCompileTask
 import maker.utils.IntellijStringDistance
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
-import maker.project.MakerTestReporter
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () => Iterable[String])  extends Task {
 
-  val reporter = baseProject.makerTestReporter
 
   override def failureHaltsTaskManager = false
   val props = baseProject.props
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+    val testManager = baseProject.buildTestManager()
+
     val classOrSuiteNames = classOrSuiteNames_()
-    reporter.reset()
     val log = props.log
 
 
@@ -77,22 +76,27 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m", 
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
-      "-Dsbt.log.format=false"
-    ) ::: reporter.systemProperties ::: systemProperties
-    val args = List("-P", "-C", reporter.scalatestReporterClass) ++ suiteParameters
+      "-Dsbt.log.format=false",
+      "-Dmaker.test.manager.port=" + testManager.port,
+      "-Dmaker.test.manager.name=" + testManager.name,
+      "-Dmaker.test.module=" + baseProject.name
+    ) ::: systemProperties
+    val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ++ suiteParameters
     val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
       props,
       outputHandler,
       props.Java,
       opts,
-      baseProject.testClasspath + ":" + reporter.scalatestClasspah,
+      baseProject.testClasspath + ":" + file("maker-scalatest-reporter.jar").absPath,
+    //baseProject.testClasspath + ":" + file("test-reporter/target-maker/classes/").absPath,
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 
     )
     val res = cmd.exec
-    val results = baseProject.testResults
+    val results = testManager.testResults()
+    baseProject.lastTestResults.set(Some(results))
     val result = if (results.numFailedTests == 0){
       TaskResult.success(this, sw, info = Some(results))
     } else {
@@ -100,6 +104,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       TaskResult.failure(this, sw, message = Some("Test failed in " + baseProject + failingSuiteClassesText), info = Some(results))
     }
     result
+
   }
 
 }
@@ -144,7 +149,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () => module.testResults.failedTestSuites
+      () => module.lastTestResults.get.get.failedTestSuites
     )
   }
 }

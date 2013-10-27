@@ -45,11 +45,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 import maker.task.test.TestResults
 import maker.task.test.RunUnitTestsTask
 import java.io.File
-import maker.task.test.TestState
 import maker.utils.ScreenUtils
 import maker.project.Module
 import maker.task.Task
 import maker.task.TaskResult
+import maker.akka.MakerActorSystem
 
 case class Build(
   name : String,
@@ -139,9 +139,12 @@ case class Build(
         clock.ms()
       )
       module.tearDown(graph, buildResult)
-      if (buildResult.failed && props.ExecMode()){
-        log.error(this + " failed ")
-        System.exit(-1)
+      if (props.ExecMode()){
+        MakerActorSystem.shutdown
+        if (buildResult.failed){
+          log.error(this + " failed ")
+          System.exit(-1)
+        }
       }
       BuildResult.lastResult.set(Some(buildResult))
       buildResult

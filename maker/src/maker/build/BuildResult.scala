@@ -11,6 +11,7 @@ import maker.task.compile.CompileTask
 import maker.task.test.RunUnitTestsTask
 import maker.utils.Implicits.RichIterable._
 import maker.task.TaskResult
+import maker.task.test.TestResults
 
 
 case class BuildResult(
@@ -23,6 +24,11 @@ case class BuildResult(
 
   self =>
 
+  def testResults() : TestResults = {
+    self.results.map(_.info).collect{
+      case Some(tr : TestResults) => tr
+    }.foldLeft(TestResults.EMPTY)(_++_)
+  }
   def succeeded = results.forall(_.succeeded)
   def failed = !succeeded
 

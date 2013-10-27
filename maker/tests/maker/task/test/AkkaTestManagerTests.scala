@@ -5,7 +5,6 @@ import maker.utils.FileUtils._
 import maker.Props
 import maker.project.Module
 import maker.project.TestModule
-import maker.project.MakerTestReporter
 
 class AkkaTestManagerTests extends FunSuite {
   test("Dummy"){
@@ -20,15 +19,6 @@ class AkkaTestManagerTests extends FunSuite {
           dir, moduleName, 
           props
         ) with TestModule{
-        //override def makerTestReporter = new MakerTestReporter{
-          //def scalatestReporterClass = "maker.scalatest.AkkaTestReporter"
-          //def scalatestClasspah = file("test-reporter/target-maker/classes").absPath
-          //def systemProperties : List[String]  = List(
-            //"-Dmaker.test.manager.port=" + testManager.port,
-            //"-Dmaker.test.module=" + moduleName
-            //)
-          //def results() = testManager
-          //}
         }
 
         module.writeTest(
@@ -50,15 +40,17 @@ class AkkaTestManagerTests extends FunSuite {
         )
 
       assert(module.testCompile.succeeded, "Should compile")
-      assert(module.test.failed, "Tests should have failed")
+      val res = module.test
+      var testResults = res.testResults
+      assert(res.failed, "Tests should have failed")
 
-      assert(module.testResults.numPassedTests === 1, "One successful test")
-      assert(module.testResults.numFailedTests === 1, "One failing test")
-      assert(module.testResults.failedTestSuites === List("foo.Test1"), "One suite failed")
+      assert(testResults.numPassedTests === 1, "One successful test")
+      assert(testResults.numFailedTests === 1, "One failing test")
+      assert(testResults.failedTestSuites === List("foo.Test1"), "One suite failed")
       
-      module.test
-      assert(module.testResults.numPassedTests === 1, "One successful test")
-      assert(module.testResults.numFailedTests === 1, "One failing test")
+      testResults = module.test.testResults
+      assert(testResults.numPassedTests === 1, "One successful test")
+      assert(testResults.numFailedTests === 1, "One failing test")
     }
   }
     
