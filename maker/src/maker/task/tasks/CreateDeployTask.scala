@@ -74,10 +74,10 @@ case class CreateDeployTask(baseProject : BaseProject) extends Task {
           copyFileToDirectory(m.outputArtifact, jarsDir)
         }
 
-        log.info("Copying properties files")
-        val propsDir = file(baseOutputDir,"/props/envs")
-        propsDir.mkdirs()
-        copyDirectory(file(p.rootAbsoluteFile,"/props/envs/"),propsDir)
+//        log.info("Copying properties files")
+//        val propsDir = file(baseOutputDir,"/props/envs")
+//        propsDir.mkdirs()
+//        copyDirectory(file(p.rootAbsoluteFile,"/props/envs/"),propsDir)
 
         log.info("Copying scripts")
         copyDirectory(file(p.rootAbsoluteFile,"/bin/"),binDir)
