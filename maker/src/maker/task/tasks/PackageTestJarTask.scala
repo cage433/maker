@@ -7,7 +7,6 @@ import maker.utils.Stopwatch
 import maker.utils.os.Command
 import maker.utils.FileUtils._
 import java.io.File
-import scala.Some
 import maker.task.compile.TestCompileTask
 
 case class PackageTestJarTask(module : Module) extends Task {
