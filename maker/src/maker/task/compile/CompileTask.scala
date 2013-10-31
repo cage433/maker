@@ -8,10 +8,7 @@ import maker.utils._
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
 import sbt.compiler.CompileFailed
-import scala.Left
 import maker.task.tasks.UpdateTask
-import scala.Some
-import scala.Right
 
 abstract class CompileTask extends Task{
   
