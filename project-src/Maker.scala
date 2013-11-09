@@ -46,7 +46,13 @@ import maker.task.compile._
  */
 object Maker {
 
-  private val props = Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
+  private val props = {
+    val propsFile = file("Maker.conf")
+    if (propsFile.exists)
+      Props((propsFile).asAbsoluteFile, "GroupId", "com.google.code.maker")
+    else
+      Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
+  }
 
   def module(name : String, upstreamProjects : Module*) = {
     val root = file(name).asAbsoluteFile
