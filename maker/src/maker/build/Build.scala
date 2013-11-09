@@ -81,7 +81,6 @@ case class Build(
 
   def execute = new Execute().execute
   class Execute{
-
     val executor = {
       val nWorkers = props.NumberOfTaskThreads()
       val taskNumber = Build.taskCount.getAndIncrement

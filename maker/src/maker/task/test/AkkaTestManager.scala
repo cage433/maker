@@ -44,6 +44,7 @@ class AkkaTestManager(baseProject : BaseProject) {
 
   val name = "manager-" + baseProject.name + "-" + MakerActorSystem.nextActorID()
   val manager = MakerActorSystem.system.actorOf(Props[Manager], name)
+  //val manager = MakerActorSystem.supervisor
   val port = MakerActorSystem.port
 
 

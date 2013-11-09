@@ -1,10 +1,19 @@
 package maker.akka
-import akka.actor.ActorSystem
-import java.util.concurrent.atomic.AtomicReference
-import com.typesafe.config.ConfigFactory
-import akka.actor.ExtendedActorSystem
-import java.util.concurrent.atomic.AtomicInteger
 
+
+import akka.actor._
+import akka.pattern.ask
+import akka.pattern.Patterns
+import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit
+import maker.project.Module
+import maker.task.test.AkkaTestManager
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.concurrent.Future
 /**
   * As much as I dislike this use of a global, I couldn't find a way 
   * around it. Threading through an actor system created dynamically
@@ -40,6 +49,54 @@ object MakerActorSystem{
     ConfigFactory.parseString(text)
   }
 
+
+  case class MakeActorManager(module : Module)  
+  case class AskManagers(msg : Any)  
+
+  case class Supervisor extends Actor{
+    import context.dispatcher
+    import akka.pattern.ask
+    var managers : Map[Module, ActorRef] = Map.empty
+
+    private def manager(module : Module) : ActorRef = {
+      managers.get(module) match {
+        case None =>
+          val manager = context.actorOf(Props[AkkaTestManager.Manager], module.name) 
+          context.watch(manager)
+          managers += (module -> manager)
+          manager
+        case Some(m) => m
+      }
+    }
+
+    def processRequest(sender : ActorRef, msg : Any) = msg match {
+
+      case MakeActorManager(module) => 
+        val manager = context.actorOf(Props[AkkaTestManager.Manager], module.name) 
+        context.watch(manager)
+        managers += (module -> manager)
+
+      case Terminated(manager) =>
+        managers = managers.filterNot(_ == manager)
+
+      case AskManagers(msg : Any) =>
+        implicit val timeout = Timeout(5 seconds)
+        val future = Future.sequence(managers.values.map{m => m ? msg})
+
+    }
+
+    def receive = {
+      case msg : Any =>
+        processRequest(sender, msg)
+    }
+  }
+
+  lazy val supervisor = system.actorOf(Props[Supervisor], "Supervisor")
+
+  private def askSupervisor[T](msg : AnyRef) : T = {
+    val fut = Patterns.ask(supervisor, msg, 10 * 1000)
+    Await.result(fut, Duration(100, TimeUnit.SECONDS)).asInstanceOf[T]
+  }
   def system = synchronized{
     maybeSystem.get match {
       case Some(system) => system
