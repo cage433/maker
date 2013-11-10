@@ -56,7 +56,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   val props = baseProject.props
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
-  def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+  def exec(rs2 : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     val testManager = baseProject.buildTestManager()
 
     val classOrSuiteNames = classOrSuiteNames_()

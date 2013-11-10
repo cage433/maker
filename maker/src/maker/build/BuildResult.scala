@@ -18,7 +18,6 @@ case class BuildResult(
   name : String,
   results : List[TaskResult],
   graph : Dependency.Graph,
-  props : Props,
   clockTime : Long
 ) {
 

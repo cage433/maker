@@ -6,8 +6,9 @@ import java.io.File
 import maker.utils.FileUtils._
 
 object ZincCompile{
-
   lazy val zinc = new ZincClient()
+
+
   def apply(projectPhase : ModuleCompilePhase) : Int = {
     val props = projectPhase.module.props
     val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
@@ -68,9 +69,7 @@ object ZincCompile{
 
 
     try {
-      println("Debug: " + (new java.util.Date()) + " ZincCompile: compiling")
       val result = zinc.run(arguments, projectPhase.module.rootAbsoluteFile, projectPhase.compilationOutputStream, projectPhase.compilationOutputStream)
-      println("Debug: " + (new java.util.Date()) + " ZincCompile: finished")
       val analysis = Compiler.analysis(projectPhase.compilationCacheFile)
       projectPhase.module.analyses.put(projectPhase.outputDir, analysis)
       result

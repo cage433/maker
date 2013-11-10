@@ -25,48 +25,65 @@
 
 package maker.utils
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 import maker.Props
 
 object MakerLog{
-  def apply() : MakerLog = {
-    synchronized{
-      val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
-      MakerLog(logger)
+  def retry[T](times: Int, delay: Int = 0)(f: => T): T = {
+    assert(times > 0)
+
+    var exception: Option[Throwable] = None
+    var done = false
+    var result: Option[T] = None
+
+    for (i <- 1 to times if !done) try {
+      result = Some(f)
+      exception = None
+      done = true
+    } catch {
+      case t: Throwable => {
+        exception = Some(t)
+        Thread.sleep(delay)
+      }
     }
+
+    if (!done) {
+      throw exception.get
+    }
+    result.get
+  }
+
+  def apply() : MakerLog = synchronized {
+    def getLogger() = {
+      LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+    }
+    val logger: Logger = try {
+      retry(10, delay = 500)(getLogger()) // 5 seconds should be long enough
+    } catch {
+      case t: Throwable ⇒ {
+        System.err.println("COULD NOT CREATE LOGGER, GIVING UP.")
+        t.printStackTrace(System.err)
+        sys.exit(1)
+      }
+    }
+    MakerLog(logger)
   }
 
 }
 
 case class MakerLog(logger: Logger) {
 
-  def level = logger.getEffectiveLevel
-
-  def infoWithTime[T](message:String)(f: =>T) = {
-    val stopwatch = new Stopwatch()
-    val oldThreadName = Thread.currentThread.getName
-    try {
-      Thread.currentThread.setName(oldThreadName + " > " + message)
-      info(" Start")
-      val result = f;
-      info(" Complete. Time: " + stopwatch)
-      result
-    }
-    finally {
-      Thread.currentThread.setName(oldThreadName)
-    }
-  }
+  //def level = logger.getEffectiveLevel
 
 
    def debug(msg: => AnyRef) = logger.debug(msg.toString)
 
    def debug(msg: => AnyRef, t: => Throwable) = logger.debug(msg.toString, t)
 
-   def error(msg: => AnyRef) = logger.error(msg.toString)
+   def error(msg: String) = logger.error(msg.toString)
 
-   def error(msg: => AnyRef, t: => Throwable) = logger.error(msg.toString, t)
+   def error(msg: String, t: Throwable) = logger.error(msg.toString, t)
 
    def info(msg: => AnyRef) = logger.info(msg.toString)
 
@@ -78,18 +95,6 @@ case class MakerLog(logger: Logger) {
     logger.warn(msg.toString)
   }
 
-   def setLevel(level: Level) = {
-     logger.setLevel(level)
-   }
-
-   def withLevel[T](newLevel: Level)(thunk: => T) = {
-    val savedLevel = logger.getEffectiveLevel(); 
-    setLevel(newLevel); 
-    val thunkVal = {thunk}; 
-    setLevel(savedLevel); 
-    thunkVal 
-  }
-
-   def name = logger.getName
+  //def name = logger.getName
 
 }

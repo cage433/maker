@@ -24,7 +24,7 @@ resolver: default http://repo1.maven.org/maven2/
 version: scala_version 2.10.2
 version: scala_version_base 2.10
 version: sbt_version 0.13.0
-version: scalatest_version 1.9.2
+version: scalatest_version 2.0
 version: jetty_version 7.6.3.v20120416
 version: akka_version 2.2.1
 version: twitter_version 6.3.6

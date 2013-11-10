@@ -134,7 +134,6 @@ case class Build(
         name,
         taskResults.toList,
         graph,
-        props,
         clock.ms()
       )
       module.tearDown(graph, buildResult)
