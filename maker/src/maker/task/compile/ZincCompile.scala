@@ -28,7 +28,7 @@ object ZincCompile{
 
     val arguments = List[String](
       "-log-level",
-      "error",
+      "info",
       "-no-color",
       "-scala-compiler",
       props.ProjectScalaCompilerJar().getAbsolutePath(),
