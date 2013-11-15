@@ -103,19 +103,19 @@ trait BaseProject {
     "Compile tests in module(s) " + allUpstreamTestModules.map(_.name).mkString(", ") + " after compiling any upstream source (and also tests in the case of upstreamTestProjects"
   )
 
-  lazy val Test = Build(
+  def Test(verbose : Boolean) = Build(
     "Test " + name, 
-    () ⇒ Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly.graph)),
+    () ⇒ Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(verbose).graph)),
     this,
-    "test",
+    "test (<verbose>)",
     "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". After any module fails, all currently running modules will continue till completion, however no tests for any downstream modules will be launched"
   )
   
-  lazy val TestSansCompile = Build(
+  def TestSansCompile(verbose : Boolean) = Build(
     "Test without compiling " + name,
-    () ⇒ Dependency.Graph(allUpstreamModules.map(RunUnitTestsTask(_))),
+    () ⇒ Dependency.Graph(allUpstreamModules.map(RunUnitTestsTask(_, verbose))),
     this,
-    "testNoCompile",
+    "testNoCompile (<verbose>)",
     "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". No compilation at all is done before running tests"
   )
 
@@ -123,15 +123,15 @@ trait BaseProject {
     "Test single class ",
     () ⇒ throw new Exception("Placeholder graph only - should never be called"),
     this,
-    "testClass <class name>",
+    "testClass <class name> (<verbose>)",
     "Exceutes a single test suite using the class path of " + name + ". Does IntelliJ style best match on (mandatory) provided class name - e.g. testClass(\"QuanTe\") instead of testClass(\"starling.quantity.QuantityTests\")"
   )
 
-  lazy val TestFailedSuites = Build(
+  def TestFailedSuites(verbose : Boolean) = Build(
     "Run failing test suites for " + name + " and upstream ", 
-    () ⇒ Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly.graph_())),
+    () ⇒ Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly(verbose).graph_())),
     this,
-    "testFailedSuites",
+    "testFailedSuites (<verbose>)",
     "Runs all failed tests in the module " + name + " and upstream"
   )
 
@@ -203,10 +203,13 @@ trait BaseProject {
   def compileContinuously = continuously(Compile)
   def testCompile = TestCompile.execute
   def testCompileContinuously = continuously(TestCompile)
-  def test = Test.execute
-  def testNoCompile = TestSansCompile.execute
-  def testClass(className : String) = TestClassBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))).execute
-  def testFailedSuites = TestFailedSuites.execute
+  def test = Test(false).execute
+  def test(verbose : Boolean) = Test(verbose).execute
+  def testNoCompile = TestSansCompile(false).execute
+  def testNoCompile(verbose : Boolean) = TestSansCompile(verbose).execute
+  def testClass(className : String, verbose : Boolean = false) = TestClassBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className, verbose))).execute
+  def testFailedSuites = TestFailedSuites(false).execute
+  def testFailedSuites(verbose : Boolean) = TestFailedSuites(verbose).execute
   def pack = PackageJars.execute
   def update = Update.execute
 

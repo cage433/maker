@@ -36,9 +36,10 @@ import maker.project.BaseProject
 import maker.utils.MakerTestResults
 import maker.task.compile.TestCompileTask
 import maker.utils.StringUtils
+import com.sun.org.apache.xpath.internal.operations.Bool
 
 
-case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String])  extends Task {
+case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String], verbose: Boolean)  extends Task {
 
 
   override def failureHaltsTaskManager = false
@@ -67,7 +68,12 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false"
     ) ::: systemProperties
-    val args = List("-P", "-C", "maker.utils.MakerTestReporter") ++ suiteParameters
+    val testParameters =
+      if(!verbose)
+        List("-P", "-C", "maker.utils.MakerTestReporter")
+      else
+        List("-o")
+    val args = testParameters ++ suiteParameters
     val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 
@@ -92,15 +98,16 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 }
 
 object RunUnitTestsTask{
-  def apply(module : Module) : RunUnitTestsTask = {
+  def apply(module : Module, verbose : Boolean) : RunUnitTestsTask = {
     RunUnitTestsTask(
       module.name + " test all",
       module,
-      () ⇒ module.testClassNames()
+      () ⇒ module.testClassNames(),
+      verbose
     )
   }
   
-  def apply(baseProject : BaseProject, classNameOrAbbreviation : String) : Task  = {
+  def apply(baseProject : BaseProject, classNameOrAbbreviation : String, verbose : Boolean) : Task  = {
     def resolveClassName() = {
       if (classNameOrAbbreviation.contains('.'))
         List(classNameOrAbbreviation)
@@ -122,16 +129,18 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Test class " + classNameOrAbbreviation, 
       baseProject,
-      resolveClassName
+      resolveClassName,
+      verbose
     )
   }
 
 
-  def failingTests(module : Module) : RunUnitTestsTask = {
+  def failingTests(module : Module, verbose : Boolean) : RunUnitTestsTask = {
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () ⇒ MakerTestResults(module.props, module.testOutputFile).failingSuiteClasses
+      () ⇒ MakerTestResults(module.props, module.testOutputFile).failingSuiteClasses,
+      verbose
     )
   }
 }

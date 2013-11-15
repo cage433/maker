@@ -126,17 +126,17 @@ class Module(
     "Deletes classes (source and test) for module " + name + ", leaving upstream module untouched"
   )
 
-  lazy val TestOnly = Build(
+  def TestOnly(verbose : Boolean) = Build(
     "Test " + name + " only", 
-    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)), 
+    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose)),
     this,
-    "testOnly",
+    "testOnly (<verbose>)",
     "Runs all tests in the module " + name + ". Tests from upstream modules are _not_ run."
   )
 
-  lazy val TestFailedSuitesOnly = Build(
+  def TestFailedSuitesOnly(verbose : Boolean) = Build(
     "Run failing test suites for " + name + " only", 
-    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this)), 
+    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this, verbose)),
     this,
     "testFailuresOnly",
     "Runs all failed tests in the module " + name
@@ -146,13 +146,15 @@ class Module(
     "Update libraries for " + name + " only",
     () ⇒ Dependency.Graph(UpdateTask(this)),
     this,
-    "updateOnly",
+    "updateOnly (<verbose>)",
     "Update libraries for " + name + " only"
   )
 
   def cleanOnly = CleanOnly.execute
-  def testOnly = TestOnly.execute
-  def testFailuredSuitesOnly = TestFailedSuitesOnly.execute
+  def testOnly = TestOnly(false).execute
+  def testOnly(verbose : Boolean) = TestOnly(verbose).execute
+  def testFailuredSuitesOnly = TestFailedSuitesOnly(false).execute
+  def testFailuredSuitesOnly(verbose : Boolean) = TestFailedSuitesOnly(verbose).execute
   def updateOnly = UpdateOnly.execute
 
 
