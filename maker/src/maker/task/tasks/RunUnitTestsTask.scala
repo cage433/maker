@@ -26,7 +26,7 @@
 package maker.task.tasks
 
 import maker.project.Module
-import maker.utils.os.{ScalaCommand, WithJdbcCommand}
+import maker.utils.os.ScalaCommand
 import maker.task.Task
 import maker.utils.os.CommandOutputHandler
 import maker.task.TaskResult
@@ -74,7 +74,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       else
         List("-o", "-C", "maker.utils.MakerTestReporter")
     val args = testParameters ++ suiteParameters
-    val cmd = WithJdbcCommand(
+    val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 
       props.Java().getAbsolutePath, 

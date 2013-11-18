@@ -144,13 +144,6 @@ object Command{
   def apply(props : MakerProps, workingDirectory : Option[File], args : String*) : Command = new Command(props, CommandOutputHandler(), workingDirectory, args : _*)
 }
 
-object WithJdbcCommand {
-  def apply(props : MakerProps, outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
-    val all: List[String] = java :: opts ::: List[String](props.MakerHome.toCommandLine, "-classpath", classpath, "starling.utils.WithJdbcDrivers", klass) ::: args
-    Command(props, outputHandler, None, all :_*)
-  }
-}
-
 object ScalaCommand {
   def apply(props : MakerProps, outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
     val allArgs : List[String] = java :: opts ::: List[String](
