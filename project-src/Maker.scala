@@ -40,6 +40,7 @@ import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
 import scala.collection.mutable.{Map ⇒ MMap}
 import maker.task.compile._
+import scala.util.Properties
 
 /**
  * Maker's own self-build definition,
@@ -65,6 +66,6 @@ object Maker {
   lazy val topLevel = new Project("top-level", file("."), List(mkr), props)
 
   // Used to disambiguate which maker is running in the repl.
-  def pwd = println(System.getProperty("user.dir"))
+  def pwd = println(Properties.userDir)
 
 }

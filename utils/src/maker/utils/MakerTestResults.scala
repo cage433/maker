@@ -9,6 +9,8 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.SynchronizedMap
 import scala.collection.mutable.SynchronizedQueue
 import scala.Console
+import scala.util.Properties
+
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.io._
@@ -79,19 +81,19 @@ object MakerTestResults{
     MakerTestResults(startTimeInNanos, endTimeInNanos, failures.sortWith(_._1 < _._1))
   }
 
-  def outputFile : File = Option(System.getProperty("maker.test.output")) match {
+  def outputFile : File = Properties.propOrNone("maker.test.output") match {
     case Some(f) ⇒ new File(f)
     case None ⇒ throw new Exception(" maker must have maker.test.output set")
   }
 
   // Note we don't use log4j here as this runs in the user's classpath.
-  val showTestProgress = java.lang.Boolean.parseBoolean(Option(System.getProperty("maker.show.test.progress")).getOrElse("true"))
+  val showTestProgress = java.lang.Boolean.parseBoolean(Properties.propOrElse("maker.show.test.progress", "true"))
   val dateFormat = new SimpleDateFormat("HH:mm:ss")
   def indent : String = {
-    Option(System.getProperty("maker.level")).getOrElse("0").toInt match {
+    Properties.propOrElse("maker.level", "0").toInt match {
       case 0 ⇒ ""
       case i ⇒ " " * 8 * i + "L" + i + ": "
-      }
+    }
   }
   def info(msg : String){
     if (showTestProgress)

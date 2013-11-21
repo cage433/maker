@@ -30,8 +30,9 @@ import java.io.FileWriter
 import java.io.BufferedWriter
 import java.io.BufferedReader
 import java.io.FileReader
-import maker.MakerProps
 import java.util.concurrent.atomic.AtomicBoolean
+import maker.MakerProps
+import scala.util.Properties
 
 object FileUtils extends Asserting{
 
@@ -51,7 +52,7 @@ object FileUtils extends Asserting{
     new File(base, file)
   }
 
-  def cwd = file(System.getProperty("user.dir"))
+  def cwd = file(Properties.userDir)
 
   implicit def toRichFile(f : File) = RichFile(f)
 

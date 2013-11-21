@@ -31,6 +31,7 @@ import java.io.File
 import scala.collection.mutable.{Map ⇒ MMap}
 import ch.qos.logback.classic.Level
 import xml.{XML, NodeSeq}
+import scala.util.Properties
 
 trait PropsTrait extends DelayedInit{
   protected def overrides : MMap[String, String]
@@ -99,7 +100,7 @@ trait PropsTrait extends DelayedInit{
   }
 
   abstract class SystemProperty(key : String) extends Property{
-    protected def systemValue = Option(System.getProperty(key))
+    protected def systemValue = Properties.propOrNone(key)
     override def stringValue = overrides.getOrElse(name, systemValue.getOrElse{throw new Exception("Required System property " + name + " not set")})
     def toCommandLine(value : String) = "-D%s=%s" % (key, value)
     def toCommandLine = "-D%s=%s" % (key, apply())

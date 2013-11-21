@@ -25,10 +25,11 @@
 
 package maker.utils.os
 import maker.MakerProps
+import scala.util.Properties
 
 object OsUtils {
-  def isLinux = System.getProperty("os.name").toLowerCase.contains("linux")
-  def isOSX = System.getProperty("os.name").toLowerCase.contains("os x")
+  def isLinux = Properties.osName.toLowerCase.contains("linux")
+  def isOSX = Properties.osName.toLowerCase.contains("os x")
   def isUnix = isLinux || isOSX
   def isPortUsed(props : MakerProps, port : Int) = {
     List("tcp", "udp").exists{ t ⇒ 
