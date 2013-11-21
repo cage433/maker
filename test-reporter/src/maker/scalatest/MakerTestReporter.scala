@@ -6,16 +6,17 @@ import java.text.SimpleDateFormat
 import scala.Console
 import org.scalatest.events._
 import java.util.Date
+import scala.util.Properties
 
 
 class MakerTestReporter extends Reporter{
-  val outputFile : File = Option(System.getProperty("maker.test.output")) match {
+  val outputFile : File = Properties.propOrNone("maker.test.output") match {
     case Some(f) ⇒ new File(f)
     case None ⇒ throw new Exception(" maker must have maker.test.output set")
   }
 
   object Log{
-    val showTestProgress = java.lang.Boolean.parseBoolean(Option(System.getProperty("maker.show.test.progress")).getOrElse("false"))
+    val showTestProgress = Properties.propOrFalse("maker.show.test.progress")
     val dateFormat = new SimpleDateFormat("mm:ss,SSS")
     def info(msg : String){
       if (showTestProgress)
