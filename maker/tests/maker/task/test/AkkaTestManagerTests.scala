@@ -7,8 +7,6 @@ import maker.project.Module
 import maker.project.TestModule
 
 class AkkaTestManagerTests extends FunSuite {
-  test("Dummy"){
-  }
   test("Can receive test events via akka"){
     withTempDir{
       dir => 
