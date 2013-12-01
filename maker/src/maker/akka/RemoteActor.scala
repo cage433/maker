@@ -18,6 +18,7 @@ import akka.actor.{Props => AkkaProps}
 import maker.utils.os.ScalaCommand
 import maker.utils.FileUtils._
 import maker.project.Module
+import akka.actor.Address
 
 
 trait Receiver{
@@ -25,14 +26,17 @@ trait Receiver{
 }
 
 case class RemoteActor(
-  localActorSelection : ActorSelection, 
   localActorPath : String, 
   receiver : Receiver
-) extends Actor{
-  var toProcess : List[(ActorRef, Any)] = Nil
+) 
+  extends Actor
+{
+
   private def sendIdentifyRequest(){
-    localActorSelection ! Identify(localActorPath)
+    context.actorSelection(localActorPath) ! Identify(localActorPath)
   }
+
+  var toProcess : List[(ActorRef, Any)] = Nil
   context.setReceiveTimeout(3.seconds)
   sendIdentifyRequest()
 
@@ -63,30 +67,31 @@ case class RemoteActor(
   }
 }
 
-object RemoteActorLauncher extends App{
-  RemoteActor.create
-}
 object RemoteActor extends App{
-  val system = MakerActorSystem.system
+
+  create
 
   def props(
-    localActorSelection : ActorSelection, 
     localActorPath : String, 
     receiver : Receiver
   ) = {
-    AkkaProps.create(classOf[RemoteActor], localActorSelection, localActorPath, receiver)
+    AkkaProps.create(classOf[RemoteActor], localActorPath, receiver)
   }
 
-  def start2(props : Props, classpath : String, system : ExtendedActorSystem, localActor : ActorRef, remoteReceiverClass : String) = {
-    val outputHandler = CommandOutputHandler().withSavedOutput
+  def start(
+    props : Props, classpath : String, 
+    system : ExtendedActorSystem, localActor : ActorRef, 
+    remoteReceiverClass : String
+  ) = {
+
     val props = Props(file("."))
     val cmd = ScalaCommand(
       props,
-      outputHandler,
+      CommandOutputHandler(),
       props.Java,
       javaOpts(system, localActor, remoteReceiverClass),
       classpath,
-      "maker.akka.RemoteActorLauncher",
+      "maker.akka.RemoteActor",
       "LaunchRemoteActor"
     )
     cmd.execAsync
@@ -94,27 +99,21 @@ object RemoteActor extends App{
   
   def javaOpts(localSystem : ExtendedActorSystem, localActor : ActorRef, remoteReceiverClass : String) : List[String] = {
 
-    val localPort = localSystem.provider.getDefaultAddress.port.get.toString
-    val localActorName = localActor.path.name
-    val localSystemName = localSystem.name
+    val elements = localActor.path.elements.mkString("/")
+    val localActorPath = localSystem.provider.getDefaultAddress + "/" + elements
     List(
-      s"-Dmaker.local.system.port=$localPort",
-      s"-Dmaker.local.system.name=$localSystemName",
-      s"-Dmaker.local.actor.name=$localActorName",
+      s"-Dmaker.local.actor.path=$localActorPath",
       s"-Dmaker.remote.receive.classname=$remoteReceiverClass"
     )
   }
 
   def create() {
-    val localPort = System.getProperty("maker.local.system.port").toInt
-    val localActorName = System.getProperty("maker.local.actor.name")
-    val localSystemName = System.getProperty("maker.local.system.name")
-    val remoteSystemName = s"$localSystemName-remote"
-    val localActorPath = s"akka.tcp://$localSystemName@127.0.0.1:$localPort/system/$localActorName"
-    val receiveClassName = System.getProperty("maker.remote.receive.classname")
-    val receive = Class.forName(receiveClassName).newInstance.asInstanceOf[Receiver]
-    val system = ActorSystem.create(remoteSystemName)
+    val localActorPath = System.getProperty("maker.local.actor.path")
+    val receive = Class.forName(
+      System.getProperty("maker.remote.receive.classname")
+    ).newInstance.asInstanceOf[Receiver]
+    val system = ActorSystem.create("Remote-system")
     val localActorSelection = system.actorSelection(localActorPath)
-    val remoteActor = system.actorOf(RemoteActor.props(localActorSelection, localActorPath, receive))
+    val remoteActor = system.actorOf(RemoteActor.props(localActorPath, receive))
   }
 }

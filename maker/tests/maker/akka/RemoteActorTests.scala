@@ -1,38 +1,30 @@
 package maker.akka
 
-import org.scalatest.FunSuite
-import akka.testkit.TestKitBase
-import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
-import akka.actor.ExtendedActorSystem
-import org.scalatest.FunSpecLike
-import akka.actor.ActorRef
+
 import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.actor.{Props => AkkaProps}
-import maker.utils.FileUtils._
-import maker.Props
-import maker.project.TestModule
-import akka.testkit.TestProbe
-import org.scalatest.BeforeAndAfterAll
-import java.io.File
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
-
+import akka.testkit.TestKitBase
+import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
+import java.io.File
+import java.net.URLClassLoader
+import maker.project.TestModule
+import maker.Props
+import maker.utils.FileUtils._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.FunSpecLike
+import org.scalatest.FunSuite
 
 class TestReceiver1 extends Receiver{
   def active(remoteSystem : ActorSystem, localActorRef : ActorRef) : PartialFunction[Any, Unit] = {
-    case "hi" => 
-      localActorRef ! "hi to you too!"
     case "stop" =>
       println("Shutting down")
       remoteSystem.shutdown
-  }
-}
-
-class DumbLocalActor extends Actor{
-  def receive = {
-    case any => 
-      println(any)
   }
 }
 
@@ -42,18 +34,19 @@ class RemoteActorTests
   with BeforeAndAfterAll
   with ImplicitSender
 {
-  //implicit lazy val system = ActorSystem.create("MAKER-TEST-SYSTEM")
   override def afterAll() { system.shutdown() }
 
   def writeAkkaConfig(projectRoot : File){
     writeToFile(
-      file(projectRoot, "/test-resources/application.conf"), 
+      file(projectRoot, "application.conf"), 
       """
         akka {
           loggers = ["akka.event.slf4j.Slf4jLogger"]
           actor {
             provider = "akka.remote.RemoteActorRefProvider"
           }
+          log-dead-letters = off
+          log-dead-letters-during-shutdown = off
           loglevel = off
           remote {
             log-remote-lifecycle-events = off
@@ -67,20 +60,24 @@ class RemoteActorTests
       """
     )
   }
+
   describe("RemoteActor"){
     it("Should start up and register itself"){
-      withTestDir{
+      withTempDir{
         dir => 
           writeAkkaConfig(dir)
           val props : Props = Props.initialiseTestProps(dir)
           props.StopCompileOutput := false
-import java.net.URLClassLoader
-          val classpath : String = getClass.getClassLoader.asInstanceOf[URLClassLoader].getURLs.toList.mkString(":")
+          val classpath : String = dir.getAbsolutePath + "/" + ":" + 
+            getClass.getClassLoader.asInstanceOf[URLClassLoader].getURLs.toList.map(_.getFile).mkString(":") 
+
           val localActor = TestProbe()
-          val (proc, exitStatusFuture) = RemoteActor.start2(
+
+          val (proc, exitStatusFuture) = RemoteActor.start(
             props, classpath, system.asInstanceOf[ExtendedActorSystem], 
             localActor.ref, "maker.akka.TestReceiver1"
           )
+
           localActor.expectMsg("Hello")
           localActor.reply("stop")
           assert(exitStatusFuture() === 0, "Future should return 0")
