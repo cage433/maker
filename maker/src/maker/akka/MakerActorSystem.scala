@@ -28,7 +28,7 @@ object MakerActorSystem{
 
   private val maybeSystem : AtomicReference[Option[ExtendedActorSystem]] = new AtomicReference(None)
 
-  private val systemConfig = {
+  val systemConfig = {
     val text = """
       akka {
         loggers = ["akka.event.slf4j.Slf4jLogger"]

@@ -12,19 +12,16 @@ import akka.actor.Actor
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.ActorSelection
+import maker.utils.os.CommandOutputHandler
+import maker.Props
+import akka.actor.{Props => AkkaProps}
+import maker.utils.os.ScalaCommand
+import maker.utils.FileUtils._
+import maker.project.Module
 
-case class RemoteActorManager(system : ActorSystem){
-
-}
-
-object RemoteActorLauncher{
-  def launch(localActorName : String, config : String) : Process = {
-    null
-  }
-}
 
 trait Receiver{
-  def active(manager : ActorRef) : PartialFunction[Any, Unit]
+  def active(remoteSystem : ActorSystem, manager : ActorRef) : PartialFunction[Any, Unit]
 }
 
 case class RemoteActor(
@@ -33,64 +30,81 @@ case class RemoteActor(
   receiver : Receiver
 ) extends Actor{
   var toProcess : List[(ActorRef, Any)] = Nil
+  println("Debug: " + (new java.util.Date()) + " RemoteActor: created " + this)
   private def sendIdentifyRequest(){
     localActorSelection ! Identify(localActorPath)
   }
+  context.setReceiveTimeout(3.seconds)
+  sendIdentifyRequest()
+
+  def processRequest(msg : Any) = {
+    msg match {
+      case ActorIdentity(`localActorPath`, Some(localActor)) =>
+        
+        context.setReceiveTimeout(Duration.Undefined)
+        localActor ! "Hello"
+        context.become(receiver.active(context.system, localActor))
+        toProcess.reverse.foreach{
+          case (sender, msg) => 
+            self ! ((sender, msg))
+        }
+
+      case ActorIdentity(`localActorPath`, None) => 
+        println(s"Remote actor not availible: $localActorPath")
+
+      case ReceiveTimeout => 
+        sendIdentifyRequest()
+
+      case other => 
+        toProcess = (sender, other) :: toProcess
+    }
+  }
   def receive = {
-    case ActorIdentity(`localActorSelection`, Some(localActor)) =>
-      context.setReceiveTimeout(Duration.Undefined)
-      context.become(receiver.active(localActor))
-      toProcess.reverse.foreach{
-        case (sender, msg) => 
-          self ! ((sender, msg))
-      }
-
-    case ActorIdentity(`localActorPath`, None) => 
-      println(s"Remote actor not availible: $localActorPath")
-
-    case ReceiveTimeout => 
-      sendIdentifyRequest()
-
-    case other => 
-      toProcess = (sender, other) :: toProcess
+    case any => processRequest(any)
   }
 }
 
-object RemoteActorManager extends App{
-  println("Hello")
+object RemoteActorLauncher extends App{
+  RemoteActor.create
+}
+object RemoteActor extends App{
   val system = MakerActorSystem.system
   println(MakerActorSystem.supervisor.path)
 
-  
-  private val configText = """
-    akka {
-      loggers = ["akka.event.slf4j.Slf4jLogger"]
-      actor {
-        provider = "akka.remote.RemoteActorRefProvider"
-      }
-      loglevel = off
-      remote {
-        log-remote-lifecycle-events = off
-        enabled-transports = ["akka.remote.netty.tcp"]
-        netty.tcp {
-          hostname = "127.0.0.1"
-          port = 0
-        }
-      }
-    }
-  """
-  private val config = ConfigFactory.parseString(configText)
+  def props(
+    localActorSelection : ActorSelection, 
+    localActorPath : String, 
+    receiver : Receiver
+  ) = {
+    AkkaProps.create(classOf[RemoteActor], localActorSelection, localActorPath, receiver)
+  }
 
-  def javaOpts(localSystem : ExtendedActorSystem, localActor : ActorRef) : List[String] = {
+  def start(module : Module, system : ExtendedActorSystem, localActor : ActorRef, remoteReceiverClass : String) = {
+    
+    val outputHandler = CommandOutputHandler().withSavedOutput
+    val props = Props(file("."))
+    val cmd = ScalaCommand(
+      module.props,
+      outputHandler,
+      module.props.Java,
+      javaOpts(system, localActor, remoteReceiverClass),
+      module.testClasspath,
+      "maker.akka.RemoteActorLauncher",
+      "LaunchRemoteActor"
+    )
+    cmd.execAsync
+  }
+  
+  def javaOpts(localSystem : ExtendedActorSystem, localActor : ActorRef, remoteReceiverClass : String) : List[String] = {
 
     val localPort = localSystem.provider.getDefaultAddress.port.get.toString
     val localActorName = localActor.path.name
     val localSystemName = localSystem.name
     List(
-      "-Dmaker.local.system.port", localPort,
-      "-Dmaker.local.system.name", localSystemName,
-      "-Dmaker.local.actor.name", localActorName,
-      "-Dmaker.remote.system.config", configText
+      s"-Dmaker.local.system.port=$localPort",
+      s"-Dmaker.local.system.name=$localSystemName",
+      s"-Dmaker.local.actor.name=$localActorName",
+      s"-Dmaker.remote.receive.classname=$remoteReceiverClass"
     )
   }
 
@@ -98,12 +112,12 @@ object RemoteActorManager extends App{
     val localPort = System.getProperty("maker.local.system.port").toInt
     val localActorName = System.getProperty("maker.local.actor.name")
     val localSystemName = System.getProperty("maker.local.system.name")
-    val remoteSystemName = "$localSystemName-remote"
-    val remoteSystemConfig = System.getProperty("maker.remote.system.config")
-    val localActorPath = s"akka.tcp://$localSystemName@127.0.0.1:$localPort/user/$localActorName"
+    val remoteSystemName = s"$localSystemName-remote"
+    val localActorPath = s"akka.tcp://$localSystemName@127.0.0.1:$localPort/system/$localActorName"
     val receiveClassName = System.getProperty("maker.remote.receive.classname")
-    val receive = Class.forName(receiveClassName).newInstance.asInstanceOf[PartialFunction[Any, Unit]]
-    val system = ActorSystem.create(remoteSystemName, ConfigFactory.parseString(remoteSystemConfig))
+    val receive = Class.forName(receiveClassName).newInstance.asInstanceOf[Receiver]
+    val system = ActorSystem.create(remoteSystemName)
     val localActorSelection = system.actorSelection(localActorPath)
+    val remoteActor = system.actorOf(RemoteActor.props(localActorSelection, localActorPath, receive))
   }
 }
