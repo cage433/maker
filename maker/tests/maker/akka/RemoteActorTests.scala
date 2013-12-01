@@ -75,11 +75,13 @@ class RemoteActorTests
           val props = Props.initialiseTestProps(dir)
           val module = TestModule(dir, "RemoteActorTestModule", props)
           val localActor = TestProbe()
-          val (proc, exitStatus) = RemoteActor.start(
+          val (proc, exitStatusFuture) = RemoteActor.start(
             module, system.asInstanceOf[ExtendedActorSystem], 
             localActor.ref, "maker.akka.TestReceiver1")
           localActor.expectMsg("Hello")
           localActor.reply("stop")
+          assert(exitStatusFuture() === 0, "Future should return 0")
+
       }
 
     }
