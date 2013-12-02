@@ -110,6 +110,8 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
    */
   object RunningInMakerTest extends Default(false) with IsBoolean
 
+  object StopCompileOutput extends Default(RunningInMakerTest()) with IsBoolean
+
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
       case List(k, v) => k -> v

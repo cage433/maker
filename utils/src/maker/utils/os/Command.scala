@@ -121,7 +121,8 @@ case class Command(props : Props, outputHandler : CommandOutputHandler, workingD
     val procBuilder = new ProcessBuilder(args : _*)
     procBuilder.redirectErrorStream(true)
     workingDirectory.foreach(procBuilder.directory(_))
-    log.debug("cwd set to " + workingDirectory.map(_.getAbsolutePath))
+    // Clear environment variables in particular to prevent CLASSPATH being used
+    procBuilder.environment.clear
     procBuilder.start
   }
 

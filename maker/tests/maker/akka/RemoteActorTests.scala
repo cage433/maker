@@ -24,7 +24,7 @@ class TestReceiver1 extends Receiver{
     case "hi" => 
       localActorRef ! "hi to you too!"
     case "stop" =>
-      println("Debug: " + (new java.util.Date()) + " RemoteActorTests: shutting down")
+      println("Shutting down")
       remoteSystem.shutdown
   }
 }
@@ -69,15 +69,18 @@ class RemoteActorTests
   }
   describe("RemoteActor"){
     it("Should start up and register itself"){
-      withTempDir{
+      withTestDir{
         dir => 
           writeAkkaConfig(dir)
-          val props = Props.initialiseTestProps(dir)
-          val module = TestModule(dir, "RemoteActorTestModule", props)
+          val props : Props = Props.initialiseTestProps(dir)
+          props.StopCompileOutput := false
+import java.net.URLClassLoader
+          val classpath : String = getClass.getClassLoader.asInstanceOf[URLClassLoader].getURLs.toList.mkString(":")
           val localActor = TestProbe()
-          val (proc, exitStatusFuture) = RemoteActor.start(
-            module, system.asInstanceOf[ExtendedActorSystem], 
-            localActor.ref, "maker.akka.TestReceiver1")
+          val (proc, exitStatusFuture) = RemoteActor.start2(
+            props, classpath, system.asInstanceOf[ExtendedActorSystem], 
+            localActor.ref, "maker.akka.TestReceiver1"
+          )
           localActor.expectMsg("Hello")
           localActor.reply("stop")
           assert(exitStatusFuture() === 0, "Future should return 0")

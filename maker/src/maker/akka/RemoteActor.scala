@@ -30,7 +30,6 @@ case class RemoteActor(
   receiver : Receiver
 ) extends Actor{
   var toProcess : List[(ActorRef, Any)] = Nil
-  println("Debug: " + (new java.util.Date()) + " RemoteActor: created " + this)
   private def sendIdentifyRequest(){
     localActorSelection ! Identify(localActorPath)
   }
@@ -69,7 +68,6 @@ object RemoteActorLauncher extends App{
 }
 object RemoteActor extends App{
   val system = MakerActorSystem.system
-  println(MakerActorSystem.supervisor.path)
 
   def props(
     localActorSelection : ActorSelection, 
@@ -79,16 +77,15 @@ object RemoteActor extends App{
     AkkaProps.create(classOf[RemoteActor], localActorSelection, localActorPath, receiver)
   }
 
-  def start(module : Module, system : ExtendedActorSystem, localActor : ActorRef, remoteReceiverClass : String) = {
-    
+  def start2(props : Props, classpath : String, system : ExtendedActorSystem, localActor : ActorRef, remoteReceiverClass : String) = {
     val outputHandler = CommandOutputHandler().withSavedOutput
     val props = Props(file("."))
     val cmd = ScalaCommand(
-      module.props,
+      props,
       outputHandler,
-      module.props.Java,
+      props.Java,
       javaOpts(system, localActor, remoteReceiverClass),
-      module.testClasspath,
+      classpath,
       "maker.akka.RemoteActorLauncher",
       "LaunchRemoteActor"
     )

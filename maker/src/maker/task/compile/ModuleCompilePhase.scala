@@ -122,7 +122,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     }
   }
   def compilationOutputStream : PrintStream = {
-    val outputStream = if (module.props.RunningInMakerTest()){
+    val outputStream = if (module.props.StopCompileOutput()){
       new NullOutputStream
     } else {
       new TeeOutputStream(
