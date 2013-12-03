@@ -38,7 +38,6 @@ class TestModuleTests extends FunSuite{
         file("test-reporter/external-resources").copyTo(proj.resourcesFile)
 
         val cmd = Command(
-          Props(file(dir, "props.conf")),
           makerDotSh,
           "-z",      // Developer mode prevents maker bootstrapping 
           "-e", "TestTestModule.test"

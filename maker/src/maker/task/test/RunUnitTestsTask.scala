@@ -84,7 +84,6 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ++ suiteParameters
     val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
-      props,
       outputHandler,
       props.Java,
       opts,

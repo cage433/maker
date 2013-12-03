@@ -62,7 +62,6 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
       "-Dlogback.configurationFile=" + "logback.xml"
     ) ::: opts
     val cmd = ScalaCommand(
-      props,
       new CommandOutputHandler(Some(writer)),
       props.Java,
       optsToUse,

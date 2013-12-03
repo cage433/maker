@@ -48,7 +48,7 @@ case class PackageJarTask(module : Module) extends Task {
       }
     }
     def jarCommand(updateOrCreate : String, dir : File) = WrappedCommand( 
-      Command(props, List(jar, updateOrCreate, module.outputArtifact.getAbsolutePath, "-C", dir.getAbsolutePath, "."): _*),
+      Command(List(jar, updateOrCreate, module.outputArtifact.getAbsolutePath, "-C", dir.getAbsolutePath, "."): _*),
       ignoreFailure = false
     )
     def createJarCommand(dir : File) = jarCommand("cf", dir)

@@ -205,13 +205,13 @@ object FileUtils extends Asserting{
     root.subDirs.foreach(traverseDirectories(_, fn))
   }
 
-  def findInPaths(props : Props, paths : List[File], predicate : String => Boolean) : List[File] = {
+  def findInPaths(jar : File, paths : List[File], predicate : String => Boolean) : List[File] = {
     def find(p : List[File]) : List[File] = {
       p match {
         case Nil | null => Nil
         case x :: xs => x match {
           case z if z.isFile => z match {
-            case f if (f.getName.endsWith(".jar")) => if (findInArchive(props, f, predicate)) f :: find(xs) else find(xs)
+            case f if (f.getName.endsWith(".jar")) => if (findInArchive(jar, f, predicate)) f :: find(xs) else find(xs)
             case f => if (predicate(f.getName)) f :: find(xs) else find(xs)
           }
           case d if (d.isDirectory) => find(d.safeListFiles) ::: find(xs)
@@ -222,10 +222,10 @@ object FileUtils extends Asserting{
     find(paths)
   }
   /// extracts the table of contents for the archive and looks for a matching line
-  def findInArchive(props : Props, file : File, predicate : String => Boolean) : Boolean = {
+  def findInArchive(jar : File, file : File, predicate : String => Boolean) : Boolean = {
     import maker.utils.os._
     val coh = new CommandOutputHandler(None, Some(new StringBuffer()), false)
-    val cmd = new Command(props, coh, None, props.Jar, "-tf", file.getAbsolutePath)
+    val cmd = new Command(coh, None, jar.getAbsolutePath, "-tf", file.getAbsolutePath)
     cmd.exec() match {
       case 0 => cmd.savedOutput.split('\r').exists(predicate)
       case _ => false

@@ -86,7 +86,6 @@ object RemoteActor extends App{
 
     val props = Props(file("."))
     val cmd = ScalaCommand(
-      props,
       CommandOutputHandler(),
       props.Java,
       javaOpts(system, localActor, remoteReceiverClass),

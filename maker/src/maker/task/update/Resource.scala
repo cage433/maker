@@ -120,7 +120,6 @@ case class Resource(
     (preferredRepository.toList ::: props.resourceResolvers().values.toList).find{
       repository =>
         val cmd = Command(
-          props, 
           "curl",
           "-s",
           "-H", "Pragma: no-cache",

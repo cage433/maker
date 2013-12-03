@@ -91,7 +91,6 @@ class PublishLocalTaskTests extends FreeSpec{
 
         assert(proj.publishLocalJar.exists, "Jar should exist")
         val jarTfCommand = Command(
-          proj.props, 
           CommandOutputHandler.NULL.withSavedOutput,
           None,
           List(proj.props.Jar, "tf", proj.publishLocalJar.getAbsolutePath): _*

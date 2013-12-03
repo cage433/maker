@@ -58,7 +58,6 @@ class ProjectTests extends FunSuite {
         )
 
         val cmd = Command(
-          Props(file(dir, "props.conf")),
           makerDotSh,
           "-z",      // Developer mode prevents maker bootstrapping 
           "-e", "TestProject.test"
