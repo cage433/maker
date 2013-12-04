@@ -69,61 +69,75 @@ object BuildManager{
 
   def props(graph : Dependency.Graph, log : MakerLog = MakerLog()) = Props(classOf[BuildManager], graph, log)
 
-  def build(manager : ActorRef, log : MakerLog = MakerLog()) : Promise[Any] = {
+  def execute(manager : ActorRef, log : MakerLog = MakerLog()) : TimedResults = {
     import akka.pattern.ask
     implicit val timeout = Timeout(5 seconds)
     val future = manager ? Execute
-    val promise = Await.result(future, Duration.Inf).asInstanceOf[Promise[Any]]
-    promise
-
+    Await.result(future, Duration.Inf).asInstanceOf[TimedResults]
   }
 }
+
 
 case class BuildManager(graph : Dependency.Graph, log : MakerLog = MakerLog()) extends Actor{
 
   import BuildManager._
 
-  var buildLauncher : Option[ActorRef] = None
   var workers : Set[ActorRef] = Set.empty
-  var remaining : Dependency.Graph = graph
-  var completed : Set[Task] = Set.empty
-  var running : Set[Task] = Set.empty
-  var results : List[TaskResult] = Nil
-  var stopwatch : Stopwatch = Stopwatch()
-  var nextResult : Option[Promise[Any]] = None
 
   private def announceWork = workers.foreach{ _ ! WorkAvailable}
-  private def nextTask : Option[Task] = (remaining.leaves -- running).headOption
-  def returnResults = {
-    val tr = TimedResults(results.reverse, 0)
-    nextResult.get.success(tr)
-    buildLauncher.get ! tr
+
+  private def acceptWorker(worker : ActorRef){
+    if (workers.contains(worker))
+      log.error("Already have this worker")
+    else
+      workers += worker
   }
 
-  def processRequest(msg : Any){
-    msg match {
-      case Execute => {
-        buildLauncher = Some(sender)
-        nextResult = Some(Promise[Any]())
-        sender ! nextResult.get
+  override def preStart() {
+    context.become(awaiting)
+  }
 
-        if (graph.isEmpty)
-          returnResults
-        else if (workers.isEmpty)
-          log.error("Have no workers")
-        else {
-          stopwatch = Stopwatch()
-          announceWork
-        }
+  def awaiting : Receive = {
+    case Execute => {
+
+      if (graph.isEmpty)
+        sender ! TimedResults(Nil, 0)
+      else if (workers.isEmpty)
+        log.error("Have no workers")
+      else {
+        context.become(executing(sender))
       }
+    }
 
-      case RegisterWorker(worker) => {
-        if (workers.contains(worker))
-          log.error("Already have this worker")
-        else
-          workers += worker
-      }
+    case RegisterWorker(worker) => {
+      acceptWorker(worker)
+    }
 
+
+    case _ : UnitOfWorkResult => 
+      // Should be from an early build that was finished early - can be ignored
+
+
+  }
+
+  def executing(buildLauncher : ActorRef):Receive = {
+    var remaining : Dependency.Graph = graph
+    var completed : Set[Task] = Set.empty
+    var running : Set[Task] = Set.empty
+    var results : List[TaskResult] = Nil
+    var stopwatch : Stopwatch = Stopwatch()
+
+    def nextTask : Option[Task] = (remaining.leaves -- running).headOption
+
+
+    def returnResults = {
+      val tr = TimedResults(results.reverse, 0)
+      buildLauncher ! tr
+      context.become(awaiting)
+    }
+    announceWork
+
+    {
       case UnitOfWorkResult(task, result) =>{
         completed += task
         running -= task
@@ -140,6 +154,7 @@ case class BuildManager(graph : Dependency.Graph, log : MakerLog = MakerLog()) e
         }
       }
 
+
       case GiveMeWork => {
         nextTask match {
           case Some(task) => 
@@ -148,18 +163,19 @@ case class BuildManager(graph : Dependency.Graph, log : MakerLog = MakerLog()) e
           case None => 
         }
       }
+
+      case RegisterWorker(worker) => 
+        acceptWorker(worker)
+        announceWork
+
+      case Execute =>
+        log.error("Already executing")
     }
   }
 
   def receive = {
     case msg => 
-      try {
-        processRequest(msg)
-      } catch {
-        case e : Exception => 
-          log.error("couldn't process " + msg, e)
-          sender ! e
-      }
+      log.error("Should already have become something else")
   }
 
 }

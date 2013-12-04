@@ -67,6 +67,18 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
   case class DummyTask(n : Int) extends IntTask
 
+  object ExceptionThrowingTask extends Task{
+    val name = "ExceptionThrowingTask"
+    def exec(upstreamResults : Iterable[TaskResult], sw : Stopwatch) = {
+      throw new RuntimeException("BANG!")
+    }
+    def upstreamTasks = Nil
+  }
+
+  def graphOfUnrelatedTasks(tasks : Task*) : Dependency.Graph = {
+    Dependency.Graph(tasks.toSet, Set.empty)
+  }
+
   def newGraph(tasks : List[IntTask]) : Dependency.Graph = {
     val edges = for(
       t1 <- tasks; 
@@ -210,10 +222,16 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val graph = newGraph(List(DummyTask(2), failingTask, DummyTask(20)))
       val manager = newManager(graph, "dont-stop")
       newWorker(manager)
-      val promise = BuildManager.build(manager)
-      import scala.concurrent.ExecutionContext.Implicits.global
-      val r = promise.future.onSuccess({case r : TimedResults => r})
-      println(r)
+      val TimedResults(results, _) = BuildManager.execute(manager)
+      assert(results.size === 3)
+    }
+
+    it("Shouldn't die if a task throws an exception"){
+      val graph = graphOfUnrelatedTasks(ExceptionThrowingTask)
+      val manager = newManager(graph, "Exception-throwing")
+      newWorker(manager)
+      val TimedResults(results, _) = BuildManager.execute(manager)
+      assert(results.size === 1)
     }
 
   }

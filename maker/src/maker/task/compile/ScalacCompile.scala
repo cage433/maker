@@ -17,7 +17,7 @@ object ScalacCompile{
   def apply(modulePhase : ModuleCompilePhase) : Either[CompileFailed, Analysis] = {
     val outputDir = modulePhase.outputDir.getCanonicalFile
         
-    val inputs = Inputs(
+    def inputs = Inputs(
       classpath         = modulePhase.classpathDirectoriesAndJars.toList.map(_.getCanonicalFile),
       sources           = modulePhase.sourceFiles.toList.map(_.getCanonicalFile),
       classesDirectory  = outputDir,
