@@ -112,8 +112,7 @@ case class CreateDeployTask(baseProject : BaseProject) extends Task {
         copyDirectory(file(p.rootAbsoluteFile,"/launcher/resource_managed/"),file(baseOutputDir,"/launcher/resource_managed/"))
         copyDirectory(file(p.rootAbsoluteFile,"services/cs/TrinityService/files/"),file(baseOutputDir,"services/cs/TrinityService/files/"))
 
-
-
+        copyFile(file(p.rootAbsoluteFile,"logback.xml"),file(baseOutputDir,"logback.xml"))
 
         writeToFile(file(baseOutputDir,"/git.txt"), "USE BINARY DEPLOY")
 
