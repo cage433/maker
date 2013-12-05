@@ -36,6 +36,7 @@ object Dependency{
     }
 
     def isEmpty = nodes.isEmpty
+    def nonEmpty = nodes.nonEmpty
     def leaves = nodes.filterNot(edges.map(_.downstream))
     def innerNodes = nodes.filterNot(leaves)
     def filter(predicate : Task => Boolean) = Graph(

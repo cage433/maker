@@ -17,7 +17,7 @@ object ScalacCompile{
   def apply(modulePhase : ModuleCompilePhase) : Either[CompileFailed, Analysis] = {
     val outputDir = modulePhase.outputDir.getCanonicalFile
         
-    def inputs = Inputs(
+    val inputs = Inputs(
       classpath         = modulePhase.classpathDirectoriesAndJars.toList.map(_.getCanonicalFile),
       sources           = modulePhase.sourceFiles.toList.map(_.getCanonicalFile),
       classesDirectory  = outputDir,
@@ -35,8 +35,17 @@ object ScalacCompile{
       mirrorAnalysis    = true
     )
 
+    def stopUsingJavaClasspath{
+      /* Without this the compiler will include maker's own classpath
+         This property must be set in order to launch the repl, or execute
+         the compiler form the command line. 
+         Not sure why - nor whether it's truly ok to unset this here
+      */
+      System.setProperty("scala.usejavacp", "false")
+    }
 
     val result = try {
+      stopUsingJavaClasspath
       val analysis = Module.compiler.compile(inputs)(modulePhase.compilerLogger)
       modulePhase.module.analyses.put(outputDir, analysis)
       Right(analysis)

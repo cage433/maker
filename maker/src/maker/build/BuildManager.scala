@@ -18,26 +18,27 @@ import scala.concurrent.duration.Duration
 
 object BuildManager{
 
+  case class AcknowledgeMeAsYourMaster(master : ActorRef)
   case object WorkAvailable
   case object GiveMeWork
   case object CurrentlyBusy
   case object Execute
-  case class RegisterWorker(executor : ActorRef)
   case class UnitOfWork(task : Task, upstreamResults : Iterable[TaskResult], sw : Stopwatch) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
   case class TimedResults(results : List[TaskResult], clockTime : Long)
 
-  class Worker(manager : ActorRef) extends Actor{
+  object Worker{
+    def props() = Props(classOf[Worker])
+  }
+
+  class Worker extends Actor{
 
     val log = MakerLog()
-    override def preStart{
-      manager ! RegisterWorker(self)
-    }
 
     def processRequest(msg : Any){
       msg match {
         case WorkAvailable => {
-          manager ! GiveMeWork
+          sender ! GiveMeWork
         }
         case UnitOfWork(task, upstreamResults, sw) => {
           val result = try {
@@ -47,8 +48,8 @@ object BuildManager{
               log.warn("Error running " + task, e)
               TaskResult(task, sw, succeeded = false, exception = Some(e))
           }
-          manager ! UnitOfWorkResult(task, result)
-          manager ! GiveMeWork
+          sender ! UnitOfWorkResult(task, result)
+          sender ! GiveMeWork
         }
         case _ => 
           log.error("Unexpected message " + msg)
@@ -67,7 +68,7 @@ object BuildManager{
     }
   }
 
-  def props(graph : Dependency.Graph, log : MakerLog = MakerLog()) = Props(classOf[BuildManager], graph, log)
+  def props(graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) = Props(classOf[BuildManager], graph, workers, log)
 
   def execute(manager : ActorRef, log : MakerLog = MakerLog()) : TimedResults = {
     import akka.pattern.ask
@@ -78,39 +79,23 @@ object BuildManager{
 }
 
 
-case class BuildManager(graph : Dependency.Graph, log : MakerLog = MakerLog()) extends Actor{
+case class BuildManager(graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) extends Actor{
 
   import BuildManager._
 
-  var workers : Set[ActorRef] = Set.empty
+  if (graph.nonEmpty)
+    require(workers.nonEmpty, "Can't execute non empty graph of tasks without workers")
 
-  private def announceWork = workers.foreach{ _ ! WorkAvailable}
-
-  private def acceptWorker(worker : ActorRef){
-    if (workers.contains(worker))
-      log.error("Already have this worker")
-    else
-      workers += worker
-  }
-
-  override def preStart() {
-    context.become(awaiting)
-  }
+  private def announceWork = workers.foreach{wkr =>  wkr ! WorkAvailable}
 
   def awaiting : Receive = {
     case Execute => {
 
       if (graph.isEmpty)
         sender ! TimedResults(Nil, 0)
-      else if (workers.isEmpty)
-        log.error("Have no workers")
       else {
         context.become(executing(sender))
       }
-    }
-
-    case RegisterWorker(worker) => {
-      acceptWorker(worker)
     }
 
 
@@ -133,8 +118,8 @@ case class BuildManager(graph : Dependency.Graph, log : MakerLog = MakerLog()) e
     def returnResults = {
       val tr = TimedResults(results.reverse, 0)
       buildLauncher ! tr
-      context.become(awaiting)
     }
+
     announceWork
 
     {
@@ -154,7 +139,6 @@ case class BuildManager(graph : Dependency.Graph, log : MakerLog = MakerLog()) e
         }
       }
 
-
       case GiveMeWork => {
         nextTask match {
           case Some(task) => 
@@ -163,19 +147,18 @@ case class BuildManager(graph : Dependency.Graph, log : MakerLog = MakerLog()) e
           case None => 
         }
       }
-
-      case RegisterWorker(worker) => 
-        acceptWorker(worker)
-        announceWork
-
-      case Execute =>
-        log.error("Already executing")
     }
   }
 
   def receive = {
-    case msg => 
-      log.error("Should already have become something else")
+    case Execute => {
+
+      if (graph.isEmpty)
+        sender ! TimedResults(Nil, 0)
+      else {
+        context.become(executing(sender))
+      }
+    }
   }
 
 }

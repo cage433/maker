@@ -15,6 +15,7 @@ import maker.task.TaskResult
 import maker.utils.MakerLog
 import maker.utils.Stopwatch
 import org.mockito.Matchers._
+import org.mockito.ArgumentMatcher
 import org.mockito.Mockito
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSpecLike
@@ -25,6 +26,7 @@ import org.slf4j.Logger
 import scala.concurrent.duration._
 import akka.testkit.ImplicitSender
 import java.util.concurrent.atomic.AtomicBoolean
+
 
 class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem")) 
   with FunSpecLike 
@@ -41,14 +43,27 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
   def randomName = "manager-" + Math.random
 
-  def newManagerWithLogger(graph : Dependency.Graph = Dependency.Graph.empty, name : String = randomName) = {
+  def newManager(graph : Dependency.Graph, workers : Iterable[ActorRef], name : String) : ActorRef = {
     val logger = makeLogger
-    val actor = TestActorRef[BuildManager](BuildManager.props(graph, MakerLog(logger)), name)
-    (logger, actor)
+    val actor = TestActorRef[BuildManager](BuildManager.props(graph, workers, MakerLog(logger)), name)
+    actor
   }
-  def newManager(graph : Dependency.Graph = Dependency.Graph.empty, name : String = randomName) = newManagerWithLogger(graph, name)._2
 
-  def newWorker(manager : ActorRef) = TestActorRef[Worker](Props(new Worker(manager) { override val log = MakerLog(makeLogger)}))
+  def newManager(graph : Dependency.Graph = Dependency.Graph.empty, numWorkers : Int, name : String = randomName) : ActorRef = {
+    val workers : List[ActorRef] = (1 to numWorkers).toList.map{
+      i => 
+        system.actorOf(Props[BuildManager.Worker], "Worker-" + Math.random + "-" + i)
+    }
+    newManager(graph, workers, name)
+  }
+
+
+  def newWorkerWithLogger = {
+    val logger = makeLogger
+    val worker = TestActorRef[Worker](Props(new Worker { override val log = MakerLog(logger)}))
+    (worker, logger)
+  }
+  def newWorker = newWorkerWithLogger._1
      
   trait IntTask extends Task{
     def n : Int
@@ -92,24 +107,11 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
   }
 
   describe("BuildManager"){
-    it("Should reject work if it has no attached workers"){
-      val graph = newGraph(1)
-      val (logger, manager) = newManagerWithLogger(graph)
-      manager ! Execute
-      Mockito.verify(logger).error(any())
-    }
-
-    it("Registers workers"){
-      val manager = newManager(newGraph())
-      val worker = newWorker(manager)
-      manager.underlyingActor.workers should contain(worker)
-    }
 
     it("Tells workers there is work available"){
       val graph = newGraph(1)
-      val manager = newManager(graph)
-      val workers = Seq(TestProbe(), TestProbe())
-      workers.foreach{ worker => manager ! RegisterWorker(worker.ref)}
+      val workers = List(TestProbe(), TestProbe())
+      val manager = newManager(graph, workers.map(_.ref), "WorkTellingManager")
       manager ! Execute
       workers.foreach{_.expectMsg(WorkAvailable)}
     }
@@ -117,15 +119,10 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
   }
 
   describe("Worker"){
-    it("Registers with a build manager when created"){
-      val manager = newManager(newGraph())
-      val worker = newWorker(manager)
-      manager.underlyingActor.workers should contain(worker)
-    }
 
     it("Should request work when there is some available"){
       ignoreMsg{case _ => true}
-      val worker = newWorker(testActor)
+      val worker = newWorker
       ignoreNoMsg
       worker ! WorkAvailable
       fishForMessage(){
@@ -135,7 +132,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     }
 
     it("Should ask for more work when it finishes any"){
-      val worker = newWorker(testActor)
+      val worker = newWorker
       worker ! UnitOfWork(DummyTask(1), Nil, Stopwatch.global)
       fishForMessage(){
         case GiveMeWork => true
@@ -146,8 +143,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
   describe("Build"){
     it("should return success on an empty graph"){
-      val manager = newManager(newGraph())
-      val worker = newWorker(manager)
+      val manager = newManager(newGraph(), numWorkers = 0)
       manager ! Execute
       fishForMessage(){
         case TimedResults(results, _)  => results.isEmpty
@@ -156,8 +152,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     }
 
     it("Should process a single task"){
-      val manager = newManager(newGraph(101))
-      val worker = newWorker(manager)
+      val manager = newManager(newGraph(101), numWorkers = 1)
       manager ! Execute
       fishForMessage(){
         case TimedResults(List(taskResult), _)  => taskResult.info === Some(101)
@@ -166,8 +161,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     }
 
     it("Should allow one worker to process two tasks with no dependency"){
-      val manager = newManager(newGraph(2, 5))
-      val worker = newWorker(manager)
+      val manager = newManager(newGraph(2, 5), numWorkers = 1)
       manager ! Execute
       val TimedResults(results, _) = fishForMessage(){
         case tr : TimedResults => true
@@ -178,8 +172,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
     it("Should allow one worker to process dependent tasks"){
       val graph = newGraph(2, 4, 6, 8) 
-      val manager = newManager(graph)
-      val worker = newWorker(manager)
+      val manager = newManager(graph, numWorkers = 1)
       manager ! Execute
       val TimedResults(results, _) = fishForMessage(){
         case tr : TimedResults => true
@@ -190,10 +183,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
     it("Should allow more than one worker to process dependent tasks"){
       val graph = newGraph(2, 4, 6, 8, 10, 12, 14, 16) 
-      val manager = newManager(graph)
-      newWorker(manager)
-      newWorker(manager)
-      newWorker(manager)
+      val manager = newManager(graph, numWorkers = 3)
       manager ! Execute
       val TimedResults(results, _) = fishForMessage(){
         case tr : TimedResults => true
@@ -205,8 +195,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     it("Should stop at the first failure - by default"){
       
       val graph = newGraph(2, 4, -6, 12) 
-      val manager = newManager(graph)
-      newWorker(manager)
+      val manager = newManager(graph, numWorkers = 1)
       manager ! Execute
       val TimedResults(results, _) = fishForMessage(){
         case tr : TimedResults => true
@@ -220,18 +209,26 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
         override def failureHaltsTaskManager = false
       }
       val graph = newGraph(List(DummyTask(2), failingTask, DummyTask(20)))
-      val manager = newManager(graph, "dont-stop")
-      newWorker(manager)
+      val manager = newManager(graph, numWorkers = 1, name = "dont-stop")
       val TimedResults(results, _) = BuildManager.execute(manager)
       assert(results.size === 3)
     }
 
+
     it("Shouldn't die if a task throws an exception"){
       val graph = graphOfUnrelatedTasks(ExceptionThrowingTask)
-      val manager = newManager(graph, "Exception-throwing")
-      newWorker(manager)
+      val (worker, logger) = newWorkerWithLogger
+      val manager = newManager(graph, List(worker), name = "Exception-throwing")
       val TimedResults(results, _) = BuildManager.execute(manager)
       assert(results.size === 1)
+      class IsThrowable extends ArgumentMatcher[Throwable]{
+        def matches(obj : Object) = obj match {
+          case _ : Throwable => true
+          case _ => false
+        }
+      }
+      val anyThrowable = new IsThrowable
+      Mockito.verify(logger).warn(anyString(), argThat(anyThrowable))
     }
 
   }

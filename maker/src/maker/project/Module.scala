@@ -234,7 +234,7 @@ object Module{
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
   val props = Props(file(".").asAbsoluteFile)
-  private def setup = Setup.create(
+  private val setup = Setup.create(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),
     props.extraJars(),
@@ -244,7 +244,7 @@ object Module{
     forkJava = false
   )
 
-  def compiler = Compiler.create(setup, logger)
+  val compiler = Compiler.create(setup, logger)
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
 

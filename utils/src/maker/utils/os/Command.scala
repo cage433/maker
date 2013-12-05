@@ -113,8 +113,6 @@ case class Command(outputHandler : CommandOutputHandler, workingDirectory : Opti
 
 
   private def startProc() : Process = {
-    if (args.exists(_.trim == ""))
-      println("Passed an empty argument in '" + this + "' you probably didn't wan't this")
     val procBuilder = new ProcessBuilder(args : _*)
     procBuilder.redirectErrorStream(true)
     workingDirectory.foreach(procBuilder.directory(_))
