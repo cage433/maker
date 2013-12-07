@@ -175,7 +175,7 @@ bootstrap_maker_if_required() {
     echo "Building maker"
     build_jar $MAKER_SCALATEST_REPORTER_JAR $(find "$MAKER_ROOT_DIR/test-reporter/src" -name '*.scala' | xargs)
 
-    for module in utils maker; do
+    for module in utils maker test-reporter; do
       SRC_FILES="$SRC_FILES $(find $MAKER_ROOT_DIR/$module/src -name '*.scala' | xargs)"
     done
     build_jar $MAKER_JAR $SRC_FILES

@@ -81,7 +81,7 @@ object AkkaTestManager{
 
           case e : RunCompleted =>
             events ::= e 
-            sender ! "ACK"  
+            sender ! "stop"  
 
           case e : Event =>
             events ::= e 

@@ -47,6 +47,8 @@ import maker.task.compile.TestCompileTask
 import maker.utils.IntellijStringDistance
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
+import maker.akka.RemoteActor
+import maker.akka.MakerActorSystem
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () => Iterable[String])  extends Task {
@@ -77,18 +79,17 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-XX:MaxPermSize=200m", 
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false",
-      "-Dmaker.test.manager.port=" + testManager.port,
-      "-Dmaker.test.manager.name=" + testManager.name,
       "-Dmaker.test.module=" + baseProject.name
-    ) ::: systemProperties
+    ) ::: systemProperties ::: RemoteActor.javaOpts(testManager.manager, MakerActorSystem.system, "maker.scalatest.TestReporterActor")
+
     val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ++ suiteParameters
     val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
       outputHandler,
       props.Java,
       opts,
-      baseProject.testClasspath + ":" + file("maker-scalatest-reporter.jar").absPath,
-    //baseProject.testClasspath + ":" + file("test-reporter/target-maker/classes/").absPath,
+     // baseProject.testClasspath + ":" + file("maker-scalatest-reporter.jar").absPath,
+    baseProject.testClasspath + ":" + file("test-reporter/target-maker/classes/").absPath,
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 

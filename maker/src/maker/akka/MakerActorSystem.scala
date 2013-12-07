@@ -50,53 +50,6 @@ object MakerActorSystem{
   }
 
 
-  case class MakeActorManager(module : Module)  
-  case class AskManagers(msg : Any)  
-
-  case class Supervisor extends Actor{
-    import context.dispatcher
-    import akka.pattern.ask
-    var managers : Map[Module, ActorRef] = Map.empty
-
-    private def manager(module : Module) : ActorRef = {
-      managers.get(module) match {
-        case None =>
-          val manager = context.actorOf(Props[AkkaTestManager.Manager], module.name) 
-          context.watch(manager)
-          managers += (module -> manager)
-          manager
-        case Some(m) => m
-      }
-    }
-
-    def processRequest(sender : ActorRef, msg : Any) = msg match {
-
-      case MakeActorManager(module) => 
-        val manager = context.actorOf(Props[AkkaTestManager.Manager], module.name) 
-        context.watch(manager)
-        managers += (module -> manager)
-
-      case Terminated(manager) =>
-        managers = managers.filterNot(_ == manager)
-
-      case AskManagers(msg : Any) =>
-        implicit val timeout = Timeout(5 seconds)
-        val future = Future.sequence(managers.values.map{m => m ? msg})
-
-    }
-
-    def receive = {
-      case msg : Any =>
-        processRequest(sender, msg)
-    }
-  }
-
-  lazy val supervisor = system.actorOf(Props[Supervisor], "Supervisor")
-
-  private def askSupervisor[T](msg : AnyRef) : T = {
-    val fut = Patterns.ask(supervisor, msg, 10 * 1000)
-    Await.result(fut, Duration(100, TimeUnit.SECONDS)).asInstanceOf[T]
-  }
   def system = synchronized{
     maybeSystem.get match {
       case Some(system) => system
