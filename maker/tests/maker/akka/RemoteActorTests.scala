@@ -19,12 +19,39 @@ import maker.utils.FileUtils._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FunSpecLike
 import org.scalatest.FunSuite
+import maker.utils.os.ScalaCommand
+import maker.utils.os.CommandOutputHandler
 
-class TestReceiver1 extends Receiver{
-  def active(remoteSystem : ActorSystem, localActorRef : ActorRef) : PartialFunction[Any, Unit] = {
+object LaunchRemoteActorProcess extends App{
+
+  // This runs in the remote process
+  RemoteActor.create
+
+  // This runs in the local one
+  def start(
+    props : Props, classpath : String, 
+    localSystem : ExtendedActorSystem, localActor : ActorRef, 
+    remoteActorClassname : String
+  ) = {
+
+    val props = Props(file("."))
+    val cmd = ScalaCommand(
+      CommandOutputHandler(),
+      props.Java,
+      RemoteActor.javaOpts(localActor, localSystem, remoteActorClassname),
+      classpath,
+      "maker.akka.LaunchRemoteActorProcess",
+      name = "LaunchRemoteActor"
+    )
+    cmd.execAsync
+  }
+}
+
+class TestRemoteActor extends RemoteActor{
+  def activate(localActorRef : ActorRef) : PartialFunction[Any, Unit] = {
     case "stop" =>
       println("Shutting down")
-      remoteSystem.shutdown
+      context.system.shutdown
   }
 }
 
@@ -73,9 +100,9 @@ class RemoteActorTests
 
           val localActor = TestProbe()
 
-          val (proc, exitStatusFuture) = RemoteActor.start(
+          val (proc, exitStatusFuture) = LaunchRemoteActorProcess.start(
             props, classpath, system.asInstanceOf[ExtendedActorSystem], 
-            localActor.ref, "maker.akka.TestReceiver1"
+            localActor.ref, "maker.akka.TestRemoteActor"
           )
 
           localActor.expectMsg("Hello")

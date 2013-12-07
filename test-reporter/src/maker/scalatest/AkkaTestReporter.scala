@@ -16,6 +16,7 @@ import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ReceiveTimeout
+import maker.akka.Receiver
 
 class AkkaTestReporter extends Reporter{
 
@@ -57,6 +58,17 @@ class AkkaTestReporter extends Reporter{
       case _ =>
         actor ! event
     }
+  }
+}
+
+class TestReporterReceiver extends Receiver{
+  def active(remoteSystem : ActorSystem, manager : ActorRef) : PartialFunction[Any, Unit] = {
+    case event : Event =>
+      manager ! event
+    
+    case "stop" =>
+      println("Shutting down")
+      remoteSystem.shutdown
   }
 }
 
