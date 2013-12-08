@@ -1,7 +1,6 @@
 package maker.akka
 
 
-import akka.actor._
 import akka.pattern.ask
 import akka.pattern.Patterns
 import akka.util.Timeout
@@ -14,6 +13,13 @@ import maker.task.test.AkkaTestManager
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import akka.actor.ExtendedActorSystem
+import akka.actor.ActorSystem
+import akka.actor.ActorRef
+import maker.Props
+import maker.build.BuildManager
+import maker.build.Dependency
+
 /**
   * As much as I dislike this use of a global, I couldn't find a way 
   * around it. Threading through an actor system created dynamically
@@ -21,9 +27,9 @@ import scala.concurrent.Future
   * at the time of execution - not least as the may not know their
   * graphs till that time.
   * In the end - given I can't think of a compelling reason to need
-  * more than one actor system per JVM - I just went for a global.
+  * more than one actor system per JVM, and Akka itself recommends one
+  * ActorSytem per application - I just went for a global.
   */
-
 object MakerActorSystem{
 
   private val maybeSystem : AtomicReference[Option[ExtendedActorSystem]] = new AtomicReference(None)
@@ -78,5 +84,14 @@ object MakerActorSystem{
   val nextActorID_ = new AtomicInteger(0)
   def nextActorID() : Int = nextActorID_.getAndIncrement
 
+  private val nextBuildNumber = new AtomicInteger(-1)
+  def buildManager(graph : Dependency.Graph, props : Props) = {
+    val buildNumber  = nextBuildNumber.incrementAndGet
+    val workers : List[ActorRef] = (1 to props.NumberOfTaskThreads()).toList.map{
+      case i => 
+        system.actorOf(BuildManager.Worker.props(), "Worker-" + buildNumber + "-" + i)
+    }
+    system.actorOf(BuildManager.props(graph, workers), "BuildManager-" + buildNumber)
+  }
 }
 

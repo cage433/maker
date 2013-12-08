@@ -13,6 +13,7 @@ import org.scalatest.events._
 
 case class TestResults(eventsByModule : Map[String, List[Event]]) {
   def ++(rhs : TestResults) = TestResults(eventsByModule ++ rhs.eventsByModule)
+
   val events = eventsByModule.values.flatten
 
   def succeeded : Boolean = isComplete && numFailedTests == 0
@@ -32,7 +33,8 @@ case class TestResults(eventsByModule : Map[String, List[Event]]) {
   def failedTestSuites = events.collect {
     case t : TestFailed => t.suiteClassName.get
   }.toList.distinct
-  override def toString = "TestResults " + succeeded
+
+  override def toString = "TestResults " + succeeded + "\tNUM FAILED " + numFailedTests + " " + System.identityHashCode(this)
 }
 
 

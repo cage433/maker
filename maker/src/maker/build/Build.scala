@@ -79,7 +79,11 @@ case class Build(
 
   lazy val graph = graph_()
 
-  def execute = new Execute().execute
+  def execute = {
+    val buildManager = MakerActorSystem.buildManager(graph, props)
+    BuildManager.execute(buildManager)
+  }
+  def execute2 = new Execute().execute
   class Execute{
     val executor = {
       val nWorkers = props.NumberOfTaskThreads()

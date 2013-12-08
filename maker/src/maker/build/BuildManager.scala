@@ -15,6 +15,9 @@ import scala.concurrent.Promise
 import akka.actor.ActorSystem
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import maker.task.test.TestResults
+import scala.concurrent.Future
+import akka.pattern.ask
 
 object BuildManager{
 
@@ -25,7 +28,18 @@ object BuildManager{
   case object Execute
   case class UnitOfWork(task : Task, upstreamResults : Iterable[TaskResult], sw : Stopwatch) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
-  case class TimedResults(results : List[TaskResult], clockTime : Long)
+  case class TimedResults(graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
+    def failed = results.exists(_.failed)
+    def succeeded = results.forall(_.succeeded)
+    def testResults() : TestResults = {
+      var trs : List[TestResults] = Nil
+      val allTestResults : List[TestResults] = 
+        results.flatMap(_.info).collect{
+          case tr : TestResults => tr
+      }
+      allTestResults.foldLeft(TestResults.EMPTY)(_++_)
+    }
+  }
 
   object Worker{
     def props() = Props(classOf[Worker])
@@ -71,10 +85,11 @@ object BuildManager{
   def props(graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) = Props(classOf[BuildManager], graph, workers, log)
 
   def execute(manager : ActorRef, log : MakerLog = MakerLog()) : TimedResults = {
-    import akka.pattern.ask
-    implicit val timeout = Timeout(5 seconds)
-    val future = manager ? Execute
-    Await.result(future, Duration.Inf).asInstanceOf[TimedResults]
+    implicit val timeout = Timeout(2 seconds)
+    val future : Future[Promise[TimedResults]] = (manager ? Execute).mapTo[Promise[TimedResults]]
+    val resultFuture = Await.result(future, 2 seconds).future
+    val tr = Await.result(resultFuture, Duration.Inf).asInstanceOf[TimedResults]
+    tr
   }
 }
 
@@ -88,24 +103,9 @@ case class BuildManager(graph : Dependency.Graph, workers : Iterable[ActorRef], 
 
   private def announceWork = workers.foreach{wkr =>  wkr ! WorkAvailable}
 
-  def awaiting : Receive = {
-    case Execute => {
+  val resultPromise = Promise[TimedResults]()
 
-      if (graph.isEmpty)
-        sender ! TimedResults(Nil, 0)
-      else {
-        context.become(executing(sender))
-      }
-    }
-
-
-    case _ : UnitOfWorkResult => 
-      // Should be from an early build that was finished early - can be ignored
-
-
-  }
-
-  def executing(buildLauncher : ActorRef):Receive = {
+  def executing():Receive = {
     var remaining : Dependency.Graph = graph
     var completed : Set[Task] = Set.empty
     var running : Set[Task] = Set.empty
@@ -116,8 +116,8 @@ case class BuildManager(graph : Dependency.Graph, workers : Iterable[ActorRef], 
 
 
     def returnResults = {
-      val tr = TimedResults(results.reverse, 0)
-      buildLauncher ! tr
+      val tr = TimedResults(graph, results.reverse, 0)
+      resultPromise.success(tr)
     }
 
     announceWork
@@ -153,10 +153,11 @@ case class BuildManager(graph : Dependency.Graph, workers : Iterable[ActorRef], 
   def receive = {
     case Execute => {
 
+      sender ! resultPromise
       if (graph.isEmpty)
-        sender ! TimedResults(Nil, 0)
+        resultPromise.success(TimedResults(graph, Nil, 0))
       else {
-        context.become(executing(sender))
+        context.become(executing())
       }
     }
   }

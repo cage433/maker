@@ -94,7 +94,8 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
     (runtimeMemory / 2) min 1024
   }
   object TestProcessMemoryInMB extends Default(defaultTestProcessMemory) with IsInt
-  object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
+  //object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
+  object NumberOfTaskThreads extends Default(1) with IsInt
   object CompilationCache extends EmptyString
 
   object LogCommands extends Default(true) with IsBoolean

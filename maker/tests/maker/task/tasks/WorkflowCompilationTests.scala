@@ -17,6 +17,7 @@ import org.scalatest.FunSpec
 import org.scalatest._
 import org.scalatest.FunSuite
 import maker.project.TestModule
+import maker.build.BuildManager
 
 class WorkflowCompilationTests extends FunSuite{
 
@@ -24,7 +25,7 @@ class WorkflowCompilationTests extends FunSuite{
     * the changing state of a developer's module(s)
     */
   object Nouns {
-    var result : BuildResult = null
+    var result : BuildManager.TimedResults = null
     var a : Module with TestModule = null
     var b : Module with TestModule = null
     var topLevelProject : Project = null

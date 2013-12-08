@@ -16,10 +16,10 @@ import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ReceiveTimeout
-import maker.akka.Receiver
 import maker.akka.RemoteActor
 import scala.concurrent.duration._
 import akka.pattern.ask
+import maker.akka.PartialFunctionUtils
 
 class AkkaTestReporter extends Reporter{
 
@@ -59,6 +59,7 @@ class AkkaTestReporter extends Reporter{
     event match {
       case rc : RunCompleted =>
         blockOnRemoteActorAck(rc)
+        println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: shutting down remote system")
         system.shutdown
       case _ =>
         actor ! event
@@ -71,6 +72,7 @@ class TestReporterActor extends RemoteActor{
   var runComplete = false
 
   def activate(manager : ActorRef) = {
+    println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: activating, manager is " + manager.path)
     def processEvents{
       def blockOnResponseFromTestManager(rc : RunCompleted) = {
         implicit val timeout = Timeout(10 seconds)
@@ -85,18 +87,21 @@ class TestReporterActor extends RemoteActor{
 
         case (_, event) =>
           manager ! event
+
+        case other =>
+          println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: unexpected event " + other)
       }
       toProcess = Nil
     }
     processEvents
-    val foo : PartialFunction[Any, Unit] = {
+    val pf : PartialFunction[Any, Unit] = {
       case event : Event =>
         toProcess = (sender, event) :: toProcess
         processEvents
       case other =>
         println("Debug: " + (new java.util.Date()) + " ActorTestReporter: unexpected event " + other)
     }
-    foo
+    PartialFunctionUtils.withExceptionsToStdOut(pf)
   }
 }
 

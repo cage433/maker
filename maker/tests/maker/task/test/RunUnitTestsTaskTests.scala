@@ -84,13 +84,13 @@ class RunUnitTestsTaskTests extends FunSuite {
         assert(testResults.numFailedTests === 2, "Expecting exactly two failures")
         assert(testResults.numPassedTests === 3, "Expecting exactly three passes")
 
-        // Running failed tests should pass over passed tests
+        //Running failed tests should pass over passed tests
         testResults = proj.testFailedSuites.testResults
 
         assert(testResults.numFailedTests === 2, "Expecting exactly two failures")
         assert(testResults.numPassedTests === 0, "Expecting zero passes")
 
-        // repair broken tests
+        //repair broken tests
         proj.writeTest(
           "foo/ExceptionThrowingTest.scala",
           """

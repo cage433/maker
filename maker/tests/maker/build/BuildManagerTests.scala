@@ -146,7 +146,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val manager = newManager(newGraph(), numWorkers = 0)
       manager ! Execute
       fishForMessage(){
-        case TimedResults(results, _)  => results.isEmpty
+        case TimedResults(_, results, _)  => results.isEmpty
         case _ => false
       }
     }
@@ -155,7 +155,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val manager = newManager(newGraph(101), numWorkers = 1)
       manager ! Execute
       fishForMessage(){
-        case TimedResults(List(taskResult), _)  => taskResult.info === Some(101)
+        case TimedResults(_, List(taskResult), _)  => taskResult.info === Some(101)
         case other => false
       }
     }
@@ -163,7 +163,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     it("Should allow one worker to process two tasks with no dependency"){
       val manager = newManager(newGraph(2, 5), numWorkers = 1)
       manager ! Execute
-      val TimedResults(results, _) = fishForMessage(){
+      val TimedResults(_, results, _) = fishForMessage(){
         case tr : TimedResults => true
         case other => false
       }
@@ -174,7 +174,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val graph = newGraph(2, 4, 6, 8) 
       val manager = newManager(graph, numWorkers = 1)
       manager ! Execute
-      val TimedResults(results, _) = fishForMessage(){
+      val TimedResults(_, results, _) = fishForMessage(){
         case tr : TimedResults => true
         case other => false
       }
@@ -185,7 +185,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val graph = newGraph(2, 4, 6, 8, 10, 12, 14, 16) 
       val manager = newManager(graph, numWorkers = 3)
       manager ! Execute
-      val TimedResults(results, _) = fishForMessage(){
+      val TimedResults(_, results, _) = fishForMessage(){
         case tr : TimedResults => true
         case other => false
       }
@@ -197,7 +197,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val graph = newGraph(2, 4, -6, 12) 
       val manager = newManager(graph, numWorkers = 1)
       manager ! Execute
-      val TimedResults(results, _) = fishForMessage(){
+      val TimedResults(_, results, _) = fishForMessage(){
         case tr : TimedResults => true
         case other => false
       }
@@ -210,7 +210,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       }
       val graph = newGraph(List(DummyTask(2), failingTask, DummyTask(20)))
       val manager = newManager(graph, numWorkers = 1, name = "dont-stop")
-      val TimedResults(results, _) = BuildManager.execute(manager)
+      val TimedResults(_, results, _) = BuildManager.execute(manager)
       assert(results.size === 3)
     }
 
@@ -219,7 +219,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val graph = graphOfUnrelatedTasks(ExceptionThrowingTask)
       val (worker, logger) = newWorkerWithLogger
       val manager = newManager(graph, List(worker), name = "Exception-throwing")
-      val TimedResults(results, _) = BuildManager.execute(manager)
+      val TimedResults(_, results, _) = BuildManager.execute(manager)
       assert(results.size === 1)
       class IsThrowable extends ArgumentMatcher[Throwable]{
         def matches(obj : Object) = obj match {

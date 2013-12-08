@@ -71,7 +71,7 @@ class ScalatestResultsTests extends FunSuite{
           """
         )
 
-        val res : BuildResult = proj.test
+        val res = proj.test
         val testResults = res.testResults()
         assert(testResults.numPassedTests === 2)
         assert(testResults.numFailedTests === 1)

@@ -15,11 +15,6 @@ import akka.actor.ActorSelection
 import akka.actor.{Props => AkkaProps}
 import akka.actor.Address
 
-
-trait Receiver{
-  def active(remoteSystem : ActorSystem, manager : ActorRef) : PartialFunction[Any, Unit]
-}
-
 trait RemoteActor extends Actor
 {
   import RemoteActor._
@@ -37,20 +32,23 @@ trait RemoteActor extends Actor
 
   def receive = {
 
-    case ActorIdentity(`localActorPath`, Some(localActor)) =>
-      
-      context.setReceiveTimeout(Duration.Undefined)
-      localActor ! "Hello"
-      context.become(activate(localActor))
+    val pf : PartialFunction[Any, Unit] = {
+      case ActorIdentity(`localActorPath`, Some(localActor)) =>
+        
+        context.setReceiveTimeout(Duration.Undefined)
+        localActor ! "Hello"
+        context.become(activate(localActor))
 
-    case ActorIdentity(`localActorPath`, None) => 
-      println(s"Remote actor not availible: $localActorPath")
+      case ActorIdentity(`localActorPath`, None) => 
+        println(s"Remote actor not availible: $localActorPath")
 
-    case ReceiveTimeout => 
-      sendIdentifyRequest()
+      case ReceiveTimeout => 
+        sendIdentifyRequest()
 
-    case other => 
-      toProcess = (sender, other) :: toProcess
+      case other => 
+        toProcess = (sender, other) :: toProcess
+    }
+    PartialFunctionUtils.withExceptionsToStdOut(pf)
   }
 }
 

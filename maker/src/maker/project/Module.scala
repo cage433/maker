@@ -174,6 +174,7 @@ class Module(
   )
 
   def cleanOnly = CleanOnly.execute
+
   def testOnly = TestOnly.execute
   def testFailuredSuitesOnly = TestFailedSuitesOnly.execute
   def updateOnly = UpdateOnly.execute
