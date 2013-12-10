@@ -25,13 +25,14 @@ import maker.task.publish.PublishLocalTask
 import maker.task.publish.PublishTask
 import maker.task.test.AkkaTestManager
 import java.util.concurrent.atomic.AtomicReference
+import maker.build.BuildManager.TimedResults
 
 trait BaseProject {
   protected def root : File
   val rootAbsoluteFile = root.asAbsoluteFile
   def name : String
   def setUp(graph : Dependency.Graph) : Unit
-  def tearDown(graph : Dependency.Graph, result : BuildResult) : Unit
+  def tearDown(graph : Dependency.Graph, result : TimedResults) : Unit
   def extraUpstreamTasks(task : Task) : Set[Task] = Set.empty
   def extraDownstreamTasks(task : Task) : Set[Task] = Set.empty
   def props : Props

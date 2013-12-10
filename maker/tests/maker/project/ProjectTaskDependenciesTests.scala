@@ -13,6 +13,7 @@ import maker.build.BuildResult
 import maker.task.test.RunUnitTestsTask
 import maker.task.compile._
 import maker.build.Build
+import maker.build.BuildManager.TimedResults
 
 class ProjectTaskDependenciesTests extends FunSuite{
 
@@ -102,7 +103,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
             WriteClassCountToFile(this, "setup").exec
           super.setUp(graph)
         }
-        override def tearDown(graph : Dependency.Graph, result : BuildResult){
+        override def tearDown(graph : Dependency.Graph, result : TimedResults){
           if (graphContainsClean(graph))
             WriteClassCountToFile(this, "teardown").exec
           super.tearDown(graph, result)

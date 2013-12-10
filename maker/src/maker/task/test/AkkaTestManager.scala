@@ -42,9 +42,9 @@ class AkkaTestManager(baseProject : BaseProject) {
     ConfigFactory.parseString(text)
   }
 
+
   val name = "manager-" + baseProject.name + "-" + MakerActorSystem.nextActorID()
   val manager = MakerActorSystem.system.actorOf(Props[Manager], name)
-  //val manager = MakerActorSystem.supervisor
   val port = MakerActorSystem.port
 
 
@@ -80,10 +80,12 @@ object AkkaTestManager{
         msg match {
 
           case e : RunCompleted =>
+            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + e)
             events ::= e 
             sender ! "stop"  
 
           case e : Event =>
+            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + e)
             events ::= e 
 
           case EVENTS =>

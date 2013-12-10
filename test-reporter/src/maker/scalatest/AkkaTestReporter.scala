@@ -59,7 +59,7 @@ class AkkaTestReporter extends Reporter{
     event match {
       case rc : RunCompleted =>
         blockOnRemoteActorAck(rc)
-        println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: shutting down remote system")
+        println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: SHUTTING DOWN")
         system.shutdown
       case _ =>
         actor ! event
