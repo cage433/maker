@@ -72,7 +72,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       if(!verbose)
         List("-P", "-C", "maker.utils.MakerTestReporter")
       else
-        List("-oF", "-P", "-C", "maker.utils.MakerTestReporter")
+        List("-o", "-C", "maker.utils.MakerTestReporter")
     val args = testParameters ++ suiteParameters
     val cmd = ScalaCommand(
       props,
