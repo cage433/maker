@@ -26,6 +26,10 @@ import maker.task.publish.PublishTask
 import maker.task.test.AkkaTestManager
 import java.util.concurrent.atomic.AtomicReference
 import maker.build.BuildManager.TimedResults
+import maker.utils.os.Command
+import maker.utils.os.CommandOutputHandler
+import scala.actors.Future
+import scala.actors.Futures
 
 trait BaseProject {
   protected def root : File
@@ -228,44 +232,69 @@ trait BaseProject {
   }
 
   def continuously(bld : Build){
-    var lastTaskTime :Option[Long] = None
 
-    def allSourceFiles : List[File] = allUpstreamModules.flatMap{
-      proj => 
-        proj.compilePhase.sourceFiles++ proj.testCompilePhase.sourceFiles
+    var fileChanged = false
+    var inotifyProcess : Option[(Process, Future[Int])] = None
+
+    def launchInotifyWait{
+      assert(!inotifyProcess.isDefined, "inotify may still be running")
+      var runnable = new Runnable(){
+        def run{
+          try{
+            val dirs = allUpstreamModules.flatMap{m => List(m.sourceDir, m.testSourceDir)}.filter(_.exists).map(_.getAbsolutePath)
+            val args : List[String] = List(
+              "inotifywait", "-q", "-r",
+              "--exclude", "'.*\\.class'",
+              "--event", "modify",
+              "--event", "create",
+              "--event", "move",
+              "--event", "delete"
+            ) ::: dirs
+            val cmd = Command(
+              CommandOutputHandler(),
+              //CommandOutputHandler.NULL,
+              Some(file(".")),
+              args : _*
+            )
+
+            //block until a change happens
+            val (proc, future) = cmd.execAsync
+            inotifyProcess = Some((proc, future))
+            println("\nWaiting for source file changes (press 'enter' to interrupt)")
+            proc.waitFor
+
+            fileChanged = true
+            inotifyProcess = None
+          } catch {
+            case e : Throwable =>
+              println("Error when running inotifywait, " + e)
+          }
+        }
+      }
+      val thread = new Thread(runnable)
+      thread.start
+    }
+    def killInotifyProcess{
+      val (proc, future) = inotifyProcess.get
+      proc.destroy
+      Futures.awaitAll(1000, future)
     }
 
-    def sourceFileCount : Int = allSourceFiles.size
-    var lastFileCount : Int = sourceFileCount 
-    def sourceFileNames : String = allSourceFiles.map(_.getPath).sortWith(_<_).mkString(" ")
-    var lastSourceFileNames : String = sourceFileNames
+    println(bld.execute)
+    launchInotifyWait
 
-    def printWaitingMessage = println("\nWaiting for source file changes (press 'enter' to interrupt)")
-    def rerunTask{
-      println(bld.execute)
-      lastTaskTime = Some(System.currentTimeMillis)
-      lastFileCount = sourceFileCount
-      lastSourceFileNames = sourceFileNames
-      printWaitingMessage
-    }
+    var running = true
+    while (running) {
 
+      Thread.sleep(bld.props.ContinuousTaskWaitInMillis())
 
-    def lastSrcModificationTime = {
-      allUpstreamModules.map(proj => {
-          val watchedFiles = proj.compilePhase.sourceFiles ++ proj.testCompilePhase.sourceFiles
-          FileUtils.lastModifiedFileTime(watchedFiles)
-        }).max
-    }
-    printWaitingMessage
-    while (true) {
-      Thread.sleep(1000)
-      if (System.in.available > 0 && System.in.read == 10) return
-      (lastTaskTime,  lastSrcModificationTime, lastFileCount, sourceFileCount, lastSourceFileNames, sourceFileNames) match {
-        case (None, _, _, _, _, _) => { rerunTask }                        // Task has never been run
-        case (Some(t1), Some(t2), _, _, _, _) if t1 < t2 => { rerunTask }  // Code has changed since task last run
-        case (_, _, m, n, _, _) if m != n => { rerunTask }                  // Source file has been added or deleted
-        case (_, _, _, _, a, b) if a != b => { rerunTask }                  // Source file has been renamed
-        case _ =>                                                    // Either no code yet or code has not changed
+      if (System.in.available > 0 && System.in.read == 10) {
+        killInotifyProcess
+        running = false
+      } else if(fileChanged){
+        fileChanged = false
+        println(bld.execute)
+        launchInotifyWait
       }
     }
   }
