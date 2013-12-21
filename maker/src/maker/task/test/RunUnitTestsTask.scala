@@ -62,7 +62,6 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val testManager = baseProject.buildTestManager()
 
     val classOrSuiteNames = classOrSuiteNames_()
-    println("Debug: " + (new java.util.Date()) + " RunUnitTestsTask: classes " + classOrSuiteNames.mkString("\n\t", "\n\t", ""))
     val log = props.log
 
 
@@ -85,13 +84,12 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 
     val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ++ suiteParameters
     val outputHandler = CommandOutputHandler().withSavedOutput
-      println("Using classpath " + baseProject.testClasspath + ":" + file("maker-scalatest-reporter.jar").absPath)
     val cmd = ScalaCommand(
       outputHandler,
       props.Java,
       opts,
-      baseProject.testClasspath + ":" + file("maker-scalatest-reporter.jar").absPath,
-    //baseProject.testClasspath + ":" + file("test-reporter/target-maker/classes/").absPath,
+      baseProject.testClasspath + ":" + props.MakerTestReportedClasspath().absPath,
+    //baseProject.testClasspath + ":" + file(props.makerRoot, "test-reporter/target-maker/classes/").absPath,
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 

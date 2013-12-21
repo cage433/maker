@@ -80,12 +80,10 @@ object AkkaTestManager{
         msg match {
 
           case e : RunCompleted =>
-            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + e)
             events ::= e 
             sender ! "stop"  
 
           case e : Event =>
-            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + e)
             events ::= e 
 
           case EVENTS =>

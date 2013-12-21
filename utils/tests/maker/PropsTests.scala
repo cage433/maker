@@ -58,6 +58,7 @@ class PropsTests extends FunSuite{
     withTempFile{
       file => 
         writeToFile(file, "ProjectScalaVersion=Fred")
+        //assert("a" === "b")
         assert(Props(file).ProjectScalaVersion() === "Fred")
         assert(Props(file.getParentFile).ProjectScalaVersion() === "2.10.2")
     }

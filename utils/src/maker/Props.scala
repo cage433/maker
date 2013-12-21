@@ -12,7 +12,7 @@ import ch.qos.logback.classic.Level
 import scala.xml.{XML, NodeSeq}
 
 
-case class Props (private val root_ : File, overrides : MMap[String, String]) extends PropsTrait{
+case class Props (private val root_ : File, overrides : MMap[String, String] = MMap.empty) extends PropsTrait{
 
   val root = root_.asAbsoluteFile
   
@@ -112,6 +112,8 @@ case class Props (private val root_ : File, overrides : MMap[String, String]) ex
   object StopCompileOutput extends Default(RunningInMakerTest()) with IsBoolean
   object ContinuousTaskWaitInMillis extends Default(50) with IsInt
 
+  object MakerTestReportedClasspath extends SystemProperty("maker.test.reporter.classpath") with IsFile
+
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
       case List(k, v) => k -> v
@@ -145,6 +147,16 @@ object Props {
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 
+  def makerRootSystemProperty : File = {
+    new File(
+      Option(
+        System.getProperty("maker.home")
+      ).getOrElse{
+        throw new Exception("maker.home not set")
+      }
+    ).asAbsoluteFile
+  }
+
  def initialiseTestProps(root : File, cwdProps : Props = Props(file(".").asAbsoluteFile)) : Props = {
     val makerDotConf = file(root, "Maker.conf")
     def writeProperty(key : String, value : String){
@@ -154,7 +166,6 @@ object Props {
     writeProperty("TmuxMessaging", "false")
     writeProperty("RunningInMakerTest", "true")
     writeProperty("PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().absPath)
-    file(cwdProps.root, "maker-scalatest-reporter.jar").copyTo(root)
     List(
       cwdProps.ProjectScalaLibraryJar,
       cwdProps.ProjectScalaLibrarySourceJar,
@@ -169,7 +180,8 @@ object Props {
       cwdProps.ResourceConfigFile,
       cwdProps.LogbackTestConfigFile,
       cwdProps.LogCommandFile,
-      cwdProps.IvySettingsFile
+      cwdProps.IvySettingsFile,
+      cwdProps.MakerTestReportedClasspath
     ).foreach{
       prop => 
         writeProperty(prop.name, prop().absPath)
@@ -194,6 +206,8 @@ object Props {
     }
   }
 }
+
+class PropertyNotSetException(key : String) extends Throwable("Property " + key +  " not set")
 
 /**
   * In a trait, rather than just in Props, as it allows 
@@ -234,7 +248,6 @@ trait PropsTrait extends DelayedInit{
     buffer.toString
   }
 
-  class PropertyNotSetException(key : String) extends Throwable("Property " + key +  " not set")
 
 
   trait Property{

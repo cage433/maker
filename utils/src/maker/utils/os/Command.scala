@@ -116,8 +116,7 @@ case class Command(outputHandler : CommandOutputHandler, workingDirectory : Opti
     val procBuilder = new ProcessBuilder(args : _*)
     procBuilder.redirectErrorStream(true)
     workingDirectory.foreach(procBuilder.directory(_))
-    // Clear environment variables in particular to prevent CLASSPATH being used
-    procBuilder.environment.clear
+    procBuilder.environment.remove("CLASSPATH") // This could cause no end of confusion
     procBuilder.start
   }
 

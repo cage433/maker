@@ -85,8 +85,8 @@ main() {
   update_external_jars && check_for_errors
   if [ -z $MAKER_DEVELOPER_MODE ]; then
     bootstrap_maker_if_required && check_for_errors
-    recompile_project_if_required && check_for_errors
   fi
+  recompile_project_if_required && check_for_errors
 
   launch_maker_repl
 }
@@ -212,6 +212,7 @@ launch_maker_repl(){
     -classpath "$(external_scala_jars):$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
+    -Dmaker.test.reporter.classpath="$MAKER_SCALATEST_REPORTER_JAR" \
     $RUNNING_EXEC_MODE \
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \
@@ -225,6 +226,7 @@ launch_maker_repl(){
 }
 
 recompile_project_if_required(){
+  echo $PROJECT_DEFINITION_CLASS_DIR
   if [ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
     has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
     [ ! -z $MAKER_RECOMPILE_PROJECT ]; 
@@ -244,7 +246,7 @@ maker_classpath(){
   cp=$(external_jars)
   if [ $MAKER_DEVELOPER_MODE ];
   then
-    for module in utils maker ; do
+    for module in utils maker test-reporter; do
       cp="$cp${PSEP}$MAKER_ROOT_DIR/$module/target-maker/classes${PSEP}$MAKER_ROOT_DIR/$module/target-maker/test-classes/"
     done
   else

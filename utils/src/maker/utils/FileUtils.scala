@@ -159,10 +159,17 @@ object FileUtils extends Asserting{
     }
 
     def copyTo(file : File){
-      if (file.isDirectory)
+      if (plainFile.isDirectory){
+        require(
+          file.isDirectory, 
+          "Can't copy directory " + plainFile + " to " + file + "as the latter isn't a directory"
+        )
+        ApacheFileUtils.copyDirectory(plainFile, file)
+      } else if (file.isDirectory){
         ApacheFileUtils.copyFileToDirectory(plainFile, file)
-      else
+      } else {
         ApacheFileUtils.copyFile(plainFile, file)
+      }
     }
 
     def makeDir() : File = FileUtils.mkdir(plainFile)

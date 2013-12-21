@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.actor.Actor
-import org.scalatest.events.Event
+import org.scalatest.events._
 import akka.actor.Props
 import akka.actor.ActorSelection
 import org.scalatest.events.RunCompleted
@@ -30,7 +30,6 @@ class AkkaTestReporter extends Reporter{
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
-        loglevel = off
         remote {
           log-remote-lifecycle-events = off
           enabled-transports = ["akka.remote.netty.tcp"]
@@ -56,13 +55,19 @@ class AkkaTestReporter extends Reporter{
   }
 
   def apply(event : Event){
-    event match {
-      case rc : RunCompleted =>
-        blockOnRemoteActorAck(rc)
-        println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: SHUTTING DOWN")
-        system.shutdown
-      case _ =>
-        actor ! event
+    try {
+      event match {
+        case rc : RunCompleted =>
+          blockOnRemoteActorAck(rc)
+          println(" AkkaTestReporter: SHUTTING DOWN")
+          system.shutdown
+        case _ =>
+          actor ! event
+      }
+    } catch {
+      case e : Throwable =>
+        println("Exception when processing event " + event + " will shutdown")
+        System.exit(1)
     }
   }
 }
@@ -72,7 +77,6 @@ class TestReporterActor extends RemoteActor{
   var runComplete = false
 
   def activate(manager : ActorRef) = {
-    println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: activating, manager is " + manager.path)
     def processEvents{
       def blockOnResponseFromTestManager(rc : RunCompleted) = {
         implicit val timeout = Timeout(10 seconds)
@@ -81,27 +85,38 @@ class TestReporterActor extends RemoteActor{
       }
       
       toProcess.reverse.foreach{
-        case (sender, event : RunCompleted) =>
-          val response = blockOnResponseFromTestManager(event)
-          sender ! response
+        x => 
+          try {
+            x match {
+              case (sender, event : RunCompleted) =>
+                val response = blockOnResponseFromTestManager(event)
+                sender ! response
 
-        case (_, event) =>
-          manager ! event
+              case (_, event) =>
+                manager ! event
 
-        case other =>
-          println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: unexpected event " + other)
+              case other =>
+                println(" AkkaTestReporter: unexpected event " + other)
+              }
+          } catch {
+            case e : Throwable => 
+              println("Error processing " + x + ", will exit")
+              System.exit(1)
+          }
       }
       toProcess = Nil
     }
+
     processEvents
+
     val pf : PartialFunction[Any, Unit] = {
       case event : Event =>
         toProcess = (sender, event) :: toProcess
         processEvents
       case other =>
-        println("Debug: " + (new java.util.Date()) + " ActorTestReporter: unexpected event " + other)
+        println(" ActorTestReporter: unexpected event " + other)
     }
-    PartialFunctionUtils.withExceptionsToStdOut(pf)
+    pf
   }
 }
 
