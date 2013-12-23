@@ -4,7 +4,7 @@ import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor.{Props => AkkaProps}
 import akka.actor.ExtendedActorSystem
 import org.scalatest.events._
 import maker.utils.MakerLog
@@ -16,6 +16,8 @@ import org.scalatest.events.TestSucceeded
 import akka.actor.Terminated
 import maker.project.BaseProject
 import maker.akka.MakerActorSystem
+import maker.utils.FileUtils._
+import maker.Props
 
 class AkkaTestManager(baseProject : BaseProject) {
 
@@ -44,7 +46,7 @@ class AkkaTestManager(baseProject : BaseProject) {
 
 
   val name = "manager-" + baseProject.name + "-" + MakerActorSystem.nextActorID()
-  val manager = MakerActorSystem.system.actorOf(Props[Manager], name)
+  val manager = MakerActorSystem.system.actorOf(AkkaProps[Manager], name)
   val port = MakerActorSystem.port
 
 
@@ -71,12 +73,14 @@ object AkkaTestManager{
 
   class Manager extends Actor{
 
+    val isRunningInMakerTest : Boolean = Props(file(".")).RunningInMakerTest()
     var events : List[Event] = Nil
     val log = MakerLog()
     var reporters : List[ActorRef] = Nil
 
     private def processRequest(sender : ActorRef, msg : Any){
-      println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + msg)
+      if (!isRunningInMakerTest)
+        println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + msg)
       try {
         msg match {
 

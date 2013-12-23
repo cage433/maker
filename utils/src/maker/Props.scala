@@ -107,7 +107,7 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   /* 
    * Switches off sundry output with testing maker
    */
-  object RunningInMakerTest extends Default(false) with IsBoolean
+  object RunningInMakerTest extends SystemPropertyWithDefault("maker.running.within.test", false) with IsBoolean
 
   object StopCompileOutput extends Default(RunningInMakerTest()) with IsBoolean
   object ContinuousTaskWaitInMillis extends Default(50) with IsInt

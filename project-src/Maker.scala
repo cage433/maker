@@ -51,9 +51,9 @@ object Maker {
     val testReporterClasspath=file(".", "test-reporter/target-maker/classes").getAbsolutePath
     val propsFile = file("Maker.conf")
     if (propsFile.exists)
-      Props((propsFile).asAbsoluteFile, "GroupId", "com.google.code.maker", "MakerTestReportedClasspath", testReporterClasspath)
+      Props((propsFile).asAbsoluteFile, "GroupId", "com.google.code.maker", "MakerTestReporterClasspath", testReporterClasspath)
     else
-      Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker", "MakerTestReportedClasspath", testReporterClasspath)
+      Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker", "MakerTestReporterClasspath", testReporterClasspath)
   }
 
   def module(name : String, upstreamProjects : Module*) = {
