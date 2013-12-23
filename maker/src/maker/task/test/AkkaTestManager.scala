@@ -30,7 +30,6 @@ class AkkaTestManager(baseProject : BaseProject) {
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
-        loglevel = off
         remote {
           log-remote-lifecycle-events = off
           enabled-transports = ["akka.remote.netty.tcp"]
@@ -79,8 +78,6 @@ object AkkaTestManager{
     var reporters : List[ActorRef] = Nil
 
     private def processRequest(sender : ActorRef, msg : Any){
-      if (!isRunningInMakerTest)
-        println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + msg)
       try {
         msg match {
 

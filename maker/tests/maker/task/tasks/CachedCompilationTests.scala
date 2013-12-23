@@ -25,7 +25,7 @@ class CachedCompilationTests extends FunSuite {
     )
   }
 
-  test("cached Compilation is used when source hash matches") {
+  ignore("cached Compilation is used when source hash matches") {
     //projA depends on projU
     //compile both, modify projU, compile, revert change
     //assert the next compilation uses cache

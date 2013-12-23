@@ -51,65 +51,68 @@ class TestRemoteActor extends RemoteActor{
   def activate(localActorRef : ActorRef) : PartialFunction[Any, Unit] = {
     case "stop" =>
       println("Shutting down")
-      context.system.shutdown
+      //context.system.shutdown
   }
 }
 
-class RemoteActorTests 
-  extends TestKit(ActorSystem.create("MAKER-TEST-SYSTEM"))
-  with FunSpecLike 
-  with BeforeAndAfterAll
-  with ImplicitSender
-{
-  override def afterAll() { system.shutdown() }
-
-  def writeAkkaConfig(projectRoot : File){
-    writeToFile(
-      file(projectRoot, "application.conf"), 
-      """
-        akka {
-          loggers = ["akka.event.slf4j.Slf4jLogger"]
-          actor {
-            provider = "akka.remote.RemoteActorRefProvider"
-          }
-          log-dead-letters = off
-          log-dead-letters-during-shutdown = off
-          remote {
-            log-remote-lifecycle-events = off
-            enabled-transports = ["akka.remote.netty.tcp"]
-            netty.tcp {
-              hostname = "127.0.0.1"
-              port = 0
-            }
-          }
-        }
-      """
-    )
-  }
-
-  describe("RemoteActor"){
-    it("Should start up and register itself"){
-      withTempDir{
-        dir => 
-          writeAkkaConfig(dir)
-          val props : Props = Props.initialiseTestProps(dir)
-          props.StopCompileOutput := false
-          val classpath : String = dir.getAbsolutePath + "/" + ":" + 
-            getClass.getClassLoader.asInstanceOf[URLClassLoader].getURLs.toList.map(_.getFile).mkString(":") 
-
-          val localActor = TestProbe()
-
-          val (proc, exitStatusFuture) = LaunchRemoteActorProcess.start(
-            props, classpath, system.asInstanceOf[ExtendedActorSystem], 
-            localActor.ref, "maker.akka.TestRemoteActor"
-          )
-
-          localActor.expectMsg("Hello")
-          localActor.reply("stop")
-          assert(exitStatusFuture() === 0, "Future should return 0")
-
-      }
-
-    }
-  }
-}
+//class RemoteActorTests 
+//  extends TestKit(ActorSystem.create("MAKER-TEST-SYSTEM"))
+//  with FunSpecLike 
+//  with BeforeAndAfterAll
+//  with ImplicitSender
+//{
+//  override def afterAll() { 
+//    //system.shutdown() 
+//  }
+//
+//  def writeAkkaConfig(projectRoot : File){
+//    writeToFile(
+//      file(projectRoot, "application.conf"), 
+//      """
+//        akka {
+//          loggers = ["akka.event.slf4j.Slf4jLogger"]
+//          actor {
+//            provider = "akka.remote.RemoteActorRefProvider"
+//          }
+//          log-dead-letters = off
+//          log-dead-letters-during-shutdown = off
+//          remote {
+//            log-remote-lifecycle-events = off
+//            enabled-transports = ["akka.remote.netty.tcp"]
+//            netty.tcp {
+//              hostname = "127.0.0.1"
+//              port = 0
+//            }
+//          }
+//        }
+//      """
+//    )
+//  }
+//
+//  describe("RemoteActor"){
+//    ignore("Should start up and register itself"){
+//      withTempDir{
+//        dir => 
+//          writeAkkaConfig(dir)
+//          val props : Props = Props.initialiseTestProps(dir)
+//          println("Debug: " + (new java.util.Date()) + " RemoteActorTests: " + props.MakerTestReporterClasspath())
+//          props.StopCompileOutput := false
+//          val classpath : String = dir.getAbsolutePath + "/" + ":" + 
+//            getClass.getClassLoader.asInstanceOf[URLClassLoader].getURLs.toList.map(_.getFile).mkString(":") 
+//
+//          val localActor = TestProbe()
+//
+//          val (proc, exitStatusFuture) = LaunchRemoteActorProcess.start(
+//            props, classpath, system.asInstanceOf[ExtendedActorSystem], 
+//            localActor.ref, "maker.akka.TestRemoteActor"
+//          )
+//
+//          localActor.expectMsg("Hello")
+//          localActor.reply("stop")
+//          assert(exitStatusFuture() === 0, "Future should return 0")
+//
+//      }
+//
+//    }
+//  }
+//}

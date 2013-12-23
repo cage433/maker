@@ -62,6 +62,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val testManager = baseProject.buildTestManager()
 
     val classOrSuiteNames = classOrSuiteNames_()
+    println("Debug: " + (new java.util.Date()) + " RunUnitTestsTask: suites are " + classOrSuiteNames.mkString("\n\t", "\n\t", "\n"))
     val log = props.log
 
 
@@ -92,7 +93,8 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       opts,
       baseProject.testClasspath + ":" + props.MakerTestReporterClasspath().absPath,
     //baseProject.testClasspath + ":" + file(props.makerRoot, "test-reporter/target-maker/classes/").absPath,
-      "org.scalatest.tools.Runner", 
+      "maker.scalatest.RunTests",
+      //"org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 
     )
@@ -120,17 +122,17 @@ object RunUnitTestsTask{
     )
   }
   
-  def apply(baseProject : BaseProject, classNameOrAbbreviation : String) : Task  = {
-    def resolveClassName() = {
-      if (classNameOrAbbreviation.contains('.'))
-        List(classNameOrAbbreviation)
+  def apply(baseProject : BaseProject, firstClassNameOrAbbreviation : String, moreClassNamesOrAbbreviations : String*) : Task  = {
+    def resolveClassName(cn : String) : List[String] = {
+      if (cn.contains('.'))
+        List(cn)
       else {
         val matchingTestClasses = IntellijStringDistance.bestMatches(
-          classNameOrAbbreviation,
+          cn,
           baseProject.testClassNames()
         )
         if (matchingTestClasses.isEmpty){
-          baseProject.log.warn("No class matching " + classNameOrAbbreviation + " found")
+          baseProject.log.warn("No class matching " + cn + " found")
           Nil
         } else {
           if (matchingTestClasses.size > 1)
@@ -139,10 +141,11 @@ object RunUnitTestsTask{
         }
       }
     }
+    val classNames = firstClassNameOrAbbreviation :: moreClassNamesOrAbbreviations.toList
     RunUnitTestsTask(
-      "Test class " + classNameOrAbbreviation, 
+      "Test class " + classNames.mkString(", "), 
       baseProject,
-      resolveClassName
+      () => classNames.flatMap(resolveClassName)
     )
   }
 

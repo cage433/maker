@@ -21,12 +21,24 @@ import scala.concurrent.duration._
 import akka.pattern.ask
 import maker.akka.PartialFunctionUtils
 import java.lang.management.ManagementFactory
+import org.scalatest.tools.Runner
+
+object RunTests {
+  def main(args : Array[String]){
+    println("Debug: " + (new java.util.Date()) + " RunTests: ")
+    val result = Runner.run(args)
+    if (result)
+      System.exit(0)
+    else
+      System.exit(1)
+
+  }
+}
 
 class AkkaTestReporter extends Reporter{
 
   val List(idString, host) = ManagementFactory.getRuntimeMXBean().getName().split("@").toList
   
-  println("AkkaTestReporter - initialised " + idString)
   private val config = {
     val text = """
       akka {
@@ -63,7 +75,6 @@ class AkkaTestReporter extends Reporter{
       event match {
         case rc : RunCompleted =>
           blockOnRemoteActorAck(rc)
-          println(" AkkaTestReporter: SHUTTING DOWN " + idString)
           system.shutdown
         case _ =>
           actor ! event
