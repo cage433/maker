@@ -112,7 +112,7 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   object StopCompileOutput extends Default(RunningInMakerTest()) with IsBoolean
   object ContinuousTaskWaitInMillis extends Default(50) with IsInt
 
-  object MakerTestReportedClasspath extends SystemProperty("maker.test.reporter.classpath") with IsFile
+  object MakerTestReporterClasspath extends SystemProperty("maker.test.reporter.classpath") with IsFile
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
@@ -181,7 +181,7 @@ object Props {
       cwdProps.LogbackTestConfigFile,
       cwdProps.LogCommandFile,
       cwdProps.IvySettingsFile,
-      cwdProps.MakerTestReportedClasspath
+      cwdProps.MakerTestReporterClasspath
     ).foreach{
       prop => 
         writeProperty(prop.name, prop().absPath)

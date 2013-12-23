@@ -76,6 +76,7 @@ object AkkaTestManager{
     var reporters : List[ActorRef] = Nil
 
     private def processRequest(sender : ActorRef, msg : Any){
+      println("Debug: " + (new java.util.Date()) + " AkkaTestManager: " + msg)
       try {
         msg match {
 

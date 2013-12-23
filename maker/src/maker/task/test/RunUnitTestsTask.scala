@@ -79,7 +79,8 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-XX:MaxPermSize=200m", 
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
       "-Dsbt.log.format=false",
-      "-Dmaker.test.module=" + baseProject.name
+      "-Dmaker.test.module=" + baseProject.name,
+      props.MakerTestReporterClasspath.toCommandLine
     ) ::: systemProperties ::: RemoteActor.javaOpts(testManager.manager, MakerActorSystem.system, "maker.scalatest.TestReporterActor")
 
     val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ++ suiteParameters
@@ -88,7 +89,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       outputHandler,
       props.Java,
       opts,
-      baseProject.testClasspath + ":" + props.MakerTestReportedClasspath().absPath,
+      baseProject.testClasspath + ":" + props.MakerTestReporterClasspath().absPath,
     //baseProject.testClasspath + ":" + file(props.makerRoot, "test-reporter/target-maker/classes/").absPath,
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
