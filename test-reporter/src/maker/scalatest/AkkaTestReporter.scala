@@ -20,9 +20,13 @@ import maker.akka.RemoteActor
 import scala.concurrent.duration._
 import akka.pattern.ask
 import maker.akka.PartialFunctionUtils
+import java.lang.management.ManagementFactory
 
 class AkkaTestReporter extends Reporter{
 
+  val List(idString, host) = ManagementFactory.getRuntimeMXBean().getName().split("@").toList
+  
+  println("AkkaTestReporter - initialised " + idString)
   private val config = {
     val text = """
       akka {
@@ -59,7 +63,7 @@ class AkkaTestReporter extends Reporter{
       event match {
         case rc : RunCompleted =>
           blockOnRemoteActorAck(rc)
-          println(" AkkaTestReporter: SHUTTING DOWN")
+          println(" AkkaTestReporter: SHUTTING DOWN " + idString)
           system.shutdown
         case _ =>
           actor ! event

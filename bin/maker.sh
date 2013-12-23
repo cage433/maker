@@ -226,19 +226,20 @@ launch_maker_repl(){
 }
 
 recompile_project_if_required(){
-  echo $PROJECT_DEFINITION_CLASS_DIR
-  if [ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
-    has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
-    [ ! -z $MAKER_RECOMPILE_PROJECT ]; 
-  then
-    echo "Recompiling project"
-    PROJECT_DEFINITION_SRC_FILES=`ls $PROJECT_DEFINITION_SRC_DIR/*.scala | xargs`
-    echo "Compiling $PROJECT_DEFINITION_SRC_FILES"
-    rm -rf $PROJECT_DEFINITION_CLASS_DIR
-    mkdir -p $PROJECT_DEFINITION_CLASS_DIR
+  if [ -e $PROJECT_DEFINITION_SRC_DIR ]; then 
+    if [ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
+      has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
+      [ ! -z $MAKER_RECOMPILE_PROJECT ]; 
+    then
+      echo "Recompiling project"
+      PROJECT_DEFINITION_SRC_FILES=`ls $PROJECT_DEFINITION_SRC_DIR/*.scala | xargs`
+      echo "Compiling $PROJECT_DEFINITION_SRC_FILES"
+      rm -rf $PROJECT_DEFINITION_CLASS_DIR
+      mkdir -p $PROJECT_DEFINITION_CLASS_DIR
 
-    java -classpath "$(external_scala_jars):$(maker_classpath)" \
-         -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
+      java -classpath "$(external_scala_jars):$(maker_classpath)" \
+          -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
+    fi
   fi
 }
 

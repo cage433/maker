@@ -7,7 +7,7 @@ import maker.Props
 
 
 class TestModuleTests extends FunSuite{
-  test("Can build test module from itself"){
+  ignore("Can build test module from itself"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)

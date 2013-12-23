@@ -164,6 +164,12 @@ test_has_newer_src_files_empty()
   assertFalse "Should have no newer src files" $(has_newer_src_files DIR DIR)
 }
 
+test_has_newer_src_files_no_directory()
+{
+  mkdir DIR
+  result=$(has_newer_src_files not_a_real_dir DIR)
+  assertFalse "Should have no newer src files" $(has_newer_src_files not_a_real_dir DIR)
+}
 test_has_src_files_one_newer()
 {
   touch maker.jar

@@ -41,7 +41,6 @@ object MakerActorSystem{
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
-        loglevel=off
         remote {
           log-remote-lifecycle-events = off
           enabled-transports = ["akka.remote.netty.tcp"]

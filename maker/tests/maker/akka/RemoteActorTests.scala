@@ -74,7 +74,6 @@ class RemoteActorTests
           }
           log-dead-letters = off
           log-dead-letters-during-shutdown = off
-          loglevel = off
           remote {
             log-remote-lifecycle-events = off
             enabled-transports = ["akka.remote.netty.tcp"]
