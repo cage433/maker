@@ -38,6 +38,8 @@ object MakerActorSystem{
     val text = """
       akka {
         loggers = ["akka.event.slf4j.Slf4jLogger"]
+        loglevel = "ERROR"
+        log-dead-letters = off
         actor {
           provider = "akka.remote.RemoteActorRefProvider"
         }
@@ -84,13 +86,13 @@ object MakerActorSystem{
   def nextActorID() : Int = nextActorID_.getAndIncrement
 
   private val nextBuildNumber = new AtomicInteger(-1)
-  def buildManager(graph : Dependency.Graph, props : Props) = {
+  def buildManager(buildName : String, graph : Dependency.Graph, props : Props) = {
     val buildNumber  = nextBuildNumber.incrementAndGet
     val workers : List[ActorRef] = (1 to props.NumberOfTaskThreads()).toList.map{
       case i => 
         system.actorOf(BuildManager.Worker.props(), "Worker-" + buildNumber + "-" + i)
     }
-    system.actorOf(BuildManager.props(graph, workers), "BuildManager-" + buildNumber)
+    system.actorOf(BuildManager.props(buildName, graph, workers), "BuildManager-" + buildNumber)
   }
 }
 

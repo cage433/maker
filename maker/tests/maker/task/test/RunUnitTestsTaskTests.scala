@@ -10,7 +10,7 @@ import maker.Props
 class RunUnitTestsTaskTests extends FunSuite {
 
   test("Test Reporter does its thing"){
-    withTestDir{
+    withTempDir{
       root => 
         val props = Props.initialiseTestProps(root) 
 

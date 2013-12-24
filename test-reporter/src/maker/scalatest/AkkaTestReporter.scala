@@ -27,6 +27,7 @@ object RunTests {
   def main(args : Array[String]){
     println("Debug: " + (new java.util.Date()) + " RunTests: ")
     val result = Runner.run(args)
+    SlaveTestSystem.system.awaitTermination()
     if (result)
       System.exit(0)
     else
@@ -35,48 +36,50 @@ object RunTests {
   }
 }
 
+object SlaveTestSystem{
+  val port : Int = Option(System.getProperty(RemoteActor.localActorSystemPortLabel)).map(_.toInt).getOrElse{
+    throw new RuntimeException("Local system port not set")
+  }
+    
+  val system = {
+    val config = {
+      val text = """
+        akka {
+          loggers = ["akka.event.slf4j.Slf4jLogger"]
+          loglevel = "ERROR"
+          log-dead-letters = off
+          log-dead-letters-during-shutdown = off
+          actor {
+            provider = "akka.remote.RemoteActorRefProvider"
+          }
+          remote {
+            log-remote-lifecycle-events = off
+            enabled-transports = ["akka.remote.netty.tcp"]
+            netty.tcp {
+              hostname = "127.0.0.1"
+              port = 0
+            }
+          }
+        }
+      """
+      ConfigFactory.parseString(text)
+    }
+    val module = System.getProperty("maker.test.module")
+    ActorSystem.create("REMOTE-" + module, config)
+  }
+  val actor : ActorRef = system.actorOf(Props[TestReporterActor], "test-reporter")
+}
+
 class AkkaTestReporter extends Reporter{
 
   val List(idString, host) = ManagementFactory.getRuntimeMXBean().getName().split("@").toList
   
-  private val config = {
-    val text = """
-      akka {
-        loggers = ["akka.event.slf4j.Slf4jLogger"]
-        actor {
-          provider = "akka.remote.RemoteActorRefProvider"
-        }
-        remote {
-          log-remote-lifecycle-events = off
-          enabled-transports = ["akka.remote.netty.tcp"]
-          netty.tcp {
-            hostname = "127.0.0.1"
-            port = 0
-          }
-        }
-      }
-    """
-    ConfigFactory.parseString(text)
-  }
-
-  val module = System.getProperty("maker.test.module")
-  val system = ActorSystem.create("REMOTE-" + module, config)
-
-  val actor = system.actorOf(Props[TestReporterActor], "test-reporter")
-
-  def blockOnRemoteActorAck(rc : RunCompleted){
-    implicit val timeout = Timeout(10 seconds)
-    val future = actor ? rc
-    Await.result(future, timeout.duration)
-  }
+  val actor = SlaveTestSystem.actor
 
   def apply(event : Event){
     try {
       event match {
-        case rc : RunCompleted =>
-          blockOnRemoteActorAck(rc)
-          system.shutdown
-        case _ =>
+        case e : Event =>
           actor ! event
       }
     } catch {
@@ -91,23 +94,19 @@ class TestReporterActor extends RemoteActor{
 
   var runComplete = false
 
+  override def postStop{
+    println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: received poison pill - trying to die")
+    context.system.shutdown
+  }
+
   def activate(manager : ActorRef) = {
     def processEvents{
-      def blockOnResponseFromTestManager(rc : RunCompleted) = {
-        implicit val timeout = Timeout(10 seconds)
-        val future = Patterns.ask(manager, rc, 10 * 1000)
-        Await.result(future, timeout.duration)
-      }
       
       toProcess.reverse.foreach{
         x => 
           try {
             x match {
-              case (sender, event : RunCompleted) =>
-                val response = blockOnResponseFromTestManager(event)
-                sender ! response
-
-              case (_, event) =>
+              case (_, event : Event) =>
                 manager ! event
 
               case other =>

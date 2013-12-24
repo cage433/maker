@@ -45,7 +45,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
   def newManager(graph : Dependency.Graph, workers : Iterable[ActorRef], name : String) : ActorRef = {
     val logger = makeLogger
-    val actor = TestActorRef[BuildManager](BuildManager.props(graph, workers, MakerLog(logger)), name)
+    val actor = TestActorRef[BuildManager](BuildManager.props("Dummy build name", graph, workers, MakerLog(logger)), name)
     actor
   }
 
@@ -150,13 +150,13 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
     it("Should process a single task"){
       val manager = newManager(newGraph(101), numWorkers = 1)
-      val TimedResults(_, List(taskResult), _) = BuildManager.execute(manager)
+      val TimedResults(_, _, List(taskResult), _) = BuildManager.execute(manager)
       assert(taskResult.info == Some(101))
     }
 
     it("Should allow one worker to process two tasks with no dependency"){
       val manager = newManager(newGraph(2, 5), numWorkers = 1)
-      val tr@TimedResults(_, results, _) = BuildManager.execute(manager)
+      val tr@TimedResults(_, _, results, _) = BuildManager.execute(manager)
       assert(results.size === 2)
       assert(tr.succeeded)
     }
@@ -164,7 +164,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     it("Should allow one worker to process dependent tasks"){
       val graph = newGraph(2, 4, 6, 8) 
       val manager = newManager(graph, numWorkers = 1)
-      val tr@TimedResults(_, results, _) = BuildManager.execute(manager)
+      val tr@TimedResults(_, _, results, _) = BuildManager.execute(manager)
       assert(results.size === 4)
       assert(tr.succeeded)
     }
@@ -172,7 +172,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     it("Should allow more than one worker to process dependent tasks"){
       val graph = newGraph(2, 4, 6, 8, 10, 12, 14, 16) 
       val manager = newManager(graph, numWorkers = 3)
-      val tr@TimedResults(_, results, _) = BuildManager.execute(manager)
+      val tr@TimedResults(_, _, results, _) = BuildManager.execute(manager)
       assert(results.size === 8)
       assert(tr.succeeded)
     }
@@ -181,7 +181,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       
       val graph = newGraph(2, 4, -6, 12) 
       val manager = newManager(graph, numWorkers = 1)
-      val tr@TimedResults(_, results, _) = BuildManager.execute(manager)
+      val tr@TimedResults(_, _, results, _) = BuildManager.execute(manager)
       assert(tr.failed)
       assert(results.size < 4)
     }
@@ -192,7 +192,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       }
       val graph = newGraph(List(DummyTask(2), failingTask, DummyTask(20)))
       val manager = newManager(graph, numWorkers = 1, name = "dont-stop")
-      val TimedResults(_, results, _) = BuildManager.execute(manager)
+      val TimedResults(_, _, results, _) = BuildManager.execute(manager)
       assert(results.size === 3)
     }
 
@@ -201,7 +201,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
       val graph = graphOfUnrelatedTasks(ExceptionThrowingTask)
       val (worker, logger) = newWorkerWithLogger
       val manager = newManager(graph, List(worker), name = "Exception-throwing")
-      val TimedResults(_, results, _) = BuildManager.execute(manager)
+      val TimedResults(_, _, results, _) = BuildManager.execute(manager)
       assert(results.size === 1)
       class IsThrowable extends ArgumentMatcher[Throwable]{
         def matches(obj : Object) = obj match {

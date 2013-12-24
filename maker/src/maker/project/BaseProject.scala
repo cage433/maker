@@ -52,6 +52,17 @@ trait BaseProject {
 
   lazy val groupId = props.GroupId()
   val artifactId = name
+
+  /* To override the logback config file would require a system property, which
+     seems odd given logback.configurationFile is the standard system property
+     for this. No current reason to override so will go with convention instead
+  */
+  def logbackConfigFilePath = {
+    val f = file(props.root, "logback.xml")
+    require(f.exists, f + " doesn't exist")
+    f.getAbsolutePath
+  }
+
   def toIvyExclude : Elem = <exclude org={groupId} module={artifactId} />
   def publishLocalDir = file(props.PublishLocalRootDir(), groupId, artifactId).makeDirs
   def publishLocalPomFile = file(file(publishLocalDir, "/poms/").makeDir, "pom.xml")

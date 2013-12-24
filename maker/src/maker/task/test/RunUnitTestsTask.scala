@@ -75,10 +75,11 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       case (key, value) => "-D" + key + "=" + value
     }.toList
 
+
     val opts = List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m", 
-      "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
+      "-Dlogback.configurationFile=" + baseProject.logbackConfigFilePath,
       "-Dsbt.log.format=false",
       "-Dmaker.test.module=" + baseProject.name,
       props.MakerTestReporterClasspath.toCommandLine,

@@ -43,7 +43,6 @@ import maker.utils.os.Command
 case class UpdateTask(module : Module) extends Task {
   def name = "Update " + module
   private val props = module.props
-  private lazy val log = props.log
   
   def upstreamTasks : List[Task] = Nil
 

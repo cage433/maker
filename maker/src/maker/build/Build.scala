@@ -80,7 +80,7 @@ case class Build(
   lazy val graph = graph_()
 
   def execute = {
-    val buildManager = MakerActorSystem.buildManager(graph, props)
+    val buildManager = MakerActorSystem.buildManager(name, graph, props)
     BuildManager.execute(buildManager, Some((module, graph)))
   }
 

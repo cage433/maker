@@ -1,6 +1,5 @@
 package maker.task.test
 
-import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -18,31 +17,11 @@ import maker.project.BaseProject
 import maker.akka.MakerActorSystem
 import maker.utils.FileUtils._
 import maker.Props
+import akka.actor.PoisonPill
 
 class AkkaTestManager(baseProject : BaseProject) {
 
   import AkkaTestManager._
-
-  private val config = {
-    val text = """
-      akka {
-        loggers = ["akka.event.slf4j.Slf4jLogger"]
-        actor {
-          provider = "akka.remote.RemoteActorRefProvider"
-        }
-        remote {
-          log-remote-lifecycle-events = off
-          enabled-transports = ["akka.remote.netty.tcp"]
-          netty.tcp {
-            hostname = "127.0.0.1"
-            port = 0
-          }
-        }
-      }
-    """
-    ConfigFactory.parseString(text)
-  }
-
 
   val name = "manager-" + baseProject.name + "-" + MakerActorSystem.nextActorID()
   val manager = MakerActorSystem.system.actorOf(AkkaProps[Manager], name)
@@ -75,7 +54,6 @@ object AkkaTestManager{
     val isRunningInMakerTest : Boolean = Props(file(".")).RunningInMakerTest()
     var events : List[Event] = Nil
     val log = MakerLog()
-    var reporters : List[ActorRef] = Nil
 
     private def processRequest(sender : ActorRef, msg : Any){
       try {
@@ -83,7 +61,8 @@ object AkkaTestManager{
 
           case e : RunCompleted =>
             events ::= e 
-            sender ! "stop"  
+            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: sending poison pill")
+            sender ! PoisonPill
 
           case e : Event =>
             events ::= e 
@@ -116,10 +95,6 @@ object AkkaTestManager{
               case _ : RunCompleted => true
             }.nonEmpty
 
-          case RESET =>
-            events = Nil
-            reporters = Nil
-
           case other =>
             println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)
         }
@@ -131,6 +106,7 @@ object AkkaTestManager{
 
     def receive = {
       case msg : Any =>
+      //println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received message " + msg + " from sender " + sender)
         processRequest(sender, msg)
     }
   }

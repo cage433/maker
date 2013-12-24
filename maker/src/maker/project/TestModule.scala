@@ -35,7 +35,7 @@ trait TestModule{
     def writeTest(relativeSrcPath : String, code : String) = writeSrc(relativeSrcPath, code, TestCompilePhase)
 
     writeToFile(
-      file(root, "logback.xml"),
+      file(props.root, "logback.xml"),
       ("""
         |<configuration>
         |  <appender name="FILE" class="ch.qos.logback.core.FileAppender">

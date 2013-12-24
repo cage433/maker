@@ -26,7 +26,7 @@ version: scala_version_base 2.10
 version: sbt_version 0.13.0
 version: scalatest_version 2.0
 version: jetty_version 7.6.3.v20120416
-version: akka_version 2.2.1
+version: akka_version 2.2.3
 version: twitter_version 6.3.6
 version: typesafe_config_version 1.0.2
 version: protobuf_version 2.4.1

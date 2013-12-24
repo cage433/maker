@@ -56,14 +56,17 @@ object RemoteActor {
 
   private val remoteActorClassnameLabel ="maker.remote.actor.classname"
   val localActorPathLabel = "maker.local.actor.path"
+  val localActorSystemPortLabel = "maker.local.actor.port"
 
   def javaOpts(localActor : ActorRef, localSystem : ExtendedActorSystem, remoteActorClassname : String) = {
     val elements = localActor.path.elements.mkString("/")
     val localActorPath = localSystem.provider.getDefaultAddress + "/" + elements
+    val localPort = localSystem.provider.getDefaultAddress.port.get
 
     List(
       s"-D$localActorPathLabel=$localActorPath",
-      s"-D$remoteActorClassnameLabel=$remoteActorClassname"
+      s"-D$remoteActorClassnameLabel=$remoteActorClassname",
+      s"-D$localActorSystemPortLabel=$localPort"
     )
   }
   def create() {

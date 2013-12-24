@@ -59,7 +59,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     val optsToUse = List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m",
-      "-Dlogback.configurationFile=" + "logback.xml"
+      "-Dlogback.configurationFile=" + baseProject.logbackConfigFilePath
     ) ::: opts
     val cmd = ScalaCommand(
       new CommandOutputHandler(Some(writer)),

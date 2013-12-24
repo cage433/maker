@@ -30,7 +30,7 @@ object BuildManager{
   case object Execute
   case class UnitOfWork(task : Task, upstreamResults : Iterable[TaskResult], sw : Stopwatch) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
-  case class TimedResults(graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
+  case class TimedResults(buildName : String, graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
     def failed = results.exists(_.failed)
     def succeeded = results.forall(_.succeeded)
     def testResults() : TestResults = {
@@ -84,7 +84,7 @@ object BuildManager{
     }
   }
 
-  def props(graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) = Props(classOf[BuildManager], graph, workers, log)
+  def props(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) = Props(classOf[BuildManager], buildName, graph, workers, log)
 
   def execute(manager : ActorRef, moduleAndGraph : Option[(BaseProject, Dependency.Graph)] = None, log : MakerLog = MakerLog()) : TimedResults = {
     moduleAndGraph.foreach{
@@ -104,7 +104,7 @@ object BuildManager{
 }
 
 
-case class BuildManager(graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) extends Actor{
+case class BuildManager(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) extends Actor{
 
   import BuildManager._
 
@@ -126,7 +126,7 @@ case class BuildManager(graph : Dependency.Graph, workers : Iterable[ActorRef], 
 
 
     def returnResults = {
-      val tr = TimedResults(graph, results.reverse, 0)
+      val tr = TimedResults(buildName, graph, results.reverse, 0)
       resultPromise.success(tr)
     }
 
@@ -165,7 +165,7 @@ case class BuildManager(graph : Dependency.Graph, workers : Iterable[ActorRef], 
 
       sender ! resultPromise
       if (graph.isEmpty)
-        resultPromise.success(TimedResults(graph, Nil, 0))
+        resultPromise.success(TimedResults(buildName, graph, Nil, 0))
       else {
         context.become(executing())
       }

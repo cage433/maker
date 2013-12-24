@@ -37,12 +37,6 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   def resourceResolvers() : Map[String, String] = Props.ResourceSettings(ResourceConfigFile()).resolvers
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
 
-  /**
-   * Maker has its own logback file which applies during compilation, 
-   * this is the one that is used when running tests and main methods
-   */
-  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file(root, "logback-unit-tests.xml")) with IsFile
-
   object ProjectScalaLibraryJar extends Default(file(root, "scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file(root, "scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
   object ProjectScalaCompilerJar extends Default(file(root, "scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
@@ -178,7 +172,6 @@ object Props {
       cwdProps.SbtInterfaceJar,
       cwdProps.CompilerInterfaceSourcesJar,
       cwdProps.ResourceConfigFile,
-      cwdProps.LogbackTestConfigFile,
       cwdProps.LogCommandFile,
       cwdProps.IvySettingsFile,
       cwdProps.MakerTestReporterClasspath

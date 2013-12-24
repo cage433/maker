@@ -12,18 +12,22 @@
     </filter>
   </appender>
         
-  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+  <appender name="MAKER-ERROR-CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
       <immediateFlush>true</immediateFlush>
     </encoder>
     <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>DEBUG</level>
+      <level>ERROR</level>
     </filter>
   </appender>
 
+  <logger name="maker">
+    <appender-ref ref="MAKER-ERROR-CONSOLE" />
+  </logger>
+
   <root level="info">
-    <appender-ref ref="CONSOLE" />
+    <!--<appender-ref ref="CONSOLE" />-->
     <appender-ref ref="FILE" />
   </root>
 </configuration>
