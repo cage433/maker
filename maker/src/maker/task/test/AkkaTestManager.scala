@@ -21,13 +21,13 @@ import akka.actor.PoisonPill
 import maker.utils.Implicits.RichString._
 import org.scalatest.events.IndentedText
 
-class AkkaTestManager(baseProject : BaseProject) {
+case class AkkaTestManager(system : ExtendedActorSystem, baseProject : BaseProject) {
 
   import AkkaTestManager._
 
   val name = "manager-" + baseProject.name + "-" + MakerActorSystem.nextActorID()
-  val manager = MakerActorSystem.system.actorOf(AkkaProps[Manager], name)
-  val port = MakerActorSystem.port
+  val manager = system.actorOf(AkkaProps[Manager], name)
+  val port : Int = system.provider.getDefaultAddress.port.get
 
 
   private def askActor[T](msg : AnyRef) : T = {
@@ -43,12 +43,6 @@ class AkkaTestManager(baseProject : BaseProject) {
 
 object AkkaTestManager{
   trait Message
-  case object NUM_COMPLETE_SUITES
-  case object NUM_PASSED_TESTS
-  case object NUM_FAILED_TESTS
-  case object FAILED_TEST_SUITES
-  case object IS_COMPLETE
-  case object RESET
   case object EVENTS
 
   class Manager extends Actor{
@@ -71,31 +65,6 @@ object AkkaTestManager{
 
           case EVENTS =>
             sender ! events
-            
-          case NUM_COMPLETE_SUITES =>
-            sender ! events.collect {
-              case _ : SuiteCompleted => true
-            }.size
-
-          case NUM_PASSED_TESTS =>
-            sender ! events.collect {
-              case _ : TestSucceeded => true
-            }.size
-
-          case NUM_FAILED_TESTS =>
-            sender ! events.collect {
-              case _ : TestFailed => true
-            }.size
-
-          case FAILED_TEST_SUITES =>
-            sender ! events.collect {
-              case t : TestFailed => t.suiteClassName.get
-            }.toList.distinct
-
-          case IS_COMPLETE =>
-            sender ! events.collect {
-              case _ : RunCompleted => true
-            }.nonEmpty
 
           case "Hello" =>
             // Used to test remote test reporters

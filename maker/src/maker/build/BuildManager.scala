@@ -87,21 +87,6 @@ object BuildManager{
 
   def props(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) = Props(classOf[BuildManager], buildName, graph, workers, log)
 
-  def execute(manager : ActorRef, moduleAndGraph : Option[(BaseProject, Dependency.Graph)] = None, log : MakerLog = MakerLog()) : TimedResults = {
-    moduleAndGraph.foreach{
-      case (m, g) => 
-        m.setUp(g)
-    }
-    implicit val timeout = Timeout(2 seconds)
-    val future : Future[Promise[TimedResults]] = (manager ? Execute).mapTo[Promise[TimedResults]]
-    val resultFuture = Await.result(future, 2 seconds).future
-    val tr = Await.result(resultFuture, Duration.Inf).asInstanceOf[TimedResults]
-    moduleAndGraph.foreach{
-      case (m, g) => 
-        m.tearDown(g, tr)
-    }
-    tr
-  }
 }
 
 
@@ -114,9 +99,9 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
 
   private def announceWork = workers.foreach{wkr =>  wkr ! WorkAvailable}
 
-  val resultPromise = Promise[TimedResults]()
+  private val resultPromise = Promise[TimedResults]()
 
-  def executing():Receive = {
+  private def executing():Receive = {
     var remaining : Dependency.Graph = graph
     var completed : Set[Task] = Set.empty
     var running : Set[Task] = Set.empty

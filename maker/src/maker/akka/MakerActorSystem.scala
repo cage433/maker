@@ -19,17 +19,8 @@ import akka.actor.ActorRef
 import maker.Props
 import maker.build.BuildManager
 import maker.build.Dependency
+import maker.build.Build
 
-/**
-  * As much as I dislike this use of a global, I couldn't find a way 
-  * around it. Threading through an actor system created dynamically
-  * would have been difficult, given that builds create their graphs
-  * at the time of execution - not least as the may not know their
-  * graphs till that time.
-  * In the end - given I can't think of a compelling reason to need
-  * more than one actor system per JVM, and Akka itself recommends one
-  * ActorSytem per application - I just went for a global.
-  */
 object MakerActorSystem{
 
   private val maybeSystem : AtomicReference[Option[ExtendedActorSystem]] = new AtomicReference(None)
@@ -78,21 +69,8 @@ object MakerActorSystem{
     }
   }
 
-  def port = synchronized{
-    system.provider.getDefaultAddress.port.get
-  }
-
   val nextActorID_ = new AtomicInteger(0)
   def nextActorID() : Int = nextActorID_.getAndIncrement
 
-  private val nextBuildNumber = new AtomicInteger(-1)
-  def buildManager(buildName : String, graph : Dependency.Graph, props : Props) = {
-    val buildNumber  = nextBuildNumber.incrementAndGet
-    val workers : List[ActorRef] = (1 to props.NumberOfTaskThreads()).toList.map{
-      case i => 
-        system.actorOf(BuildManager.Worker.props(), "Worker-" + buildNumber + "-" + i)
-    }
-    system.actorOf(BuildManager.props(buildName, graph, workers), "BuildManager-" + buildNumber)
-  }
 }
 

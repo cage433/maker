@@ -141,29 +141,21 @@ class Module(
   *       TASKS
   **************************/
 
-  lazy val CleanOnly = Build(
+  lazy val CleanOnly = build(
     "Clean only " + name, 
-    Dependency.Graph(CleanTask(this)), 
-    this
-  )
+    Dependency.Graph(CleanTask(this))) 
 
-  lazy val TestOnly = Build(
+  lazy val TestOnly = build(
     "Test " + name + " only", 
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)), 
-    this
-  )
+    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)))
 
-  def TestFailedSuitesOnly() = Build(
+  def TestFailedSuitesOnly() = build(
     "Run failing test suites for " + name + " only", 
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this)), 
-    this
-  )
+    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this))) 
 
-  lazy val UpdateOnly =  Build(
+  lazy val UpdateOnly =  build(
     "Update libraries for " + name + " only",
-    Dependency.Graph(UpdateTask(this)),
-    this
-  )
+    Dependency.Graph(UpdateTask(this)))
 
   def cleanOnly = CleanOnly.execute
 

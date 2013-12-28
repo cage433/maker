@@ -50,11 +50,20 @@ import maker.project.Module
 import maker.task.Task
 import maker.task.TaskResult
 import maker.akka.MakerActorSystem
+import maker.build.BuildManager.TimedResults
+import akka.actor.ActorRef
+import akka.util.Timeout
+import scala.concurrent.Future
+import akka.pattern.ask
+import scala.concurrent.duration._
+import scala.concurrent.Promise
+import scala.concurrent.Await
+import akka.actor.ActorSystem
 
 case class Build(
   name : String,
   graph : Dependency.Graph,
-  module : BaseProject
+  numberOfWorkers : Int
 ) {
 
   override def toString = "Build " + name
@@ -67,12 +76,32 @@ case class Build(
   }
   
 
-  val props = module.props
-  val log = props.log
-
   def execute = {
-    val buildManager = MakerActorSystem.buildManager(name, graph, props)
-    BuildManager.execute(buildManager, Some((module, graph)))
+    Build.execute(this)
   }
 
+}
+
+object Build{
+  def execute(build : Build) : TimedResults = {
+    val manager = buildManager(MakerActorSystem.system, build)
+    execute(manager)
+  }
+
+  def execute(manager : ActorRef) : TimedResults = {
+    implicit val timeout = Timeout(2 seconds)
+    val future : Future[Promise[TimedResults]] = (manager ? BuildManager.Execute).mapTo[Promise[TimedResults]]
+    val resultFuture = Await.result(future, 2 seconds).future
+    Await.result(resultFuture, Duration.Inf).asInstanceOf[TimedResults]
+  }
+
+  private val nextBuildNumber = new AtomicInteger(-1)
+  private def buildManager(system : ActorSystem, build : Build) = {
+    val buildNumber  = nextBuildNumber.incrementAndGet
+    val workers : List[ActorRef] = (1 to build.numberOfWorkers).toList.map{
+      case i => 
+        system.actorOf(BuildManager.Worker.props(), "Worker-" + buildNumber + "-" + i)
+    }
+    system.actorOf(BuildManager.props(build.name, build.graph, workers), "BuildManager-" + buildNumber)
+  }
 }

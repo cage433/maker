@@ -59,7 +59,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
   def exec(rs2 : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    val testManager = baseProject.buildTestManager()
+    val testManager = AkkaTestManager(MakerActorSystem.system, baseProject)
 
     // If no class names are passed in then they are found via reflection, so 
     // compilation has to have taken place
