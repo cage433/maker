@@ -88,114 +88,79 @@ trait BaseProject {
 
   lazy val Clean = Build(
     buildName("Clean"),
-    () => Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_))),
-    this,
-    "clean",
-    """
-    |Cleans this and upstream modules. Including class files, caches, output jars and doc but excluding managed libraries
-    |
-    |see also CleanAll and CleanOnly
-    """.stripMargin
-  )
+    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_))),
+    this)
 
   lazy val CleanAll = Build(
     "Clean All " + name, 
-    () => Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_, deleteManagedLibs = true))),
-    this,
-    "cleanAll",
-    "Same as clean except it also deletes managed libraries"
-  )
+    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_, deleteManagedLibs = true))),
+    this)
 
   lazy val Compile = Build(
     "Compile " + name, 
-    () => Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask(_))),
-    this,
-    "compile",
-    "Compile module(s) " + allUpstreamModules.map(_.name).mkString(", ") + " after compiling any upstream modules"
-  )
+    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask(_))),
+    this)
 
   lazy val TestCompile = Build(
     "Test Compile " + name, 
-    () => Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask(_))),
-    this,
-    "testCompile",
-    "Compile tests in module(s) " + allUpstreamTestModules.map(_.name).mkString(", ") + " after compiling any upstream source (and also tests in the case of upstreamTestProjects"
+    Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask(_))),
+    this
   )
 
   lazy val Test = {
     Build(
       "Test " + name, 
-      () => Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly.graph)),
-      this,
-      "test",
-      "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". After any module fails, all currently running modules will continue till completion, however no tests for any downstream modules will be launched"
+      Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly.graph)),
+      this
     )
   }
   
-  lazy val TestClass = Build(
+  def TestClass(className : String, moreClassNames : String*) = Build(
     "Test single class ",
-    () => throw new Exception("Placeholder graph only - should never be called"),
-    this,
-    "testClass <class name>",
-    "Exceutes a single test suite using the class path of " + name + ". Does IntelliJ style best match on (mandatory) provided class name - e.g. testClass(\"QuanTe\") instead of testClass(\"starling.quantity.QuantityTests\")"
+    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className, moreClassNames : _*)),
+    this
   )
 
-  lazy val TestFailedSuites = Build(
+  def TestFailedSuites() = Build(
     "Run failing test suites for " + name + " and upstream ", 
-    () => Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly.graph_())),
-    this,
-    "testFailedSuites",
-    "Runs all failed tests in the module " + name + " and upstream"
+    Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly().graph)),
+    this
   )
 
   lazy val PackageJars = Build(
     "Package jar(s) for " + name + " and upstream ", 
-    () => Dependency.Graph(allUpstreamModules.map(PackageJarTask(_))),
-    this,
-    "pack",
-    "Packages jars for " + name + " and upstream. Output jars will be " + allUpstreamModules.map(_.outputArtifact).mkString("\n\t")
+    Dependency.Graph(allUpstreamModules.map(PackageJarTask(_))),
+    this
   )
   
   lazy val Update = Build(
     "Update libraries for " + name,
-    () => Dependency.Graph.combine(allUpstreamModules.map(_.UpdateOnly.graph_())),
-    this,
-    "update",
-    "Update libraries for " + name
+    Dependency.Graph.combine(allUpstreamModules.map(_.UpdateOnly.graph)),
+    this
   )
 
-  lazy val PublishLocal = Build(
+  def PublishLocal(version : String) = Build(
     "Publish " + name + " locally",
-    () => throw new Exception("Placeholder graph only - should never be called"),
-    this,
-    "publishLocal version",
-    "Publish " + name + " to ~/.ivy2"
+    Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version)),
+    this
   )
 
-  lazy val Publish = Build(
+  def Publish(version : String, resolver : String = props.defaultResolver()) = Build(
     "Publish " + name,
-    () => throw new Exception("Placeholder graph only - should never be called"),
-    this,
-    "publish <version> <optional resolver>",
-    "Publish " + name 
+    Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version)),
+    this
   )
 
-  lazy val RunMain = Build(
+  def RunMain(className : String)(opts : String*)(args : String*)  = Build(
     "Run single class",
-    () => throw new Exception("Placeholder graph only - should never be called"),
-    this,
-    "runMain(className)(opts : String*)(args : String*)",
-    ("""|Executes a single class using the class path of %s. Does IntelliJ style best match on (mandatory) provided class name - like testClass
-        |opts are set as JVM -D args to the process runner
-        |args are passed to the main method""" % name).stripMargin
+    Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList)),
+    this
   )
 
   lazy val Doc = Build(
     "Document " + name,
-    () => Dependency.Graph.transitiveClosure(this, DocTask(this)),
-    this, 
-    "doc",
-    "Document " + name + " aggregated with all upstream modules"
+    Dependency.Graph.transitiveClosure(this, DocTask(this)),
+    this
   )
   
 
@@ -207,34 +172,17 @@ trait BaseProject {
   def testCompile = TestCompile.execute
   def testCompileContinuously = continuously(TestCompile)
   def test = Test.execute
-  def testClass(className : String, classNames : String*) = TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className, classNames : _*))).execute
-  def testClassContinuously(className : String) = continuously(TestClass.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className))))
-  def testFailedSuites = TestFailedSuites.execute
+  def testClass(className : String, moreClassNames : String*) = TestClass(className, moreClassNames : _*).execute
+  def testClassContinuously(className : String) = continuously(TestClass(className))
+  def testFailedSuites = TestFailedSuites().execute
   def pack = PackageJars.execute
   def update = Update.execute
-  def publishLocal(version : String) = {
-    PublishLocal.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version))).execute
-  }
-  def publish(version : String, resolver : String = props.defaultResolver()) = {
-    Publish.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version))).execute
-  }
+  def publishLocal(version : String) = PublishLocal(version).execute
+  def publish(version : String, resolver : String = props.defaultResolver()) = Publish(version, resolver).execute
 
-  def runMain(className : String)(opts : String*)(args : String*) = {
-    RunMain.copy(graph_ = () => Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList))).execute
-  }
+  def runMain(className : String)(opts : String*)(args : String*) = RunMain(className)(opts : _*)(args : _*).execute
 
   def doc = Doc.execute
-
-  def builds = {
-    val buildFields = this.getClass.getDeclaredFields.filter{f => classOf[maker.build.Build].isAssignableFrom(f.getType)}.map(_.getName)
-    val helpText = """
-      |Builds are directed graphs of tasks, such as Update, Clean, Compile, TestCompile and Test.
-      |
-      |By convention tasks are executed with the non-capitalized name - e.g. testCompile 
-      |Each task has a help method for a fuller decription
-      """.stripMargin
-    println(helpText + buildFields.mkString("\n", "\t\n", ""))
-  }
 
   // Some sugar
   def tcc = testCompileContinuously

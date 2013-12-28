@@ -53,16 +53,9 @@ import maker.akka.MakerActorSystem
 
 case class Build(
   name : String,
-  graph_ : () => Dependency.Graph,
-  module : BaseProject,
-  invokingMethod : String,
-  helpText : String
+  graph : Dependency.Graph,
+  module : BaseProject
 ) {
-
-  def help{
-    println(name + " - (Executed with method " + invokingMethod + ")\n")
-    println(helpText)
-  }
 
   override def toString = "Build " + name
 
@@ -76,8 +69,6 @@ case class Build(
 
   val props = module.props
   val log = props.log
-
-  lazy val graph = graph_()
 
   def execute = {
     val buildManager = MakerActorSystem.buildManager(name, graph, props)
