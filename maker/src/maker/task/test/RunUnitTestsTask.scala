@@ -51,7 +51,7 @@ import maker.akka.RemoteActor
 import maker.akka.MakerActorSystem
 
 
-case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () => Iterable[String])  extends Task {
+case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : Option[Iterable[String]])  extends Task {
 
 
   override def failureHaltsTaskManager = false
@@ -61,7 +61,13 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   def exec(rs2 : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     val testManager = baseProject.buildTestManager()
 
-    val classOrSuiteNames = classOrSuiteNames_()
+    // If no class names are passed in then they are found via reflection, so 
+    // compilation has to have taken place
+    val classOrSuiteNames = (baseProject, classOrSuiteNames_) match {
+      case (_, Some(cs)) => cs
+      case (m : Module, None) => m.testClassNames()
+      case _ => throw new RuntimeException("Can't run all tests against a top level project directly")
+    }
     val log = props.log
 
 
@@ -119,7 +125,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       module.name + " test all",
       module,
-      () => module.testClassNames()
+      None
     )
   }
   
@@ -146,7 +152,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Test class " + classNames.mkString(", "), 
       baseProject,
-      () => classNames.flatMap(resolveClassName)
+      Some(classNames.flatMap(resolveClassName))
     )
   }
 
@@ -155,7 +161,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () => module.lastTestResults.get.get.failedTestSuites
+      Some(module.lastTestResults.get.get.failedTestSuites)
     )
   }
 }
