@@ -57,10 +57,6 @@ trait TestModule{
     writeToFile(
       file(root, "external-resources"),
       """|org.scalatest scalatest_{scala_version_base} {scalatest_version}
-          |org.testng testng 6.2.1
-          |com.beust jcommander 1.12
-          |org.beanshell bsh 2.0b4
-          |com.google.inject guice 2.0
           |org.scalatest scalatest_{scala_version_base} {scalatest_version}
           |com.typesafe.akka akka-actor_{scala_version_base} {akka_version} 
           |com.typesafe.akka akka-remote_{scala_version_base} {akka_version} 

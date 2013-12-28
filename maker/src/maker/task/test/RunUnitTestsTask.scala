@@ -62,7 +62,6 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val testManager = baseProject.buildTestManager()
 
     val classOrSuiteNames = classOrSuiteNames_()
-    println("Debug: " + (new java.util.Date()) + " RunUnitTestsTask: suites are " + classOrSuiteNames.mkString("\n\t", "\n\t", "\n"))
     val log = props.log
 
 
@@ -70,11 +69,12 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       return TaskResult.success(this, sw)
     }
 
-    val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
+    val suiteParameters : List[String] = classOrSuiteNames.map(List("-s", _)).flatten.toList
     val systemProperties = (props.JavaSystemProperties.asMap + ("scala.usejavacp" -> "true")).map{
       case (key, value) => "-D" + key + "=" + value
     }.toList
 
+    val consoleReporterArg = if (props.RunningInMakerTest()) Nil else List("-o")
 
     val opts = List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
@@ -86,7 +86,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       props.RunningInMakerTest.toCommandLine("true")
     ) ::: systemProperties ::: RemoteActor.javaOpts(testManager.manager, MakerActorSystem.system, "maker.scalatest.TestReporterActor")
 
-    val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ++ suiteParameters
+    val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ::: suiteParameters ::: consoleReporterArg
     val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
       outputHandler,

@@ -41,6 +41,7 @@ object BuildManager{
       }
       allTestResults.foldLeft(TestResults.EMPTY)(_++_)
     }
+    override def toString = buildName + " " + (if (succeeded) "succeeded" else "failed")
   }
 
   object Worker{

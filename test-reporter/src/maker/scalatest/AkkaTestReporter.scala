@@ -25,7 +25,6 @@ import org.scalatest.tools.Runner
 
 object RunTests {
   def main(args : Array[String]){
-    println("Debug: " + (new java.util.Date()) + " RunTests: ")
     val result = Runner.run(args)
     SlaveTestSystem.system.awaitTermination()
     if (result)
@@ -95,7 +94,6 @@ class TestReporterActor extends RemoteActor{
   var runComplete = false
 
   override def postStop{
-    println("Debug: " + (new java.util.Date()) + " AkkaTestReporter: received poison pill - trying to die")
     context.system.shutdown
   }
 

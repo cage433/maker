@@ -125,7 +125,7 @@ object Implicits{
     }
     case class RichString(s: String){
       def % (args: Any*) = String.format(s, box(nullsafe(args)):_*)
-      def inGreen = "\033[1;32m" + s + "\033[0m"
+      def inGreen = "\033[0;32m" + s + "\033[0m"
       def inRed = "\033[1;31m" + s + "\033[0m"
       def inReverseRed = "\033[7;31m" + s + "\033[0m"
       def inBlue = "\033[1;34m" + s + "\033[0m"

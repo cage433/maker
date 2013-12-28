@@ -17,11 +17,7 @@ class RunUnitTestsTaskTests extends FunSuite {
         val proj = TestModule(root, "RunUnitTestsTaskTests", props)
         appendToFile(
           file(root, "external-resources"),
-          """|org.scalatest scalatest_{scala_version_base} {scalatest_version}
-             |org.testng testng 6.2.1
-             |com.beust jcommander 1.12
-             |org.beanshell bsh 2.0b4
-             |com.google.inject guice 2.0""".stripMargin
+          """|org.scalatest scalatest_{scala_version_base} {scalatest_version}""".stripMargin
         )
         proj.writeTest(
           "foo/GoodTest.scala",
@@ -52,21 +48,6 @@ class RunUnitTestsTaskTests extends FunSuite {
         )
 
         proj.writeTest(
-          "foo/TestNGTest.scala",
-          """
-          package foo
-          import org.scalatest.testng.TestNGSuite
-          import org.testng.annotations.Test
-          class TestNGTest extends TestNGSuite {
-            @Test
-            def testAnything{
-              assert(1 == 1)
-            }
-          }
-          """
-        )
-
-        proj.writeTest(
           "foo/ExceptionThrowingTest.scala",
           """
           package foo
@@ -82,7 +63,7 @@ class RunUnitTestsTaskTests extends FunSuite {
 
         var testResults = proj.test.testResults
         assert(testResults.numFailedTests === 2, "Expecting exactly two failures")
-        assert(testResults.numPassedTests === 3, "Expecting exactly three passes")
+        assert(testResults.numPassedTests === 2, "Expecting exactly two passes")
 
         //Running failed tests should pass over passed tests
         testResults = proj.testFailedSuites.testResults

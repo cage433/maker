@@ -18,6 +18,8 @@ import maker.akka.MakerActorSystem
 import maker.utils.FileUtils._
 import maker.Props
 import akka.actor.PoisonPill
+import maker.utils.Implicits.RichString._
+import org.scalatest.events.IndentedText
 
 class AkkaTestManager(baseProject : BaseProject) {
 
@@ -52,6 +54,7 @@ object AkkaTestManager{
   class Manager extends Actor{
 
     val isRunningInMakerTest : Boolean = Props(file(".")).RunningInMakerTest()
+
     var events : List[Event] = Nil
     val log = MakerLog()
 
@@ -61,7 +64,6 @@ object AkkaTestManager{
 
           case e : RunCompleted =>
             events ::= e 
-            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: sending poison pill")
             sender ! PoisonPill
 
           case e : Event =>
@@ -94,6 +96,9 @@ object AkkaTestManager{
             sender ! events.collect {
               case _ : RunCompleted => true
             }.nonEmpty
+
+          case "Hello" =>
+            // Used to test remote test reporters
 
           case other =>
             println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)

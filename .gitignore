@@ -37,3 +37,4 @@ proj-compile-output
 *.log
 scala-libs
 zinc-libs
+project-classpath.sh
