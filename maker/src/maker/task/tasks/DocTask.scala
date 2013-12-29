@@ -37,6 +37,7 @@ import maker.Props
 import maker.task.compile.SourceCompileTask
 import maker.task.compile._
 import maker.project.BaseProject
+import maker.task.TaskContext
 
 
 /** Doc generation task - produces scaladocs from module sources
@@ -47,7 +48,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
   
   def name = "Doc " + baseProject.name
   def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask(_)).toList
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+  def exec(context : TaskContext) = {
     val props = baseProject.props
     val log = props.log
 
@@ -83,13 +84,13 @@ case class DocTask(baseProject : BaseProject) extends Task {
         optsFile)
 
       cmd.exec() match {
-        case 0 => TaskResult.success(this, sw)
-        case _ => TaskResult.failure(this, sw, message = Some(cmd.savedOutput))
+        case 0 => TaskResult.success(this)
+        case _ => TaskResult.failure(this, message = Some(cmd.savedOutput))
       }
     }
     else {
       log.debug("not generating doc for module " + baseProject.toString)
-      TaskResult.success(this, sw)
+      TaskResult.success(this)
     }
   }
 }

@@ -39,6 +39,7 @@ import maker.utils.Stopwatch
 import maker.Props
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.utils.os.Command
+import maker.task.TaskContext
 
 case class UpdateTask(module : Module) extends Task {
   def name = "Update " + module
@@ -46,7 +47,7 @@ case class UpdateTask(module : Module) extends Task {
   
   def upstreamTasks : List[Task] = Nil
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+  def exec(context : TaskContext) : TaskResult = {
     // delete old resource files
     module.resources().map(_.resourceFile).groupBy(_.dirname).foreach{
       case (dir, expectedResourceFiles) => 
@@ -58,9 +59,9 @@ case class UpdateTask(module : Module) extends Task {
     val (_, failures) = missingResources.partition(Exec(_).apply())
     failures match {
       case Nil => 
-        TaskResult.success(this, sw)
+        TaskResult.success(this)
       case _ => 
-        TaskResult.failure(this, sw, message = Some("Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t")))
+        TaskResult.failure(this, message = Some("Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t")))
     }
   }
 

@@ -10,16 +10,10 @@ import maker.task.compile.CompilationInfo
 import maker.task.test.RunUnitTestsTask
 
 
-case class TaskResult(task : Task, sw : Stopwatch, succeeded : Boolean, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None){
+case class TaskResult(task : Task, succeeded : Boolean, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None){
   def failed = !succeeded
   def status = if (succeeded) "succeeded" else "failed"
-  def timeTaken(name : String) = (timeAt(name) - sw.startTime) / 1000000
-  def timeAt(name : String) = sw.snapshotTime(name).get
 
-  def snapshot(name : String) = {
-    sw.snapshot(name)
-    this
-  }
   def compilationInfo : Option[CompilationInfo] = info match {
     case Some(x) if x.isInstanceOf[CompilationInfo] => Some(x.asInstanceOf[CompilationInfo])
     case _ => None
@@ -60,27 +54,19 @@ case class TaskResult(task : Task, sw : Stopwatch, succeeded : Boolean, info : O
 }
 
 object TaskResult{
-  def success(task : Task, sw : Stopwatch, info : Option[Any] = None) : TaskResult = TaskResult(
+  def success(task : Task, info : Option[Any] = None) : TaskResult = TaskResult(
     task,
-    sw,
     succeeded = true,
     info = info
-    ).snapshot(EXEC_COMPLETE)
+  )
   
-  def failure(task : Task, sw : Stopwatch, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None) : TaskResult = TaskResult(
+  def failure(task : Task, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None) : TaskResult = TaskResult(
     task,
-    sw,
     succeeded = false,
     info = info,
     message = message,
     exception = exception
-  ).snapshot(EXEC_COMPLETE)
+  )
 
-  val EXEC_START = "Exec start"
-  val EXEC_COMPLETE = "Exec complete"
-  val TASK_COMPLETE = "Task complete"
-  val TASK_LAUNCHED = "Task launched"
-  val WORKER_RECEIVED = "Worked received"
-  val WORKER_COMPLETE = "Worked complete"
 }
 

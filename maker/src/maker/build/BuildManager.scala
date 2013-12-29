@@ -20,6 +20,8 @@ import scala.concurrent.Future
 import akka.pattern.ask
 import maker.project.Module
 import maker.project.BaseProject
+import maker.task.TaskContext
+import akka.actor.ExtendedActorSystem
 
 object BuildManager{
 
@@ -28,7 +30,7 @@ object BuildManager{
   case object GiveMeWork
   case object CurrentlyBusy
   case object Execute
-  case class UnitOfWork(task : Task, upstreamResults : Iterable[TaskResult], sw : Stopwatch) 
+  case class UnitOfWork(task : Task, context : TaskContext) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
   case class TimedResults(buildName : String, graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
     def failed = results.exists(_.failed)
@@ -57,13 +59,13 @@ object BuildManager{
         case WorkAvailable => {
           sender ! GiveMeWork
         }
-        case UnitOfWork(task, upstreamResults, sw) => {
+        case UnitOfWork(task, taskContext) => {
           val result = try {
-            task.exec(upstreamResults, sw)
+            task.exec(taskContext)
           } catch {
             case e : Exception => 
               log.warn("Error running " + task, e)
-              TaskResult(task, sw, succeeded = false, exception = Some(e))
+              TaskResult(task, succeeded = false, exception = Some(e))
           }
           sender ! UnitOfWorkResult(task, result)
           sender ! GiveMeWork
@@ -85,12 +87,12 @@ object BuildManager{
     }
   }
 
-  def props(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) = Props(classOf[BuildManager], buildName, graph, workers, log)
+  def props(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef]) = Props(classOf[BuildManager], buildName, graph, workers)
 
 }
 
 
-case class BuildManager(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef], log : MakerLog = MakerLog()) extends Actor{
+case class BuildManager(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef]) extends Actor{
 
   import BuildManager._
 
@@ -139,7 +141,7 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
         nextTask match {
           case Some(task) => 
             running += task
-            sender ! UnitOfWork(task, results, stopwatch)
+            sender ! UnitOfWork(task, TaskContext(context.system.asInstanceOf[ExtendedActorSystem], results))
           case None => 
         }
       }

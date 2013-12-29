@@ -49,6 +49,7 @@ import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
 import maker.akka.RemoteActor
 import maker.akka.MakerActorSystem
+import maker.task.TaskContext
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : Option[Iterable[String]])  extends Task {
@@ -58,8 +59,8 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   val props = baseProject.props
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
-  def exec(rs2 : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    val testManager = AkkaTestManager(MakerActorSystem.system, baseProject)
+  def exec(context : TaskContext) : TaskResult = {
+    val testManager = AkkaTestManager(context.actorSystem, baseProject)
 
     // If no class names are passed in then they are found via reflection, so 
     // compilation has to have taken place
@@ -72,7 +73,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 
 
     if (classOrSuiteNames.isEmpty) {
-      return TaskResult.success(this, sw)
+      return TaskResult.success(this)
     }
 
     val suiteParameters : List[String] = classOrSuiteNames.map(List("-s", _)).flatten.toList
@@ -109,10 +110,10 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     val results = testManager.testResults()
     baseProject.lastTestResults.set(Some(results))
     val result = if (results.numFailedTests == 0){
-      TaskResult.success(this, sw, info = Some(results))
+      TaskResult.success(this, info = Some(results))
     } else {
       val failingSuiteClassesText = results.failedTestSuites.indented()
-      TaskResult.failure(this, sw, message = Some("Test failed in " + baseProject + failingSuiteClassesText), info = Some(results))
+      TaskResult.failure(this, message = Some("Test failed in " + baseProject + failingSuiteClassesText), info = Some(results))
     }
     result
 

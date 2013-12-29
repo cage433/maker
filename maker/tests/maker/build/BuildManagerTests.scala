@@ -26,6 +26,8 @@ import org.slf4j.Logger
 import scala.concurrent.duration._
 import akka.testkit.ImplicitSender
 import java.util.concurrent.atomic.AtomicBoolean
+import maker.task.TaskContext
+import akka.actor.ExtendedActorSystem
 
 
 class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem")) 
@@ -45,7 +47,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
   def newManager(graph : Dependency.Graph, workers : Iterable[ActorRef], name : String) : ActorRef = {
     val logger = makeLogger
-    val actor = TestActorRef[BuildManager](BuildManager.props("Dummy build name", graph, workers, MakerLog(logger)), name)
+    val actor = TestActorRef[BuildManager](BuildManager.props("Dummy build name", graph, workers), name)
     actor
   }
 
@@ -60,13 +62,13 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
     def n : Int
     val haveLaunched = new AtomicBoolean(false)
     val name = "Test " + n
-    def exec(upstreamResults : Iterable[TaskResult], sw : Stopwatch) = {
+    def exec(context : TaskContext) = {
       require(! haveLaunched.get, "Should only launch task once")
       haveLaunched.set(true)
       if (n < 0)
-        TaskResult.failure(this, sw, info = Some(n))
+        TaskResult.failure(this, info = Some(n))
       else
-        TaskResult.success(this, sw, info = Some(n))
+        TaskResult.success(this, info = Some(n))
     }
     def upstreamTasks = Nil
   }
@@ -75,7 +77,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
   object ExceptionThrowingTask extends Task{
     val name = "ExceptionThrowingTask"
-    def exec(upstreamResults : Iterable[TaskResult], sw : Stopwatch) = {
+    def exec(context : TaskContext) = {
       throw new RuntimeException("BANG!")
     }
     def upstreamTasks = Nil
@@ -124,7 +126,7 @@ class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem"))
 
     it("Should ask for more work when it finishes any"){
       val worker = newWorker
-      worker ! UnitOfWork(DummyTask(1), Nil, Stopwatch.global)
+      worker ! UnitOfWork(DummyTask(1), TaskContext(system.asInstanceOf[ExtendedActorSystem], Nil))
       fishForMessage(){
         case GiveMeWork => true
         case _ => false

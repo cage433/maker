@@ -31,9 +31,6 @@ case class BuildResult(
   def succeeded = results.forall(_.succeeded)
   def failed = !succeeded
 
-  def linearTime : Long = results.map(_.timeTaken(EXEC_COMPLETE)).toList.sum
-  def taskCompletedTimes = results.map(r => (r, Stopwatch.milliToHumanString(r.timeTaken(TaskResult.TASK_COMPLETE) / 1000 * 1000))).sortWith(_._2 > _._2)
-
   def maybeFirstFailure : Option[TaskResult] = results.reverse.find(_.failed)
   def toString_ = {
     assert(results.size > 0, "Expected some tasks to execute")

@@ -40,19 +40,20 @@ import org.apache.ivy.core.module.id.ModuleRevisionId
 import org.apache.ivy.core.module.id.ModuleId
 import org.apache.ivy.util.DefaultMessageLogger
 import org.apache.ivy.util.Message
+import maker.task.TaskContext
 
 
 case class PublishTask(baseProject : BaseProject, resolverName : String, version : String) extends Task {
 
   def name = "Publish"
   def upstreamTasks = PublishLocalTask(baseProject, version = version) :: baseProject.immediateUpstreamModules.map(PublishTask(_, resolverName, version))
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+  def exec(context : TaskContext) = {
     IvyLock.synchronized{
-      doPublish(baseProject, results, sw)
+      doPublish(baseProject)
     }
   }
 
-  private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
+  private def doPublish(baseProject: BaseProject) = {
 
     val props : Props = baseProject.props
 
@@ -99,12 +100,12 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
         resolverName,
         po)
 
-      TaskResult.success(this, sw)
+      TaskResult.success(this)
     }
     catch {
       case t: Throwable =>
         t.printStackTrace
-        TaskResult.failure(this, sw, exception = Some(t))
+        TaskResult.failure(this, exception = Some(t))
     }
   }
 }

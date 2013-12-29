@@ -32,10 +32,19 @@ import maker.task.TaskResult._
 import java.io.File
 import maker.utils.Stopwatch
 import maker.Props
+import akka.actor.ExtendedActorSystem
+
+/**
+  * Place for any bits and pieces needed during task execution
+  */
+case class TaskContext(
+  actorSystem : ExtendedActorSystem,        // Used to build the various actors involved in interactive test running
+  upstreamResults : Iterable[TaskResult]    // Used to optimize compilations
+)
 
 trait Task {
   def name : String
-  def exec(upstreamResults : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
+  def exec(context : TaskContext) : TaskResult
   def failureHaltsTaskManager : Boolean = true
 
   /**
@@ -47,7 +56,7 @@ trait Task {
 
 object NullTask extends Task{
   def name = "Null Task"
-  def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = TaskResult(this, sw, succeeded = true)
+  def exec(context : TaskContext) : TaskResult = TaskResult(this, succeeded = true)
   def upstreamTasks = Nil
 }
 

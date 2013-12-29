@@ -14,6 +14,7 @@ import maker.task.test.RunUnitTestsTask
 import maker.task.compile._
 import maker.build.Build
 import maker.build.BuildManager.TimedResults
+import maker.task.TaskContext
 
 class ProjectTaskDependenciesTests extends FunSuite{
 
@@ -21,9 +22,9 @@ class ProjectTaskDependenciesTests extends FunSuite{
     def name = "Write class count "
     def copy_(p : Module) = copy(module = p)
     def upstreamTasks = Nil
-    def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
+    def exec(context : TaskContext) : TaskResult = {
       exec
-      TaskResult.success(WriteClassCountToFile.this, sw)
+      TaskResult.success(WriteClassCountToFile.this)
     }
     def exec = {
       writeToFile(file(module.rootAbsoluteFile, basename), module.compilePhase.classFiles.size + "")

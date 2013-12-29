@@ -17,6 +17,7 @@ import maker.utils.CompilationCache
 import maker.build.Build
 import sbt.compiler.CompileFailed
 import java.util.Date
+import maker.task.TaskContext
 
 abstract class CompileTask extends Task{
   
@@ -42,12 +43,12 @@ abstract class CompileTask extends Task{
   }
   def inputsHash = HashCache.hash(modulePhase.compilationDependencies())
 
-  private def cachedCompilation(sw : Stopwatch) : Option[TaskResult] = {
+  private def cachedCompilation() : Option[TaskResult] = {
     classesCache collect {
       case cache if cache.contains(inputsHash) => {
         val files = CompilationCache.lookup(cache, inputsHash).get
         files.copyTo(modulePhase.module.rootAbsoluteFile, modulePhase.outputDir, modulePhase.phaseDirectory)
-        TaskResult(this, sw, succeeded = true, info = Some(CompilationInfo(this, CachedCompilation)))
+        TaskResult(this, succeeded = true, info = Some(CompilationInfo(this, CachedCompilation)))
       }
     }
   }
@@ -63,39 +64,39 @@ abstract class CompileTask extends Task{
   }
 
 
-  def exec(upstreamTaskResults : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+  def exec(context : TaskContext) : TaskResult = {
 
     if (modulePhase.sourceFiles.isEmpty){
       cleanRegularFilesLeavingDirectories(modulePhase.outputDir)
       modulePhase.compilationCacheFile.delete
-      return success(this, sw, Some(CompilationInfo(this, CompilationNotRequired)))
+      return success(this, Some(CompilationInfo(this, CompilationNotRequired)))
     }
     copyResourcesToTargetDirIfNecessary()
-    val result = cachedCompilation(sw).getOrElse{
-      if (compilationRequired(upstreamTaskResults)){
+    val result = cachedCompilation().getOrElse{
+      if (compilationRequired(context.upstreamResults)){
         props.Compiler() match {
           case "zinc" => 
             val exitCode = ZincCompile(modulePhase)
             if (exitCode == 0)
-              success(this, sw, Some(CompilationInfo(this, CompilationSucceeded)))
+              success(this, Some(CompilationInfo(this, CompilationSucceeded)))
             else 
-              failure(this, sw, message = Some("zinc compilation failure"))
+              failure(this, message = Some("zinc compilation failure"))
           case "scalac" => 
             ScalacCompile(modulePhase) match {
               case Left(e) => {
-                failure(this, sw, message = Some("compilation failure"), info = Some(CompilationFailedInfo(e)))
+                failure(this, message = Some("compilation failure"), info = Some(CompilationFailedInfo(e)))
               }
               case Right(a) => {
-                success(this, sw, Some(CompilationInfo(this, CompilationSucceeded)))
+                success(this, Some(CompilationInfo(this, CompilationSucceeded)))
               }
             }
           case "dummy-test-compiler" =>
             DummyScalaCompile(modulePhase)
-            success(this, sw)
+            success(this)
 
         }
       } else {
-        success(this, sw, Some(CompilationInfo(this, CompilationNotRequired)))
+        success(this, Some(CompilationInfo(this, CompilationNotRequired)))
       }
     }
     classesCache.foreach{

@@ -35,6 +35,7 @@ import maker.Props
 import java.io.IOException
 import maker.utils.FileUtils
 import maker.task.tasks.PackageJarTask
+import maker.task.TaskContext
 
 
 /**
@@ -50,13 +51,13 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
     case m : Module => PackageJarTask(m) :: baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
   }
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+  def exec(context : TaskContext) = {
     IvyLock.synchronized{
-      doPublish(baseProject, results, sw)
+      doPublish(baseProject)
     }
   }
   
-  private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
+  private def doPublish(baseProject: BaseProject) = {
 
     FileUtils.writeToFile(baseProject.publishLocalPomFile, PomUtils.pomXml(baseProject, version))
 
@@ -65,6 +66,6 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
       case m : Module => 
         copyFileToDirectory(m.outputArtifact, m.publishLocalJarDir)
     }
-    TaskResult.success(this, sw)
+    TaskResult.success(this)
   }
 }

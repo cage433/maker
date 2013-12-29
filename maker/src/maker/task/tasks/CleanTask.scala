@@ -33,6 +33,7 @@ import maker.utils.Stopwatch
 import maker.Props
 import maker.task.compile._
 import maker.utils.FileUtils
+import maker.task.TaskContext
 
 
 /** Clean task - cleans up all build artifacts from the classpath
@@ -43,7 +44,7 @@ case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) exten
   def name = "Clean"
   def upstreamTasks = (module.immediateUpstreamModules ::: module.immediateUpstreamTestModules).distinct.map(CleanTask(_, deleteManagedLibs))
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+  def exec(context : TaskContext) = {
     val props = module.props
     val log = props.log
     log.debug("cleaning " + module)
@@ -64,6 +65,6 @@ case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) exten
     module.compilePhase.compilationCacheFile.delete
     module.testCompilePhase.compilationCacheFile.delete
 
-    TaskResult.success(this, sw)
+    TaskResult.success(this)
   }
 }

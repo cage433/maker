@@ -9,6 +9,7 @@ import maker.utils.FileUtils._
 import java.io.File
 import maker.task.compile.SourceCompileTask
 import maker.task.compile._
+import maker.task.TaskContext
 
 case class PackageJarTask(module : Module) extends Task {
   def name = "Package Jar"
@@ -21,18 +22,18 @@ case class PackageJarTask(module : Module) extends Task {
   //   and in package runtime binary artifacts (so test scope content is deliberately excluded here)
   private lazy val dirsToPack : List[File] =  List(module.compilePhase.outputDir, module.resourceDir).filter(_.exists)
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+  def exec(context : TaskContext) = {
     synchronized{
       if (fileIsLaterThan(module.outputArtifact, dirsToPack)) {
         log.info("Packaging up to date for " + module.name + ", skipping...")
-        TaskResult.success(this, sw)
+        TaskResult.success(this)
       } else {
-        doPackage(results, sw)
+        doPackage()
       }
     }
   }
 
-  private def doPackage(results : Iterable[TaskResult], sw : Stopwatch) = {
+  private def doPackage() = {
     val jar = props.Jar
 
     case class WrappedCommand(cmd : Command, ignoreFailure : Boolean){
@@ -60,8 +61,8 @@ case class PackageJarTask(module : Module) extends Task {
     var cmds : List[WrappedCommand] = createJarCommand(dirsToPack.head) :: dirsToPack.tail.map(updateJarCommand)
 
     cmds.find(_.exec != 0) match {
-      case Some(failingCommand) => TaskResult.failure(this, sw, message = Some(failingCommand.cmd.savedOutput))
-      case None => TaskResult.success(this, sw)
+      case Some(failingCommand) => TaskResult.failure(this, message = Some(failingCommand.cmd.savedOutput))
+      case None => TaskResult.success(this)
     }
   }
 }

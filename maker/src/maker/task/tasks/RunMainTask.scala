@@ -50,7 +50,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
 
 
   val runLogFile = file("runlog.out")
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+  def exec(context : TaskContext) = {
     val props = baseProject.props
     val log = props.log
     log.info("running main in class " + className)
@@ -83,14 +83,14 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
           log.info("Terminating: " + className)
           procHandle._1.destroy()
           log.info("Terminated process for runMain of class : " + className)
-          TaskResult.success(this, sw)
+          TaskResult.success(this)
         }
         else checkRunning()
       }
       else {
         procHandle._2() match {
-          case 0 => TaskResult.success(this, sw)
-          case code => TaskResult.failure(this, sw, message = Some("Run Main failed in " + baseProject))
+          case 0 => TaskResult.success(this)
+          case code => TaskResult.failure(this, message = Some("Run Main failed in " + baseProject))
         }
       }
     }
