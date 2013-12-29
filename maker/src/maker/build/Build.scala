@@ -59,6 +59,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Promise
 import scala.concurrent.Await
 import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 
 case class Build(
   name : String,
@@ -84,8 +85,12 @@ case class Build(
 
 object Build{
   def execute(build : Build) : TimedResults = {
-    val manager = buildManager(MakerActorSystem.system, build)
-    execute(manager)
+    val buildNumber = nextBuildNumber.incrementAndGet
+    val system = ActorSystem.create("MAKER-ACTOR-SYSTEM-" + buildNumber, MakerActorSystem.systemConfig).asInstanceOf[ExtendedActorSystem]
+    val manager = buildManager(system, buildNumber, build)
+    val result = execute(manager)
+    system.shutdown
+    result
   }
 
   def execute(manager : ActorRef) : TimedResults = {
@@ -96,8 +101,7 @@ object Build{
   }
 
   private val nextBuildNumber = new AtomicInteger(-1)
-  private def buildManager(system : ActorSystem, build : Build) = {
-    val buildNumber  = nextBuildNumber.incrementAndGet
+  private def buildManager(system : ActorSystem, buildNumber : Int, build : Build) = {
     val workers : List[ActorRef] = (1 to build.numberOfWorkers).toList.map{
       case i => 
         system.actorOf(BuildManager.Worker.props(), "Worker-" + buildNumber + "-" + i)

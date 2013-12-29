@@ -23,8 +23,6 @@ import maker.build.Build
 
 object MakerActorSystem{
 
-  private val maybeSystem : AtomicReference[Option[ExtendedActorSystem]] = new AtomicReference(None)
-
   val systemConfig = {
     val text = """
       akka {
@@ -47,27 +45,6 @@ object MakerActorSystem{
     ConfigFactory.parseString(text)
   }
 
-
-  def system = synchronized{
-    maybeSystem.get match {
-      case Some(system) => system
-      case None => {
-        val system = ActorSystem.create("MAKER-ACTOR-SYSTEM", systemConfig).asInstanceOf[ExtendedActorSystem]
-        maybeSystem.set(Some(system))
-        system
-      }
-    }
-  }
-
-  def shutdown = synchronized{
-    maybeSystem.get match {
-      case None => 
-        // Called in exec mode after each build - so may never have created a system
-      case Some(system) =>
-        system.shutdown
-        maybeSystem.set(None)
-    }
-  }
 
   val nextActorID_ = new AtomicInteger(0)
   def nextActorID() : Int = nextActorID_.getAndIncrement

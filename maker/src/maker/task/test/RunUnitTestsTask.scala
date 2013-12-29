@@ -91,7 +91,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Dmaker.test.module=" + baseProject.name,
       props.MakerTestReporterClasspath.toCommandLine,
       props.RunningInMakerTest.toCommandLine("true")
-    ) ::: systemProperties ::: RemoteActor.javaOpts(testManager.manager, MakerActorSystem.system, "maker.scalatest.TestReporterActor")
+    ) ::: systemProperties ::: RemoteActor.javaOpts(testManager.manager, context.actorSystem, "maker.scalatest.TestReporterActor")
 
     val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ::: suiteParameters ::: consoleReporterArg
     val outputHandler = CommandOutputHandler().withSavedOutput
