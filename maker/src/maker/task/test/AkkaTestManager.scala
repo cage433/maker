@@ -47,8 +47,6 @@ object AkkaTestManager{
 
   class Manager extends Actor{
 
-    val isRunningInMakerTest : Boolean = Props(file(".")).RunningInMakerTest()
-
     var events : List[Event] = Nil
     val log = MakerLog()
 
@@ -70,7 +68,7 @@ object AkkaTestManager{
             // Used to test remote test reporters
 
           case other =>
-            println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)
+            log.error("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)
         }
       } catch {
         case e : Throwable =>
@@ -80,7 +78,6 @@ object AkkaTestManager{
 
     def receive = {
       case msg : Any =>
-      //println("Debug: " + (new java.util.Date()) + " AkkaTestManager: received message " + msg + " from sender " + sender)
         processRequest(sender, msg)
     }
   }

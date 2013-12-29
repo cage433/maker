@@ -35,7 +35,7 @@ import maker.Props
 
 trait Task {
   def name : String
-  def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
+  def exec(upstreamResults : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
   def failureHaltsTaskManager : Boolean = true
 
   /**
