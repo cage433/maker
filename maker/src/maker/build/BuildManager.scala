@@ -21,6 +21,7 @@ import maker.project.Module
 import maker.project.BaseProject
 import maker.task.TaskContext
 import akka.actor.ExtendedActorSystem
+import maker.scalatest.TestReporterActor
 
 object BuildManager{
 
@@ -29,6 +30,9 @@ object BuildManager{
   case object Execute
   case class UnitOfWork(task : Task, context : TaskContext) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
+  case class ModuleTestsStarted(moduleName : String)
+  case class ModuleTestsFinished(moduleName : String)
+
   case class TimedResults(buildName : String, graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
     def failed = results.exists(_.failed)
     def succeeded = results.forall(_.succeeded)
@@ -100,6 +104,9 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
 
   private val resultPromise = Promise[TimedResults]()
 
+  type ModuleName = String
+  private var runningTests : List[(ModuleName, ActorRef)] = Nil
+
   private def executing():Receive = {
     var remaining : Dependency.Graph = graph
     var completed : Set[Task] = Set.empty
@@ -142,6 +149,19 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
           case None => 
         }
       }
+
+      case ModuleTestsStarted(moduleName) => 
+        runningTests = (moduleName, sender) :: runningTests
+
+      case ModuleTestsFinished(moduleName) => 
+        runningTests = runningTests.filterNot(_._1 == moduleName)
+
+      case TestReporterActor.DumpTestThread =>
+        runningTests.lastOption.foreach{
+          case (_, actorRef) => 
+            actorRef ! TestReporterActor.DumpTestThread
+        }
+
     }
   }
 

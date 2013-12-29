@@ -22,6 +22,7 @@ import akka.pattern.ask
 import maker.akka.PartialFunctionUtils
 import java.lang.management.ManagementFactory
 import org.scalatest.tools.Runner
+import scala.collection.JavaConversions._
 
 object RunTests {
   def main(args : Array[String]){
@@ -107,6 +108,13 @@ class TestReporterActor extends RemoteActor{
               case (_, event : Event) =>
                 manager ! event
 
+              case (_, TestReporterActor.DumpTestThread) => 
+                TestReporterActor.stackTraceOfTests.foreach{
+                  st => 
+                    println("\n" + st)
+                }
+                
+
               case other =>
                 println(" AkkaTestReporter: unexpected event " + other)
               }
@@ -132,4 +140,14 @@ class TestReporterActor extends RemoteActor{
   }
 }
 
+object TestReporterActor{
+  case object DumpTestThread
 
+  def stackTraceOfTests : List[String] = {
+    val testTraces = Thread.getAllStackTraces.values.toList.map(_.toList).filter{
+      stackTraceList => 
+        stackTraceList.map(_.toString).exists(_.contains("org.scalatest"))
+    }
+    testTraces.map(_.mkString("\n\t", "\n\t", "\n"))
+  }
+}

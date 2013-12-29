@@ -60,6 +60,7 @@ import scala.concurrent.Await
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import maker.akka.RemoteActor
+import maker.scalatest.TestReporterActor
 
 case class Build(
   name : String,
@@ -88,24 +89,56 @@ object Build{
     val buildNumber = nextBuildNumber.incrementAndGet
     val system = ActorSystem.create("MAKER-ACTOR-SYSTEM-" + buildNumber, RemoteActor.systemConfig).asInstanceOf[ExtendedActorSystem]
     val manager = buildManager(system, buildNumber, build)
-    val result = execute(manager)
+    val buildResultPromise = executePromise(manager)
+    val interactor = testInteractor(manager, buildResultPromise)
+    interactor.start
+    interactor.join()
     system.shutdown
-    result
+    promisedValue(buildResultPromise)
+  }
+
+  def testInteractor(manager : ActorRef, buildResultPromise : Promise[TimedResults]) : Thread = {
+    val runnable = new Runnable{
+      def run {
+        try {
+          while(! buildResultPromise.isCompleted){
+            if (System.in.available > 0 && System.in.read == 100) 
+              manager ! TestReporterActor.DumpTestThread
+            Thread.sleep(10)
+          }
+        } catch {
+          case e : Throwable => 
+            println("Got error " + e)
+        }
+      }
+    }
+    new Thread(runnable)
   }
 
   private [build] def execute(manager : ActorRef) : TimedResults = {
+    val resultPromise = executePromise(manager)
+    promisedValue(resultPromise)
+  }
+
+  private def promisedValue(promise : Promise[TimedResults]) : TimedResults = {
+    val resultFuture = promise.future
+    Await.result(resultFuture, Duration.Inf).asInstanceOf[TimedResults]
+  }
+
+  private def executePromise(manager : ActorRef) : Promise[TimedResults] = {
     implicit val timeout = Timeout(2 seconds)
     val future : Future[Promise[TimedResults]] = (manager ? BuildManager.Execute).mapTo[Promise[TimedResults]]
-    val resultFuture = Await.result(future, 2 seconds).future
-    Await.result(resultFuture, Duration.Inf).asInstanceOf[TimedResults]
+    val resultPromise : Promise[TimedResults] = Await.result(future, 2 seconds)
+    resultPromise
   }
 
   private val nextBuildNumber = new AtomicInteger(-1)
   private def buildManager(system : ActorSystem, buildNumber : Int, build : Build) = {
     val workers : List[ActorRef] = (1 to build.numberOfWorkers).toList.map{
       case i => 
-        system.actorOf(BuildManager.Worker.props(), "Worker-" + buildNumber + "-" + i)
+        system.actorOf(BuildManager.Worker.props(), "Worker-" + i)
     }
-    system.actorOf(BuildManager.props(build.name, build.graph, workers), "BuildManager-" + buildNumber)
+    system.actorOf(BuildManager.props(build.name, build.graph, workers), "BuildManager")
   }
 }
+
