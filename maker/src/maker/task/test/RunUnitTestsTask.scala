@@ -50,6 +50,12 @@ import maker.task.NullTask
 import maker.akka.RemoteActor
 import maker.akka.MakerActorSystem
 import maker.task.TaskContext
+import akka.actor.{Props => AkkaProps}
+import akka.pattern.Patterns
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit
+import org.scalatest.events._
 
 
 case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : Option[Iterable[String]])  extends Task {
@@ -60,10 +66,14 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask(_))
 
   def exec(context : TaskContext) : TaskResult = {
-    val testManager = AkkaTestManager(context.actorSystem, baseProject)
+    val testEventCollector = context.actorSystem.actorOf(
+      AkkaProps[AkkaTestManager],
+      "manager-" + baseProject.name
+    )
 
     // If no class names are passed in then they are found via reflection, so 
-    // compilation has to have taken place
+    // compilation has to have taken place - hence class names can't be determined
+    // at the point the task is created
     val classOrSuiteNames = (baseProject, classOrSuiteNames_) match {
       case (_, Some(cs)) => cs
       case (m : Module, None) => m.testClassNames()
@@ -87,7 +97,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Dmaker.test.module=" + baseProject.name,
       props.MakerTestReporterClasspath.toCommandLine,
       props.RunningInMakerTest.toCommandLine("true")
-    ) ::: RemoteActor.javaOpts(testManager.manager, context.actorSystem, "maker.scalatest.TestReporterActor")
+    ) ::: RemoteActor.javaOpts(testEventCollector, context.actorSystem, "maker.scalatest.TestReporterActor")
 
     val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ::: suiteParameters ::: consoleReporterArg
     val outputHandler = CommandOutputHandler().withSavedOutput
@@ -96,13 +106,15 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       props.Java,
       opts,
       baseProject.testClasspath + ":" + props.MakerTestReporterClasspath().absPath,
-    //baseProject.testClasspath + ":" + file(props.makerRoot, "test-reporter/target-maker/classes/").absPath,
       "maker.scalatest.RunTests",
       "Running tests in " + name,
       args 
     )
     val res = cmd.exec
-    val results = testManager.testResults()
+
+    val fut = Patterns.ask(testEventCollector, AkkaTestManager.EVENTS, 10 * 1000)
+    val events = Await.result(fut, Duration(100, TimeUnit.SECONDS)).asInstanceOf[List[Event]]
+    val results = TestResults(Map[String, List[Event]](baseProject.name -> events))
     baseProject.lastTestResults.set(Some(results))
     val result = if (results.numFailedTests == 0){
       TaskResult.success(this, info = Some(results))

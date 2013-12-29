@@ -2,7 +2,6 @@ package maker.build
 
 import maker.utils.MakerLog
 import akka.actor.Actor
-import maker.akka.MakerActorSystem
 import akka.actor.Props
 import akka.pattern.ask
 import scala.concurrent.duration._
@@ -25,10 +24,8 @@ import akka.actor.ExtendedActorSystem
 
 object BuildManager{
 
-  case class AcknowledgeMeAsYourMaster(master : ActorRef)
   case object WorkAvailable
   case object GiveMeWork
-  case object CurrentlyBusy
   case object Execute
   case class UnitOfWork(task : Task, context : TaskContext) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)

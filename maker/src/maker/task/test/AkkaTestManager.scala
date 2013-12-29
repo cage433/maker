@@ -21,65 +21,43 @@ import akka.actor.PoisonPill
 import maker.utils.Implicits.RichString._
 import org.scalatest.events.IndentedText
 
-case class AkkaTestManager(system : ExtendedActorSystem, baseProject : BaseProject) {
+class AkkaTestManager extends Actor{
 
-  import AkkaTestManager._
+  var events : List[Event] = Nil
+  val log = MakerLog()
 
-  val name = "manager-" + baseProject.name + "-" + MakerActorSystem.nextActorID()
-  val manager = system.actorOf(AkkaProps[Manager], name)
-  val port : Int = system.provider.getDefaultAddress.port.get
+  private def processRequest(sender : ActorRef, msg : Any){
+    try {
+      msg match {
 
+        case e : RunCompleted =>
+          events ::= e 
+          sender ! PoisonPill
 
-  private def askActor[T](msg : AnyRef) : T = {
-    val fut = Patterns.ask(manager, msg, 10 * 1000)
-    Await.result(fut, Duration(100, TimeUnit.SECONDS)).asInstanceOf[T]
+        case e : Event =>
+          events ::= e 
+
+        case AkkaTestManager.EVENTS =>
+          sender ! events
+
+        case "Hello" =>
+          // Used to test remote test reporters
+
+        case other =>
+          log.error("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)
+      }
+    } catch {
+      case e : Throwable =>
+        log.error("Error processing message " + msg + " from " + sender, e)
+    }
   }
 
-  def testResults() = {
-    val events : List[Event] = askActor(EVENTS)
-    TestResults(Map[String, List[Event]](baseProject.name -> events))
+  def receive = {
+    case msg : Any =>
+      processRequest(sender, msg)
   }
 }
 
 object AkkaTestManager{
-  trait Message
   case object EVENTS
-
-  class Manager extends Actor{
-
-    var events : List[Event] = Nil
-    val log = MakerLog()
-
-    private def processRequest(sender : ActorRef, msg : Any){
-      try {
-        msg match {
-
-          case e : RunCompleted =>
-            events ::= e 
-            sender ! PoisonPill
-
-          case e : Event =>
-            events ::= e 
-
-          case EVENTS =>
-            sender ! events
-
-          case "Hello" =>
-            // Used to test remote test reporters
-
-          case other =>
-            log.error("Debug: " + (new java.util.Date()) + " AkkaTestManager: received " + other)
-        }
-      } catch {
-        case e : Throwable =>
-          log.error("Error processing message " + msg + " from " + sender, e)
-      }
-    }
-
-    def receive = {
-      case msg : Any =>
-        processRequest(sender, msg)
-    }
-  }
-
 }

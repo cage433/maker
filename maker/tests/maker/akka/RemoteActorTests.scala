@@ -21,6 +21,7 @@ import org.scalatest.FunSpecLike
 import org.scalatest.FunSuite
 import maker.utils.os.ScalaCommand
 import maker.utils.os.CommandOutputHandler
+import maker.akka.RemoteActor
 
 object LaunchRemoteActorProcess extends App{
 
@@ -50,13 +51,12 @@ object LaunchRemoteActorProcess extends App{
 class TestRemoteActor extends RemoteActor{
   def activate(localActorRef : ActorRef) : PartialFunction[Any, Unit] = {
     case "stop" =>
-      println("Shutting down")
       context.system.shutdown
   }
 }
 
 class RemoteActorTests 
-extends TestKit(ActorSystem.create("MAKER-TEST-SYSTEM", MakerActorSystem.systemConfig))
+extends TestKit(ActorSystem.create("MAKER-TEST-SYSTEM", RemoteActor.systemConfig))
 with FunSpecLike 
 with BeforeAndAfterAll
 with ImplicitSender
@@ -90,12 +90,11 @@ with ImplicitSender
   }
 
   describe("RemoteActor"){
-    ignore("Should start up and register itself"){
+    it("Should start up and register itself"){
       withTempDir{
         dir => 
         writeAkkaConfig(dir)
         val props : Props = Props.initialiseTestProps(dir)
-          println("Debug: " + (new java.util.Date()) + " RemoteActorTests: " + props.MakerTestReporterClasspath())
         props.StopCompileOutput := false
         val classpath : String = dir.getAbsolutePath + "/" + ":" + 
         getClass.getClassLoader.asInstanceOf[URLClassLoader].getURLs.toList.map(_.getFile).mkString(":") 
@@ -108,10 +107,7 @@ with ImplicitSender
         )
 
         localActor.expectMsg("Hello")
-        println("Debug: " + (new java.util.Date()) + " RemoteActorTests: replying with a stop")
         localActor.reply("stop")
-        println("Debug: " + (new java.util.Date()) + " RemoteActorTests: awaiting exit status")
-        println("Debug: " + (new java.util.Date()) + " RemoteActorTests: exit status is " + exitStatusFuture())
         assert(exitStatusFuture() === 0, "Future should return 0")
 
       }

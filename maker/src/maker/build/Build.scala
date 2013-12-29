@@ -49,7 +49,6 @@ import maker.utils.ScreenUtils
 import maker.project.Module
 import maker.task.Task
 import maker.task.TaskResult
-import maker.akka.MakerActorSystem
 import maker.build.BuildManager.TimedResults
 import akka.actor.ActorRef
 import akka.util.Timeout
@@ -60,6 +59,7 @@ import scala.concurrent.Promise
 import scala.concurrent.Await
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
+import maker.akka.RemoteActor
 
 case class Build(
   name : String,
@@ -86,7 +86,7 @@ case class Build(
 object Build{
   def execute(build : Build) : TimedResults = {
     val buildNumber = nextBuildNumber.incrementAndGet
-    val system = ActorSystem.create("MAKER-ACTOR-SYSTEM-" + buildNumber, MakerActorSystem.systemConfig).asInstanceOf[ExtendedActorSystem]
+    val system = ActorSystem.create("MAKER-ACTOR-SYSTEM-" + buildNumber, RemoteActor.systemConfig).asInstanceOf[ExtendedActorSystem]
     val manager = buildManager(system, buildNumber, build)
     val result = execute(manager)
     system.shutdown

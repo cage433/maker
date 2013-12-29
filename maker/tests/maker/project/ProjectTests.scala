@@ -6,7 +6,7 @@ import maker.utils.os.Command
 import maker.Props
 
 class ProjectTests extends FunSuite {
-  ignore("Project can write its own definition file"){
+  test("Project can write its own definition file"){
     withTempDir{
       dir =>{
         val props = Props.initialiseTestProps(dir)
@@ -62,7 +62,6 @@ class ProjectTests extends FunSuite {
           "-z",      // Developer mode prevents maker bootstrapping 
           "-e", "TestProject.test"
         ).withWorkingDirectory(dir)
-        println(cmd)
         val result = cmd.exec
         assert(result === 0, "Expected project test to succeeed")
       }
