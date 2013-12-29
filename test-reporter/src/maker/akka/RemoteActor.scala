@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorSelection
 import akka.actor.{Props => AkkaProps}
 import akka.actor.Address
+import com.typesafe.config.ConfigFactory
 
 trait RemoteActor extends Actor
 {
@@ -69,11 +70,35 @@ object RemoteActor {
       s"-D$localActorSystemPortLabel=$localPort"
     )
   }
+
+  val systemConfig = {
+    val text = """
+      akka {
+        loggers = ["akka.event.slf4j.Slf4jLogger"]
+        loglevel = "ERROR"
+        log-dead-letters = off
+        actor {
+          provider = "akka.remote.RemoteActorRefProvider"
+        }
+        remote {
+          log-remote-lifecycle-events = off
+          enabled-transports = ["akka.remote.netty.tcp"]
+          netty.tcp {
+            hostname = "127.0.0.1"
+            port = 0
+          }
+        }
+      }
+    """
+    ConfigFactory.parseString(text)
+  }
+
+
   def create() {
     val localActorClass = Class.forName(
       System.getProperty(remoteActorClassnameLabel)
     )
-    val system = ActorSystem.create("Remote-system")
+    val system = ActorSystem.create("Remote-system", systemConfig)
     val props = AkkaProps.create(localActorClass)
     val remoteActor = system.actorOf(props)
   }

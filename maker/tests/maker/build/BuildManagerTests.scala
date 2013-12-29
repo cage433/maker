@@ -28,9 +28,10 @@ import akka.testkit.ImplicitSender
 import java.util.concurrent.atomic.AtomicBoolean
 import maker.task.TaskContext
 import akka.actor.ExtendedActorSystem
+import maker.akka.MakerActorSystem
 
 
-class BuildManagerTests extends TestKit(ActorSystem("TestActorSystem")) 
+class BuildManagerTests extends TestKit(ActorSystem.create("TestActorSystem", MakerActorSystem.systemConfig)) 
   with FunSpecLike 
   with MockitoSugar 
   with BeforeAndAfterAll

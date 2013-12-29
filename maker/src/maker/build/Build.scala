@@ -93,7 +93,7 @@ object Build{
     result
   }
 
-  def execute(manager : ActorRef) : TimedResults = {
+  private [build] def execute(manager : ActorRef) : TimedResults = {
     implicit val timeout = Timeout(2 seconds)
     val future : Future[Promise[TimedResults]] = (manager ? BuildManager.Execute).mapTo[Promise[TimedResults]]
     val resultFuture = Await.result(future, 2 seconds).future

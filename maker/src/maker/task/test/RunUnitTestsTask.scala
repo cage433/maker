@@ -69,17 +69,12 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       case (m : Module, None) => m.testClassNames()
       case _ => throw new RuntimeException("Can't run all tests against a top level project directly")
     }
-    val log = props.log
-
 
     if (classOrSuiteNames.isEmpty) {
       return TaskResult.success(this)
     }
 
     val suiteParameters : List[String] = classOrSuiteNames.map(List("-s", _)).flatten.toList
-    val systemProperties = (props.JavaSystemProperties.asMap + ("scala.usejavacp" -> "true")).map{
-      case (key, value) => "-D" + key + "=" + value
-    }.toList
 
     val consoleReporterArg = if (props.RunningInMakerTest()) Nil else List("-o")
 
@@ -88,10 +83,11 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-XX:MaxPermSize=200m", 
       "-Dlogback.configurationFile=" + baseProject.logbackConfigFilePath,
       "-Dsbt.log.format=false",
+      "-Dscala.usejavacp=true",
       "-Dmaker.test.module=" + baseProject.name,
       props.MakerTestReporterClasspath.toCommandLine,
       props.RunningInMakerTest.toCommandLine("true")
-    ) ::: systemProperties ::: RemoteActor.javaOpts(testManager.manager, context.actorSystem, "maker.scalatest.TestReporterActor")
+    ) ::: RemoteActor.javaOpts(testManager.manager, context.actorSystem, "maker.scalatest.TestReporterActor")
 
     val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ::: suiteParameters ::: consoleReporterArg
     val outputHandler = CommandOutputHandler().withSavedOutput
@@ -102,7 +98,6 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       baseProject.testClasspath + ":" + props.MakerTestReporterClasspath().absPath,
     //baseProject.testClasspath + ":" + file(props.makerRoot, "test-reporter/target-maker/classes/").absPath,
       "maker.scalatest.RunTests",
-      //"org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 
     )
