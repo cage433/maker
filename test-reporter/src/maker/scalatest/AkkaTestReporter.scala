@@ -92,6 +92,8 @@ class AkkaTestReporter extends Reporter{
 
 class TestReporterActor extends RemoteActor{
 
+  import TestReporterActor._
+
   var runComplete = false
 
   override def postStop{
@@ -108,12 +110,11 @@ class TestReporterActor extends RemoteActor{
               case event : Event =>
                 manager ! event
 
-              case "DumpTestThread" => 
+              case DumpTestThread => 
                   TestReporterActor.stackTraceOfTests.foreach{
                     st => 
                       println("\n" + st)
                   }
-                
 
               case other =>
                 println(" AkkaTestReporter: unexpected event is " + other)
@@ -139,6 +140,8 @@ class TestReporterActor extends RemoteActor{
 }
 
 object TestReporterActor{
+
+  case object DumpTestThread
 
   def stackTraceOfTests : List[String] = {
     val testTraces = Thread.getAllStackTraces.values.toList.map(_.toList).filter{

@@ -96,6 +96,7 @@ object BuildManager{
 case class BuildManager(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef]) extends Actor{
 
   import BuildManager._
+  import TestReporterActor._
 
   if (graph.nonEmpty)
     require(workers.nonEmpty, "Can't execute non empty graph of tasks without workers")
@@ -156,10 +157,10 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
       case ModuleTestsFinished(moduleName) => 
         runningTests = runningTests.filterNot(_._1 == moduleName)
 
-      case "DumpTestThread" =>
+      case DumpTestThread =>
         runningTests.lastOption.foreach{
           case (_, actorRef) => 
-            actorRef ! "DumpTestThread"
+            actorRef ! DumpTestThread
         }
 
     }

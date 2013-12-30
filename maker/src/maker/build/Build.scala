@@ -103,7 +103,7 @@ object Build{
         try {
           while(! buildResultPromise.isCompleted){
             if (System.in.available > 0 && System.in.read == 100)
-              manager ! "DumpTestThread"
+              manager ! TestReporterActor.DumpTestThread
             Thread.sleep(200)
           }
         } catch {
