@@ -105,18 +105,18 @@ class TestReporterActor extends RemoteActor{
         x => 
           try {
             x match {
-              case (_, event : Event) =>
+              case event : Event =>
                 manager ! event
 
-              case (_, TestReporterActor.DumpTestThread) => 
-                TestReporterActor.stackTraceOfTests.foreach{
-                  st => 
-                    println("\n" + st)
-                }
+              case "DumpTestThread" => 
+                  TestReporterActor.stackTraceOfTests.foreach{
+                    st => 
+                      println("\n" + st)
+                  }
                 
 
               case other =>
-                println(" AkkaTestReporter: unexpected event " + other)
+                println(" AkkaTestReporter: unexpected event is " + other)
               }
           } catch {
             case e : Throwable => 
@@ -130,23 +130,20 @@ class TestReporterActor extends RemoteActor{
     processEvents
 
     val pf : PartialFunction[Any, Unit] = {
-      case event : Event =>
-        toProcess = (sender, event) :: toProcess
+      case msg : Any =>
+        toProcess = msg :: toProcess
         processEvents
-      case other =>
-        println(" ActorTestReporter: unexpected event " + other)
     }
     pf
   }
 }
 
 object TestReporterActor{
-  case object DumpTestThread
 
   def stackTraceOfTests : List[String] = {
     val testTraces = Thread.getAllStackTraces.values.toList.map(_.toList).filter{
       stackTraceList => 
-        stackTraceList.map(_.toString).exists(_.contains("org.scalatest"))
+        stackTraceList.map(_.toString).exists(_.contains("org.scalatest.tools.SuiteRunner"))
     }
     testTraces.map(_.mkString("\n\t", "\n\t", "\n"))
   }

@@ -14,17 +14,19 @@ import java.util.concurrent.TimeUnit
 import org.scalatest.events.TestSucceeded
 import akka.actor.Terminated
 import maker.project.BaseProject
-import maker.akka.MakerActorSystem
 import maker.utils.FileUtils._
 import maker.Props
 import akka.actor.PoisonPill
 import maker.utils.Implicits.RichString._
 import org.scalatest.events.IndentedText
+import maker.build.BuildManager
 
-class AkkaTestManager extends Actor{
+class AkkaTestManager(moduleName : String) extends Actor{
 
   var events : List[Event] = Nil
   val log = MakerLog()
+
+  val buildManager = context.actorSelection("../BuildManager")
 
   private def processRequest(sender : ActorRef, msg : Any){
     try {
@@ -32,7 +34,12 @@ class AkkaTestManager extends Actor{
 
         case e : RunCompleted =>
           events ::= e 
+          buildManager ! BuildManager.ModuleTestsFinished(moduleName)
           sender ! PoisonPill
+
+        case e : RunStarting =>
+          events ::= e 
+          buildManager ! BuildManager.ModuleTestsStarted(sender, moduleName)
 
         case e : Event =>
           events ::= e 
@@ -60,4 +67,5 @@ class AkkaTestManager extends Actor{
 
 object AkkaTestManager{
   case object EVENTS
+  def props(moduleName : String) = AkkaProps(classOf[AkkaTestManager], moduleName)
 }

@@ -27,7 +27,7 @@ trait RemoteActor extends Actor
     context.actorSelection(localActorPath) ! Identify(localActorPath)
   }
 
-  var toProcess : List[(ActorRef, Any)] = Nil
+  var toProcess : List[Any] = Nil
   context.setReceiveTimeout(3.seconds)
   sendIdentifyRequest()
 
@@ -47,7 +47,7 @@ trait RemoteActor extends Actor
         sendIdentifyRequest()
 
       case other => 
-        toProcess = (sender, other) :: toProcess
+        toProcess = other :: toProcess
     }
     PartialFunctionUtils.withExceptionsToStdOut(pf)
   }

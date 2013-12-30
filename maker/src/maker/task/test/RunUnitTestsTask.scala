@@ -48,7 +48,6 @@ import maker.utils.IntellijStringDistance
 import maker.task.compile.SourceCompileTask
 import maker.task.NullTask
 import maker.akka.RemoteActor
-import maker.akka.MakerActorSystem
 import maker.task.TaskContext
 import akka.actor.{Props => AkkaProps}
 import akka.pattern.Patterns
@@ -67,7 +66,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 
   def exec(context : TaskContext) : TaskResult = {
     val testEventCollector = context.actorSystem.actorOf(
-      AkkaProps[AkkaTestManager],
+      AkkaTestManager.props(baseProject.name),
       "manager-" + baseProject.name
     )
 
@@ -105,7 +104,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       outputHandler,
       props.Java,
       opts,
-      baseProject.testClasspath + ":" + props.MakerTestReporterClasspath().absPath,
+      props.MakerTestReporterClasspath().absPath + ":" + baseProject.testClasspath,
       "maker.scalatest.RunTests",
       "Running tests in " + name,
       args 

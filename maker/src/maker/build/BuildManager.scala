@@ -28,10 +28,10 @@ object BuildManager{
   case object WorkAvailable
   case object GiveMeWork
   case object Execute
+  case class ModuleTestsStarted(testReporterActor : ActorRef, moduleName : String) 
+  case class ModuleTestsFinished(moduleName : String) 
   case class UnitOfWork(task : Task, context : TaskContext) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
-  case class ModuleTestsStarted(moduleName : String)
-  case class ModuleTestsFinished(moduleName : String)
 
   case class TimedResults(buildName : String, graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
     def failed = results.exists(_.failed)
@@ -150,16 +150,16 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
         }
       }
 
-      case ModuleTestsStarted(moduleName) => 
-        runningTests = (moduleName, sender) :: runningTests
+      case ModuleTestsStarted(testReporterActorRef, moduleName) => 
+        runningTests = (moduleName, testReporterActorRef) :: runningTests
 
       case ModuleTestsFinished(moduleName) => 
         runningTests = runningTests.filterNot(_._1 == moduleName)
 
-      case TestReporterActor.DumpTestThread =>
+      case "DumpTestThread" =>
         runningTests.lastOption.foreach{
           case (_, actorRef) => 
-            actorRef ! TestReporterActor.DumpTestThread
+            actorRef ! "DumpTestThread"
         }
 
     }

@@ -102,9 +102,9 @@ object Build{
       def run {
         try {
           while(! buildResultPromise.isCompleted){
-            if (System.in.available > 0 && System.in.read == 100) 
-              manager ! TestReporterActor.DumpTestThread
-            Thread.sleep(10)
+            if (System.in.available > 0 && System.in.read == 100)
+              manager ! "DumpTestThread"
+            Thread.sleep(200)
           }
         } catch {
           case e : Throwable => 

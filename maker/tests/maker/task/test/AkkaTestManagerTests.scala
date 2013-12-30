@@ -12,7 +12,6 @@ class AkkaTestManagerTests extends FunSuite {
       dir => 
         val props = Props.initialiseTestProps(dir)
         val moduleName = "AkkaTestReporterTest"
-      //val testManager = new AkkaTestManager()
         val module = new Module(
           dir, moduleName, 
           props
