@@ -111,10 +111,7 @@ class TestReporterActor extends RemoteActor{
                 manager ! event
 
               case DumpTestThread => 
-                  TestReporterActor.stackTraceOfTests.foreach{
-                    st => 
-                      println("\n" + st)
-                  }
+                println(TestReporterActor.someTestStackTrace())
 
               case other =>
                 println(" AkkaTestReporter: unexpected event is " + other)
@@ -143,11 +140,15 @@ object TestReporterActor{
 
   case object DumpTestThread
 
-  def stackTraceOfTests : List[String] = {
-    val testTraces = Thread.getAllStackTraces.values.toList.map(_.toList).filter{
+  /**
+    * Dumps the stack trace of any running test - typically used when a test is hanging, in 
+    * which case there will be only one
+    */
+  def someTestStackTrace() : String = {
+    val testTrace = Thread.getAllStackTraces.values.toList.map(_.toList).filter{
       stackTraceList => 
         stackTraceList.map(_.toString).exists(_.contains("org.scalatest.tools.SuiteRunner"))
-    }
-    testTraces.map(_.mkString("\n\t", "\n\t", "\n"))
+    }.take(1)
+    testTrace.mkString("\n\t", "\n\t", "\n")
   }
 }
