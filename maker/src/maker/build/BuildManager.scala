@@ -157,7 +157,7 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
       case ModuleTestsFinished(moduleName) => 
         runningTests = runningTests.filterNot(_._1 == moduleName)
 
-      case DumpTestThread =>
+      case BuildInteractor.KeyPressed(100) =>
         runningTests.lastOption.foreach{
           case (_, actorRef) => 
             actorRef ! DumpTestThread

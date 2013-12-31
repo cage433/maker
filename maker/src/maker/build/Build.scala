@@ -90,9 +90,7 @@ object Build{
     val system = ActorSystem.create("MAKER-ACTOR-SYSTEM-" + buildNumber, RemoteActor.systemConfig).asInstanceOf[ExtendedActorSystem]
     val manager = buildManager(system, buildNumber, build)
     val buildResultPromise = executePromise(manager)
-    val interactor = testInteractor(manager, buildResultPromise)
-    interactor.start
-    interactor.join()
+    BuildInteractor.startAndJoin(manager, buildResultPromise)
     system.shutdown
     promisedValue(buildResultPromise)
   }
