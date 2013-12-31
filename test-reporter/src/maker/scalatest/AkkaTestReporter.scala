@@ -145,10 +145,9 @@ object TestReporterActor{
     * which case there will be only one
     */
   def someTestStackTrace() : String = {
-    val testTrace = Thread.getAllStackTraces.values.toList.map(_.toList).filter{
+    Thread.getAllStackTraces.values.toList.map(_.toList).filter{
       stackTraceList => 
         stackTraceList.map(_.toString).exists(_.contains("org.scalatest.tools.SuiteRunner"))
-    }.take(1)
-    testTrace.mkString("\n\t", "\n\t", "\n")
+    }.headOption.map(_.mkString("\n\t", "\n\t", "\n")).getOrElse("")
   }
 }

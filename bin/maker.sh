@@ -199,7 +199,7 @@ java_opts(){
   then
     JAVA_OPTS="$JAVA_OPTS -Dmaker.test.reporter.classpath=$MAKER_ROOT_DIR/test-reporter/target-maker/classes"
   else
-    JAVA_OPTS="$JAVA_OPTS -Dmaker.test.reporter.classpath="$MAKER_SCALATEST_REPORTER_JAR"
+    JAVA_OPTS="$JAVA_OPTS -Dmaker.test.reporter.classpath=$MAKER_SCALATEST_REPORTER_JAR"
   fi
   echo $JAVA_OPTS
 }
