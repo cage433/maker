@@ -26,20 +26,13 @@ class AkkaTestManager(moduleName : String) extends Actor{
   var events : List[Event] = Nil
   val log = MakerLog()
 
-  val buildManager = context.actorSelection("../BuildManager")
-
   private def processRequest(sender : ActorRef, msg : Any){
     try {
       msg match {
 
         case e : RunCompleted =>
           events ::= e 
-          buildManager ! BuildManager.ModuleTestsFinished(moduleName)
           sender ! PoisonPill
-
-        case e : RunStarting =>
-          events ::= e 
-          buildManager ! BuildManager.ModuleTestsStarted(sender, moduleName)
 
         case e : Event =>
           events ::= e 

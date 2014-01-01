@@ -67,7 +67,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   def exec(context : TaskContext) : TaskResult = {
     val testEventCollector = context.actorSystem.actorOf(
       AkkaTestManager.props(baseProject.name),
-      "test-manager-" + baseProject.nameSansSpaces
+      "TestManager-" + baseProject.nameSansSpaces
     )
 
     // If no class names are passed in then they are found via reflection, so 

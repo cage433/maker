@@ -215,7 +215,6 @@ launch_maker_repl(){
   "$JAVA_HOME/bin/java" $(java_opts) \
     -classpath "$(external_scala_jars):$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
-    -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
     -Dscala.usejavacp=true \

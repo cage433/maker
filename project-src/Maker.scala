@@ -47,13 +47,11 @@ import maker.task.compile._
 object Maker {
 
   private val props = {
-    val makerRoot = file(Option(System.getProperty("maker.home")).getOrElse("maker.home property not set")).asAbsoluteFile
-    val testReporterClasspath=file(".", "test-reporter/target-maker/classes").getAbsolutePath
     val propsFile = file("Maker.conf")
     if (propsFile.exists)
-      Props((propsFile).asAbsoluteFile, "GroupId", "com.google.code.maker")//, "MakerTestReporterClasspath", testReporterClasspath)
+      Props((propsFile).asAbsoluteFile, "GroupId", "com.google.code.maker")
     else
-      Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")//, "MakerTestReporterClasspath", testReporterClasspath)
+      Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
   }
 
   def module(name : String, upstreamProjects : Module*) = {

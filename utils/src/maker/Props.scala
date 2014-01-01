@@ -141,16 +141,6 @@ object Props {
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 
-  def makerRootSystemProperty : File = {
-    new File(
-      Option(
-        System.getProperty("maker.home")
-      ).getOrElse{
-        throw new Exception("maker.home not set")
-      }
-    ).asAbsoluteFile
-  }
-
  def initialiseTestProps(root : File, cwdProps : Props = Props(file(".").asAbsoluteFile)) : Props = {
     val makerDotConf = file(root, "Maker.conf")
     def writeProperty(key : String, value : String){

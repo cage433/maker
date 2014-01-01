@@ -26,7 +26,7 @@ import maker.akka.RemoteActor
 object RunTests {
   def main(args : Array[String]){
     val result = Runner.run(args)
-    SlaveTestSystem.system.awaitTermination()
+    TestReporterActor.system.awaitTermination()
     if (result)
       System.exit(0)
     else
@@ -35,20 +35,9 @@ object RunTests {
   }
 }
 
-object SlaveTestSystem{
-    
-  val system = {
-    val module = Option(System.getProperty("maker.test.module")).getOrElse{
-      throw new RuntimeException("Property 'maker.test.module' not set")
-    }
-    ActorSystem.create("REMOTE-" + module, RemoteActor.systemConfig)
-  }
-  val actor : ActorRef = system.actorOf(Props[TestReporterActor], "test-reporter")
-}
-
 class AkkaTestReporter extends Reporter{
 
-  val actor = SlaveTestSystem.actor
+  val actor = TestReporterActor.actor
 
   def apply(event : Event){
     try {
@@ -67,12 +56,8 @@ class AkkaTestReporter extends Reporter{
 class TestReporterActor extends Actor{
 
   import TestReporterActor._
-  val localSystemAddress = System.getProperty(localSystemAddressLabel)
-  val module = System.getProperty("maker.test.module")
-  val localActorPath = localSystemAddress + "/" + "user/test-manager-" + module
-  val testManager = context.actorSelection(localActorPath) 
-
-  var toProcess : List[Any] = Nil
+  val testManager = context.actorSelection(localSystemAddress + "/user/TestManager-" + module) 
+  val buildManager = context.actorSelection(localSystemAddress + "/user/BuildManager")
 
   override def postStop{
     context.system.shutdown
@@ -80,62 +65,55 @@ class TestReporterActor extends Actor{
 
   def receive = {
     case msg : Any =>
-      toProcess = msg :: toProcess
-      processEvents
+      processEvent(msg)
   }
 
-  private def processEvents{
-    toProcess.reverse.foreach{
-      x => 
-        try {
-          x match {
-            case event : Event =>
-              testManager ! event
+  private def processEvent(msg : Any){
+    try {
+      msg match {
+        case e : RunStarting =>
+          buildManager ! ModuleTestsStarted(module)
+          testManager ! e
 
-            case DumpTestThread => 
-              println(TestReporterActor.someTestStackTrace())
+        case e : RunAborted =>
+          buildManager ! ModuleTestsFinished(module)
+          testManager ! e
 
-            case other =>
-              println(" AkkaTestReporter2: unexpected event is " + other)
-            }
-        } catch {
-          case e : Throwable => 
-            println("Error processing " + x + ", will exit")
-            System.exit(1)
+        case e : RunCompleted =>
+          buildManager ! ModuleTestsFinished(module)
+          testManager ! e
+
+        case e : Event =>
+          testManager ! e
+
+        case DumpTestThread => 
+          println(TestReporterActor.someTestStackTrace())
+
+        case other =>
+          println(" AkkaTestReporter: unexpected event is " + other)
         }
+    } catch {
+      case e : Throwable => 
+        println("Error processing " + msg + ", will exit")
+        System.exit(1)
     }
-    toProcess = Nil
   }
 
 }
 
 object TestReporterActor{
 
-  val config = {
-    val text = """
-      akka {
-        loggers = ["akka.event.slf4j.Slf4jLogger"]
-        loglevel = "ERROR"
-        log-dead-letters = off
-        log-dead-letters-during-shutdown = off
-        actor {
-          provider = "akka.remote.RemoteActorRefProvider"
-        }
-        remote {
-          log-remote-lifecycle-events = off
-          enabled-transports = ["akka.remote.netty.tcp"]
-          netty.tcp {
-            hostname = "127.0.0.1"
-            port = 0
-          }
-        }
-      }
-    """
-    ConfigFactory.parseString(text)
+  private def property(label : String) = Option(System.getProperty(label)).getOrElse{
+    throw new RuntimeException(s"Property $label not set")
   }
 
-  val localSystemAddressLabel = "maker.local.system.address"
+  val localSystemAddress = property(RemoteActor.localSystemAddressLabel)
+  val module = property("maker.test.module")
+  val system = ActorSystem.create("REMOTE-" + module, RemoteActor.systemConfig)
+  val actor : ActorRef = system.actorOf(Props[TestReporterActor], "test-reporter")
   case object DumpTestThread
+  case class ModuleTestsStarted(moduleName : String)
+  case class ModuleTestsFinished(moduleName : String)
 
   /**
     * Dumps the stack trace of any running test - typically used when a test is hanging, in 

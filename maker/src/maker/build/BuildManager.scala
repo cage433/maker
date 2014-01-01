@@ -28,8 +28,6 @@ object BuildManager{
   case object WorkAvailable
   case object GiveMeWork
   case object Execute
-  case class ModuleTestsStarted(testReporterActor : ActorRef, moduleName : String) 
-  case class ModuleTestsFinished(moduleName : String) 
   case class UnitOfWork(task : Task, context : TaskContext) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
 
@@ -151,8 +149,8 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
         }
       }
 
-      case ModuleTestsStarted(testReporterActorRef, moduleName) => 
-        runningTests = (moduleName, testReporterActorRef) :: runningTests
+      case ModuleTestsStarted(moduleName) => 
+        runningTests = (moduleName, sender) :: runningTests
 
       case ModuleTestsFinished(moduleName) => 
         runningTests = runningTests.filterNot(_._1 == moduleName)
