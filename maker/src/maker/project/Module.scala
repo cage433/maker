@@ -124,9 +124,9 @@ class Module(
     "Clean only " + name, 
     Dependency.Graph(CleanTask(this))) 
 
-  lazy val TestOnly = build(
+  def TestOnly(runParallel : Boolean) = build(
     "Test " + name + " only", 
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this)))
+    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, runParallel)))
 
   def TestFailedSuitesOnly() = build(
     "Run failing test suites for " + name + " only", 
@@ -138,7 +138,8 @@ class Module(
 
   def cleanOnly = CleanOnly.execute
 
-  def testOnly = TestOnly.execute
+  def testOnly = TestOnly(runParallel = true).execute
+  def testOnly(runParallel : Boolean) = TestOnly(runParallel).execute
   def testFailuredSuitesOnly = TestFailedSuitesOnly().execute
   def updateOnly = UpdateOnly.execute
 

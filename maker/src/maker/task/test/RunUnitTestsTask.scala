@@ -57,7 +57,12 @@ import java.util.concurrent.TimeUnit
 import org.scalatest.events._
 
 
-case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : Option[Iterable[String]])  extends Task {
+case class RunUnitTestsTask(
+  name : String, 
+  baseProject : BaseProject, 
+  classOrSuiteNames_ : Option[Iterable[String]],
+  runParallel : Boolean
+)  extends Task {
 
 
   override def failureHaltsTaskManager = false
@@ -98,7 +103,9 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       props.RunningInMakerTest.toCommandLine("true")
     ) ::: RemoteActor.javaOpts(testEventCollector, context.actorSystem, "maker.scalatest.TestReporterActor")
 
-    val args = List("-P", "-C", "maker.scalatest.AkkaTestReporter") ::: suiteParameters ::: consoleReporterArg
+    var args = List("-C", "maker.scalatest.AkkaTestReporter") ::: suiteParameters ::: consoleReporterArg
+    if (runParallel)
+      args = "-P" :: args
     val outputHandler = CommandOutputHandler().withSavedOutput
     val cmd = ScalaCommand(
       outputHandler,
@@ -128,15 +135,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 }
 
 object RunUnitTestsTask{
-  def apply(module : Module) : RunUnitTestsTask = {
-    RunUnitTestsTask(
-      module.name + " test all",
-      module,
-      None
-    )
-  }
-  
-  def apply(baseProject : BaseProject, firstClassNameOrAbbreviation : String, moreClassNamesOrAbbreviations : String*) : Task  = {
+  def apply(baseProject : BaseProject, runParallel : Boolean, classNamesOrAbbreviations : String*) : Task  = {
     def resolveClassName(cn : String) : List[String] = {
       if (cn.contains('.'))
         List(cn)
@@ -155,12 +154,21 @@ object RunUnitTestsTask{
         }
       }
     }
-    val classNames = firstClassNameOrAbbreviation :: moreClassNamesOrAbbreviations.toList
-    RunUnitTestsTask(
-      "Test class " + classNames.mkString(", "), 
-      baseProject,
-      Some(classNames.flatMap(resolveClassName))
-    )
+    val classNames = classNamesOrAbbreviations.toList.flatMap(resolveClassName)
+    if (classNames.isEmpty)
+      RunUnitTestsTask(
+        baseProject.name + " test all",
+        baseProject,
+        None,
+        runParallel
+      )
+    else 
+      RunUnitTestsTask(
+        "Test class " + classNames.mkString(", "), 
+        baseProject,
+        Some(classNames),
+        runParallel
+      )
   }
 
 
@@ -168,7 +176,8 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      Some(module.lastTestResults.get.get.failedTestSuites)
+      Some(module.lastTestResults.get.get.failedTestSuites),
+      runParallel = true
     )
   }
 }

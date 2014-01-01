@@ -210,14 +210,14 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
         List(A, B, C).foreach{
           proj => 
-            assert(proj.Test.graph.nodes.exists{
-              case RunUnitTestsTask(_, `proj`, _) => true
+            assert(proj.Test(runParallel = true).graph.nodes.exists{
+              case RunUnitTestsTask(_, `proj`, _, _) => true
               case _ => false
             })
         }
         import Dependency.Edge
         assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
-        assert(D.Test.graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
+        assert(D.Test(runParallel = true).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
         assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(B), TestCompileTask(C))))
 
         assert(D.TestCompile.graph.subGraphOf(D.test.graph))

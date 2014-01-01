@@ -102,13 +102,13 @@ trait BaseProject {
     "Test Compile " + name, 
     Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask(_))))
 
-  lazy val Test = build(
+  def Test(runParallel : Boolean) = build(
       "Test " + name, 
-      Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly.graph)))
+      Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(runParallel).graph)))
   
-  def TestClass(className : String, moreClassNames : String*) = build(
+  def TestClass(classNames : String*) = build(
     "Test single class ",
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className, moreClassNames : _*)))
+    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, false, classNames: _*)))
 
   def TestFailedSuites() = build(
     "Run failing test suites for " + name + " and upstream ", 
@@ -146,8 +146,9 @@ trait BaseProject {
   def compileContinuously = continuously(Compile)
   def testCompile = execute(TestCompile)
   def testCompileContinuously = continuously(TestCompile)
-  def test = execute(Test)
-  def testClass(className : String, moreClassNames : String*) = execute(TestClass(className, moreClassNames : _*))
+  def test = execute(Test(runParallel = true))
+  def test(runParallel : Boolean) = execute(Test(runParallel))
+  def testClass(classNames : String*) = execute(TestClass(classNames: _*))
   def testClassContinuously(className : String) = continuously(TestClass(className))
   def testFailedSuites = execute(TestFailedSuites())
   def pack = execute(PackageJars)
