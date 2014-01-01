@@ -59,8 +59,8 @@ import scala.concurrent.Promise
 import scala.concurrent.Await
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
-import maker.akka.RemoteActor
 import maker.scalatest.TestReporterActor
+import maker.akka.RemoteActor
 
 case class Build(
   name : String,

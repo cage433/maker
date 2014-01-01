@@ -16,58 +16,15 @@ import akka.actor.{Props => AkkaProps}
 import akka.actor.Address
 import com.typesafe.config.ConfigFactory
 
-trait RemoteActor extends Actor
-{
-  import RemoteActor._
-  val localActorPath = System.getProperty(localActorPathLabel)
-
-  def activate(localActorRef : ActorRef) : PartialFunction[Any, Unit]
-
-  def sendIdentifyRequest(){
-    context.actorSelection(localActorPath) ! Identify(localActorPath)
-  }
-
-  var toProcess : List[Any] = Nil
-  context.setReceiveTimeout(3.seconds)
-  sendIdentifyRequest()
-
-  def receive = {
-
-    val pf : PartialFunction[Any, Unit] = {
-      case ActorIdentity(`localActorPath`, Some(localActor)) =>
-        
-        context.setReceiveTimeout(Duration.Undefined)
-        localActor ! "Hello"
-        context.become(activate(localActor))
-
-      case ActorIdentity(`localActorPath`, None) => 
-        println(s"Remote actor not availible: $localActorPath")
-
-      case ReceiveTimeout => 
-        sendIdentifyRequest()
-
-      case other => 
-        toProcess = other :: toProcess
-    }
-    PartialFunctionUtils.withExceptionsToStdOut(pf)
-  }
-}
-
 object RemoteActor {
 
-  private val remoteActorClassnameLabel ="maker.remote.actor.classname"
-  val localActorPathLabel = "maker.local.actor.path"
-  val localActorSystemPortLabel = "maker.local.actor.port"
+  val localSystemAddressLabel = "maker.local.system.address"
 
   def javaOpts(localActor : ActorRef, localSystem : ExtendedActorSystem, remoteActorClassname : String) = {
-    val elements = localActor.path.elements.mkString("/")
-    val localActorPath = localSystem.provider.getDefaultAddress + "/" + elements
-    val localPort = localSystem.provider.getDefaultAddress.port.get
+    val localSystemAddress = localSystem.provider.getDefaultAddress.toString
 
     List(
-      s"-D$localActorPathLabel=$localActorPath",
-      s"-D$remoteActorClassnameLabel=$remoteActorClassname",
-      s"-D$localActorSystemPortLabel=$localPort"
+      s"-D$localSystemAddressLabel=$localSystemAddress"
     )
   }
 
@@ -93,14 +50,5 @@ object RemoteActor {
     ConfigFactory.parseString(text)
   }
 
-
-  def create() {
-    val localActorClass = Class.forName(
-      System.getProperty(remoteActorClassnameLabel)
-    )
-    val system = ActorSystem.create("Remote-system", systemConfig)
-    val props = AkkaProps.create(localActorClass)
-    val remoteActor = system.actorOf(props)
-  }
 }
 

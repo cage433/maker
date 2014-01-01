@@ -16,13 +16,12 @@ import akka.actor.ActorRef
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ReceiveTimeout
-import maker.akka.RemoteActor
 import scala.concurrent.duration._
 import akka.pattern.ask
-import maker.akka.PartialFunctionUtils
 import java.lang.management.ManagementFactory
 import org.scalatest.tools.Runner
 import scala.collection.JavaConversions._
+import maker.akka.RemoteActor
 
 object RunTests {
   def main(args : Array[String]){
@@ -37,43 +36,18 @@ object RunTests {
 }
 
 object SlaveTestSystem{
-  val port : Int = Option(System.getProperty(RemoteActor.localActorSystemPortLabel)).map(_.toInt).getOrElse{
-    throw new RuntimeException("Local system port not set")
-  }
     
   val system = {
-    val config = {
-      val text = """
-        akka {
-          loggers = ["akka.event.slf4j.Slf4jLogger"]
-          loglevel = "ERROR"
-          log-dead-letters = off
-          log-dead-letters-during-shutdown = off
-          actor {
-            provider = "akka.remote.RemoteActorRefProvider"
-          }
-          remote {
-            log-remote-lifecycle-events = off
-            enabled-transports = ["akka.remote.netty.tcp"]
-            netty.tcp {
-              hostname = "127.0.0.1"
-              port = 0
-            }
-          }
-        }
-      """
-      ConfigFactory.parseString(text)
+    val module = Option(System.getProperty("maker.test.module")).getOrElse{
+      throw new RuntimeException("Property 'maker.test.module' not set")
     }
-    val module = System.getProperty("maker.test.module")
-    ActorSystem.create("REMOTE-" + module, config)
+    ActorSystem.create("REMOTE-" + module, RemoteActor.systemConfig)
   }
   val actor : ActorRef = system.actorOf(Props[TestReporterActor], "test-reporter")
 }
 
 class AkkaTestReporter extends Reporter{
 
-  val List(idString, host) = ManagementFactory.getRuntimeMXBean().getName().split("@").toList
-  
   val actor = SlaveTestSystem.actor
 
   def apply(event : Event){
@@ -90,54 +64,77 @@ class AkkaTestReporter extends Reporter{
   }
 }
 
-class TestReporterActor extends RemoteActor{
+class TestReporterActor extends Actor{
 
   import TestReporterActor._
+  val localSystemAddress = System.getProperty(localSystemAddressLabel)
+  val module = System.getProperty("maker.test.module")
+  val localActorPath = localSystemAddress + "/" + "user/test-manager-" + module
+  val testManager = context.actorSelection(localActorPath) 
 
-  var runComplete = false
+  var toProcess : List[Any] = Nil
 
   override def postStop{
     context.system.shutdown
   }
 
-  def activate(manager : ActorRef) = {
-    def processEvents{
-      
-      toProcess.reverse.foreach{
-        x => 
-          try {
-            x match {
-              case event : Event =>
-                manager ! event
-
-              case DumpTestThread => 
-                println(TestReporterActor.someTestStackTrace())
-
-              case other =>
-                println(" AkkaTestReporter: unexpected event is " + other)
-              }
-          } catch {
-            case e : Throwable => 
-              println("Error processing " + x + ", will exit")
-              System.exit(1)
-          }
-      }
-      toProcess = Nil
-    }
-
-    processEvents
-
-    val pf : PartialFunction[Any, Unit] = {
-      case msg : Any =>
-        toProcess = msg :: toProcess
-        processEvents
-    }
-    pf
+  def receive = {
+    case msg : Any =>
+      toProcess = msg :: toProcess
+      processEvents
   }
+
+  private def processEvents{
+    toProcess.reverse.foreach{
+      x => 
+        try {
+          x match {
+            case event : Event =>
+              testManager ! event
+
+            case DumpTestThread => 
+              println(TestReporterActor.someTestStackTrace())
+
+            case other =>
+              println(" AkkaTestReporter2: unexpected event is " + other)
+            }
+        } catch {
+          case e : Throwable => 
+            println("Error processing " + x + ", will exit")
+            System.exit(1)
+        }
+    }
+    toProcess = Nil
+  }
+
 }
 
 object TestReporterActor{
 
+  val config = {
+    val text = """
+      akka {
+        loggers = ["akka.event.slf4j.Slf4jLogger"]
+        loglevel = "ERROR"
+        log-dead-letters = off
+        log-dead-letters-during-shutdown = off
+        actor {
+          provider = "akka.remote.RemoteActorRefProvider"
+        }
+        remote {
+          log-remote-lifecycle-events = off
+          enabled-transports = ["akka.remote.netty.tcp"]
+          netty.tcp {
+            hostname = "127.0.0.1"
+            port = 0
+          }
+        }
+      }
+    """
+    ConfigFactory.parseString(text)
+  }
+
+  val localSystemAddressLabel = "maker.local.system.address"
   case object DumpTestThread
 
   /**

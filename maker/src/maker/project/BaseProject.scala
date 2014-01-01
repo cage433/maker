@@ -35,6 +35,7 @@ trait BaseProject {
   protected def root : File
   val rootAbsoluteFile = root.asAbsoluteFile
   def name : String
+  def nameSansSpaces = name.replace(' ', '-')
   def setUp(graph : Dependency.Graph) : Unit
   def tearDown(graph : Dependency.Graph, result : TimedResults) : Unit
   def extraUpstreamTasks(task : Task) : Set[Task] = Set.empty

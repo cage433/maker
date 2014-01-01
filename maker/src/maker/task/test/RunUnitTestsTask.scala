@@ -67,7 +67,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
   def exec(context : TaskContext) : TaskResult = {
     val testEventCollector = context.actorSystem.actorOf(
       AkkaTestManager.props(baseProject.name),
-      "manager-" + baseProject.name
+      "test-manager-" + baseProject.nameSansSpaces
     )
 
     // If no class names are passed in then they are found via reflection, so 
@@ -93,7 +93,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
       "-Dlogback.configurationFile=" + baseProject.logbackConfigFilePath,
       "-Dsbt.log.format=false",
       "-Dscala.usejavacp=true",
-      "-Dmaker.test.module=" + baseProject.name,
+      "-Dmaker.test.module=" + baseProject.nameSansSpaces,
       props.MakerTestReporterClasspath.toCommandLine,
       props.RunningInMakerTest.toCommandLine("true")
     ) ::: RemoteActor.javaOpts(testEventCollector, context.actorSystem, "maker.scalatest.TestReporterActor")
