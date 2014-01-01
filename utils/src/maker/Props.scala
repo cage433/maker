@@ -10,6 +10,7 @@ import maker.utils.FileUtils._
 import maker.utils.Implicits.RichString._
 import ch.qos.logback.classic.Level
 import scala.xml.{XML, NodeSeq}
+import scala.util.{Properties => ScalaProps}
 
 
 case class Props (private val root_ : File, overrides : MMap[String, String] = MMap.empty) extends PropsTrait{
@@ -58,19 +59,6 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   object SbtInterfaceJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-sbt-interface-0.13.0.jar")) with IsFile
   object CompilerInterfaceSourcesJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-compiler-interface-0.13.0-sources.jar")) with IsFile
 
-  object JavaSystemProperties extends IsOptionalFile {
-    def properties = {
-      val properties = new java.util.Properties()
-        apply().foreach{file => properties.load(new FileInputStream(file))}
-      properties
-    }
-    def asMap = {
-      val ps = properties
-      JavaConversions.asScalaSet(ps.stringPropertyNames).map{
-        p => p -> ps.getProperty(p)
-      }.toMap
-    }
-  }
   object ShowFailingTestException extends Default(false) with IsBoolean
   object CopyResourcesBeforeCompiling extends Default(false) with IsBoolean
 
@@ -262,7 +250,7 @@ trait PropsTrait extends DelayedInit{
   }
 
   abstract class SystemProperty(key : String) extends Property{
-    protected def systemValue = Option(System.getProperty(key))
+    protected def systemValue = ScalaProps.propOrNone(key)
     override def stringValue = overrides.getOrElse(name, systemValue.getOrElse{throw new Exception("Required System property " + name + " not set")})
     def toCommandLine(value : String) = "-D%s=%s" % (key, value)
     def toCommandLine = "-D%s=%s" % (key, apply())

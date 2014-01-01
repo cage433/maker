@@ -36,6 +36,7 @@ import maker.Props._
 import maker.Props
 import maker.utils.MakerLog
 import maker.utils.FileUtils._
+import scala.util.Properties
 
 
 case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWriter(System.out)),
@@ -153,7 +154,7 @@ object ScalaCommand {
     val allArgs : List[String] = java :: opts ::: List[String](
       "-Dscala.usejavacp=true", 
       "-classpath",
-      classpath + ":" + System.getProperty("sun.boot.class.path")) ::: 
+      classpath + ":" + Properties.propOrNull("sun.boot.class.path")) ::: 
       List("scala.tools.nsc.MainGenericRunner",
       klass) ::: args.toList
     Command(outputHandler, None, allArgs :_*)

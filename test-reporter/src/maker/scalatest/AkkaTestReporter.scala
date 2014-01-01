@@ -22,6 +22,7 @@ import java.lang.management.ManagementFactory
 import org.scalatest.tools.Runner
 import scala.collection.JavaConversions._
 import maker.akka.RemoteActor
+import scala.util.Properties
 
 object RunTests {
   def main(args : Array[String]){
@@ -103,7 +104,7 @@ class TestReporterActor extends Actor{
 
 object TestReporterActor{
 
-  private def property(label : String) = Option(System.getProperty(label)).getOrElse{
+  private def property(label : String) = Properties.propOrNone(label).getOrElse{
     throw new RuntimeException(s"Property $label not set")
   }
 

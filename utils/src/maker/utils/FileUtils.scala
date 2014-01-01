@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import java.io.InputStreamReader
 import java.io.FileInputStream
+import scala.util.Properties
 
 object FileUtils extends Asserting{
 
@@ -63,7 +64,7 @@ object FileUtils extends Asserting{
     new File(base, file)
   }
 
-  def cwd = file(System.getProperty("user.dir"))
+  def cwd = file(Properties.userDir)
 
   implicit def toRichFile(f : File) = RichFile(f)
 

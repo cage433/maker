@@ -25,45 +25,24 @@
 package maker.project
 
 import com.typesafe.zinc.Compiler
-import com.typesafe.zinc.Inputs
-import com.typesafe.zinc.Parsed
-import com.typesafe.zinc.Settings
 import com.typesafe.zinc.Setup
-import com.typesafe.zinc.ZincClient
 import java.io.File
-import java.io.FileOutputStream
-import java.io.PrintStream
-import java.io.PrintStream
-import java.io.PrintWriter
 import java.util.concurrent.ConcurrentHashMap
-import maker.build.Build
 import maker.build.Dependency
 import maker.Props
 import maker.task.compile._
-import maker.task.compile.CompileTask
 import maker.task.publish.PomUtils
 import maker.task.tasks.CleanTask
 import maker.task.test.RunUnitTestsTask
 import maker.task.test.TestResults
 import maker.task.update.Resource
 import maker.task.update.UpdateTask
-import maker.utils._
 import maker.utils.FileUtils._
 import maker.utils.Implicits.RichString._
 import org.apache.commons.io.FileUtils._
-import org.apache.commons.io.output.NullOutputStream
-import org.apache.commons.io.output.TeeOutputStream
-import os.Command
 import sbt.ConsoleLogger
 import sbt.inc.Analysis
 import scala.collection.JavaConversions._
-import scala.tools.nsc.Global
-import scala.tools.nsc.io.Directory
-import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.Settings
-import scala.xml.Elem
-import xml.NodeSeq
-import xsbti.compile.CompileOrder
 
 /**
   * Corresponds to a module in IntelliJ

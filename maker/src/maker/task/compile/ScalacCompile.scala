@@ -11,6 +11,7 @@ import sbt.inc.Analysis
 import sbt.inc.Locate
 import maker.build.Build
 import maker.utils.FileUtils._
+import scala.util.Properties
 
 object ScalacCompile{
 
@@ -41,7 +42,7 @@ object ScalacCompile{
          the compiler form the command line. 
          Not sure why - nor whether it's truly ok to unset this here
       */
-      System.setProperty("scala.usejavacp", "false")
+      Properties.setProp("scala.usejavacp", "false")
     }
 
     val result = try {
