@@ -70,7 +70,7 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     ) ::: systemProperties
     val testParameters =
       if(!verbose)
-        List("-P", "-C", "maker.utils.MakerTestReporter")
+        List("-o", "-P", "-C", "maker.utils.MakerTestReporter")
       else
         List("-oF", "-P", "-C", "maker.utils.MakerTestReporter")
     val args = testParameters ++ suiteParameters
@@ -86,8 +86,10 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
     )
     val res = cmd.exec
     val results = MakerTestResults(baseProject.props, baseProject.testOutputFile)
-    val result = if (results.failures.isEmpty){
+    val result = if (res == 0 && results.failures.isEmpty){
       TaskResult.success(this, sw)
+    } else if (results.failures.isEmpty){
+      TaskResult.failure(this, sw, "scalatest process bombed out. $? = " + res)
     } else {
       val failingSuiteClassesText = results.failingSuiteClasses.indented()
       TaskResult.failure(this, sw, "Test failed in " + baseProject + failingSuiteClassesText)
