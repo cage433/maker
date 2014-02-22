@@ -113,25 +113,15 @@ org.scala-lang scala-library {scala_version} classifier:sources path:scala-libra
 org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.jar
 org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version}.jar
 org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
-org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
-org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-{scala_version}.jar
 org.scala-lang jline {scala_version} path:jline-{scala_version}.jar
 org.scala-lang jline {scala_version} classifier:sources path:jline-{scala_version}.jar
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
-  cat > dynamic-akka-resource-list <<HERE
-com.typesafe.akka akka-remote_{scala_version_base} {akka_version} path:akka-remote_{scala_version_base}-{akka_version}.jar
-com.typesafe.akka akka-remote_{scala_version_base} {akka_version} classifier:sources path:akka-remote_{scala_version_base}-{akka_version}.jar
-HERE
-
-  #update_resources $MAKER_ROOT_DIR/scala-libs dynamic-akka-resource-list 
 
   GLOBAL_RESOURCE_CONFIG="$PROJECT_ROOT_DIR/maker-resource-config" 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
-  #update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-akka-resource-list 
   rm dynamic-scala-resource-list
-  rm dynamic-akka-resource-list
   rm dynamic-zinc-resource-list
 }
 

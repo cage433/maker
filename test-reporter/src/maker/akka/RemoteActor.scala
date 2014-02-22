@@ -5,26 +5,25 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.ActorSystem
-import akka.actor.Identify
-import akka.actor.ActorIdentity
 import akka.actor.ReceiveTimeout
 import akka.actor.Actor
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.dispatch.Await
+import akka.util.duration._
 import akka.actor.ActorSelection
 import akka.actor.{Props => AkkaProps}
 import akka.actor.Address
 import com.typesafe.config.ConfigFactory
+import akka.remote.RemoteActorRefProvider
 
 object RemoteActor {
 
   val localSystemAddressLabel = "maker.local.system.address"
 
   def javaOpts(localActor : ActorRef, localSystem : ExtendedActorSystem, remoteActorClassname : String) = {
-    val localSystemAddress = localSystem.provider.getDefaultAddress.toString
+    val localSystemAddress = localSystem.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address.toString
 
     List(
-      s"-D$localSystemAddressLabel=$localSystemAddress"
+      "-D" + localSystemAddressLabel + "=" + localSystemAddress
     )
   }
 

@@ -51,8 +51,8 @@ import maker.akka.RemoteActor
 import maker.task.TaskContext
 import akka.actor.{Props => AkkaProps}
 import akka.pattern.Patterns
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import akka.dispatch.Await
+import akka.util.Duration
 import java.util.concurrent.TimeUnit
 import org.scalatest.events._
 

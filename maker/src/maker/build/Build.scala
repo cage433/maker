@@ -52,11 +52,12 @@ import maker.task.TaskResult
 import maker.build.BuildManager.TimedResults
 import akka.actor.ActorRef
 import akka.util.Timeout
-import scala.concurrent.Future
+import akka.dispatch.Future
 import akka.pattern.ask
-import scala.concurrent.duration._
-import scala.concurrent.Promise
-import scala.concurrent.Await
+import akka.util.duration._
+import akka.util.Duration
+import akka.dispatch.Promise
+import akka.dispatch.Await
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import maker.scalatest.TestReporterActor

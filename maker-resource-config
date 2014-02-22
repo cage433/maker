@@ -12,7 +12,7 @@
 # 'default' is used for all resources that don't specify a particular resolver
 #----------------------------------------------------------------------------
 resolver: default http://repo1.maven.org/maven2/
-
+resolver: akka http://repo.typesafe.com/typesafe/releases/
 
 
 #----------------------------------------------------------------------------
@@ -21,13 +21,13 @@ resolver: default http://repo1.maven.org/maven2/
 # (see scala_url below). versions _can_ be hard coded in external-resources if
 # there is a good reason
 #----------------------------------------------------------------------------
-version: scala_version 2.10.2
-version: scala_version_base 2.10
-version: sbt_version 0.13.0
-version: scalatest_version 2.0
+version: scala_version 2.9.2
+version: scala_version_base 2.9
+version: sbt_version 0.13.1
+version: scalatest_version 1.9.2
 version: jetty_version 7.6.3.v20120416
-version: akka_version 2.2.3
-version: twitter_version 6.3.6
+version: akka_version 2.0.5
+version: twitter_version 6.11.1
 version: typesafe_config_version 1.0.2
 version: protobuf_version 2.4.1
 version: netty_version 3.6.6.Final

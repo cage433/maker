@@ -8,8 +8,8 @@ import akka.actor.ExtendedActorSystem
 import org.scalatest.events._
 import maker.utils.MakerLog
 import akka.pattern.Patterns
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import akka.dispatch.Await
+import akka.util.Duration
 import java.util.concurrent.TimeUnit
 import org.scalatest.events.TestSucceeded
 import akka.actor.Terminated
@@ -60,5 +60,5 @@ class AkkaTestManager(moduleName : String) extends Actor{
 
 object AkkaTestManager{
   case object EVENTS
-  def props(moduleName : String) = AkkaProps(classOf[AkkaTestManager], moduleName)
+  def props(moduleName : String) = AkkaProps(new AkkaTestManager(moduleName))
 }

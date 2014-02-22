@@ -23,7 +23,7 @@ import org.scalatest.FunSuiteLike
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.mock.MockitoSugar
 import org.slf4j.Logger
-import scala.concurrent.duration._
+import akka.util.duration._
 import akka.testkit.ImplicitSender
 import java.util.concurrent.atomic.AtomicBoolean
 import maker.task.TaskContext

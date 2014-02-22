@@ -1,6 +1,6 @@
 package maker.build
 
-import scala.concurrent.Promise
+import akka.dispatch.Promise
 import akka.actor.ActorRef
 
 /** 

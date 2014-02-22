@@ -10,13 +10,10 @@ import akka.actor.Props
 import akka.actor.ActorSelection
 import org.scalatest.events.RunCompleted
 import akka.pattern.Patterns
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.dispatch.Await
+import akka.util.duration._
 import akka.actor.ActorRef
-import akka.actor.Identify
-import akka.actor.ActorIdentity
 import akka.actor.ReceiveTimeout
-import scala.concurrent.duration._
 import akka.pattern.ask
 import java.lang.management.ManagementFactory
 import org.scalatest.tools.Runner

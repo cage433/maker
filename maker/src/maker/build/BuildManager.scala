@@ -4,18 +4,18 @@ import maker.utils.MakerLog
 import akka.actor.Actor
 import akka.actor.Props
 import akka.pattern.ask
-import scala.concurrent.duration._
+import akka.util.duration._
 import akka.util.Timeout
 import maker.task.Task
 import akka.actor.ActorRef
 import maker.utils.Stopwatch
 import maker.task.TaskResult
-import scala.concurrent.Promise
+import akka.dispatch.Promise
 import akka.actor.ActorSystem
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import akka.dispatch.Await
+import akka.util.Duration
 import maker.task.test.TestResults
-import scala.concurrent.Future
+import akka.dispatch.Future
 import akka.pattern.ask
 import maker.project.Module
 import maker.project.BaseProject
@@ -46,7 +46,7 @@ object BuildManager{
   }
 
   object Worker{
-    def props() = Props(classOf[Worker])
+    def props() = Props(new Worker())
   }
 
   class Worker extends Actor{
@@ -86,7 +86,7 @@ object BuildManager{
     }
   }
 
-  def props(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef]) = Props(classOf[BuildManager], buildName, graph, workers)
+  def props(buildName : String, graph : Dependency.Graph, workers : Iterable[ActorRef]) = Props(new BuildManager(buildName, graph, workers))
 
 }
 
@@ -101,6 +101,7 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
 
   private def announceWork = workers.foreach{wkr =>  wkr ! WorkAvailable}
 
+  implicit val executionContext = context.dispatcher
   private val resultPromise = Promise[TimedResults]()
 
   type ModuleName = String
