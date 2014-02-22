@@ -43,7 +43,7 @@ case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWri
                                 buffer : Option[StringBuffer] = None,
                                 closeWriter : Boolean = false) {
   def withSavedOutput = copy(buffer = Some(new StringBuffer()))
-  def savedOutput : String = buffer.fold("")(_.toString)
+  def savedOutput : String = buffer.map(_.toString).getOrElse("")
   def processLine(line : String){
     writer.foreach{
       w =>

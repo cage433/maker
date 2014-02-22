@@ -102,7 +102,7 @@ class TestReporterActor extends Actor{
 object TestReporterActor{
 
   private def property(label : String) = Properties.propOrNone(label).getOrElse{
-    throw new RuntimeException(s"Property $label not set")
+    throw new RuntimeException("Property " + label + " not set")
   }
 
   val localSystemAddress = property(RemoteActor.localSystemAddressLabel)
