@@ -23,43 +23,41 @@ class IvyUtilsTests extends FreeSpec {
         assert(
           IvyUtils.generateIvyFile(b).readLines.mkString("\n") === 
           """|<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
-             |  <info organisation="MakerTestGroupID" module="b" revision="${maker.module.version}"/>
+             |  <info revision="${maker.module.version}" module="b" organisation="MakerTestGroupID"></info>
              |  <configurations>
-             |    <conf name="default" transitive="false"/>
-             |    <conf name="compile" transitive="false"/>
-             |    <conf name="test" transitive="false"/>
+             |    <conf name="default" transitive="false"></conf>
+             |    <conf name="compile" transitive="false"></conf>
+             |    <conf name="test" transitive="false"></conf>
              |  </configurations>
              |  <publications>
-             |    <artifact name="b" type="pom"/>
-             |    <artifact name="b" type="jar" ext="jar" conf="default"/>
+             |    <artifact type="pom" name="b"></artifact>
+             |    <artifact conf="default" type="jar" name="b" ext="jar"></artifact>
              |  </publications>
              |  <dependencies defaultconfmapping="${ivy.default.conf.mappings}">
-             |    <exclude org="MakerTestGroupID" module="a"/>
-             |    <exclude org="MakerTestGroupID" module="b"/>
+             |    <exclude org="MakerTestGroupID" module="a"></exclude>
+             |    <exclude org="MakerTestGroupID" module="b"></exclude>
              |  </dependencies>
              |</ivy-module>""".stripMargin
         )
-
         assert(
           IvyUtils.generateIvyFile(c).readLines.mkString("\n") === 
           """|<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
-             |  <info organisation="MakerTestGroupID" module="c" revision="${maker.module.version}"/>
+             |  <info revision="${maker.module.version}" module="c" organisation="MakerTestGroupID"></info>
              |  <configurations>
-             |    <conf name="default" transitive="false"/>
-             |    <conf name="compile" transitive="false"/>
-             |    <conf name="test" transitive="false"/>
+             |    <conf name="default" transitive="false"></conf>
+             |    <conf name="compile" transitive="false"></conf>
+             |    <conf name="test" transitive="false"></conf>
              |  </configurations>
              |  <publications>
-             |    <artifact name="c" type="pom"/>
-             |    <artifact name="c" type="jar" ext="jar" conf="default"/>
+             |    <artifact type="pom" name="c"></artifact>
+             |    <artifact conf="default" type="jar" name="c" ext="jar"></artifact>
              |  </publications>
              |  <dependencies defaultconfmapping="${ivy.default.conf.mappings}">
-             |    <exclude org="MakerTestGroupID" module="a"/>
-             |    <exclude org="MakerTestGroupID" module="b"/>
-             |    <exclude org="MakerTestGroupID" module="c"/>
+             |    <exclude org="MakerTestGroupID" module="a"></exclude>
+             |    <exclude org="MakerTestGroupID" module="b"></exclude>
+             |    <exclude org="MakerTestGroupID" module="c"></exclude>
              |  </dependencies>
-             |</ivy-module>""".stripMargin
-        )
+             |</ivy-module>""".stripMargin)
     }
   }
 }
