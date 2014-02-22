@@ -60,7 +60,7 @@ class PropsTests extends FunSuite{
         writeToFile(file, "ProjectScalaVersion=Fred")
         //assert("a" === "b")
         assert(Props(file).ProjectScalaVersion() === "Fred")
-        assert(Props(file.getParentFile).ProjectScalaVersion() === "2.10.2")
+        assert(Props(file.getParentFile).ProjectScalaVersion() === "2.9.2")
     }
   }
 

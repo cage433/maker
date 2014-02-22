@@ -3,7 +3,7 @@ commons-io commons-io 2.1
 commons-pool commons-pool 1.5.5
 com.typesafe.sbt incremental-compiler {sbt_version}
 com.typesafe.sbt sbt-interface {sbt_version}
-com.typesafe.zinc zinc 0.3.0
+com.typesafe.zinc zinc {zinc_version}
 net.debasishg sjson_{scala_version} 0.19
 org.apache.ant ant 1.8.2
 org.apache.commons commons-lang3 3.1

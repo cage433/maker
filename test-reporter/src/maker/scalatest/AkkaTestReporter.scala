@@ -54,8 +54,8 @@ class AkkaTestReporter extends Reporter{
 class TestReporterActor extends Actor{
 
   import TestReporterActor._
-  val testManager = context.actorSelection(localSystemAddress + "/user/TestManager-" + module) 
-  val buildManager = context.actorSelection(localSystemAddress + "/user/BuildManager")
+  val testManager = context.actorFor(localSystemAddress + "/user/TestManager-" + module) 
+  val buildManager = context.actorFor(localSystemAddress + "/user/BuildManager")
 
   override def postStop{
     context.system.shutdown

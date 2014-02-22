@@ -2,7 +2,6 @@ package maker.task.compile
 
 import maker.project.Module
 import com.typesafe.zinc.Inputs
-import com.typesafe.zinc.IncOptions
 import scala.collection.JavaConversions._
 import java.io.File
 import xsbti.compile.CompileOrder
@@ -30,7 +29,6 @@ object ScalacCompile{
       definesClass      = Locate.definesClass _,
       javaOnly          = false,
       compileOrder      = CompileOrder.Mixed,
-      incOptions        = IncOptions(),
       outputRelations   = None,
       outputProducts    = None,
       mirrorAnalysis    = true

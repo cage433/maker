@@ -27,8 +27,8 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   val Java = file(JavaHome() + "/bin/java").absPath
   val Javac = file(JavaHome() + "/bin/javac").absPath
   val Jar = file(JavaHome() + "/bin/jar").absPath
-  object MakerScalaVersion extends Default("2.10.2") with IsString
-  object ProjectScalaVersion extends Default("2.10.2") with IsString
+  object MakerScalaVersion extends Default("2.9.2") with IsString
+  object ProjectScalaVersion extends Default("2.9.2") with IsString
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
   object Compiler extends Default("scalac") with IsString

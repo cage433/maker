@@ -38,8 +38,8 @@ object RemoteActor {
         }
         remote {
           log-remote-lifecycle-events = off
-          enabled-transports = ["akka.remote.netty.tcp"]
-          netty.tcp {
+          transport = "akka.remote.netty.NettyRemoteTransport"
+          netty{
             hostname = "127.0.0.1"
             port = 0
           }

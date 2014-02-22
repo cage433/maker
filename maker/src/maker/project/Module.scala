@@ -205,8 +205,7 @@ object Module{
     props.extraJars(),
     props.SbtInterfaceJar(),
     props.CompilerInterfaceSourcesJar(),
-    props.JavaHome(),
-    forkJava = false
+    props.JavaHome()
   )
 
   val compiler = Compiler.create(setup, logger)

@@ -201,7 +201,6 @@ launch_maker_repl(){
     RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
   fi
  
-
   "$JAVA_HOME/bin/java" $(java_opts) \
     -classpath "$(external_scala_jars):$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
     -Dsbt.log.format="false" \
