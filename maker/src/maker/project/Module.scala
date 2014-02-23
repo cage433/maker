@@ -199,6 +199,17 @@ object Module{
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
   val props = Props(file(".").asAbsoluteFile)
+  val files = List[File](
+    props.ProjectScalaCompilerJar(),
+    props.ProjectScalaLibraryJar(),
+    props.SbtInterfaceJar(),
+    props.CompilerInterfaceSourcesJar(),
+    props.JavaHome()
+  ) ::: props.extraJars()
+  files.foreach{
+    f =>
+      println(f.exists + ", " + f)
+  }
   private val setup = Setup.create(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),
@@ -208,6 +219,7 @@ object Module{
     props.JavaHome()
   )
 
+  println("Debug: " + (new java.util.Date()) + " Module: " + setup)
   val compiler = Compiler.create(setup, logger)
 
   val analyses = new ConcurrentHashMap[File, Analysis]()

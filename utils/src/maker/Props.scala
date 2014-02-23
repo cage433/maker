@@ -51,13 +51,14 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   def compilerJars() = List(
     ProjectScalaCompilerJar(), ProjectScalaLibraryJar(), ProjectScalaReflectJar(), ProjectJlineJar())
 
-  def extraJars() = List( ProjectScalaReflectJar(), 
+  def extraJars() = List( 
+    //ProjectScalaReflectJar(), 
     //ProjectScalaActorsJar(), 
     ProjectJlineJar())
   
 
-  object SbtInterfaceJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-sbt-interface-0.13.0.jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-compiler-interface-0.13.0-sources.jar")) with IsFile
+  object SbtInterfaceJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-sbt-interface-0.12.4.jar")) with IsFile
+  object CompilerInterfaceSourcesJar extends Default(file(root, "zinc-libs/com.typesafe.sbt-compiler-interface-0.12.4-sources.jar")) with IsFile
 
   object ShowFailingTestException extends Default(false) with IsBoolean
   object CopyResourcesBeforeCompiling extends Default(false) with IsBoolean
