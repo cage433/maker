@@ -89,7 +89,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   }
 
   test("Compilation makes class files, writes dependencies, and package makes jar"){
-    withTestDir {
+    withTempDir {
       dir => 
         val (proj, _) = simpleProject(dir)
         proj.clean
@@ -106,7 +106,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   }
 
 
-  ignore("Deletion of source file causes deletion of class files"){
+  test("Deletion of source file causes deletion of class files"){
     withTempDir{
       dir => 
         val (proj, files) = simpleProject(dir)
@@ -128,7 +128,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Generated class files are deleted before compilation of source"){
+  test("Generated class files are deleted before compilation of source"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)
@@ -162,7 +162,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Recompilation of test source is done if signature of dependent source file changes"){
+  test("Recompilation of test source is done if signature of dependent source file changes"){
     withTempDir{
       tempDir => 
         val props = Props.initialiseTestProps(tempDir)
@@ -210,7 +210,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Compilation across dependent modules works"){
+  test("Compilation across dependent modules works"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)
@@ -249,7 +249,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("When two files are broken fixing one doesn't alow compilation to succeed"){
+  test("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)
@@ -307,7 +307,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   }
 
   /// add test for suspected problem underlying bug #57
-  ignore("Compilation across dependent modules and scopes works correctly"){
+  test("Compilation across dependent modules and scopes works correctly"){
     withTempDir{
       dir =>
         val props = Props.initialiseTestProps(dir)
@@ -377,7 +377,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Compilation of mutually dependent classes works"){
+  test("Compilation of mutually dependent classes works"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)
@@ -408,7 +408,7 @@ class SomeClass extends SomeTrait{
   }
 
 
-  ignore("Incremental compilation recompiles implementation of changed interfaces"){
+  test("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)
@@ -477,7 +477,7 @@ class SomeClass extends SomeTrait{
     }
   }
 
-  ignore("Adding parameter to constructor causes recompilation of downstream file"){
+  test("Adding parameter to constructor causes recompilation of downstream file"){
     withTempDir{
       dir => 
         val props = Props.initialiseTestProps(dir)
