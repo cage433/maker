@@ -89,7 +89,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   }
 
   test("Compilation makes class files, writes dependencies, and package makes jar"){
-    withTempDir {
+    withTestDir {
       dir => 
         val (proj, _) = simpleProject(dir)
         proj.clean

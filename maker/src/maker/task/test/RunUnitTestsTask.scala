@@ -92,6 +92,7 @@ case class RunUnitTestsTask(
 
     val consoleReporterArg = if (props.RunningInMakerTest()) Nil else List("-o")
 
+    // -Dsbt.log.format - see note in bin/maker.sh as to why this is required
     val opts = List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m", 

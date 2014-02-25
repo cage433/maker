@@ -23,7 +23,7 @@ resolver: akka http://repo.typesafe.com/typesafe/releases/
 #----------------------------------------------------------------------------
 version: scala_version 2.9.2
 version: scala_version_base 2.9
-version: sbt_version 0.12.4
+version: sbt_version 0.12.1
 version: scalatest_version 1.9.2
 version: jetty_version 7.6.3.v20120416
 version: akka_version 2.0.5
