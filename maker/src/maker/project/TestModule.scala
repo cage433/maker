@@ -57,12 +57,10 @@ trait TestModule{
     writeToFile(
       file(root, "external-resources"),
       """|org.scalatest scalatest_{scala_version} {scalatest_version}
-          |org.scalatest scalatest_{scala_version} {scalatest_version}
           |com.typesafe.akka akka-actor {akka_version} 
           |com.typesafe.akka akka-remote {akka_version} 
-          |com.typesafe.akka akka-slf4j_{scala_version_base} {akka_version} 
+          |com.typesafe.akka akka-slf4j {akka_version} 
           |com.twitter util-core_{scala_version} {twitter_version}
-          |org.scala-lang scala-reflect {scala_version} 
           |com.typesafe config {typesafe_config_version}
           |com.google.protobuf protobuf-java {protobuf_version}
           |io.netty netty {netty_version}

@@ -10,14 +10,14 @@ import maker.Props
 class RunUnitTestsTaskTests extends FunSuite {
 
   test("Test Reporter does its thing"){
-    withTempDir{
+    withTestDir{
       root => 
         val props = Props.initialiseTestProps(root) 
 
         val proj = TestModule(root, "RunUnitTestsTaskTests", props)
         appendToFile(
           file(root, "external-resources"),
-          """|org.scalatest scalatest_{scala_version_base} {scalatest_version}""".stripMargin
+          """|org.scalatest scalatest_{scala_version} {scalatest_version}""".stripMargin
         )
         proj.writeTest(
           "foo/GoodTest.scala",

@@ -44,7 +44,6 @@ object ScalacCompile{
     }
 
     val result = try {
-      println("Debug: " + (new java.util.Date()) + " ScalacCompile: compiling " + inputs.sources.mkString("\n"))
       stopUsingJavaClasspath
       val analysis = Module.compiler.compile(inputs)(modulePhase.compilerLogger)
 

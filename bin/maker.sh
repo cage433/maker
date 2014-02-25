@@ -201,20 +201,6 @@ launch_maker_repl(){
     RUNNING_EXEC_MODE=" -Dmaker.execmode=true "
   fi
  
-    #-Dsbt.log.format="false" \
-
-  echo "$JAVA_HOME/bin/java $(java_opts) \
-    -classpath "$(external_scala_jars):$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
-    $RUNNING_EXEC_MODE \
-    -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
-    -Dscala.usejavacp=true \
-    $MAKER_ARGS \
-    $EXTRA_REPL_ARGS \
-    scala.tools.nsc.MainGenericRunner \
-    -Yrepl-sync -nc \
-    -i $PROJECT_FILE \
-    $CMDS" 
-
   # sbt.log.format ostensibly prevents ansi coloured output in its logger, however it's
   # needed here to prevent an exception thrown when the compiler builds its logger
   # 2.10 doesn't seem to have the same issue.

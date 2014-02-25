@@ -103,24 +103,41 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
 
   implicit val executionContext = context.dispatcher
   private val resultPromise = Promise[TimedResults]()
+  private var remaining : Dependency.Graph = graph
+  private var completed : Set[Task] = Set.empty
+  private var stopwatch : Stopwatch = Stopwatch()
+  private var results : List[TaskResult] = Nil
+  private var running : Set[Task] = Set.empty
 
   type ModuleName = String
   private var runningTests : List[(ModuleName, ActorRef)] = Nil
 
+  def returnResults() = {
+    val tr = TimedResults(buildName, graph, results.reverse, 0)
+    resultPromise.success(tr)
+  }
+
+  private def failed() : Receive = {
+
+    if (running.isEmpty)
+      returnResults()
+
+    {
+      case UnitOfWorkResult(task, result) =>{
+        results = result :: results
+        running -= task
+        if (running.isEmpty){
+          returnResults()
+        }
+      }
+
+      case _ => 
+    }
+  }
   private def executing():Receive = {
-    var remaining : Dependency.Graph = graph
-    var completed : Set[Task] = Set.empty
-    var running : Set[Task] = Set.empty
-    var results : List[TaskResult] = Nil
-    var stopwatch : Stopwatch = Stopwatch()
 
     def nextTask : Option[Task] = (remaining.leaves -- running).headOption
 
-
-    def returnResults = {
-      val tr = TimedResults(buildName, graph, results.reverse, 0)
-      resultPromise.success(tr)
-    }
 
     announceWork
 
@@ -130,9 +147,9 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
         running -= task
         remaining -= task
         results = result :: results
-        if (result.failed && task.failureHaltsTaskManager)
-          returnResults
-        else {
+        if (result.failed && task.failureHaltsTaskManager){
+          context.become(failed())
+        } else {
           nextTask match {
             case Some(_) => announceWork
             case None if running.isEmpty => returnResults

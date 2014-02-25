@@ -146,8 +146,12 @@ trait BaseProject {
   def compileContinuously = continuously(Compile)
   def testCompile = execute(TestCompile)
   def testCompileContinuously = continuously(TestCompile)
-  def test = execute(Test(runParallel = true))
-  def test(runParallel : Boolean) = execute(Test(runParallel))
+  def test = {
+    execute(Test(runParallel = true))
+  }
+  def test(runParallel : Boolean) = {
+    execute(Test(runParallel))
+  }
   def testClass(classNames : String*) = execute(TestClass(classNames: _*))
   def testClassContinuously(className : String) = continuously(TestClass(className))
   def testFailedSuites = execute(TestFailedSuites())
