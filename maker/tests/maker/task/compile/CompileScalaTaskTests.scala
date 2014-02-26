@@ -36,7 +36,7 @@ import scala.collection.mutable.ListBuffer
 import maker.utils.Implicits.RichString._
 import org.scalatest.ParallelTestExecution
 import maker.project._
-import maker.Props
+import maker.MakerProps
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
@@ -45,7 +45,7 @@ import maker.utils.FileUtils
 class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
-    val props = Props.initialiseTestProps(root)
+    val props = MakerProps.initialiseTestProps(root)
     val proj = TestModule(root, "CompileScalaTaskTests", props)
     val outputDir = proj.compilePhase.outputDir
     val files = new {
@@ -131,7 +131,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Generated class files are deleted before compilation of source"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val proj = TestModule(dir, "CompileScalaTaskTests", props)
         val fooSrc = file(dir, "src/foo/Foo.scala")
         writeToFile(
@@ -165,7 +165,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Recompilation of test source is done if signature of dependent source file changes"){
     withTempDir{
       tempDir => 
-        val props = Props.initialiseTestProps(tempDir)
+        val props = MakerProps.initialiseTestProps(tempDir)
         val dir : File = file(tempDir, "proj")
         dir.mkdirs
         
@@ -213,7 +213,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Compilation across dependent modules works"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val one = TestModule(file(dir, "one"), "CompileScalaTaskTests - one", props)
         val two = TestModule(file(dir, "two"), "CompileScalaTaskTests - two", props, upstreamProjects = List(one))
         
@@ -252,7 +252,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val proj = TestModule(dir, "CompileScalaTaskTests", props)
         
         val fooSrc = file(dir, "src/foo/Foo.scala")
@@ -310,7 +310,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Compilation across dependent modules and scopes works correctly"){
     withTempDir{
       dir =>
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val one = TestModule(file(dir, "one"), "one", props)
         val two = TestModule(file(dir, "two"), "two", props, upstreamProjects = List(one))
         val three = TestModule(file(dir, "three"), "three", props, upstreamProjects = List(two))
@@ -380,7 +380,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   test("Compilation of mutually dependent classes works"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val proj = TestModule(dir, "CompileScalaTaskTests", props)
         val traitSrc = proj.writeSrc(
           "foo/SomeTrait.scala",
@@ -411,7 +411,7 @@ class SomeClass extends SomeTrait{
   test("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val proj = TestModule(dir, "CompileScalaTaskTests", props)
         proj.writeSrc(
           "foo/Foo.scala",
@@ -480,7 +480,7 @@ class SomeClass extends SomeTrait{
   test("Adding parameter to constructor causes recompilation of downstream file"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val A = TestModule(file(dir, "A"), "A", props)
         val B = TestModule(file(dir, "B"), "B", props, List(A))
         A.writeSrc(

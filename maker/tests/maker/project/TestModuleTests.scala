@@ -3,14 +3,14 @@ package maker.project
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.os.Command
-import maker.Props
+import maker.MakerProps
 
 
 class TestModuleTests extends FunSuite{
   test("Can build test module from itself"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val proj = TestModule(dir, "TestTestModule", props)
         proj.writeSrc(
           "foo/Foo.scala",

@@ -4,13 +4,13 @@ import org.scalatest.FreeSpec
 import maker.utils.FileUtils._
 import maker.project.TestModule
 import maker.project.Project
-import maker.Props
+import maker.MakerProps
 
 class PomUtilsTests extends FreeSpec {
   "test generated file for module" in {
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val a = TestModule(file(dir, "a"), "a", props)
         val b = TestModule(file(dir, "b"), "b", props, List(a))
         val c = new Project("c", dir, List(b), props ++ ("GroupId", "PomUtilsTests"))

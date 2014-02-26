@@ -27,7 +27,7 @@ package maker.utils
 
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
-import maker.Props
+import maker.MakerProps
 
 object MakerLog{
   def retry[T](times: Int, delay: Int = 0)(f: => T): T = {

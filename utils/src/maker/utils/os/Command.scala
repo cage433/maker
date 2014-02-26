@@ -32,8 +32,8 @@ import scala.actors.Futures._
 import java.io.FileWriter
 import scalaz.syntax.std.option._
 import java.io.IOException
-import maker.Props._
-import maker.Props
+import maker.MakerProps._
+import maker.MakerProps
 import maker.utils.MakerLog
 import maker.utils.FileUtils._
 import scala.util.Properties

@@ -6,7 +6,7 @@ import maker.utils.Implicits.RichString._
 import java.io.File
 import maker.project._
 import maker.project.TestModule
-import maker.Props
+import maker.MakerProps
 import maker.task.compile._
 
 
@@ -32,7 +32,7 @@ class CachedCompilationTests extends FunSuite {
 
       withTempDir{
       dir => {
-        val props = Props.initialiseTestProps(dir) ++ ("CompilationCache","file")
+        val props = MakerProps.initialiseTestProps(dir) ++ ("CompilationCache","file")
         val projU = TestModule(new File(dir, "u"), "CachedCompilationTests-u", props)
         val v1 = "package foo\nobject Sample { def hello():Int = 1 }"
         val v2 = "package foo\nobject Sample { def hello():String = \"x\" }\nobject Bob"

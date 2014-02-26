@@ -4,7 +4,7 @@ import org.scalatest.FreeSpec
 import maker.utils.FileUtils._
 import maker.utils.Implicits.RichString._
 import maker.project.TestModule
-import maker.Props
+import maker.MakerProps
 
 class UpdateTaskTests extends FreeSpec {
   "test resources" in {
@@ -14,7 +14,7 @@ class UpdateTaskTests extends FreeSpec {
         val resourceConfigFile = file(dir, "maker-resource-config")
         val resolverDir = file(dir, "RESOLVER").makeDir
 
-        val props = Props.initialiseTestProps(dir) ++ (
+        val props = MakerProps.initialiseTestProps(dir) ++ (
           "ResourceConfigFile", resourceConfigFile.getAbsolutePath, 
           "ResourceCacheDirectory", file(dir, ".maker-resource-cache").makeDirs().getPath
         )

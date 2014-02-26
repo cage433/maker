@@ -35,7 +35,7 @@ import org.apache.ivy.core.resolve.ResolveOptions
 import org.apache.ivy.Ivy
 import maker.task._
 import maker.utils.Stopwatch
-import maker.Props
+import maker.MakerProps
 import org.apache.ivy.core.module.id.ModuleRevisionId
 import org.apache.ivy.core.module.id.ModuleId
 import org.apache.ivy.util.DefaultMessageLogger
@@ -55,7 +55,7 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
 
   private def doPublish(baseProject: BaseProject) = {
 
-    val props : Props = baseProject.props
+    val props : MakerProps = baseProject.props
 
     val ivyFile = baseProject.ivyFile
     try {

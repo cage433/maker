@@ -4,7 +4,7 @@ import java.io.File
 import maker.task.TaskResult._
 import maker.utils.Stopwatch
 import maker.utils.Implicits.RichString._
-import maker.Props
+import maker.MakerProps
 import maker.task.compile.CompilationInfo
 import java.util.concurrent.atomic.AtomicReference
 import maker.task.compile.CompileTask

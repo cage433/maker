@@ -5,14 +5,14 @@ import maker.utils.FileUtils._
 import maker.project.TestModule
 import org.scalatest.ParallelTestExecution
 import maker.project.Module
-import maker.Props
+import maker.MakerProps
 
 class RunUnitTestsTaskTests extends FunSuite {
 
   test("Test Reporter does its thing"){
     withTempDir{
       root => 
-        val props = Props.initialiseTestProps(root) 
+        val props = MakerProps.initialiseTestProps(root)
 
         val proj = TestModule(root, "RunUnitTestsTaskTests", props)
         appendToFile(

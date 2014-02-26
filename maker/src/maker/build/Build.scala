@@ -29,7 +29,7 @@ import maker.utils.Stopwatch
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.LinkedBlockingQueue
-import maker.Props
+import maker.MakerProps
 import maker.utils.MakerLog
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.Executors

@@ -8,7 +8,7 @@ import maker.build.Dependency
 import java.io.File
 import maker.task.tasks.CleanTask
 import maker.utils.FileUtils._
-import maker.Props
+import maker.MakerProps
 import maker.build.BuildResult
 import maker.task.test.RunUnitTestsTask
 import maker.task.compile._
@@ -33,7 +33,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("Can add custom task to run before standard task"){
     def moduleWithCustomTaskAfterClean(root : File, name : String) = {
-      val props = Props.initialiseTestProps(root)
+      val props = MakerProps.initialiseTestProps(root)
       new Module(root, name, props) with TestModule{
         self =>  
         val extraUpstreamTask = WriteClassCountToFile(this)
@@ -86,7 +86,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
     def moduleWithSetupAndTeardowns(root : File, upstreamProjects : Module*) = {
 
-      val props = Props.initialiseTestProps(root)
+      val props = MakerProps.initialiseTestProps(root)
       new Module(
         root = root, 
         name = "With setup",
@@ -151,7 +151,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
   test("TestCompile by default doesn't depend on upstream modules TestCompile"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val A = TestModule(file(dir, "upstream"), "A", props)
         val B = TestModule(file(dir, "downstream"), "B", props, List(A))
         val C = TestModule(file(dir, "downstream2"), "C", props, List(A), List(A))
@@ -175,7 +175,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
   test("test dependencies are observed in classpaths"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val A = TestModule(file(dir, "A"), "A", props)
         val B = TestModule(file(dir, "B"), "B", props, List(A))
         val C = TestModule(file(dir, "C"), "C", props, List(A), List(A))
@@ -199,7 +199,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
   test("Upstream module tests are associated tasks"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {
           TestModule(file(dir, name), name, props, upstreams, testUpstreams)
         }

@@ -9,7 +9,7 @@ import maker.task.update.Resource._
 import maker.task.update.Resource
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.project.Project
-import maker.Props
+import maker.MakerProps
 import maker.project.Module
 import maker.project.TestModule
 import java.util.concurrent.ConcurrentHashMap
@@ -32,7 +32,7 @@ class PublishLocalTaskTests extends FreeSpec{
         val proj = new Module(
           dir,
           "testPublishLocal",
-          Props.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler"),
+          MakerProps.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler"),
           analyses = new ConcurrentHashMap[File, Analysis]()
         )with TestModule {
           override def resources() = resourcesList
@@ -113,7 +113,7 @@ class PublishLocalTaskTests extends FreeSpec{
   "Top level project should publish as expected" in {
     withTempDir {
       dir => 
-        val props = Props.initialiseTestProps(dir) ++ (
+        val props = MakerProps.initialiseTestProps(dir) ++ (
           "GroupId", "PublishLocalTaskTestsGroup",
           "Compiler", "dummy-test-compiler"
         )

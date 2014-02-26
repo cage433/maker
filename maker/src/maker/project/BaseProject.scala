@@ -3,7 +3,7 @@ import maker.build.Dependency
 import maker.build.Dependency.Graph
 import maker.build.BuildResult
 import maker.task.Task
-import maker.Props
+import maker.MakerProps
 import maker.build.Build
 import maker.task.compile.SourceCompileTask
 import maker.task.tasks.CleanTask
@@ -40,7 +40,7 @@ trait BaseProject {
   def tearDown(graph : Dependency.Graph, result : TimedResults) : Unit
   def extraUpstreamTasks(task : Task) : Set[Task] = Set.empty
   def extraDownstreamTasks(task : Task) : Set[Task] = Set.empty
-  def props : Props
+  def props : MakerProps
   def log = props.log
 
   lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)

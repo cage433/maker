@@ -7,7 +7,7 @@ import maker.utils.FileUtils._
 import maker.utils.Stopwatch
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
-import maker.Props
+import maker.MakerProps
 import maker.task.update.UpdateTask
 import maker.utils.PersistentCache
 import maker.utils.FileSysyemPersistentCache

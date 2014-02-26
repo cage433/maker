@@ -15,7 +15,7 @@ import org.scalatest.events.TestSucceeded
 import akka.actor.Terminated
 import maker.project.BaseProject
 import maker.utils.FileUtils._
-import maker.Props
+import maker.MakerProps
 import akka.actor.PoisonPill
 import maker.utils.Implicits.RichString._
 import org.scalatest.events.IndentedText

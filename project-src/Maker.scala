@@ -50,9 +50,9 @@ object Maker {
   private val props = {
     val propsFile = file("Maker.conf")
     if (propsFile.exists)
-      Props((propsFile).asAbsoluteFile, "GroupId", "com.google.code.maker")
+      MakerProps((propsFile).asAbsoluteFile, "GroupId", "com.google.code.maker")
     else
-      Props(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
+      MakerProps(file(".").asAbsoluteFile, "GroupId", "com.google.code.maker")
   }
 
   def module(name : String, upstreamProjects : Module*) = {

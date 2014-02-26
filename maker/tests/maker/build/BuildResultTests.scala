@@ -32,7 +32,7 @@ import maker.project.Module
 import maker.task.tasks.CleanTask
 import maker.task.compile.CompileTask
 import maker.project.TestModule
-import maker.Props
+import maker.MakerProps
 import maker.task.compile._
 import maker.task.Task
 import maker.task.TaskResult
@@ -55,7 +55,7 @@ class BuildResultTests extends FunSuite {
   }
   test("buildResultsShouldCompose") {
     withTempDir { root =>
-      val props = Props.initialiseTestProps(root)
+      val props = MakerProps.initialiseTestProps(root)
       val emptyGraph = Dependency.Graph.empty
 
       val p1 = TestModule(file(root, "p1"), "p1", props)

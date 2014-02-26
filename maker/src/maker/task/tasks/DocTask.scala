@@ -33,7 +33,7 @@ import maker.utils.os.{ScalaDocCmd, CommandOutputHandler}
 import maker.task.Task
 import maker.task._
 import maker.utils.Stopwatch
-import maker.Props
+import maker.MakerProps
 import maker.task.compile.SourceCompileTask
 import maker.task.compile._
 import maker.project.BaseProject

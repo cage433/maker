@@ -31,7 +31,7 @@ import java.io.BufferedWriter
 import java.io.BufferedReader
 import java.io.FileReader
 import maker.utils.os.Command
-import maker.Props
+import maker.MakerProps
 import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import java.io.InputStreamReader

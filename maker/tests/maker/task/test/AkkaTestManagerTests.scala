@@ -2,7 +2,7 @@ package maker.task.test
 
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
-import maker.Props
+import maker.MakerProps
 import maker.project.Module
 import maker.project.TestModule
 
@@ -10,7 +10,7 @@ class AkkaTestManagerTests extends FunSuite {
   test("Can receive test events via akka"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val moduleName = "AkkaTestReporterTest"
         val module = new Module(
           dir, moduleName, 

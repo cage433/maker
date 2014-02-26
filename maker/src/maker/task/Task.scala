@@ -31,7 +31,7 @@ import maker.utils.Implicits.RichString._
 import maker.task.TaskResult._
 import java.io.File
 import maker.utils.Stopwatch
-import maker.Props
+import maker.MakerProps
 import akka.actor.ExtendedActorSystem
 
 /**

@@ -29,7 +29,7 @@ import com.typesafe.zinc.Setup
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import maker.build.Dependency
-import maker.Props
+import maker.MakerProps
 import maker.task.compile._
 import maker.task.publish.PomUtils
 import maker.task.tasks.CleanTask
@@ -51,7 +51,7 @@ import scala.collection.JavaConversions._
 class Module(
     protected val root : File,
     val name : String,
-    val props : Props,
+    val props : MakerProps,
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
@@ -154,7 +154,7 @@ class Module(
   }
 
   def constructorCodeAsString : String = {
-    """val %s = new maker.project.Module(new java.io.File("%s"), "%s", maker.Props(new java.io.File("%s")), %s, %s)""" % (name, root.getAbsolutePath, 
+    """val %s = new maker.project.Module(new java.io.File("%s"), "%s", maker.MakerProps(new java.io.File("%s")), %s, %s)""" % (name, root.getAbsolutePath, 
       name, 
       props.root.getAbsolutePath + "/Maker.conf",
       immediateUpstreamModules.mkString("List(", ", ", ")"),
@@ -198,7 +198,7 @@ object Module{
  
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
-  val props = Props(file(".").asAbsoluteFile)
+  val props = MakerProps(file(".").asAbsoluteFile)
   private val setup = Setup.create(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),

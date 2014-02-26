@@ -5,13 +5,13 @@ import maker.utils.FileUtils._
 import maker.project.TestModule
 import maker.utils.Implicits.RichString._
 import maker.project.Project
-import maker.Props
+import maker.MakerProps
 
 class IvyUtilsTests extends FreeSpec {
   "test dynamic ivy file" in {
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val a = TestModule(file(dir, "a").makeDir, "a", props)
         val b = TestModule(file(dir, "b").makeDir, "b", props, List(a))
         val c = new Project("c", dir, List(a, b), props)

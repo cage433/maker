@@ -36,7 +36,7 @@ import org.apache.ivy.core.retrieve.RetrieveOptions
 import xml.NodeSeq
 import maker.task._
 import maker.utils.Stopwatch
-import maker.Props
+import maker.MakerProps
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.utils.os.Command
 import maker.task.TaskContext

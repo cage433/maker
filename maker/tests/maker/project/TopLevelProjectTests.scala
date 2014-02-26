@@ -4,7 +4,7 @@ import maker.utils.FileUtils.file
 import maker.utils.FileUtils.withTempDir
 import org.scalatest.FunSuite
 import org.scalatest.ParallelTestExecution
-import maker.Props
+import maker.MakerProps
 
 class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
 
@@ -12,7 +12,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
     withTempDir{
       dir => 
 
-        val props = Props.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
+        val props = MakerProps.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
         val top = Project("You're the top", dir, Nil, props)
 
         assert(top.compile.succeeded, "Compilation should succeed")
@@ -22,7 +22,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
   test("Single module top level module"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
+        val props = MakerProps.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
         val a = TestModule(file(dir, "a"), "a", props)
         a.writeSrc(
           "foo/Foo.scala", 
@@ -43,7 +43,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
   test("Multi module top level module"){
     withTempDir{
       dir => 
-        val props = Props.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
+        val props = MakerProps.initialiseTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
         val a = TestModule(file(dir, "a"), "a", props)
         val b = TestModule(file(dir, "b"), "b", props, List(a))
         a.writeSrc(

@@ -13,7 +13,7 @@ import scala.xml.{XML, NodeSeq}
 import scala.util.{Properties => ScalaProps}
 
 
-case class Props (private val root_ : File, overrides : MMap[String, String] = MMap.empty) extends PropsTrait{
+case class MakerProps (private val root_ : File, overrides : MMap[String, String] = MMap.empty) extends PropsTrait{
 
   val root = root_.asAbsoluteFile
   
@@ -34,8 +34,8 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   object Compiler extends Default("scalac") with IsString
   object ResourceConfigFile extends Default(file(root, "maker-resource-config")) with IsFile
   object IvySettingsFile extends Default(file(root, "ivysettings.xml")) with IsFile
-  def resourceVersions() = Props.ResourceSettings(ResourceConfigFile()).versions
-  def resourceResolvers() : Map[String, String] = Props.ResourceSettings(ResourceConfigFile()).resolvers
+  def resourceVersions() = MakerProps.ResourceSettings(ResourceConfigFile()).versions
+  def resourceResolvers() : Map[String, String] = MakerProps.ResourceSettings(ResourceConfigFile()).resolvers
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
 
   object ProjectScalaLibraryJar extends Default(file(root, "scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
@@ -48,8 +48,8 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
   object ProjectJlineSourceJar extends Default(file(root, "scala-libs/jline-" + MakerScalaVersion() + "-sources.jar")) with IsFile
 
   //def scalaLibs() = findJars(file(ScalaHome(), "lib"))
-  def compilerJars() = List(
-    ProjectScalaCompilerJar(), ProjectScalaLibraryJar(), ProjectScalaReflectJar(), ProjectJlineJar())
+  def compilerJars() = List(ProjectScalaCompilerJar(), ProjectScalaLibraryJar())
+    //ProjectScalaReflectJar(), ProjectJlineJar())
 
   def extraJars() = List( 
     //ProjectScalaReflectJar(), 
@@ -105,19 +105,19 @@ case class Props (private val root_ : File, overrides : MMap[String, String] = M
     copy(overrides = overrides ++  moreOverridesAsMap)
   }
 
-  def ++(rhs : Props) = Props(root, overrides ++ rhs.overrides)
+  def ++(rhs : MakerProps) = MakerProps(root, overrides ++ rhs.overrides)
   // DelayedInit should maker this unnecessary - scala bug?
   checkForInvalidProperties
 
 }
 
-object Props {
-  def apply(file : File, moreKeysAndValues : String*) : Props = {
+object MakerProps {
+  def apply(file : File, moreKeysAndValues : String*) : MakerProps = {
     val (root, propsMap) : (File, MMap[String, String]) = if (file.isDirectory) 
       (file, MMap.empty) 
     else 
       (file.getParentFile, MMap() ++ propsFileToMap(file))
-    Props(root, propsMap) ++ (moreKeysAndValues.toList :_*)
+    MakerProps(root, propsMap) ++ (moreKeysAndValues.toList :_*)
   }
 
   def propsFileToMap(file : File) : Map[String, String] = {
@@ -130,7 +130,7 @@ object Props {
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 
- def initialiseTestProps(root : File, cwdProps : Props = Props(file(".").asAbsoluteFile)) : Props = {
+ def initialiseTestProps(root : File, cwdProps : MakerProps = MakerProps(file(".").asAbsoluteFile)) : MakerProps = {
     val makerDotConf = file(root, "Maker.conf")
     def writeProperty(key : String, value : String){
       appendToFile(makerDotConf, key + "=" + value + "\n")
@@ -158,7 +158,7 @@ object Props {
       prop => 
         writeProperty(prop.name, prop().absPath)
     }
-    Props(makerDotConf)
+    MakerProps(makerDotConf)
   }
 
   case class ResourceSettings(resolvers : Map[String, String], versions : Map[String, String])

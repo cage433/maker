@@ -33,7 +33,7 @@ import java.io.File
 import maker.project.{TestModule, Module}
 import maker.utils.FileUtils._
 import ch.qos.logback.classic.Level._
-import maker.Props
+import maker.MakerProps
 import maker.task.test.TestResults
 import maker.build.BuildResult
 
@@ -49,7 +49,7 @@ class ScalatestResultsTests extends FunSuite{
   test("Errors are correctly counted"){
     withTempDir{
       dir =>
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val proj = TestModule(dir, "ScalatestResultsTests", props)
         file("maker-resource-config").copyTo(dir)
         proj.writeTest(

@@ -35,7 +35,7 @@ import maker.utils.os.CommandOutputHandler
 import maker.utils.os.ScalaCommand
 import maker.task._
 import maker.utils.Stopwatch
-import maker.Props
+import maker.MakerProps
 import maker.task.compile.TestCompileTask
 import maker.project.BaseProject
 

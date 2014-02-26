@@ -7,7 +7,7 @@ import maker.task.update.Resource._
 import maker.task.update.Resource
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.project.Project
-import maker.Props
+import maker.MakerProps
 import maker.utils.Implicits.RichString._
 
 class PublishTaskTests extends FreeSpec {
@@ -29,7 +29,7 @@ class PublishTaskTests extends FreeSpec {
               |</ivysettings>""".stripMargin % publishDir)
 
         val proj = TestModule(dir, "testPublish", 
-          Props.initialiseTestProps(dir) ++ (
+          MakerProps.initialiseTestProps(dir) ++ (
             "Compiler", "dummy-test-compiler",
             "IvySettingsFile", ivySettingsFile_.absPath
           ))

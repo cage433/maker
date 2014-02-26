@@ -2,7 +2,7 @@ package maker.project
 
 import java.io.File
 import maker.utils.FileUtils._
-import maker.Props
+import maker.MakerProps
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
@@ -79,7 +79,7 @@ object TestModule{
   def apply(
     root : File, 
     name : String,
-    props : Props,
+    props : MakerProps,
     upstreamProjects : List[Module] = Nil,
     upstreamTestProjects : List[Module] = Nil
   ) : Module with TestModule = {

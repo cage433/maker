@@ -31,9 +31,9 @@ import maker.utils.FileUtils
 import collection.mutable.ListBuffer
 import maker.task.compile._
 import maker.utils.Implicits.RichString._
-import maker.Props
+import maker.MakerProps
 
-case class IDEAProjectGenerator(props : Props) {
+case class IDEAProjectGenerator(props : MakerProps) {
   val scalaVersion = props.ProjectScalaVersion()
 
   def generateTopLevelModule(rootDir:File, name:String, excludedFolders:List[String]) {

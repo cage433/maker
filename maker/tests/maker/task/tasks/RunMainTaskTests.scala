@@ -29,7 +29,7 @@ import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.Implicits.RichString._
 import maker.project.{TestModule, Module}
-import maker.Props
+import maker.MakerProps
 
 class RunMainTaskTests extends FunSuite {
 
@@ -40,7 +40,7 @@ class RunMainTaskTests extends FunSuite {
   test("Can run task run-main with correct upstream tasks run first") {
     withTempDir{
       dir =>
-        val props = Props.initialiseTestProps(dir)
+        val props = MakerProps.initialiseTestProps(dir)
         val p1Dir = file(dir, "p1")
         val p2Dir = file(dir, "p2")
 

@@ -30,8 +30,8 @@ import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.task._
 import maker.utils.Stopwatch
-import maker.Props
-import maker.Props
+import maker.MakerProps
+import maker.MakerProps
 import java.io.IOException
 import maker.utils.FileUtils
 import maker.task.tasks.PackageJarTask

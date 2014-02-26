@@ -9,7 +9,7 @@ import maker.project.Module
 import maker.task.TaskResult
 import java.io.File
 import org.scalatest.FreeSpec
-import maker.Props
+import maker.MakerProps
 import maker.utils.Implicits.RichString._
 import maker.task.compile._
 import org.scalatest.GivenWhenThen
@@ -71,7 +71,7 @@ class WorkflowCompilationTests extends FunSuite{
       dir => 
 
       info("given a module with two source dirs")
-      val props = Props.initialiseTestProps(dir)
+      val props = MakerProps.initialiseTestProps(dir)
 
       a = TestModule(file(dir, "a").makeDir(), "WorkflowCompilationTests", props)
       info("Compilation should succeed") 

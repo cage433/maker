@@ -35,7 +35,7 @@ import maker.utils.FileUtils._
 import maker.task.TaskResult
 import maker.utils.Stopwatch
 import maker.utils.Implicits.RichIterable._
-import maker.Props
+import maker.MakerProps
 import maker.build.Dependency
 import java.io.File
 import maker.task.compile.TestCompileTask
