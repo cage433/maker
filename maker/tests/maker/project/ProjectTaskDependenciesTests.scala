@@ -9,7 +9,6 @@ import java.io.File
 import maker.task.tasks.CleanTask
 import maker.utils.FileUtils._
 import maker.MakerProps
-import maker.build.BuildResult
 import maker.task.test.RunUnitTestsTask
 import maker.task.compile._
 import maker.build.Build

@@ -4,7 +4,6 @@ import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.project.TestModule
 import maker.project.Project
-import maker.build.BuildResult
 import maker.project.Module
 import maker.task.TaskResult
 import java.io.File

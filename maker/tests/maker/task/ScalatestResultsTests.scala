@@ -35,7 +35,6 @@ import maker.utils.FileUtils._
 import ch.qos.logback.classic.Level._
 import maker.MakerProps
 import maker.task.test.TestResults
-import maker.build.BuildResult
 
 
 class ScalatestResultsTests extends FunSuite{

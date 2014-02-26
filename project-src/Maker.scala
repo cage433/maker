@@ -34,7 +34,6 @@ import org.apache.commons.lang3.StringUtils
 import maker.task.TaskResult._
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Level._
-import maker.build.BuildResult
 import maker.task.Task
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler

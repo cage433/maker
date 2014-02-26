@@ -1,7 +1,6 @@
 package maker.project
 import maker.task.Task
 import maker.build.Dependency
-import maker.build.BuildResult
 import maker.task.compile.CompileTask
 import maker.utils.FileUtils._
 import java.io.BufferedWriter
