@@ -120,6 +120,11 @@ object MakerProps {
     MakerProps(root, propsMap) ++ (moreKeysAndValues.toList :_*)
   }
 
+  // Here for consistency with Starling's current maker
+  def apply(key1 : String, value1 : String, moreKeysAndValues : String*) : MakerProps = {
+    MakerProps(file(".")).++(key1 :: value1 :: moreKeysAndValues.toList : _*)
+  }
+   
   def propsFileToMap(file : File) : Map[String, String] = {
     val p = new Properties()
     if (file.exists) {
