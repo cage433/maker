@@ -144,26 +144,26 @@ class BuildManagerTests extends TestKit(ActorSystem.create("TestActorSystem", Re
     }
 
     it("Should process a single task"){
-      val TimedResults(_, _, List(taskResult), _) = build(newGraph(101), numWorkers = 1).execute
+      val BuildResult(_, _, List(taskResult), _) = build(newGraph(101), numWorkers = 1).execute
       assert(taskResult.info == Some(101))
     }
 
     it("Should allow one worker to process two tasks with no dependency"){
-      val tr@TimedResults(_, _, results, _) = build(newGraph(2, 5), numWorkers = 1).execute
+      val tr@BuildResult(_, _, results, _) = build(newGraph(2, 5), numWorkers = 1).execute
       assert(results.size === 2)
       assert(tr.succeeded)
     }
 
     it("Should allow one worker to process dependent tasks"){
       val graph = newGraph(2, 4, 6, 8) 
-      val tr@TimedResults(_, _, results, _) = build(graph, numWorkers = 1).execute
+      val tr@BuildResult(_, _, results, _) = build(graph, numWorkers = 1).execute
       assert(results.size === 4)
       assert(tr.succeeded)
     }
 
     it("Should allow more than one worker to process dependent tasks"){
       val graph = newGraph(2, 4, 6, 8, 10, 12, 14, 16) 
-      val tr@TimedResults(_, _, results, _) = build(graph, numWorkers = 3).execute
+      val tr@BuildResult(_, _, results, _) = build(graph, numWorkers = 3).execute
       assert(results.size === 8)
       assert(tr.succeeded)
     }
@@ -171,7 +171,7 @@ class BuildManagerTests extends TestKit(ActorSystem.create("TestActorSystem", Re
     it("Should stop at the first failure - by default"){
       
       val graph = newGraph(2, 4, -6, 12) 
-      val tr@TimedResults(_, _, results, _) = build(graph, numWorkers = 1).execute
+      val tr@BuildResult(_, _, results, _) = build(graph, numWorkers = 1).execute
       assert(tr.failed)
       assert(results.size < 4)
     }
@@ -182,7 +182,7 @@ class BuildManagerTests extends TestKit(ActorSystem.create("TestActorSystem", Re
       }
       val graph = newGraph(List(DummyTask(2), failingTask, DummyTask(20)))
       val build = Build(name = "dont-stop", graph = graph, numberOfWorkers = 1)
-      val TimedResults(_, _, results, _) = build.execute
+      val BuildResult(_, _, results, _) = build.execute
       assert(results.size === 3)
     }
 
@@ -191,7 +191,7 @@ class BuildManagerTests extends TestKit(ActorSystem.create("TestActorSystem", Re
       val graph = graphOfUnrelatedTasks(ExceptionThrowingTask)
       val (worker, logger) = newWorkerWithLogger
       val manager = newManager(graph, List(worker), "Exception-throwing")
-      val TimedResults(_, _, results, _) = Build.execute(manager)
+      val BuildResult(_, _, results, _) = Build.execute(manager)
       assert(results.size === 1)
       class IsThrowable extends ArgumentMatcher[Throwable]{
         def matches(obj : Object) = obj match {

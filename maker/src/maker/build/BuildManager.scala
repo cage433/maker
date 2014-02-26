@@ -31,7 +31,7 @@ object BuildManager{
   case class UnitOfWork(task : Task, context : TaskContext) 
   case class UnitOfWorkResult(task : Task, result : TaskResult)
 
-  case class TimedResults(buildName : String, graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
+  case class BuildResult(buildName : String, graph : Dependency.Graph, results : List[TaskResult], clockTime : Long){
     def failed = results.exists(_.failed)
     def succeeded = results.forall(_.succeeded)
     def testResults() : TestResults = {
@@ -102,7 +102,7 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
   private def announceWork = workers.foreach{wkr =>  wkr ! WorkAvailable}
 
   implicit val executionContext = context.dispatcher
-  private val resultPromise = Promise[TimedResults]()
+  private val resultPromise = Promise[BuildResult]()
   private var remaining : Dependency.Graph = graph
   private var completed : Set[Task] = Set.empty
   private var stopwatch : Stopwatch = Stopwatch()
@@ -113,7 +113,7 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
   private var runningTests : List[(ModuleName, ActorRef)] = Nil
 
   def returnResults() = {
-    val tr = TimedResults(buildName, graph, results.reverse, 0)
+    val tr = BuildResult(buildName, graph, results.reverse, 0)
     resultPromise.success(tr)
   }
 
@@ -187,7 +187,7 @@ case class BuildManager(buildName : String, graph : Dependency.Graph, workers : 
 
       sender ! resultPromise
       if (graph.isEmpty)
-        resultPromise.success(TimedResults(buildName, graph, Nil, 0))
+        resultPromise.success(BuildResult(buildName, graph, Nil, 0))
       else {
         context.become(executing())
       }

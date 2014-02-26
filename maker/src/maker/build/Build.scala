@@ -49,7 +49,7 @@ import maker.utils.ScreenUtils
 import maker.project.Module
 import maker.task.Task
 import maker.task.TaskResult
-import maker.build.BuildManager.TimedResults
+import maker.build.BuildManager.BuildResult
 import akka.actor.ActorRef
 import akka.util.Timeout
 import akka.dispatch.Future
@@ -86,7 +86,7 @@ case class Build(
 }
 
 object Build{
-  def execute(build : Build) : TimedResults = {
+  def execute(build : Build) : BuildResult = {
     val buildNumber = nextBuildNumber.incrementAndGet
     val system = ActorSystem.create("MAKER-ACTOR-SYSTEM-" + buildNumber, RemoteActor.systemConfig).asInstanceOf[ExtendedActorSystem]
     val manager = buildManager(system, buildNumber, build)
@@ -96,7 +96,7 @@ object Build{
     promisedValue(buildResultPromise)
   }
 
-  def testInteractor(manager : ActorRef, buildResultPromise : Promise[TimedResults]) : Thread = {
+  def testInteractor(manager : ActorRef, buildResultPromise : Promise[BuildResult]) : Thread = {
     val runnable = new Runnable{
       def run {
         try {
@@ -114,20 +114,20 @@ object Build{
     new Thread(runnable)
   }
 
-  private [build] def execute(manager : ActorRef) : TimedResults = {
+  private [build] def execute(manager : ActorRef) : BuildResult = {
     val resultPromise = executePromise(manager)
     promisedValue(resultPromise)
   }
 
-  private def promisedValue(promise : Promise[TimedResults]) : TimedResults = {
+  private def promisedValue(promise : Promise[BuildResult]) : BuildResult = {
     val resultFuture = promise.future
-    Await.result(resultFuture, Duration.Inf).asInstanceOf[TimedResults]
+    Await.result(resultFuture, Duration.Inf).asInstanceOf[BuildResult]
   }
 
-  private def executePromise(manager : ActorRef) : Promise[TimedResults] = {
+  private def executePromise(manager : ActorRef) : Promise[BuildResult] = {
     implicit val timeout = Timeout(2 seconds)
-    val future : Future[Promise[TimedResults]] = (manager ? BuildManager.Execute).mapTo[Promise[TimedResults]]
-    val resultPromise : Promise[TimedResults] = Await.result(future, 2 seconds)
+    val future : Future[Promise[BuildResult]] = (manager ? BuildManager.Execute).mapTo[Promise[BuildResult]]
+    val resultPromise : Promise[BuildResult] = Await.result(future, 2 seconds)
     resultPromise
   }
 

@@ -24,7 +24,7 @@ class WorkflowCompilationTests extends FunSuite{
     * the changing state of a developer's module(s)
     */
   object Nouns {
-    var result : BuildManager.TimedResults = null
+    var result : BuildManager.BuildResult = null
     var a : Module with TestModule = null
     var b : Module with TestModule = null
     var topLevelProject : Project = null

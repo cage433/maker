@@ -24,7 +24,7 @@ import maker.task.publish.PublishLocalTask
 import maker.task.publish.PublishTask
 import maker.task.test.AkkaTestManager
 import java.util.concurrent.atomic.AtomicReference
-import maker.build.BuildManager.TimedResults
+import maker.build.BuildManager.BuildResult
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
 import scala.actors.Future
@@ -36,7 +36,7 @@ trait BaseProject {
   def name : String
   def nameSansSpaces = name.replace(' ', '-')
   def setUp(graph : Dependency.Graph) : Unit
-  def tearDown(graph : Dependency.Graph, result : TimedResults) : Unit
+  def tearDown(graph : Dependency.Graph, result : BuildResult) : Unit
   def extraUpstreamTasks(task : Task) : Set[Task] = Set.empty
   def extraDownstreamTasks(task : Task) : Set[Task] = Set.empty
   def props : MakerProps

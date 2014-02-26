@@ -8,7 +8,7 @@ import maker.utils.Implicits.RichString._
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
 import maker.build.Dependency
-import maker.build.BuildManager.TimedResults
+import maker.build.BuildManager.BuildResult
 
 trait TmuxIntegration{
   self : BaseProject => 
@@ -36,7 +36,7 @@ trait TmuxIntegration{
       tmux("set", "-g", "status-bg", "blue")
     }
 
-    private def outputCompilationToVimErrorFile(result : TimedResults){
+    private def outputCompilationToVimErrorFile(result : BuildResult){
       props.VimErrorFile().delete
       result.results.map(_.task).foreach{
         case t : CompileTask => 
@@ -48,14 +48,14 @@ trait TmuxIntegration{
       }
     }
 
-    private def tmuxReportResult(result : TimedResults){
+    private def tmuxReportResult(result : BuildResult){
       tmux("set", "-g", "status-bg", "black")
       if (result.failed){
         tmuxReportTaskFailed("task failed ")
       }
     }
 
-    def tearDown(graph : Dependency.Graph, result : TimedResults){
+    def tearDown(graph : Dependency.Graph, result : BuildResult){
       tmuxReportResult(result)
       outputCompilationToVimErrorFile(result)
     }
