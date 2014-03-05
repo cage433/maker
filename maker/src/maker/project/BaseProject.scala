@@ -162,9 +162,9 @@ trait BaseProject {
 
   lazy val CreateDeployBuild = Build(
   "Create a deployment package of " + name + " in target-maker/deploy",
-    () ⇒ Dependency.Graph.transitiveClosure(this, CreateDeployTask(this)),
+    () ⇒ throw new Exception("Placeholder graph only - should never be called"),
     this,
-    "createDeploy version",
+    "createDeploy <optional buildTests>",
     "Create deployment " + name + " to target-maker/deploy"
   )
 
@@ -217,8 +217,8 @@ trait BaseProject {
   def pack = PackageJars.execute
   def update = Update.execute
 
-  def createDeploy = {
-    CreateDeployBuild.execute
+  def createDeploy(buildTests: Boolean = true) = {
+    CreateDeployBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, CreateDeployTask(this, buildTests))).execute
   }
 
   def publishLocal(version : String) = {
