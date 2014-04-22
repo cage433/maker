@@ -19,6 +19,7 @@ vim-compile-output
 vim-test-compile-output
 lib_managed
 lib_src_managed
+lib_srcdir_managed
 *ivy-dynamic.ivy
 .maker.vim/
 maker-session.log
@@ -34,3 +35,4 @@ props.conf
 Maker.conf
 *vim*compile-output
 proj-compile-output
+.ensime_lucene
