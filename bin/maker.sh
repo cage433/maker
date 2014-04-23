@@ -76,10 +76,11 @@ update_external_jars(){
   
 
   cat > dynamic-zinc-resource-list <<HERE
-com.typesafe.sbt compiler-interface 0.12.1 classifier:sources 
-com.typesafe.sbt incremental-compiler {sbt_version} 
+com.typesafe.sbt compiler-interface {sbt_version} classifier:sources
+com.typesafe.sbt incremental-compiler {sbt_version}
 com.typesafe.sbt sbt-interface {sbt_version}
 HERE
+  echo "Updating zinc"
   update_resources $MAKER_ROOT_DIR/zinc-libs dynamic-zinc-resource-list 
 
   cat > dynamic-scala-resource-list <<HERE
