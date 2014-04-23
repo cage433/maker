@@ -1,10 +1,10 @@
 package maker.project
 
+import com.typesafe.zinc.Compiler
 import java.io.{ File, FileWriter, Writer }
 import maker.MakerProps
 import maker.utils.Zip
 import org.apache.commons.io.FileUtils
-import org.apache.tools.ant.taskdefs.GUnzip
 
 class EnsimeGenerator(props: MakerProps) {
   def generateModules(out: File, modules: List[Module]): Unit = {
@@ -31,34 +31,46 @@ class EnsimeGenerator(props: MakerProps) {
     writer.append("      :name \"" + module.name + "\"\n")
     writer.append("      :module-name \"" + module.name + "\"\n")
 
-    // TODO: compiler flags
-
     writer.append("      :depends-on-modules (\n")
     module.immediateUpstreamModules.foreach { dep =>
       writer.append("        \"" + dep.name + "\"\n")
     }
     writer.append("      )\n")
 
-    writer.append("      :compile-deps (")
-    module.managedJars.foreach { dep =>
-      writer.append("        \"" + dep.getAbsolutePath + "\"\n")
+    writer.append("      :compile-deps (\n")
+    def appendDeps(m: Module): Unit = {
+      m.managedJars.foreach { dep =>
+        writer.append("        \"" + dep.getAbsolutePath + "\"\n")
+      }
+    // BUG in ensime, it doesn't properly do transitive dependencies
+    //m.immediateUpstreamModules.foreach(appendDeps)
     }
+    appendDeps(module)
+
     writer.append("      )\n")
 
     // hack until src jars are supported
-    if (module.managedLibSourceDir.exists) {
-      FileUtils.deleteDirectory(module.managedLibSourceDirDir)
-      module.managedLibSourceDirDir.mkdirs()
-      writer.append("      :reference-source-roots (\n")
+    val depSrcs = module.managedLibSourceDir
+    if (depSrcs.exists) {
+      val extracted = module.managedLibSourceDirDir
+      FileUtils.deleteDirectory(extracted)
+      extracted.mkdirs()
+
       module.managedLibSourceDir.list.filter(_.endsWith(".jar")).foreach { dep =>
         val from = new File(module.managedLibSourceDir, dep)
-        val to = new File(module.managedLibSourceDirDir, dep)
-        println("extracting " + from + " into " + to)
-        Zip.unzip(from, to)
-        writer.append("        \"" + to.getAbsolutePath + "\"\n")
+        props.log.debug("extracting " + from + " into " + extracted)
+        Zip.unzip(from, extracted)
       }
-      writer.append("      )\n")
     }
+
+    writer.append("      :reference-source-roots (\n")
+    def appendDepRefSrcs(m: Module): Unit = {
+      writer.append("        \"" + m.managedLibSourceDirDir.getAbsolutePath() + "\"\n")
+      // BUG in ensime, it doesn't do transitive reference sources
+      //m.immediateUpstreamModules.foreach(appendDepRefSrcs)
+    }
+    appendDepRefSrcs(module)
+    writer.append("      )\n")
 
     // TODO: sources for java and scala standard libraries
 
