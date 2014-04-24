@@ -15,7 +15,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <scalatest_version>1.8</scalatest_version>
     <ivy.local.default.root>${ivy.default.ivy.user.dir}/maker-local</ivy.local.default.root>
     <jetty_version>7.6.3.v20120416</jetty_version>
-    <sbt_version>0.12.1</sbt_version>
+    <sbt_version>0.12.4</sbt_version>
     <ivy.default.conf.mappings>default-&amp;gt;*</ivy.default.conf.mappings>
     <maker.module.version>0.01</maker.module.version>
     <m_org_scalatest_scalatest___scala_version__version>${scalatest_version}</m_org_scalatest_scalatest___scala_version__version>
@@ -35,7 +35,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
     <m_org_eclipse_jetty_jetty_xml_version>${jetty_version}</m_org_eclipse_jetty_jetty_xml_version>
     <m_org_apache_ant_ant_version>1.8.2</m_org_apache_ant_ant_version>
     <m_org_slf4j_slf4j_api_version>1.6.1</m_org_slf4j_slf4j_api_version>
-    <m_com_typesafe_zinc_zinc_version>0.2.1</m_com_typesafe_zinc_zinc_version>
+    <m_com_typesafe_zinc_zinc_version>0.2.5</m_com_typesafe_zinc_zinc_version>
     <m_org_eclipse_jetty_jetty_server_version>${jetty_version}</m_org_eclipse_jetty_jetty_server_version>
     <m_org_eclipse_jetty_jetty_io_version>${jetty_version}</m_org_eclipse_jetty_jetty_io_version>
     <m_org_eclipse_jetty_jetty_security_version>${jetty_version}</m_org_eclipse_jetty_jetty_security_version>

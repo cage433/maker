@@ -63,22 +63,22 @@
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/com.typesafe.sbt-incremental-compiler-0.12.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/com.typesafe.sbt-incremental-compiler-0.12.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_src_managed/com.typesafe.sbt-incremental-compiler-0.12.1-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_src_managed/com.typesafe.sbt-incremental-compiler-0.12.4-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/com.typesafe.zinc-zinc-0.2.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/com.typesafe.zinc-zinc-0.2.5.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_src_managed/com.typesafe.zinc-zinc-0.2.1-sources.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_src_managed/com.typesafe.zinc-zinc-0.2.5-sources.jar!/" />
         </SOURCES>
       </library>
     </orderEntry>

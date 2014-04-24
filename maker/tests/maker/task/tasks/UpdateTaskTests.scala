@@ -19,7 +19,7 @@ class UpdateTaskTests extends FreeSpec {
         writeToFile(
           versionsFile,
           """|scala_version 2.9.2
-             |sbt_version 0.12.1
+             |sbt_version 0.12.4
              |scalatest_version 1.8""".stripMargin
         )
         val resolversFile = file(dir, "resolvers")
@@ -37,8 +37,8 @@ class UpdateTaskTests extends FreeSpec {
 
         assert(
           module.resources().toSet === Set(
-            Resource(module, "org.foo", "bar", "0.12.1"),
-            Resource(module, "org.foo", "bar", "0.12.1", classifier=Some("sources")),
+            Resource(module, "org.foo", "bar", "0.12.4"),
+            Resource(module, "org.foo", "bar", "0.12.4", classifier=Some("sources")),
             Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath)),
             Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath), classifier=Some("sources"))
           )
@@ -50,7 +50,7 @@ class UpdateTaskTests extends FreeSpec {
           "foo"
         )
         writeToFile(
-          file(dir, "/RESOLVER//org/foo/bar/0.12.1/bar-0.12.1.jar"),
+          file(dir, "/RESOLVER//org/foo/bar/0.12.4/bar-0.12.4.jar"),
           "bar"
         )
         assert(module.updateOnly.succeeded, "Update should fail before resources are available")

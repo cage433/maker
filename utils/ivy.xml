@@ -42,7 +42,7 @@
     <dependency org="org.apache.tomcat" name="jsp-api" rev="6.0.20" />
     <dependency org="org.mockito" name="mockito-all" rev="1.8.2" />
     <dependency org="org.apache.ivy" name="ivy" rev="2.3.0-rc2" />
-    <dependency org="com.typesafe.zinc" name="zinc" rev="0.2.1"/>
+    <dependency org="com.typesafe.zinc" name="zinc" rev="0.2.5"/>
     <dependency org="com.typesafe.sbt" name="incremental-compiler" rev="${sbt_version}"/>
     <dependency org="org.scala-lang" name="jline" rev="${scala_version}" />
     <dependency org="org.scala-lang" name="scala-compiler" rev="${scala_version}" />

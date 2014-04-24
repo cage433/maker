@@ -5,7 +5,7 @@ commons-codec commons-codec 1.6
 commons-io commons-io 2.1
 commons-pool commons-pool 1.5.5
 com.typesafe.sbt incremental-compiler {sbt_version}
-com.typesafe.zinc zinc 0.2.1
+com.typesafe.zinc zinc 0.2.5
 io.netty netty 3.4.2.Final
 javax.servlet servlet-api 2.5
 net.debasishg sjson_{scala_version} 0.19

@@ -46,8 +46,8 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
   object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
-  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-0.12.1.jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-0.12.1-sources.jar")) with IsFile
+  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-0.12.4.jar")) with IsFile
+  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-0.12.4-sources.jar")) with IsFile
 
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {

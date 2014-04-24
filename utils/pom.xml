@@ -270,7 +270,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <dependency>
       <groupId>com.typesafe.sbt</groupId>
       <artifactId>incremental-compiler</artifactId>
-      <version>0.12.1</version>
+      <version>0.12.4</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
