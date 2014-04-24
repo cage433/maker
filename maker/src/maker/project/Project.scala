@@ -45,6 +45,6 @@ case class Project(
 
   def generateEnsimeProject() {
     val generator = new EnsimeGenerator(props)
-    generator.generateModules(new File(rootAbsoluteFile, ".ensime"), allModules)
+    generator.generateModules(rootAbsoluteFile, name, allModules)
   }
 }
