@@ -62,11 +62,11 @@ class BuildResultTests extends FunSuite {
       val sw = new Stopwatch()
 
       // some success build results
-      val br1 = BuildResult("foo", List(success(CleanTask(p1), sw), success(CleanTask(p3), sw)), emptyGraph, p1.props)
-      val br2 = BuildResult("foo", List(success(SourceCompileTask(p2), sw)), emptyGraph, p1.props)
+      val br1 = BuildResult("foo", List(success(CleanTask(p1), sw), success(CleanTask(p3), sw)), emptyGraph)
+      val br2 = BuildResult("foo", List(success(SourceCompileTask(p2), sw)), emptyGraph)
 
       // and some failures
-      val fr1 = BuildResult("foo", List(failure(SourceCompileTask(p2), Stopwatch(), "was broke")), emptyGraph, p1.props)
+      val fr1 = BuildResult("foo", List(failure(SourceCompileTask(p2), Stopwatch(), "was broke")), emptyGraph)
 
       val r1 = for {
         w <- br1
@@ -85,7 +85,7 @@ class BuildResultTests extends FunSuite {
         for {
           x <- br1
           y <- br2
-          z <- BuildResult("foo", List(MyDontRunTask(p1).exec(y.results, Stopwatch())), emptyGraph, p1.props)
+          z <- BuildResult("foo", List(MyDontRunTask(p1).exec(y.results, Stopwatch())), emptyGraph)
         } yield z
         assert(false, "should have run task and didnt")
       }
@@ -98,7 +98,7 @@ class BuildResultTests extends FunSuite {
         _ <- br1
         _ <- fr1
         y <- br1
-        z <- BuildResult("foo", List(MyDontRunTask(p1).exec(y.results, Stopwatch())), emptyGraph, p1.props)
+        z <- BuildResult("foo", List(MyDontRunTask(p1).exec(y.results, Stopwatch())), emptyGraph)
       } yield z
 
       assert(r2.results.size == 3, "failed task results should not concatenate")

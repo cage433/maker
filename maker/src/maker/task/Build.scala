@@ -97,8 +97,7 @@ case class Build(
       val buildResult = BuildResult(
         name,
         taskResults.toList,
-        graph,
-        props
+        graph
       )
       module.tearDown(graph, buildResult)
       if (buildResult.failed && props.ExecMode()){

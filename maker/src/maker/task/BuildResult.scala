@@ -12,8 +12,7 @@ import maker.utils.RichIterable._
 case class BuildResult(
   name : String,
   results : List[TaskResult],
-  graph : Dependency.Graph,
-  props : MakerProps
+  graph : Dependency.Graph
 ) {
 
   self =>
