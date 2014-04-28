@@ -43,4 +43,8 @@ case class Project(
     generator.generateModulesFile(file(rootAbsoluteFile, ".idea"), this)
   }
 
+  def generateEnsimeProject() {
+    val generator = new EnsimeGenerator(props)
+    generator.generateModules(rootAbsoluteFile, name, allModules)
+  }
 }

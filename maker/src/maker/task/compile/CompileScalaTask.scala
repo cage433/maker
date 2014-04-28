@@ -27,8 +27,8 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     val cp : Seq[File] = modulePhase.classpathDirectoriesAndJars.toList
     val outputDir = modulePhase.outputDir
     val cacheFile = modulePhase.compilationCacheFile
-    val scalacOptions : Seq[String] = Nil
-    val javacOptions : Seq[String] = Nil
+    val scalacOptions : Seq[String] = Nil // List("-deprecation", "-unchecked", "–Xcheck-null")
+    val javacOptions : Seq[String] = Nil // List("-deprecation", "-Xlint")
     val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
     val definesClass: File ⇒ String ⇒ Boolean = Locate.definesClass _
         

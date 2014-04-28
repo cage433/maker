@@ -196,6 +196,7 @@ class Module(
   def packageDir = file(targetDir, "package")
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
   def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
+  def managedLibSourceDirDir = file(rootAbsoluteFile, "lib_srcdir_managed") // for ensime
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Iterable[File] = List(file(rootAbsoluteFile, "lib"))
 }
