@@ -38,7 +38,7 @@ import maker.project.BaseProject
 case class Build(
   name : String,
   graph : Dependency.Graph,
-  module : BaseProject
+  numberOfWorkers : Int
 ) {
 
   override def toString = "Build " + name
@@ -50,15 +50,13 @@ case class Build(
     buf.toString
   }
   
-
-  val props = module.props
-  val log = props.log
+  val log = MakerLog()
 
   def execute = new Execute().execute
   class Execute{
 
     val executor = {
-      val nWorkers = props.NumberOfTaskThreads()
+      val nWorkers = numberOfWorkers
       val taskNumber = Build.taskCount.getAndIncrement
       val threadCount = new AtomicInteger(0)
       new ThreadPoolExecutor(
@@ -81,21 +79,13 @@ case class Build(
 
     def execute : BuildResult = {
 
-      val taskResults = log.infoWithTime("" + this){
-        execTasksInGraph()
-      }
+      val taskResults = execTasksInGraph()
       val buildResult = BuildResult(
         name,
         taskResults.toList,
         graph
       )
-      if (buildResult.failed && props.ExecMode()){
-        log.error(this + " failed ")
-        System.exit(-1)
-      }
-      BuildResult.lastResult.set(Some(buildResult))
       buildResult
-
     }
 
     private def passToExecutor(pt : Task, resultsSoFar : Set[TaskResult]){

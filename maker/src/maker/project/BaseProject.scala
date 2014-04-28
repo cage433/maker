@@ -67,96 +67,83 @@ trait BaseProject {
     text + " " + getClass.getSimpleName.toLowerCase + " " + name
   }
 
-  lazy val Clean = Build(
+  protected def build(name : String, graph : Dependency.Graph) = Build(name, graph, props.NumberOfTaskThreads())
+   
+  lazy val Clean = build(
     buildName("Clean"),
-    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_))),
-    this
+    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_)))
   )
 
-  lazy val CleanAll = Build(
+  lazy val CleanAll = build(
     "Clean All " + name, 
-    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_, deleteManagedLibs = true))),
-    this
+    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_, deleteManagedLibs = true)))
   )
 
-  lazy val Compile = Build(
+  lazy val Compile = build(
     "Compile " + name, 
-    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask)),
-    this
+    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask))
   )
 
-  lazy val TestCompile = Build(
+  lazy val TestCompile = build(
     "Test Compile " + name, 
-    Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask)),
-    this
+    Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask))
   )
 
-  def Test(verbose : Boolean) = Build(
+  def Test(verbose : Boolean) = build(
     "Test " + name, 
-    Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(verbose).graph)),
-    this
+    Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(verbose).graph))
   )
   
-  def TestSansCompile(verbose : Boolean) = Build(
+  def TestSansCompile(verbose : Boolean) = build(
     "Test without compiling " + name,
-    Dependency.Graph(allUpstreamModules.map(RunUnitTestsTask(_, verbose))),
-    this
+    Dependency.Graph(allUpstreamModules.map(RunUnitTestsTask(_, verbose)))
   )
 
-  def TestClass(className : String, verbose : Boolean) = Build(
+  def TestClass(className : String, verbose : Boolean) = build(
     "Test single class ",
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose, className)),
-    this
+    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose, className))
   )
 
-  def TestFailedSuites(verbose : Boolean) = Build(
+  def TestFailedSuites(verbose : Boolean) = build(
     "Run failing test suites for " + name + " and upstream ", 
-    Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly(verbose).graph)),
-    this
+    Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly(verbose).graph))
   )
 
-  lazy val PackageJars = Build(
+  lazy val PackageJars = build(
     "Package jar(s) for " + name + " and upstream ", 
-    Dependency.Graph(allUpstreamModules.map(PackageMainJarTask)),
-    this
+    Dependency.Graph(allUpstreamModules.map(PackageMainJarTask))
   )
   
-  lazy val Update = Build(
+  lazy val Update = build(
     "Update libraries for " + name,
-    Dependency.Graph.combine(allUpstreamModules.map(_.UpdateOnly.graph)),
-    this
+    Dependency.Graph.combine(allUpstreamModules.map(_.UpdateOnly.graph))
   )
 
-  def PublishLocal(version : String) = Build(
+  def PublishLocal(version : String) = build(
     "Publish " + name + " locally",
-    Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version)),
-    this
+    Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version))
   )
 
 
-  def CreateDeploy(buildTests : Boolean) = Build(
+  def CreateDeploy(buildTests : Boolean) = build(
     "Create a deployment package of " + name + " in target-maker/deploy",
-    Dependency.Graph.transitiveClosure(this, CreateDeployTask(this, buildTests)),
-    this
+    Dependency.Graph.transitiveClosure(this, CreateDeployTask(this, buildTests))
   )
 
 
-  def Publish(version : String, resolver : String = props.defaultResolver) = Build(
+  def Publish(version : String, resolver : String = props.defaultResolver) = build(
     "Publish " + name,
-    Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version)),
-    this
+    Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version))
   )
 
-  def RunMain(className : String)(opts : String*)(args : String*)  = Build(
+  def RunMain(className : String)(opts : String*)(args : String*)  = build(
     "Run single class",
-    Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList)),
-    this
+    Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList))
   )
 
-  lazy val Doc = Build(
+  lazy val Doc = build(
     "Document " + name,
-    Dependency.Graph.transitiveClosure(this, DocTask(this)),
-    this
+    Dependency.Graph.transitiveClosure(this, DocTask(this))
   )
   
 
@@ -212,6 +199,11 @@ trait BaseProject {
     setUp(bld.graph)
     val result = bld.execute
     tearDown(bld.graph, result)
+    if (result.failed && props.ExecMode()){
+      log.error(bld + " failed ")
+      System.exit(-1)
+    }
+    BuildResult.lastResult.set(Some(result))
     result
   }
 
