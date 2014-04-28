@@ -39,8 +39,11 @@ import maker.utils.StringUtils
 import com.sun.org.apache.xpath.internal.operations.Bool
 
 
-case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSuiteNames_ : () ⇒ Iterable[String], verbose: Boolean)  extends Task {
-
+case class RunUnitTestsTask(
+  name : String, 
+  baseProject : BaseProject, 
+  classOrSuiteNames_ : Option[Iterable[String]],
+  verbose: Boolean)  extends Task {
 
   override def failureHaltsTaskManager = false
   val props = baseProject.props
@@ -50,7 +53,15 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
-    val classOrSuiteNames = classOrSuiteNames_()
+    // If no class names are passed in then they are found via reflection, so
+    // compilation has to have taken place - hence class names can't be determined
+    // at the point the task is created
+    val classOrSuiteNames = (baseProject, classOrSuiteNames_) match {
+      case (_, Some(cs)) => cs
+      case (m : Module, None) => m.testClassNames()
+      case _ => throw new RuntimeException("Can't run all tests against a top level project directly")
+    }
+
 
     if (classOrSuiteNames.isEmpty) {
       return TaskResult.success(this, sw)
@@ -100,26 +111,17 @@ case class RunUnitTestsTask(name : String, baseProject : BaseProject, classOrSui
 }
 
 object RunUnitTestsTask{
-  def apply(module : Module, verbose : Boolean) : RunUnitTestsTask = {
-    RunUnitTestsTask(
-      module.name + " test all",
-      module,
-      () ⇒ module.testClassNames(),
-      verbose
-    )
-  }
-  
-  def apply(baseProject : BaseProject, classNameOrAbbreviation : String, verbose : Boolean) : Task  = {
-    def resolveClassName() = {
-      if (classNameOrAbbreviation.contains('.'))
-        List(classNameOrAbbreviation)
+  def apply(baseProject : BaseProject, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
+    def resolveClassName(cn : String) : List[String] = {
+      if (cn.contains('.'))
+        List(cn)
       else {
         val matchingTestClasses = StringUtils.bestIntellijMatches(
-          classNameOrAbbreviation,
+          cn,
           baseProject.testClassNames()
         )
         if (matchingTestClasses.isEmpty){
-          baseProject.log.warn("No class matching " + classNameOrAbbreviation + " found")
+          baseProject.log.warn("No class matching " + cn + " found")
           Nil
         } else {
           if (matchingTestClasses.size > 1)
@@ -128,20 +130,38 @@ object RunUnitTestsTask{
         }
       }
     }
-    RunUnitTestsTask(
-      "Test class " + classNameOrAbbreviation, 
-      baseProject,
-      resolveClassName,
-      verbose
-    )
+    val classNames = classNamesOrAbbreviations.toList.flatMap(resolveClassName)
+    if (classNames.isEmpty)
+      RunUnitTestsTask(
+        baseProject.name + " test all",
+        baseProject,
+        None,
+        verbose
+      )
+    else
+      RunUnitTestsTask(
+        "Test class " + classNames.mkString(", "),
+        baseProject,
+        Some(classNames),
+        verbose
+      )
   }
 
+  //def apply(module : Module, verbose : Boolean) : RunUnitTestsTask = {
+    //RunUnitTestsTask(
+      //module.name + " test all",
+      //module,
+      //Some(module.testClassNames()),
+      //verbose
+      //)
+    //}
+  
 
   def failingTests(module : Module, verbose : Boolean) : RunUnitTestsTask = {
     RunUnitTestsTask(
       "Failing tests",
       module,
-      () ⇒ MakerTestResults(module.props, module.testOutputFile).failingSuiteClasses,
+      Some(MakerTestResults(module.props, module.testOutputFile).failingSuiteClasses),
       verbose
     )
   }

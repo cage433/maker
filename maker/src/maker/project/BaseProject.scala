@@ -207,9 +207,9 @@ trait BaseProject {
   def test(verbose : Boolean) = Test(verbose).execute
   def testNoCompile = TestSansCompile(false).execute
   def testNoCompile(verbose : Boolean) = TestSansCompile(verbose).execute
-  def testClass(className : String, verbose : Boolean = false) = TestClassBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className, verbose))).execute
+  def testClass(className : String, verbose : Boolean = false) = TestClassBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose, className))).execute
   def testClassContinuously(className : String) = {
-    val build = TestClassBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, className, verbose = true)))
+    val build = TestClassBuild.copy(graph_ = () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, false, className)))
     continuously(build)
   }
   def testFailedSuites = TestFailedSuites(false).execute

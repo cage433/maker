@@ -7,7 +7,7 @@ import org.scalatest.ParallelTestExecution
 import maker.project.Module
 import maker.MakerProps
 
-class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
+class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
   test("Test reports picks up failure"){
     withTempDir{
       dir ⇒ 
@@ -27,6 +27,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
           """
         )
         proj.test
+
         assert(proj.testOutputFile.exists, "Test output should exist")
     }
   }
