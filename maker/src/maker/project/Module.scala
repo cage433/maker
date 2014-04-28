@@ -150,12 +150,12 @@ class Module(
     "Update libraries for " + name + " only"
   )
 
-  def cleanOnly = CleanOnly.execute
-  def testOnly = TestOnly(false).execute
-  def testOnly(verbose : Boolean) = TestOnly(verbose).execute
-  def testFailuredSuitesOnly = TestFailedSuitesOnly(false).execute
-  def testFailuredSuitesOnly(verbose : Boolean) = TestFailedSuitesOnly(verbose).execute
-  def updateOnly = UpdateOnly.execute
+  def cleanOnly = execute(CleanOnly)
+  def testOnly = execute(TestOnly(false))
+  def testOnly(verbose : Boolean) = execute(TestOnly(verbose))
+  def testFailuredSuitesOnly = execute(TestFailedSuitesOnly(false))
+  def testFailuredSuitesOnly(verbose : Boolean) = execute(TestFailedSuitesOnly(verbose))
+  def updateOnly = execute(UpdateOnly)
 
 
   /********************

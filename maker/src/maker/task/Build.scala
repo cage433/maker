@@ -89,7 +89,6 @@ case class Build(
     def execute : BuildResult = {
 
       val taskResults = log.infoWithTime("" + this){
-        module.setUp(graph)
         execTasksInGraph()
       }
       val buildResult = BuildResult(
@@ -97,7 +96,6 @@ case class Build(
         taskResults.toList,
         graph
       )
-      module.tearDown(graph, buildResult)
       if (buildResult.failed && props.ExecMode()){
         log.error(this + " failed ")
         System.exit(-1)

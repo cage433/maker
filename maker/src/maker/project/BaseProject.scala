@@ -197,35 +197,35 @@ trait BaseProject {
   
 
 
-  def clean = Clean.execute
-  def cleanAll = CleanAll.execute
-  def compile = Compile.execute
+  def clean = execute(Clean)
+  def cleanAll = execute(CleanAll)
+  def compile = execute(Compile)
   def compileContinuously = continuously(Compile)
-  def testCompile = TestCompile.execute
+  def testCompile = execute(TestCompile)
   def testCompileContinuously = continuously(TestCompile)
-  def test = Test(false).execute
-  def test(verbose : Boolean) = Test(verbose).execute
-  def testNoCompile = TestSansCompile(false).execute
-  def testNoCompile(verbose : Boolean) = TestSansCompile(verbose).execute
-  def testClass(className : String, verbose : Boolean = false) = TestClass(className, verbose).execute
+  def test = execute(Test(false))
+  def test(verbose : Boolean) = execute(Test(verbose))
+  def testNoCompile = execute(TestSansCompile(false))
+  def testNoCompile(verbose : Boolean) = execute(TestSansCompile(verbose))
+  def testClass(className : String, verbose : Boolean = false) = execute(TestClass(className, verbose))
   def testClassContinuously(className : String) = {
     val build = TestClass(className, verbose = false)
     continuously(build)
   }
-  def testFailedSuites = TestFailedSuites(false).execute
-  def testFailedSuites(verbose : Boolean) = TestFailedSuites(verbose).execute
-  def pack = PackageJars.execute
-  def update = Update.execute
+  def testFailedSuites = execute(TestFailedSuites(false))
+  def testFailedSuites(verbose : Boolean) = execute(TestFailedSuites(verbose))
+  def pack = execute(PackageJars)
+  def update = execute(Update)
 
-  def createDeploy(buildTests: Boolean = true) = CreateDeploy(buildTests).execute
+  def createDeploy(buildTests: Boolean = true) = execute(CreateDeploy(buildTests))
 
-  def publishLocal(version : String) = PublishLocal(version).execute
-  def publish(version : String, resolver : String = props.defaultResolver()) = Publish(version, resolver).execute
+  def publishLocal(version : String) = execute(PublishLocal(version))
+  def publish(version : String, resolver : String = props.defaultResolver()) = execute(Publish(version, resolver))
 
 
-  def runMain(className : String)(opts : String*)(args : String*) = RunMain(className)(opts : _*)(args : _*).execute
+  def runMain(className : String)(opts : String*)(args : String*) = execute(RunMain(className)(opts : _*)(args : _*))
 
-  def doc = Doc.execute
+  def doc = execute(Doc)
 
   def builds = {
     val buildFields = this.getClass.getDeclaredFields.filter{f ⇒ classOf[maker.task.Build].isAssignableFrom(f.getType)}.map(_.getName)
@@ -242,6 +242,13 @@ trait BaseProject {
   def tcc = testCompileContinuously
   def stfe {
     props.ShowFailingTestException := ! props.ShowFailingTestException()
+  }
+
+  def execute(bld : Build) = {
+    setUp(bld.graph)
+    val result = bld.execute
+    tearDown(bld.graph, result)
+    result
   }
 
   def continuously(bld : Build){
