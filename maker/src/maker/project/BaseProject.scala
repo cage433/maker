@@ -70,129 +70,93 @@ trait BaseProject {
   lazy val Clean = Build(
     buildName("Clean"),
     Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_))),
-    this,
-    "clean",
-    """
-    |Cleans this and upstream modules. Including class files, caches, output jars and doc but excluding managed libraries
-    |
-    |see also CleanAll and CleanOnly
-    """.stripMargin
+    this
   )
 
   lazy val CleanAll = Build(
     "Clean All " + name, 
     Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_, deleteManagedLibs = true))),
-    this,
-    "cleanAll",
-    "Same as clean except it also deletes managed libraries"
+    this
   )
 
   lazy val Compile = Build(
     "Compile " + name, 
     Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask)),
-    this,
-    "compile",
-    "Compile module(s) " + allUpstreamModules.map(_.name).mkString(", ") + " after compiling any upstream modules"
+    this
   )
 
   lazy val TestCompile = Build(
     "Test Compile " + name, 
     Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask)),
-    this,
-    "testCompile",
-    "Compile tests in module(s) " + allUpstreamTestModules.map(_.name).mkString(", ") + " after compiling any upstream source (and also tests in the case of upstreamTestProjects"
+    this
   )
 
   def Test(verbose : Boolean) = Build(
     "Test " + name, 
     Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(verbose).graph)),
-    this,
-    "test (<verbose>)",
-    "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". After any module fails, all currently running modules will continue till completion, however no tests for any downstream modules will be launched"
+    this
   )
   
   def TestSansCompile(verbose : Boolean) = Build(
     "Test without compiling " + name,
     Dependency.Graph(allUpstreamModules.map(RunUnitTestsTask(_, verbose))),
-    this,
-    "testNoCompile (<verbose>)",
-    "Run tests for module(s) " + allUpstreamModules.map(_.name).mkString(", ") + ". No compilation at all is done before running tests"
+    this
   )
 
   def TestClass(className : String, verbose : Boolean) = Build(
     "Test single class ",
     Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose, className)),
-    this,
-    "testClass <class name> (<verbose>)",
-    "Exceutes a single test suite using the class path of " + name + ". Does IntelliJ style best match on (mandatory) provided class name - e.g. testClass(\"QuanTe\") instead of testClass(\"starling.quantity.QuantityTests\")"
+    this
   )
 
   def TestFailedSuites(verbose : Boolean) = Build(
     "Run failing test suites for " + name + " and upstream ", 
     Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly(verbose).graph)),
-    this,
-    "testFailedSuites (<verbose>)",
-    "Runs all failed tests in the module " + name + " and upstream"
+    this
   )
 
   lazy val PackageJars = Build(
     "Package jar(s) for " + name + " and upstream ", 
     Dependency.Graph(allUpstreamModules.map(PackageMainJarTask)),
-    this,
-    "pack",
-    "Packages jars for " + name + " and upstream. Output jars will be " + allUpstreamModules.map(_.outputArtifact).mkString("\n\t")
+    this
   )
   
   lazy val Update = Build(
     "Update libraries for " + name,
     Dependency.Graph.combine(allUpstreamModules.map(_.UpdateOnly.graph)),
-    this,
-    "update",
-    "Update libraries for " + name
+    this
   )
 
   def PublishLocal(version : String) = Build(
     "Publish " + name + " locally",
     Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version)),
-    this,
-    "publishLocal version",
-    "Publish " + name + " to ~/.ivy2"
+    this
   )
 
 
   def CreateDeploy(buildTests : Boolean) = Build(
     "Create a deployment package of " + name + " in target-maker/deploy",
     Dependency.Graph.transitiveClosure(this, CreateDeployTask(this, buildTests)),
-    this,
-    "createDeploy <optional buildTests>",
-    "Create deployment " + name + " to target-maker/deploy"
+    this
   )
 
 
   def Publish(version : String, resolver : String = props.defaultResolver) = Build(
     "Publish " + name,
     Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version)),
-    this,
-    "publish <version> <optional resolver>",
-    "Publish " + name 
+    this
   )
 
   def RunMain(className : String)(opts : String*)(args : String*)  = Build(
     "Run single class",
     Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList)),
-    this,
-    "runMain(className)(opts : String*)(args : String*)",
-    ("""|Executes a single class using the class path of %s. Does IntelliJ style best match on (mandatory) provided class name - like testClass
-        |opts are set as JVM -D args to the process runner
-        |args are passed to the main method""" % name).stripMargin
+    this
   )
 
   lazy val Doc = Build(
     "Document " + name,
     Dependency.Graph.transitiveClosure(this, DocTask(this)),
-    this, 
-    "doc",
-    "Document " + name + " aggregated with all upstream modules"
+    this
   )
   
 

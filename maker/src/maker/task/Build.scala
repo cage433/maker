@@ -38,15 +38,8 @@ import maker.project.BaseProject
 case class Build(
   name : String,
   graph : Dependency.Graph,
-  module : BaseProject,
-  invokingMethod : String,
-  helpText : String
+  module : BaseProject
 ) {
-
-  def help() {
-    println(name + " - (Executed with method " + invokingMethod + ")\n")
-    println(helpText)
-  }
 
   override def toString = "Build " + name
 

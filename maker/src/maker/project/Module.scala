@@ -121,33 +121,25 @@ class Module(
   lazy val CleanOnly = Build(
     "Clean only " + name, 
     Dependency.Graph(CleanTask(this)), 
-    this,
-    "cleanOnly",
-    "Deletes classes (source and test) for module " + name + ", leaving upstream module untouched"
+    this
   )
 
   def TestOnly(verbose : Boolean) = Build(
     "Test " + name + " only", 
     Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose)),
-    this,
-    "testOnly (<verbose>)",
-    "Runs all tests in the module " + name + ". Tests from upstream modules are _not_ run."
+    this
   )
 
   def TestFailedSuitesOnly(verbose : Boolean) = Build(
     "Run failing test suites for " + name + " only", 
     Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this, verbose)),
-    this,
-    "testFailuresOnly",
-    "Runs all failed tests in the module " + name
+    this
   )
 
   lazy val UpdateOnly =  Build(
     "Update libraries for " + name + " only",
     Dependency.Graph(UpdateTask(this)),
-    this,
-    "updateOnly (<verbose>)",
-    "Update libraries for " + name + " only"
+    this
   )
 
   def cleanOnly = execute(CleanOnly)
