@@ -37,7 +37,7 @@ import maker.project.BaseProject
 
 case class Build(
   name : String,
-  graph_ : () ⇒ Dependency.Graph,
+  graph : Dependency.Graph,
   module : BaseProject,
   invokingMethod : String,
   helpText : String
@@ -60,8 +60,6 @@ case class Build(
 
   val props = module.props
   val log = props.log
-
-  lazy val graph = graph_()
 
   def execute = new Execute().execute
   class Execute{
