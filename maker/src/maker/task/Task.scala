@@ -26,12 +26,15 @@
 package maker.task
 
 import maker.utils.Stopwatch
+import maker.project.BaseProject
+import maker.project.Module
 
 trait Task {
   def name : String
   def toShortString = toString
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
   def failureHaltsTaskManager : Boolean = true
+  def baseProject : BaseProject
 
   /**
    * Tasks that normally need to run BEFORE this one does 
@@ -39,11 +42,10 @@ trait Task {
   def upstreamTasks : Iterable[Task] 
 }
 
-
-object NullTask extends Task{
-  def name = "Null Task"
-  def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = TaskResult.success(this, sw)
-  def upstreamTasks = Nil
+abstract class SingleModuleTask(module : Module)
+  extends Task
+{
+  def baseProject = module
 }
 
 object Task {

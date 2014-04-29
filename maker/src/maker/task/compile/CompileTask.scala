@@ -9,10 +9,12 @@ import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
 import sbt.compiler.CompileFailed
 import maker.task.tasks.UpdateTask
+import maker.task.SingleModuleTask
 
 abstract class CompileTask extends Task{
   
   def module : Module
+  def baseProject = module
   def phase : CompilePhase
   val props = module.props
 

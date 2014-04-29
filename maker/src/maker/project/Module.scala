@@ -41,6 +41,8 @@ import maker.task.tasks.RunUnitTestsTask
 import maker.task.tasks.UpdateTask
 import maker.Resource
 import maker.PomUtils
+import maker.task.BuildResult
+import maker.task.Task
 
 /**
   * Corresponds to a module in IntelliJ
@@ -58,7 +60,7 @@ class Module(
   with TmuxIntegration
 {
 
-  val modules = List(this)
+  protected val upstreamModulesForBuild = List(this)
 
   val resourcesFile = file(root, "external-resources")
 
@@ -118,32 +120,29 @@ class Module(
   *       TASKS
   **************************/
 
-  lazy val CleanOnly = build(
-    "Clean only " + name, 
-    Dependency.Graph(CleanTask(this))
-  )
+  /**
+    * Execute just this single task, none of its upstream 
+    * dependencies. 
+    * In general should only be used by devs at the REPL - should
+    * not be used as the basis for more complex builds
+    */
+  private def executeSansDependencies(task : Task) : BuildResult = {
+    val build = Build(
+      task.name + " for " + name + " only",
+      Dependency.Graph(task),
+      props.NumberOfTaskThreads()
+    )
+    execute(build)
+  }
 
-  def TestOnly(verbose : Boolean) = build(
-    "Test " + name + " only", 
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose))
+  def cleanOnly = executeSansDependencies(CleanTask(this))
+  def testOnly(verbose : Boolean) : BuildResult = executeWithDependencies(RunUnitTestsTask(this, verbose))
+  def testOnly :BuildResult = testOnly(false)
+  def testFailuredSuitesOnly(verbose : Boolean) : BuildResult = executeSansDependencies(
+    RunUnitTestsTask.failingTests(this, verbose)
   )
-
-  def TestFailedSuitesOnly(verbose : Boolean) = build(
-    "Run failing test suites for " + name + " only", 
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this, verbose))
-  )
-
-  lazy val UpdateOnly = build(
-    "Update libraries for " + name + " only",
-    Dependency.Graph(UpdateTask(this))
-  )
-
-  def cleanOnly = execute(CleanOnly)
-  def testOnly = execute(TestOnly(false))
-  def testOnly(verbose : Boolean) = execute(TestOnly(verbose))
-  def testFailuredSuitesOnly = execute(TestFailedSuitesOnly(false))
-  def testFailuredSuitesOnly(verbose : Boolean) = execute(TestFailedSuitesOnly(verbose))
-  def updateOnly = execute(UpdateOnly)
+  def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(false)
+  def updateOnly = executeSansDependencies(UpdateTask(this))
 
 
   /********************

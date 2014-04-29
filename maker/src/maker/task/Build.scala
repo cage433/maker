@@ -166,6 +166,16 @@ case class Build(
 object Build{
   val taskCount = new AtomicInteger(0)
 
+  def apply(project : BaseProject, tasks : Task*) : Build = {
+    Build(
+      tasks.toList.headOption.map(_.name).getOrElse("No Tasks"),
+      Dependency.Graph.transitiveClosure(project, tasks.toList),
+      numberOfWorkers = project.props.NumberOfTaskThreads()
+    )
+  }
+
+  def apply(task : Task) : Build = apply(task.baseProject, task)
+
   class TaskMonitor(log : MakerLog, graph : Dependency.Graph, executor : ThreadPoolExecutor){
     private val lock = new Object
     var results = List[TaskResult]()

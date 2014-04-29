@@ -43,6 +43,7 @@ import maker.project.BaseProject
 case class RunMainTask(baseProject : BaseProject, className : String, opts : List[String], mainArgs : List[String]) extends Task {
   def name = "Run Main"
 
+  def module = baseProject
   def upstreamTasks = baseProject.allUpstreamModules.map(TestCompileTask(_))
 
 

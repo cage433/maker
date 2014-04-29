@@ -45,6 +45,7 @@ case class RunUnitTestsTask(
   classOrSuiteNames_ : Option[Iterable[String]],
   verbose: Boolean)  extends Task {
 
+  def module = baseProject
   override def failureHaltsTaskManager = false
   val props = baseProject.props
 

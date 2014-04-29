@@ -8,8 +8,11 @@ import maker.utils.os.Command
 import maker.utils.FileUtils._
 import java.io.File
 import maker.task.compile._
+import maker.task.SingleModuleTask
 
-case class PackageMainJarTask(module : Module) extends Task {
+case class PackageMainJarTask(module : Module) 
+  extends SingleModuleTask(module)
+{
   def name = "Package Jar"
   val props = module.props
   val log = props.log

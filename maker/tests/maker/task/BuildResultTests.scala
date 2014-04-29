@@ -40,10 +40,10 @@ import maker.task.compile._
  */
 class BuildResultTests extends FunSuite {
 
-  case class MyDontRunTask(module : Module) extends Task {
+  case class MyDontRunTask(baseProject : Module) extends Task {
     def name = "Don't run this task"
     def upstreamTasks = Nil
-    def copy_(p : Module) = copy(module = p)
+    def copy_(p : Module) = copy(baseProject = p)
     def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
       assert(false, "should not run task!")
       TaskResult.success(this, sw)

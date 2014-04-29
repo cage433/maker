@@ -15,6 +15,7 @@ case class Project(
   topLevelExcludedFolders:List[String] = Nil
 ) extends BaseProject  with TmuxIntegration{
   
+  val upstreamModulesForBuild = immediateUpstreamModules
   override def toString = name
 
   def constructorCodeAsString : String = {

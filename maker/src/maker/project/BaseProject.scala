@@ -62,132 +62,98 @@ trait BaseProject {
 
   def docOutputDir : File
 
+  /**
+    * Makes a Build that is the closure of the task applied to 
+    * upstream modules
+    */
+  def moduleBuild(task : Module => Task, upstreamModules : List[Module] = upstreamModulesForBuild) = Build(
+    this,
+    upstreamModules.map(task) : _*
+  )
 
-  private def buildName(text : String) = {
-    text + " " + getClass.getSimpleName.toLowerCase + " " + name
+  /** modules that need to be taken into consideration
+    * when doing a transitive build */
+  protected def upstreamModulesForBuild : List[Module]
+
+  protected def executeWithDependencies(
+    task : Module => Task, 
+    upstreamModules : List[Module] = upstreamModulesForBuild
+  ) : BuildResult = 
+  {
+    execute(moduleBuild(task, upstreamModules))
   }
 
-  protected def build(name : String, graph : Dependency.Graph) = Build(name, graph, props.NumberOfTaskThreads())
-   
-  lazy val Clean = build(
-    buildName("Clean"),
-    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_)))
+  /**
+    * Makes a Build that is the closure of some task. This project is
+    * passed in in case it has any extra tasks
+    */
+  protected def taskBuild(task : Task) = {
+    Build(
+      task.name,
+      Dependency.Graph.transitiveClosure(this, task),
+      props.NumberOfTaskThreads()
+    )
+  }
+
+  protected def executeWithDependencies(task : Task) = { 
+    execute(taskBuild(task))
+  }
+
+  def clean = executeWithDependencies(CleanTask(_))
+  def cleanAll = executeWithDependencies(CleanTask(_, deleteManagedLibs = true))
+
+  def compile = executeWithDependencies(SourceCompileTask(_))
+  def compileContinuously = continuously(moduleBuild(SourceCompileTask(_)))
+
+  def testCompile = executeWithDependencies(TestCompileTask(_))
+  def testCompileContinuously = continuously(moduleBuild(TestCompileTask(_)))
+
+  private[project] def testBuild(verbose : Boolean) = {
+    // test is an unusual build, in that if project B depends on project A, then 
+    // strictly speaking, to test B it is only necessary to compile A (perhaps test compile also)
+    // however - when we run tests on B, in general we also want to run A's tests too. 
+    //
+    // Use 'testOnly' to just run a single module's tests.
+    moduleBuild(RunUnitTestsTask(_, verbose), allUpstreamModules)
+  }
+  def test(verbose : Boolean) : BuildResult = {
+    execute(testBuild(verbose))
+  }
+  def test : BuildResult = test(verbose = false)
+
+  def testClass(className : String, verbose : Boolean = false) = executeWithDependencies(
+    RunUnitTestsTask(this, verbose, className)
   )
-
-  lazy val CleanAll = build(
-    "Clean All " + name, 
-    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(CleanTask(_, deleteManagedLibs = true)))
-  )
-
-  lazy val Compile = build(
-    "Compile " + name, 
-    Dependency.Graph.transitiveClosure(this, allUpstreamModules.map(SourceCompileTask))
-  )
-
-  lazy val TestCompile = build(
-    "Test Compile " + name, 
-    Dependency.Graph.transitiveClosure(this, allUpstreamTestModules.map(TestCompileTask))
-  )
-
-  def Test(verbose : Boolean) = build(
-    "Test " + name, 
-    Dependency.Graph.combine(allUpstreamModules.map(_.TestOnly(verbose).graph))
-  )
-  
-  def TestSansCompile(verbose : Boolean) = build(
-    "Test without compiling " + name,
-    Dependency.Graph(allUpstreamModules.map(RunUnitTestsTask(_, verbose)))
-  )
-
-  def TestClass(className : String, verbose : Boolean) = build(
-    "Test single class ",
-    Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose, className))
-  )
-
-  def TestFailedSuites(verbose : Boolean) = build(
-    "Run failing test suites for " + name + " and upstream ", 
-    Dependency.Graph.combine(allUpstreamModules.map(_.TestFailedSuitesOnly(verbose).graph))
-  )
-
-  lazy val PackageJars = build(
-    "Package jar(s) for " + name + " and upstream ", 
-    Dependency.Graph(allUpstreamModules.map(PackageMainJarTask))
-  )
-  
-  lazy val Update = build(
-    "Update libraries for " + name,
-    Dependency.Graph.combine(allUpstreamModules.map(_.UpdateOnly.graph))
-  )
-
-  def PublishLocal(version : String) = build(
-    "Publish " + name + " locally",
-    Dependency.Graph.transitiveClosure(this, PublishLocalTask(this, version))
-  )
-
-
-  def CreateDeploy(buildTests : Boolean) = build(
-    "Create a deployment package of " + name + " in target-maker/deploy",
-    Dependency.Graph.transitiveClosure(this, CreateDeployTask(this, buildTests))
-  )
-
-
-  def Publish(version : String, resolver : String = props.defaultResolver) = build(
-    "Publish " + name,
-    Dependency.Graph.transitiveClosure(this, PublishTask(this, resolver, version))
-  )
-
-  def RunMain(className : String)(opts : String*)(args : String*)  = build(
-    "Run single class",
-    Dependency.Graph.transitiveClosure(this, RunMainTask(this, className, opts.toList, args.toList))
-  )
-
-  lazy val Doc = build(
-    "Document " + name,
-    Dependency.Graph.transitiveClosure(this, DocTask(this))
-  )
-  
-
-
-  def clean = execute(Clean)
-  def cleanAll = execute(CleanAll)
-  def compile = execute(Compile)
-  def compileContinuously = continuously(Compile)
-  def testCompile = execute(TestCompile)
-  def testCompileContinuously = continuously(TestCompile)
-  def test = execute(Test(false))
-  def test(verbose : Boolean) = execute(Test(verbose))
-  def testNoCompile = execute(TestSansCompile(false))
-  def testNoCompile(verbose : Boolean) = execute(TestSansCompile(verbose))
-  def testClass(className : String, verbose : Boolean = false) = execute(TestClass(className, verbose))
   def testClassContinuously(className : String) = {
-    val build = TestClass(className, verbose = false)
-    continuously(build)
+    continuously(taskBuild(RunUnitTestsTask(this, false, className)))
   }
-  def testFailedSuites = execute(TestFailedSuites(false))
-  def testFailedSuites(verbose : Boolean) = execute(TestFailedSuites(verbose))
-  def pack = execute(PackageJars)
-  def update = execute(Update)
 
-  def createDeploy(buildTests: Boolean = true) = execute(CreateDeploy(buildTests))
-
-  def publishLocal(version : String) = execute(PublishLocal(version))
-  def publish(version : String, resolver : String = props.defaultResolver()) = execute(Publish(version, resolver))
-
-
-  def runMain(className : String)(opts : String*)(args : String*) = execute(RunMain(className)(opts : _*)(args : _*))
-
-  def doc = execute(Doc)
-
-  def builds = {
-    val buildFields = this.getClass.getDeclaredFields.filter{f ⇒ classOf[maker.task.Build].isAssignableFrom(f.getType)}.map(_.getName)
-    val helpText = """
-      |Builds are directed graphs of tasks, such as Update, Clean, Compile, TestCompile and Test.
-      |
-      |By convention tasks are executed with the non-capitalized name - e.g. testCompile 
-      |Each task has a help method for a fuller decription
-      """.stripMargin
-    println(helpText + buildFields.mkString("\n", "\t\n", ""))
+  def testFailedSuites(verbose : Boolean) : BuildResult = {
+    // To be consistent with 'test' - build must be against all upstream modules
+    val build = moduleBuild(
+      RunUnitTestsTask.failingTests(_, verbose), allUpstreamModules
+    )
+    execute(build)
   }
+  def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
+
+  def pack = executeWithDependencies(PackageMainJarTask(_))
+
+  def update = executeWithDependencies(UpdateTask(_))
+
+  def createDeploy(buildTests: Boolean = true) = 
+    executeWithDependencies(CreateDeployTask(this, buildTests))
+
+  def publishLocal(version : String) = 
+    executeWithDependencies(PublishLocalTask(this, version))
+
+  def publish(version : String, resolver : String = props.defaultResolver()) = 
+    executeWithDependencies(PublishTask(this, resolver, version))
+
+  def runMain(className : String)(opts : String*)(args : String*) = 
+    executeWithDependencies(RunMainTask(this, className, opts.toList, args.toList))
+
+  def doc = executeWithDependencies(DocTask(this))
 
   // Some sugar
   def tcc = testCompileContinuously
@@ -195,7 +161,7 @@ trait BaseProject {
     props.ShowFailingTestException := ! props.ShowFailingTestException()
   }
 
-  def execute(bld : Build) = {
+  protected def execute(bld : Build) = {
     setUp(bld.graph)
     val result = bld.execute
     tearDown(bld.graph, result)

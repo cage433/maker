@@ -11,9 +11,12 @@ import maker.utils.FileUtils._
 import maker.task.BuildResult
 import maker.task.tasks.RunUnitTestsTask
 import maker.task.compile._
+import maker.task.SingleModuleTask
 
 class ProjectTaskDependenciesTests extends FunSuite{
-  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task{
+  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") 
+    extends SingleModuleTask(module)
+  {
     def name = "Write class count "
     def copy_(p : Module) = copy(module = p)
     def upstreamTasks = Nil
@@ -148,15 +151,15 @@ class ProjectTaskDependenciesTests extends FunSuite{
         val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
 
         assert(
-          !B.TestCompile.graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
+          !B.moduleBuild(TestCompileTask(_)).graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
-          C.TestCompile.graph.upstreams(TestCompileTask(C)).contains(TestCompileTask(A)),
+          C.moduleBuild(TestCompileTask(_)).graph.upstreams(TestCompileTask(C)).contains(TestCompileTask(A)),
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
-          B.Compile.graph.upstreams(SourceCompileTask(B)).contains(SourceCompileTask(A)),
+          B.moduleBuild(SourceCompileTask(_)).graph.upstreams(SourceCompileTask(B)).contains(SourceCompileTask(A)),
           "Upstream source compilation is a dependency"  
         )
 
@@ -199,17 +202,18 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
         List(A, B, C).foreach{
           proj ⇒ 
-            assert(proj.Test(false).graph.nodes.exists{
+            assert(proj.moduleBuild(RunUnitTestsTask(_, verbose = false)).graph.nodes.exists{
               case RunUnitTestsTask(_, `proj`, _, false) ⇒ true
               case _ ⇒ false
             })
         }
         import Dependency.Edge
-        assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
-        assert(D.Test(false).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
-        assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(B), TestCompileTask(C))))
+        assert(!D.moduleBuild(TestCompileTask(_)).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
 
-        assert(D.TestCompile.graph.subGraphOf(D.test.graph))
+        assert(D.testBuild(verbose = false).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
+        assert(!D.moduleBuild(TestCompileTask(_)).graph.edges.contains(Edge(TestCompileTask(B), TestCompileTask(C))))
+
+        assert(D.moduleBuild(TestCompileTask(_)).graph.subGraphOf(D.test.graph))
         
     }
     

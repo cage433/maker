@@ -31,7 +31,9 @@ import maker.task._
 import maker.utils.Stopwatch
 import maker.Resource
 
-case class UpdateTask(module : Module) extends Task {
+case class UpdateTask(module : Module) 
+  extends SingleModuleTask(module)
+{
   def name = "Update " + module
 
   def upstreamTasks : List[Task] = Nil

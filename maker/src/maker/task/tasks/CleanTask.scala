@@ -35,7 +35,9 @@ import maker.utils.Stopwatch
   *
   *  removes all build content and directories that contained it
   */
-case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) extends Task {
+case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) 
+  extends SingleModuleTask(module)
+{
   def name = "Clean"
   def upstreamTasks = (module.immediateUpstreamModules ::: module.immediateUpstreamTestModules).distinct.map(CleanTask(_, deleteManagedLibs))
 
