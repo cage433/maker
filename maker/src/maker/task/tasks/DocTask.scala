@@ -81,13 +81,13 @@ case class DocTask(baseProject : BaseProject) extends Task {
         optsFile)
 
       cmd.exec() match {
-        case 0 => TaskResult.success(this, sw)
-        case _ => TaskResult.failure(this, sw, cmd.savedOutput)
+        case 0 => TaskResult.success(this)
+        case _ => TaskResult.failure(this, message = Some(cmd.savedOutput))
       }
     }
     else {
       log.debug("not generating doc for module " + baseProject.toString)
-      TaskResult.success(this, sw)
+      TaskResult.success(this)
     }
   }
 }

@@ -28,7 +28,7 @@ case class PackageMainJarTask(module : Module)
     synchronized{
       if (fileIsLaterThan(module.outputArtifact, mainDirsToPack)) {
         log.info("Packaging up to date for " + module.name + ", skipping...")
-        TaskResult.success(this, sw)
+        TaskResult.success(this)
       } else {
         doPackage(results, sw)
       }
@@ -64,8 +64,8 @@ case class PackageMainJarTask(module : Module)
     val cmds : List[WrappedCommand] = createJarCommand(mainDirsToPack.head) :: mainDirsToPack.tail.map(updateJarCommand)
 
     cmds.find(_.exec != 0) match {
-      case Some(failingCommand) ⇒ TaskResult.failure(this, sw, failingCommand.cmd.savedOutput)
-      case None ⇒ TaskResult.success(this, sw)
+      case Some(failingCommand) ⇒ TaskResult.failure(this, message = Some(failingCommand.cmd.savedOutput))
+      case None ⇒ TaskResult.success(this)
     }
   }
 }

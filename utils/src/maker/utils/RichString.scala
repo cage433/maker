@@ -27,6 +27,8 @@ package maker.utils
 
 import scalaz.syntax.id._
 import scala.collection.immutable.TreeMap
+import java.io.StringWriter
+import java.io.PrintWriter
 
 
 object RichString {
@@ -101,4 +103,18 @@ object RichString {
         s
     }
 	}
+
+
+}
+
+object RichThrowable{
+  implicit def throwable2RichThrowable(th : Throwable) = RichThrowable(th)
+  case class RichThrowable(th : Throwable){
+    def stackTraceAsString = {        
+      val sw = new StringWriter()
+      val w = new PrintWriter(sw)
+      th.printStackTrace(w)
+      sw.toString
+    }
+  }
 }

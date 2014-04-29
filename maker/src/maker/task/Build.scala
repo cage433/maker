@@ -90,7 +90,6 @@ case class Build(
 
     private def passToExecutor(pt : Task, resultsSoFar : Set[TaskResult]){
       val sw = new Stopwatch
-      sw.snapshot(TaskResult.TASK_LAUNCHED)
       monitor.addToQueue(pt)
       executor.execute(
         new Runnable() {
@@ -109,9 +108,8 @@ case class Build(
                 case e =>
                   log.warn("exception thrown:" + e + " when running task " + pt)
                   e.printStackTrace
-                  TaskResult.failure(pt, sw, e)
+                  TaskResult.failure(pt, exception = Some(e))
               }
-              sw.snapshot(TaskResult.TASK_COMPLETE)
               monitor.addResult(pt, result)
               log.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
             } catch {

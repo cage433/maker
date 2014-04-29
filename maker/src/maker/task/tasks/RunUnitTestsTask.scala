@@ -65,7 +65,7 @@ case class RunUnitTestsTask(
 
 
     if (classOrSuiteNames.isEmpty) {
-      return TaskResult.success(this, sw)
+      return TaskResult.success(this)
     }
 
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
@@ -99,14 +99,14 @@ case class RunUnitTestsTask(
     val res = cmd.exec
     val results = MakerTestResults(baseProject.props, baseProject.testOutputFile)
     val result = if (res == 0 && results.failures.isEmpty){
-      TaskResult.success(this, sw)
+      TaskResult.success(this)
     } else if (results.failures.isEmpty){
-      TaskResult.failure(this, sw, "scalatest process bombed out. $? = " + res)
+      TaskResult.failure(this, message = Some("scalatest process bombed out. $? = " + res))
     } else {
       val failingSuiteClassesText = results.failingSuiteClasses.indented()
-      TaskResult.failure(this, sw, "Test failed in " + baseProject + failingSuiteClassesText)
+      TaskResult.failure(this, message = Some("Test failed in " + baseProject + failingSuiteClassesText))
     }
-    result.withInfo(results)
+    result.copy(info = Some(results))
   }
 
 }

@@ -134,6 +134,6 @@ case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) exte
       case m : Module =>
         throw new IllegalStateException("Should not be run on a module")
     }
-    TaskResult.success(this, sw)
+    TaskResult.success(this)
   }
 }

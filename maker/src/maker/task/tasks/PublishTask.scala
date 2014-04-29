@@ -86,12 +86,12 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
         resolverName,
         po)
 
-      TaskResult.success(this, sw)
+      TaskResult.success(this)
     }
     catch {
       case e =>
         e.printStackTrace
-        TaskResult.failure(this, sw, e)
+        TaskResult.failure(this, exception = Some(e))
     }
   }
 }

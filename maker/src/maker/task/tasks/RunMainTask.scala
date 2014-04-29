@@ -82,14 +82,14 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
           log.info("Terminating: " + className)
           procHandle._1.destroy()
           log.info("Terminated process for runMain of class : " + className)
-          TaskResult.success(this, sw)
+          TaskResult.success(this)
         }
         else checkRunning()
       }
       else {
         procHandle._2() match {
-          case 0 => TaskResult.success(this, sw)
-          case code => TaskResult.failure(this, sw, "Run Main failed in " + baseProject)
+          case 0 => TaskResult.success(this)
+          case code => TaskResult.failure(this, message = Some("Run Main failed in " + baseProject))
         }
       }
     }
