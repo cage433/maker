@@ -42,12 +42,16 @@ case class TestFailure(message : String, throwable : List[String]) {
 
 object MakerTestResults{
  
-  def decode(s : String) : String = {
-    if (s == "")
-      return s
-    val delimiter = s.head
-    s.tail.split(delimiter).toList.mkString("\n")
+  def splitFields(line : String) : List[String] = {
+    val fieldSep = 28.toChar.toString
+    line.split(fieldSep).toList
   }
+
+  def splitGroups(field : String) : String = {
+    val grpSep = 29.toChar.toString
+    field.split(grpSep).toList.mkString("\n")
+  }
+
   def apply(props : MakerProps, file : File) : MakerTestResults = {
 
     val startTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
@@ -55,25 +59,25 @@ object MakerTestResults{
     var failures : List[(TestIdentifier, TestFailure)] = Nil
     
     withFileLineReader(file){
-      line ⇒ 
-        val split = line.split("\t").toList.map(decode)
+      line =>
+        val fields = splitFields(line).map(splitGroups)
         try {
-        split.head match {
+        fields.head match {
           case "START" ⇒ 
-            val List(suite, suiteClass, test, time) = split.tail
+            val List(suite, suiteClass, test, time) = fields.tail
             startTimeInNanos += TestIdentifier(suite, suiteClass, test) → time.toLong
           case "END" ⇒ 
-            val List(suite, suiteClass, test, time) = split.tail
+            val List(suite, suiteClass, test, time) = fields.tail
             endTimeInNanos += TestIdentifier(suite, suiteClass, test) → time.toLong
           case "FAILURE" ⇒ 
-            val suite :: suiteClass :: test :: message :: throwable = split.tail
+            val suite :: suiteClass :: test :: message :: throwable = fields.tail
             failures ::= (TestIdentifier(suite, suiteClass, test), TestFailure(message, throwable))
         }
       } catch {
         case e ⇒
           error("problem with test-output file, file is: " + file.getAbsolutePath)
-          error("head was [" + split.head + "]")
-          error("split was [" + split.mkString("\n") + "]")
+          error("head was [" + fields.head + "]")
+          error("split was [" + fields.mkString("\n") + "]")
           error("line was [" + line + "]")
           throw e
       }
