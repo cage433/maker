@@ -222,7 +222,7 @@ trait BaseProject {
 
     def printWaitingMessage = println("\nWaiting for source file changes (press 'enter' to interrupt)")
     def rerunTask{
-      println(bld.execute)
+      println(execute(bld))
       lastTaskTime = Some(System.currentTimeMillis)
       lastFileCount = sourceFileCount
       lastSourceFileNames = sourceFileNames
