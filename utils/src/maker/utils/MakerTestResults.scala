@@ -137,7 +137,6 @@ case class MakerTestResults (
   def startTime :Long = endTimeInNanos.values.toList.sortWith(_<_).headOption.getOrElse(0L)
   def time = (endTime - startTime) / 1.0e9
   def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
-  def unfinishedTests = startTimeInNanos.keySet -- endTimeInNanos.keySet
 
   def testsOrderedByTime : List[(TestIdentifier, Long)] = endTimeInNanos.map{
     case (id, endTime) ⇒ 
@@ -158,10 +157,10 @@ case class MakerTestResults (
           List(suiteClass, test, "%.2f (s)" % (timeInNanos / 1.0e9))
       }.asTable(3) + "\n")
     } else {
-      if (unfinishedTests.nonEmpty){
+      if (unfinished.nonEmpty){
         buffer.append("Unfinished\n")
         var lastSuite : String = ""
-        unfinishedTests.foreach{
+        unfinished.foreach{
           case TestIdentifier(suite, _, test) => 
             if (suite != lastSuite){
               buffer.append("\n  " + suite + "\n")
