@@ -33,7 +33,7 @@ case class Stopwatch(
   name : String = "", 
   private var snapshots_ : Map[String, Long] = Map()
 ){
-  def snapshot(name : String) = {snapshots_ = snapshots_ + (name → currentTime); this}
+  def snapshot(name : String) = {snapshots_ = snapshots_ + (name -> currentTime); this}
   def snapshots = Map[String, Long]() ++ snapshots_
   def snapshotTime(name : String) = snapshots.get(name)
   def currentTime() = System.nanoTime

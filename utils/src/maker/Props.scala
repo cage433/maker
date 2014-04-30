@@ -88,10 +88,10 @@ trait PropsTrait extends DelayedInit{
       name + "=" + valueAsString
     }
     def := (newValue : String){
-      overrides += (name → newValue)
+      overrides += (name -> newValue)
     }
     def := (newValue : T){
-      overrides += (name → newValue.toString)
+      overrides += (name -> newValue.toString)
     }
   }
 

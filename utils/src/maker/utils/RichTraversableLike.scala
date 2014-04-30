@@ -13,7 +13,7 @@ object RichTraversableLike{
     /** Zip every element if the TraversableLike with a constant element 'b'*/
     def zipWith[B, That](f: A ⇒ B)(implicit cbf: CanBuildFrom[Repr, (A, B), That]): That = tl.map(a ⇒ (a, f(a)))
     /** Pair every element if the TraversableLike with a constant element 'b'*/
-    def pairWith[B, That](b: B)(implicit cbf: CanBuildFrom[Repr, (A, B), That]): That = tl.map(_ → b)
+    def pairWith[B, That](b: B)(implicit cbf: CanBuildFrom[Repr, (A, B), That]): That = tl.map(_ -> b)
 
     def initOption(): Option[Repr] = if (tl.isEmpty) None else Some(tl.init)
 

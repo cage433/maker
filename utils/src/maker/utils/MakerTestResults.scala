@@ -65,10 +65,10 @@ object MakerTestResults{
         fields.head match {
           case "START" ⇒ 
             val List(suite, suiteClass, test, time) = fields.tail
-            startTimeInNanos += TestIdentifier(suite, suiteClass, test) → time.toLong
+            startTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
           case "END" ⇒ 
             val List(suite, suiteClass, test, time) = fields.tail
-            endTimeInNanos += TestIdentifier(suite, suiteClass, test) → time.toLong
+            endTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
           case "FAILURE" ⇒ 
             val suite :: suiteClass :: test :: message :: throwable = fields.tail
             failures ::= (TestIdentifier(suite, suiteClass, test), TestFailure(message, throwable))

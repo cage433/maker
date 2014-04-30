@@ -14,7 +14,7 @@ object ZincCompile{
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
       case pp : ModuleCompilePhase ⇒
-        upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
+        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
     }
 
     val analysisMapArguments = upstreamCaches.filter{

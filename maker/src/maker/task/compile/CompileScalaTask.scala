@@ -22,7 +22,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
       case pp : ModuleCompilePhase ⇒
-        upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
+        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
     }
     
     val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList

@@ -71,7 +71,7 @@ case class RunUnitTestsTask(
     val consoleReporterArg = if (props.RunningInMakerTest()) Nil else List("-o")
 
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
-    val systemProperties = (props.JavaSystemProperties.asMap + "scala.usejavacp" → "true").map{
+    val systemProperties = (props.JavaSystemProperties.asMap + ("scala.usejavacp" -> "true")).map{
       case (key, value) ⇒ "-D" + key + "=" + value
     }.toList
     baseProject.testOutputFile.delete

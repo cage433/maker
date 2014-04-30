@@ -7,7 +7,7 @@ object Dependency{
 
   case class Edge(upstream : Task, downstream : Task){
     val nodes = Set(downstream, upstream)
-      override def toString = upstream + " → " + downstream
+      override def toString = upstream + " -> " + downstream
     def contains(node : Task) = nodes.contains(node)
   }
   object Edge{

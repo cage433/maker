@@ -36,7 +36,7 @@ class ScalatestResultsTests extends FunSuite{
   def metadataToMap(md : MetaData, acc : Map[String, String] = Map[String, String]()) : Map[String, String] = {
     md match {
       case scala.xml.Null ⇒ acc
-      case a : Attribute ⇒ metadataToMap(md.next, acc ++ Map(a.key → a.value.toString))
+      case a : Attribute ⇒ metadataToMap(md.next, acc ++ Map(a.key -> a.value.toString))
     }
   }
 

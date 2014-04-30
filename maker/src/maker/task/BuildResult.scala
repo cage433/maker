@@ -148,7 +148,7 @@ object BuildResult{
     synchronized{
       files.foreach{
         f ⇒ 
-          compiledFiles += (f → (compiledFiles.getOrElse(f, 0) + 1))
+          compiledFiles += (f -> (compiledFiles.getOrElse(f, 0) + 1))
       }
     }
   }
@@ -177,7 +177,7 @@ object BuildResult{
     val keysAsSet = keys.toSet
     synchronized{
       val newTime : Long = timings.getOrElse(keysAsSet, 0L) + time
-      timings += (keysAsSet → newTime)
+      timings += (keysAsSet -> newTime)
     }
   }
   def printTimings{

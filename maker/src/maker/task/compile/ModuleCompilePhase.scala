@@ -144,7 +144,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
    def upstreamCacheMaps = strictlyUpstreamProjectPhases.map{
      pp ⇒ 
-      pp.outputDir → pp.compilationCacheFile
+      pp.outputDir -> pp.compilationCacheFile
     }.toMap
 
 }
