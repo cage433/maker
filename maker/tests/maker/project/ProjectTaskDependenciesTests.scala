@@ -22,7 +22,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
     def upstreamTasks = Nil
     def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
       exec
-      TaskResult.success(WriteClassCountToFile.this)
+      TaskResult.success(WriteClassCountToFile.this, sw)
     }
     def exec = {
       writeToFile(file(module.rootAbsoluteFile, basename), module.compilePhase.classFiles.size + "")

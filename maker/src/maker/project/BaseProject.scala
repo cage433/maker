@@ -175,6 +175,7 @@ trait BaseProject {
       System.exit(-1)
     }
     BuildResult.lastResult.set(Some(result))
+    result.reportTopLevelTiming
     result
   }
 

@@ -12,12 +12,16 @@ import maker.utils.RichThrowable._
 case class TaskResult(
   task : Task, 
   succeeded : Boolean, 
+  stopwatch : Stopwatch,
   info : Option[Any] = None, 
   message : Option[String] = None, 
   exception : Option[Throwable] = None
 ){
   def failed = !succeeded
   def status = if (succeeded) "succeeded" else "failed"
+
+  def startTime = stopwatch.startTime
+  def endTime = stopwatch.snapshotTime(TaskResult.TASK_END).getOrElse(startTime)
 
   def compilationInfo : Option[CompilationInfo] = info match {
     case Some(x) if x.isInstanceOf[CompilationInfo] ⇒ Some(x.asInstanceOf[CompilationInfo])
@@ -60,20 +64,24 @@ case class TaskResult(
 }
 
 object TaskResult{
-  def success(task : Task, info : Option[Any] = None) : TaskResult = TaskResult(
+  def success(task : Task, sw : Stopwatch, info : Option[Any] = None) : TaskResult = TaskResult(
     task,
     succeeded = true,
+    stopwatch = sw,
     info = info
   )
 
-  def failure(task : Task, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None) : TaskResult = TaskResult(
+  def failure(task : Task, sw : Stopwatch, info : Option[Any] = None, message : Option[String] = None, exception : Option[Throwable] = None) : TaskResult = TaskResult(
     task,
     succeeded = false,
+    stopwatch = sw,
     info = info,
     message = message,
     exception = exception
   )
 
+  val TASK_START = "TASK_START"
+  val TASK_END = "TASK_END"
 }
 
 

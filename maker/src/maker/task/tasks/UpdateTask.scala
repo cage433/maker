@@ -50,9 +50,9 @@ case class UpdateTask(module : Module)
     val (_, failures) = missingResources.partition(Exec(_).apply())
     failures match {
       case Nil => 
-        TaskResult.success(this)
+        TaskResult.success(this, sw)
       case _ => 
-        TaskResult.failure(this, message = Some("Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t")))
+        TaskResult.failure(this, sw, message = Some("Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t")))
     }
   }
 

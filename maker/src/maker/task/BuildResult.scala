@@ -41,6 +41,14 @@ case class BuildResult(
       buffer.toString inRed
     }
   }
+  def reportTopLevelTiming{
+    val clockTime = results.map(_.endTime).max - results.map(_.startTime).min
+    val cpuTime = results.map{tr => tr.endTime - tr.startTime}.sum
+    println("Clock time  (ms) = " + (clockTime / 1000000))
+    println("CPU time    (ms) = " + (cpuTime / 1000000))
+    println("Parallelism (%)  = " + (cpuTime / clockTime) * 100.0)
+  }
+
   override def toString = {
     // Nasty hack to get colourization to work in the repl
     println(toString_)

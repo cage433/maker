@@ -39,7 +39,7 @@ abstract class CompileTask extends Task{
       case cache if cache.contains(inputsHash) ⇒ {
         val files = CompilationCache.lookup(cache, inputsHash).get
         files.copyTo(modulePhase.module.rootAbsoluteFile, modulePhase.outputDir, modulePhase.phaseDirectory)
-        success(this, info = Some(CompilationInfo(this, CachedCompilation)))
+        success(this, sw, info = Some(CompilationInfo(this, CachedCompilation)))
       }
     }
   }
@@ -60,7 +60,7 @@ abstract class CompileTask extends Task{
     if (modulePhase.sourceFiles.isEmpty){
       cleanRegularFilesLeavingDirectories(modulePhase.outputDir)
       modulePhase.compilationCacheFile.delete
-      return success(this, Some(CompilationInfo(this, CompilationNotRequired)))
+      return success(this, sw, Some(CompilationInfo(this, CompilationNotRequired)))
     }
     copyResourcesToTargetDirIfNecessary()
     val result = cachedCompilation(sw).getOrElse{
@@ -69,25 +69,25 @@ abstract class CompileTask extends Task{
           case "zinc" => 
             val exitCode = ZincCompile(modulePhase)
             if (exitCode == 0)
-              success(this, info = Some(CompilationInfo(this, CompilationSucceeded)))
+              success(this, sw, info = Some(CompilationInfo(this, CompilationSucceeded)))
             else 
-              failure(this, message = Some("compilation failure"))
+              failure(this, sw, message = Some("compilation failure"))
           case "scalac" => 
             CompileScalaTask(modulePhase).exec match {
               case Left(e) ⇒ {
-                failure(this, message = Some("compilation failure"), info = Some(CompilationFailedInfo(e)))
+                failure(this, sw, message = Some("compilation failure"), info = Some(CompilationFailedInfo(e)))
               }
               case Right(a) ⇒ {
-                success(this, info = Some(CompilationInfo(this, CompilationSucceeded)))
+                success(this, sw, info = Some(CompilationInfo(this, CompilationSucceeded)))
               }
             }
           case "dummy-test-compiler" =>
             DummyCompileTask(modulePhase).exec
-            success(this)
+            success(this, sw)
 
         }
       } else {
-        success(this, info = Some(CompilationInfo(this, CompilationNotRequired)))
+        success(this, sw, info = Some(CompilationInfo(this, CompilationNotRequired)))
       }
     }
     classesCache.foreach{

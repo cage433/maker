@@ -62,6 +62,6 @@ case class CleanTask(module : Module, deleteManagedLibs : Boolean = false)
     module.compilePhase.compilationCacheFile.delete
     module.testCompilePhase.compilationCacheFile.delete
 
-    TaskResult.success(this)
+    TaskResult.success(this, sw)
   }
 }
