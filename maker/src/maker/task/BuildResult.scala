@@ -41,18 +41,47 @@ case class BuildResult(
       buffer.toString inRed
     }
   }
+
   def reportTopLevelTiming{
     if (failed || results.isEmpty){
       return
     }
     val clockTime = results.map(_.endTime).max - results.map(_.startTime).min
-    val cpuTime = results.map{tr => tr.endTime - tr.startTime}.sum
+    val cpuTime = results.map(_.time).sum
     println
     println("Clock time  = %.1f (s)".format(clockTime * 1.0 / 1000000000))
     println("CPU time    = %.1f (s)" .format(cpuTime * 1.0 / 1000000000))
     println("Parallelism = %.1f".format((cpuTime  * 1.0 / clockTime)))
   }
 
+  def reportTimingsByTaskType{
+    val resultsByType = results.groupBy{
+      case taskResult => taskResult.task.getClass.getSimpleName
+    }
+    val timesByType : List[(String, Long, Map[String, Long])] = resultsByType.map{
+      case (typeName, resultsForType) =>
+        val totalTime = resultsForType.map(_.time).sum
+        val intervalMaps : List[Map[String, Long]] = resultsForType.map(_.intervalTimings)
+        val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
+
+        val netIntervals = intervalNames.map{
+          name => 
+            val time = intervalMaps.map(_.getOrElse(name, 0l)).sum
+            name -> time
+        }.toMap
+        (typeName, totalTime, netIntervals)
+    }.toList
+    timesByType.sortWith(_._2 > _._2).foreach{
+      case (typeName, totalTime, netIntervals) =>
+        println(typeName + " took " + (totalTime / 1000000) + " (ms)")
+        if (netIntervals.nonEmpty){
+          netIntervals.toList.sortWith(_._2 > _._2).foreach{
+            case (intervalName, time) =>
+              println("\t" + intervalName + " took " + (time / 1000000) + " (ms)")
+          }
+        }
+    }
+  }
   override def toString = {
     // Nasty hack to get colourization to work in the repl
     println(toString_)

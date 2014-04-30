@@ -31,11 +31,24 @@ import java.util.Date
 case class Stopwatch(
   startTime : Long = System.nanoTime,
   name : String = "", 
-  private var snapshots_ : Map[String, Long] = Map()
+  private var snapshots_ : Map[Any, Long] = Map()
 ){
-  def snapshot(name : String) = {snapshots_ = snapshots_ + (name -> currentTime); this}
-  def snapshots = Map[String, Long]() ++ snapshots_
-  def snapshotTime(name : String) = snapshots.get(name)
+  private val START = "START"
+  private val END = "END"
+
+  def takeSnapshot(key : Any) = {snapshots_ = snapshots_ + (key -> currentTime); this}
+
+  def startInterval(name : String) = takeSnapshot((name, START))
+  def endInterval(name : String) = takeSnapshot((name, END))
+
+  def snapshots = Map[Any, Long]() ++ snapshots_
+
+  def snapshotTime(key : Any) : Option[Long] = snapshots.get(key)
+
+  def intervalTime(name : String) = (snapshotTime((name, START)), snapshotTime((name, END))) match {
+    case (Some(t1), Some(t2)) => Some(t2 - t1)
+    case _ => None
+  }
   def currentTime() = System.nanoTime
   def nanos() = currentTime - startTime
   def ms() : Long = (nanos) / 1000000
@@ -46,6 +59,7 @@ case class Stopwatch(
 }
 
 object Stopwatch {
+
   val global = new Stopwatch
 
   def time[A](name : String)(f: =>A) : A = {

@@ -73,7 +73,7 @@ abstract class CompileTask extends Task{
             else 
               failure(this, sw, message = Some("compilation failure"))
           case "scalac" => 
-            CompileScalaTask(modulePhase).exec match {
+            CompileScalaTask(modulePhase).exec(sw) match {
               case Left(e) => {
                 failure(this, sw, message = Some("compilation failure"), info = Some(CompilationFailedInfo(e)))
               }
@@ -137,6 +137,7 @@ case class TestCompileTask(module : Module) extends CompileTask{
 }
 
 object CompileTask{
+  def INTERVAL_NAME = "CALL TO SCALA COMPILER"
   def apply(module : Module, phase : CompilePhase) : CompileTask = {
     phase match{
       case SourceCompilePhase => SourceCompileTask(module)

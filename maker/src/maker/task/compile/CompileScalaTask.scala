@@ -10,14 +10,16 @@ import sbt.inc.Analysis
 import sbt.inc.Locate
 import maker.utils.FileUtils._
 import java.io.BufferedWriter
+import maker.utils.Stopwatch
 
 case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
+  import CompileScalaTask._
 
   val log = modulePhase.log
 
   val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
 
-  def exec : Either[CompileFailed, Analysis] = {
+  def exec(sw : Stopwatch) : Either[CompileFailed, Analysis] = {
     val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
@@ -52,9 +54,11 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     )
 
 
+    sw.startInterval(CompileTask.INTERVAL_NAME)
     val result = try {
       val analysis = Module.compiler.compile(inputs)(modulePhase.compilerLogger)
       modulePhase.module.analyses.put(outputDir, analysis)
+      sw.endInterval(CompileTask.INTERVAL_NAME)
       Right(analysis)
     } catch {
       case e : CompileFailed => 

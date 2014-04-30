@@ -26,7 +26,6 @@ trait BaseProject {
   def name : String
   def setUp(graph : Dependency.Graph) : Unit = {
     if (graph.includesCompileTask){
-      println("Debug: " + (new java.util.Date()) + " BaseProject: DELETING VIM FILE")
       props.VimErrorFile().delete
     }
   }
@@ -176,8 +175,10 @@ trait BaseProject {
       System.exit(-1)
     }
     BuildResult.lastResult.set(Some(result))
-    if (! props.RunningInMakerTest())
+    if (! props.RunningInMakerTest()){
       result.reportTopLevelTiming
+      result.reportTimingsByTaskType
+    }
     result
   }
 

@@ -22,6 +22,19 @@ case class TaskResult(
 
   def startTime = stopwatch.startTime
   def endTime = stopwatch.snapshotTime(TaskResult.TASK_END).getOrElse(startTime)
+  def time = endTime - startTime
+
+  def intervalNames : List[String] = stopwatch.snapshots.collect{
+    case ((name : String, _), _) => name
+  }.toList
+
+  def intervalTimings : Map[String, Long] = {
+    intervalNames.map{
+      name => 
+        val time : Long = stopwatch.intervalTime(name).getOrElse(-1)
+        name -> time
+    }.toMap
+  }
 
   def compilationInfo : Option[CompilationInfo] = info match {
     case Some(x) if x.isInstanceOf[CompilationInfo] => Some(x.asInstanceOf[CompilationInfo])
