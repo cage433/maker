@@ -30,7 +30,7 @@ case class TestFailure(message : String, throwable : List[String]) {
       buffer.append("No stack trace")
     } else {
       val highlightedThrowable = throwable.map{
-        line ⇒ if (line.contains(classToHighlight)) line.inReverseRed else line.inRed
+        line => if (line.contains(classToHighlight)) line.inReverseRed else line.inRed
       }
       buffer.append("\nStack trace:\n")
       buffer.append(highlightedThrowable.mkString("\n\t", "\n\t", "\n"))
@@ -63,18 +63,18 @@ object MakerTestResults{
         val fields = splitFields(line).map(splitGroups)
         try {
         fields.head match {
-          case "START" ⇒ 
+          case "START" => 
             val List(suite, suiteClass, test, time) = fields.tail
             startTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
-          case "END" ⇒ 
+          case "END" => 
             val List(suite, suiteClass, test, time) = fields.tail
             endTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
-          case "FAILURE" ⇒ 
+          case "FAILURE" => 
             val suite :: suiteClass :: test :: message :: throwable = fields.tail
             failures ::= (TestIdentifier(suite, suiteClass, test), TestFailure(message, throwable))
         }
       } catch {
-        case e ⇒
+        case e =>
           error("problem with test-output file, file is: " + file.getAbsolutePath)
           error("head was [" + fields.head + "]")
           error("split was [" + fields.mkString("\n") + "]")
@@ -86,8 +86,8 @@ object MakerTestResults{
   }
 
   def outputFile : File = Properties.propOrNone("maker.test.output") match {
-    case Some(f) ⇒ new File(f)
-    case None ⇒ throw new Exception(" maker must have maker.test.output set")
+    case Some(f) => new File(f)
+    case None => throw new Exception(" maker must have maker.test.output set")
   }
 
   // Note we don't use log4j here as this runs in the user's classpath.
@@ -95,8 +95,8 @@ object MakerTestResults{
   val dateFormat = new SimpleDateFormat("HH:mm:ss")
   def indent : String = {
     Properties.propOrElse("maker.level", "0").toInt match {
-      case 0 ⇒ ""
-      case i ⇒ " " * 8 * i + "L" + i + ": "
+      case 0 => ""
+      case i => " " * 8 * i + "L" + i + ": "
     }
   }
   def info(msg : String){
@@ -143,7 +143,7 @@ case class MakerTestResults (
   def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
 
   def testsOrderedByTime : List[(TestIdentifier, Long)] = endTimeInNanos.map{
-    case (id, endTime) ⇒ 
+    case (id, endTime) => 
       (id, endTime - startTimeInNanos(id))
     }.toList.sortWith(_._2 > _._2)
     
@@ -157,7 +157,7 @@ case class MakerTestResults (
       ).asTable(2) + "\n")
       buffer.append("Slowest test(s)\n")
       buffer.append(testsOrderedByTime.take(3).flatMap{
-        case (TestIdentifier(_, suiteClass, test), timeInNanos) ⇒
+        case (TestIdentifier(_, suiteClass, test), timeInNanos) =>
           List(suiteClass, test, "%.2f (s)" % (timeInNanos / 1.0e9))
       }.asTable(3) + "\n")
     } else {
@@ -178,7 +178,7 @@ case class MakerTestResults (
         buffer.append("Failures\n")
         var lastSuite : String = ""
         failures.zipWithIndex.foreach{
-          case ((TestIdentifier(suite, _, test), TestFailure(msg, _)), i) ⇒ 
+          case ((TestIdentifier(suite, _, test), TestFailure(msg, _)), i) => 
             if (suite != lastSuite){
               buffer.append("\n  " + suite + "\n")
               lastSuite = suite

@@ -1,6 +1,6 @@
 package maker
 
-import scala.collection.mutable.{Map ⇒ MMap}
+import scala.collection.mutable.{Map => MMap}
 import java.io.File
 import java.util.Properties
 import scala.collection.JavaConversions
@@ -52,13 +52,13 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {
       val properties = new java.util.Properties()
-        apply().foreach{file ⇒ properties.load(new FileInputStream(file))}
+        apply().foreach{file => properties.load(new FileInputStream(file))}
       properties
     }
     def asMap = {
       val ps = properties
       JavaConversions.asScalaSet(ps.stringPropertyNames).map{
-        p ⇒ p -> ps.getProperty(p)
+        p => p -> ps.getProperty(p)
       }.toMap
     }
   }
@@ -102,8 +102,8 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
-      case List(k, v) ⇒ k -> v
-      case other ⇒ throw new Exception("Needs matching numbers of keys and values")
+      case List(k, v) => k -> v
+      case other => throw new Exception("Needs matching numbers of keys and values")
     }.toMap
     copy(overrides = overrides ++  moreOverridesAsMap)
   }

@@ -24,8 +24,8 @@ case class TaskResult(
   def endTime = stopwatch.snapshotTime(TaskResult.TASK_END).getOrElse(startTime)
 
   def compilationInfo : Option[CompilationInfo] = info match {
-    case Some(x) if x.isInstanceOf[CompilationInfo] ⇒ Some(x.asInstanceOf[CompilationInfo])
-    case _ ⇒ None
+    case Some(x) if x.isInstanceOf[CompilationInfo] => Some(x.asInstanceOf[CompilationInfo])
+    case _ => None
   }
 
   override def toString = {
@@ -52,13 +52,13 @@ case class TaskResult(
   override def hashCode = task.hashCode
   override def equals(rhs : Any) = {
     rhs match {
-      case p : TaskResult if task == p.task && (succeeded == p.succeeded) ⇒ {
+      case p : TaskResult if task == p.task && (succeeded == p.succeeded) => {
         //I believe this assertion should always hold. It's really here so that
         //this overriden equals method never returns true on differing TaskResults
         assert(this eq p, "Shouldn't have two task results pointing to the same task")
         true
       }
-      case _ ⇒ false
+      case _ => false
     }
   }
 }

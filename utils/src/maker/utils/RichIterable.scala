@@ -15,19 +15,19 @@ case class RichIterable[A](as : Iterable[A]){
 
   def asTable(width : Int) : String = {
     def transpose[A](xs : List[List[A]]) : List[List[A]] = xs.filter(_.nonEmpty) match {
-      case Nil ⇒ Nil
-      case ys ⇒ ys.map(_.head) :: transpose(ys.map(_.tail))
+      case Nil => Nil
+      case ys => ys.map(_.head) :: transpose(ys.map(_.tail))
     }
     val lists : List[List[String]] = as.map(_.toString).toList.grouped(width).toList
-    val columnWidths = transpose(lists).map{l ⇒ val cw = l.map(_.length).max; cw + (cw & 1)} // width to even column - hack to avoid using \t
+    val columnWidths = transpose(lists).map{l => val cw = l.map(_.length).max; cw + (cw & 1)} // width to even column - hack to avoid using \t
     val justified : List[List[String]] = lists.map(_.zip(columnWidths).map{
-      case (s, cw) ⇒ s + " " * (cw - s.length)
+      case (s, cw) => s + " " * (cw - s.length)
     })
     justified.map(_.mkString("  ")).mkString("\n")
   }
 
   def inAlphabeticalOrder = as.toList.sortWith(_.toString < _.toString)
-  def closest(metric : A ⇒ Int) : Set[A] = {
+  def closest(metric : A => Int) : Set[A] = {
     if (as.isEmpty){
       Set[A]()
     } else {
@@ -38,8 +38,8 @@ case class RichIterable[A](as : Iterable[A]){
 
   def uniqueElement : A = {
     as.toList match{
-      case List(a) ⇒ a
-      case _ ⇒ throw new RuntimeException("Should only have one element, has " + as)
+      case List(a) => a
+      case _ => throw new RuntimeException("Should only have one element, has " + as)
     }
   }
 

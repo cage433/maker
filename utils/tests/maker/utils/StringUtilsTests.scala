@@ -18,7 +18,7 @@ class StringUtilsTests extends FunSuite with TableDrivenPropertyChecks{
     )
 
     forAll(table){
-      (matcher, name, shouldMatch) ⇒ 
+      (matcher, name, shouldMatch) => 
         assert(intellijDistance(matcher, name) === shouldMatch)
     }
   }
@@ -32,7 +32,7 @@ class StringUtilsTests extends FunSuite with TableDrivenPropertyChecks{
       ,("AbD", List("bill.Abc", "fred.mike.AbcDef", "bob.Ab"), List("fred.mike.AbcDef"))
     )
     forAll(table){
-      (matcher, names, best) ⇒ 
+      (matcher, names, best) => 
         assert(bestIntellijMatches(matcher, names) === best)
     }
 

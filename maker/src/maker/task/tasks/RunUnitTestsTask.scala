@@ -72,7 +72,7 @@ case class RunUnitTestsTask(
 
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
     val systemProperties = (props.JavaSystemProperties.asMap + ("scala.usejavacp" -> "true")).map{
-      case (key, value) ⇒ "-D" + key + "=" + value
+      case (key, value) => "-D" + key + "=" + value
     }.toList
     baseProject.testOutputFile.delete
     val opts = List(

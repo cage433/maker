@@ -8,7 +8,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
 
   test("Empty top level module"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val props = TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
         val top = Project("You're the top", dir, Nil, props = props)
 
@@ -18,7 +18,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
 
   test("Single module top level module"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val props = TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
         val a = new TestModule(file(dir, "a"), "a", overrideProps = Some(props))
         a.writeSrc(
@@ -39,7 +39,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
 
   test("Multi module top level module"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val props = TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
         val a = new TestModule(file(dir, "a"), "a", overrideProps = Some(props))
         val b = new TestModule(file(dir, "b"), "b", List(a), overrideProps = Some(props))

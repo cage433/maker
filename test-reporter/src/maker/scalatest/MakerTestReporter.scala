@@ -24,8 +24,8 @@ import scala.util.Properties
 
 class MakerTestReporter extends Reporter{
   val outputFile : File = Properties.propOrNone("maker.test.output") match {
-    case Some(f) ⇒ new File(f)
-    case None ⇒ throw new Exception(" maker must have maker.test.output set")
+    case Some(f) => new File(f)
+    case None => throw new Exception(" maker must have maker.test.output set")
   }
 
   object Log{
@@ -77,24 +77,24 @@ class MakerTestReporter extends Reporter{
   def apply(event : Event){
     val time = System.nanoTime
     event match {
-      case t : SuiteStarting ⇒ 
+      case t : SuiteStarting => 
         Log.info("Starting   " + t.suiteClassName.getOrElse(t.suiteName))
-      case t : SuiteCompleted ⇒ 
+      case t : SuiteCompleted => 
         Log.info("Completed  " + t.suiteClassName.getOrElse(t.suiteName))
-      case t : TestStarting ⇒ {
+      case t : TestStarting => {
         appendToOutputFile("START", t.suiteName, t.suiteClassName.getOrElse(""), t.testName, time.toString)
       }
-      case t : TestSucceeded ⇒ {
+      case t : TestSucceeded => {
         appendToOutputFile("END", t.suiteName, t.suiteClassName.getOrElse(""), t.testName, time.toString)
       }
-      case t : TestFailed ⇒ {
+      case t : TestFailed => {
         val throwableAsList : List[String] = t.throwable.map(stackTraceAsList).getOrElse(List[String](" ")) // mkstring/split hack
         appendToOutputFile("FAILURE" :: t.suiteName :: t.suiteClassName.getOrElse("") :: t.testName :: t.message :: throwableAsList : _*)
       }
-      case t : RunAborted ⇒ {
+      case t : RunAborted => {
         Log.fatal("Run aborted" + t.message + t.throwable.map(stackTraceAsList).getOrElse(List[String]()).mkString("\n\t", "\n\t", ""))
       }
-      case e ⇒  //Console.err.println(e)
+      case e =>  //Console.err.println(e)
     }
   }
 }

@@ -38,12 +38,12 @@ trait TmuxIntegration extends BaseProject{
     private def outputCompilationToVimErrorFile(result : BuildResult){
       props.VimErrorFile().delete
       result.results.map(_.task).foreach{
-        case t : CompileTask ⇒ 
+        case t : CompileTask => 
           withFileAppender(props.VimErrorFile()){
-            writer : BufferedWriter ⇒ 
+            writer : BufferedWriter => 
               t.modulePhase.vimCompileOutputFile.readLines.foreach(writer.println)
           }
-        case _ ⇒ 
+        case _ => 
       }
     }
 

@@ -68,7 +68,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
     // For now we are insisting that there is a "scala directory" at this location: $PROJECT_DIR$/lib/scala/lib_managed/
     // Obviously, this isn't very good and we should allow it to be specified.
     List(props.ProjectScalaLibraryJar(), props.ProjectScalaCompilerJar()).foreach{
-      jar ⇒ 
+      jar => 
       if (!jar.exists) {
         throw new Exception("Maker requires that file " + jar + " + be present. Launch maker with the '-y' flag to download it")
       }

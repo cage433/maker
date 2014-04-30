@@ -38,7 +38,7 @@ class RunMainTaskTests extends FunSuite {
    */
   test("Can run task run-main with correct upstream tasks run first") {
     withTempDir{
-      dir ⇒
+      dir =>
         val p1Dir = file(dir, "p1")
         val p2Dir = file(dir, "p2")
 

@@ -89,7 +89,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   test("Compilation makes class files, writes dependencies, and package makes jar"){
     withTempDir {
-      dir ⇒ 
+      dir => 
         val (proj, _) = simpleProject(dir)
         proj.clean
         assert(proj.compilePhase.classFiles.size === 0)
@@ -107,7 +107,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   test("Deletion of source file causes deletion of class files"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val (proj, files) = simpleProject(dir)
         import files._
         proj.compile
@@ -129,7 +129,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   test("Generated class files are deleted before compilation of source"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
         val fooSrc = file(dir, "src/foo/Foo.scala")
         writeToFile(
@@ -162,7 +162,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   test("Recompilation of test source is done if signature of dependent source file changes"){
     withTempDir{
-      tempDir ⇒ 
+      tempDir => 
         val dir : File = file(tempDir, "proj")
         dir.mkdirs
         
@@ -209,7 +209,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   test("Compilation across dependent modules works"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
         val one = new TestModule(file(dir, "one"), "CompileScalaTaskTests - one", analyses = analyses)
         val two = new TestModule(file(dir, "two"), "CompileScalaTaskTests - two", upstreamProjects = List(one), analyses = analyses)
@@ -248,7 +248,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   test("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
         
         val fooSrc = file(dir, "src/foo/Foo.scala")
@@ -305,7 +305,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   /// add test for suspected problem underlying bug #57
   test("Compilation across dependent modules and scopes works correctly"){
     withTempDir{
-      dir ⇒
+      dir =>
         val analyses = new ConcurrentHashMap[File, Analysis]()
         val one = new TestModule(file(dir, "one"), "one", analyses = analyses)
         val two = new TestModule(file(dir, "two"), "two", upstreamProjects = List(one), analyses = analyses)
@@ -375,7 +375,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 
   test("Compilation of mutually dependent classes works"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
         val traitSrc = proj.writeSrc(
           "foo/SomeTrait.scala",
@@ -383,7 +383,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
 package foo
 
 trait SomeTrait{
-  self : SomeClass ⇒ 
+  self : SomeClass => 
     def baz = bar * 2
 }
           """)
@@ -405,7 +405,7 @@ class SomeClass extends SomeTrait{
 
   test("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
         proj.writeSrc(
           "foo/Foo.scala",
@@ -474,7 +474,7 @@ class SomeClass extends SomeTrait{
 
   test("Adding parameter to constructor causes recompilation of downstream file"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
         val A = new TestModule(file(dir, "A"), "A", analyses = analyses)
         val B = new TestModule(file(dir, "B"), "B", List(A), analyses = analyses)
@@ -512,7 +512,7 @@ class SomeClass extends SomeTrait{
 
 //  test("Compilation only of upstream module shouldn't prevent downstream module from being recompiled"){
 //    withTempDir{
-//      dir ⇒ 
+//      dir => 
 //        val analyses = new ConcurrentHashMap[File, Analysis]()
 //        val A = new TestModule(file(dir, "A"), "A", analyses = analyses)
 //        val B = new TestModule(file(dir, "B"), "B", List(A), analyses = analyses)

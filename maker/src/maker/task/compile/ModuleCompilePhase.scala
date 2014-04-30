@@ -14,14 +14,14 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   val log = module.log
 
   def sourceDir = phase match {
-    case SourceCompilePhase ⇒ module.sourceDir
-    case TestCompilePhase ⇒ module.testSourceDir
+    case SourceCompilePhase => module.sourceDir
+    case TestCompilePhase => module.testSourceDir
   }
 
   def outputDir : File = {
     val f = phase match {
-      case SourceCompilePhase ⇒ module.outputDir
-      case TestCompilePhase ⇒ module.testOutputDir
+      case SourceCompilePhase => module.outputDir
+      case TestCompilePhase => module.testOutputDir
     }
     f.mkdirs
     f
@@ -30,8 +30,8 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def resourceDir : File = {
     val d = phase match {
-      case SourceCompilePhase ⇒ module.resourceDir
-      case TestCompilePhase ⇒ module.testResourceDir
+      case SourceCompilePhase => module.resourceDir
+      case TestCompilePhase => module.testResourceDir
     }
     d.mkdirs
     d
@@ -52,14 +52,14 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   def strictlyUpstreamProjectPhases = {
     val task = CompileTask(module, phase)
     Dependency.Graph.transitiveClosure(module, task).nodes.filterNot(_== task).collect{
-      case ct : CompileTask ⇒ ct.modulePhase
+      case ct : CompileTask => ct.modulePhase
     }
   }
   def upstreamProjectPhases = strictlyUpstreamProjectPhases + this
   def fullyQualifiedClassesOnly : Iterable[String] = {
     classFiles.map(_.className(outputDir))
   }
-  def fullyQualifiedClasses : Iterable[String] = upstreamProjectPhases.toSet.flatMap{pp : ModuleCompilePhase ⇒ pp.classFiles.map(_.className(pp.outputDir))}
+  def fullyQualifiedClasses : Iterable[String] = upstreamProjectPhases.toSet.flatMap{pp : ModuleCompilePhase => pp.classFiles.map(_.className(pp.outputDir))}
 
   def lastCompilationTime : Option[Long] = {
     if (compilationCacheFile.exists)
@@ -83,15 +83,15 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def sourceFilesDeletedSinceLastCompilation : Iterable[File] = {
     Option(module.analyses.get(outputDir)) match {
-      case None ⇒ Set.empty
-      case Some(analysis) ⇒ 
+      case None => Set.empty
+      case Some(analysis) => 
         analysis.infos.allInfos.keySet.filterNot(_.exists)
     }
   }
 
   def classpathDirectoriesAndJars : Iterable[File] = {
     upstreamProjectPhases.flatMap{
-      pp ⇒ 
+      pp => 
         pp.module.classpathJars.toSet + pp.resourceDir + pp.outputDir
     }
   }
@@ -110,8 +110,8 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def vimCompileOutputFile = {
     phase match {
-      case TestCompilePhase ⇒  file(module.rootAbsoluteFile, "module-vim-compile-output")
-      case SourceCompilePhase ⇒ file(module.rootAbsoluteFile, "module-vim-test-compile-output")
+      case TestCompilePhase =>  file(module.rootAbsoluteFile, "module-vim-compile-output")
+      case SourceCompilePhase => file(module.rootAbsoluteFile, "module-vim-test-compile-output")
     }
   }
   def compilationOutputStream : PrintStream = {
@@ -131,19 +131,19 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     val jars = module.allUpstreamModules.flatMap(_.classpathJars).toSet.toList
     val metadataFiles : List[File] = {
       val compileTask = phase match {
-        case SourceCompilePhase ⇒ SourceCompileTask(module)
-        case TestCompilePhase ⇒ TestCompileTask(module)
+        case SourceCompilePhase => SourceCompileTask(module)
+        case TestCompilePhase => TestCompileTask(module)
       }
       Dependency.Graph.transitiveClosure(module, compileTask).nodes.filterNot(_ == compileTask).flatMap{
-        case ct : CompileTask ⇒  Some(ct.modulePhase.compilationCacheFile)
-        case _ ⇒  None
+        case ct : CompileTask =>  Some(ct.modulePhase.compilationCacheFile)
+        case _ =>  None
       }.toList
     }
     (src ::: jars ::: metadataFiles.toList).filter(_.exists)
    }
 
    def upstreamCacheMaps = strictlyUpstreamProjectPhases.map{
-     pp ⇒ 
+     pp => 
       pp.outputDir -> pp.compilationCacheFile
     }.toMap
 

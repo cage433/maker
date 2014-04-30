@@ -31,20 +31,20 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("Can add custom task to run before standard task"){
     def moduleWithCustomTaskAfterClean(root : File, name : String) = new TestModule(root,name){
-      self ⇒  
+      self =>  
       val extraUpstreamTask = WriteClassCountToFile(this)
       override def extraUpstreamTasks(task : Task) = task match {
-        case _ : CleanTask ⇒ Set(WriteClassCountToFile(self, "BeforeClean"))
-        case _ ⇒ Set.empty
+        case _ : CleanTask => Set(WriteClassCountToFile(self, "BeforeClean"))
+        case _ => Set.empty
       }
       override def extraDownstreamTasks(task : Task) = task match {
-        case _ : CleanTask ⇒ Set(WriteClassCountToFile(self, "AfterClean"))
-        case _ ⇒ Set.empty
+        case _ : CleanTask => Set(WriteClassCountToFile(self, "AfterClean"))
+        case _ => Set.empty
       }
     }
 
     withTempDir{
-      dir ⇒ 
+      dir => 
         val module = moduleWithCustomTaskAfterClean(dir, "CustomTask")
         module.writeSrc(
           "foo/Fred.scala",
@@ -85,8 +85,8 @@ class ProjectTaskDependenciesTests extends FunSuite{
       val tearDownClassCountFile= file(rootAbsoluteFile, "teardown")
       def graphContainsClean(graph : Dependency.Graph) = {
         graph.nodes.exists {
-          case _ : CleanTask ⇒ true
-          case _ ⇒ false
+          case _ : CleanTask => true
+          case _ => false
         }
       }
       override def setUp(graph : Dependency.Graph){
@@ -107,7 +107,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
       def tearDownClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
     }
     withTempDir{
-      dir ⇒ 
+      dir => 
         val upstreamModule = moduleWithSetupAndTeardowns(file(dir, "upstream"))
         val downstreamModule = moduleWithSetupAndTeardowns(file(dir, "downstream"))
         upstreamModule.writeSrc(
@@ -129,7 +129,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
         )
         // Initially there should be no class count files
         List(upstreamModule, downstreamModule).foreach{
-          proj ⇒ 
+          proj => 
             assert(!proj.setUpClassCountFile.exists)
             assert(!proj.tearDownClassCountFile.exists)
         }
@@ -145,7 +145,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("TestCompile by default doesn't depend on upstream modules TestCompile"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val A = new TestModule(file(dir, "upstream"), "A")
         val B = new TestModule(file(dir, "downstream"), "B", List(A))
         val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
@@ -168,7 +168,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("test dependencies are observed in classpaths"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val A = new TestModule(file(dir, "A"), "A")
         val B = new TestModule(file(dir, "B"), "B", List(A))
         val C = new TestModule(file(dir, "C"), "C", List(A), List(A))
@@ -191,7 +191,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("Upstream module tests are associated tasks"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {
           new TestModule(file(dir, name), name, upstreams, testUpstreams)
         }
@@ -201,10 +201,10 @@ class ProjectTaskDependenciesTests extends FunSuite{
         val D = module("D", List(C))
 
         List(A, B, C).foreach{
-          proj ⇒ 
+          proj => 
             assert(proj.moduleBuild(RunUnitTestsTask(_, verbose = false)).graph.nodes.exists{
-              case RunUnitTestsTask(_, `proj`, _, false) ⇒ true
-              case _ ⇒ false
+              case RunUnitTestsTask(_, `proj`, _, false) => true
+              case _ => false
             })
         }
         import Dependency.Edge

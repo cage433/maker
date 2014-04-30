@@ -114,7 +114,7 @@ case class Build(
               monitor.addResult(pt, result)
               log.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
             } catch {
-              case e ⇒ 
+              case e => 
                 log.warn("Exception " + e + " thrown during " + pt)
                 e.printStackTrace
                 System.exit(-1)
@@ -136,7 +136,7 @@ case class Build(
         val (next, results) = monitor.nextAndResultsSoFar
 
         next.foreach {
-          pt ⇒ 
+          pt => 
             passToExecutor(pt, results)
         }
 
@@ -186,7 +186,7 @@ object Build{
     private var taskLaunchCounter = 0
 
     def isComplete = lock.synchronized{
-      completed.size == graph.size || results.exists{r ⇒ r.failed && r.task.failureHaltsTaskManager}
+      completed.size == graph.size || results.exists{r => r.failed && r.task.failureHaltsTaskManager}
     }
 
     def isRunning = lock.synchronized{
@@ -230,7 +230,7 @@ object Build{
 
     def nextAndResultsSoFar = lock.synchronized{
       val next = remaining.leaves.filter{
-        pt ⇒ 
+        pt => 
           graph.upstreams(pt).subsetOf(completed)
       }
       (next, Set[TaskResult]() ++ results)

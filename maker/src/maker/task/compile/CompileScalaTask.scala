@@ -21,7 +21,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ModuleCompilePhase ⇒
+      case pp : ModuleCompilePhase =>
         upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
     }
     
@@ -32,7 +32,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     val scalacOptions : Seq[String] = Nil // List("-deprecation", "-unchecked", "–Xcheck-null")
     val javacOptions : Seq[String] = Nil // List("-deprecation", "-Xlint")
     val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
-    val definesClass: File ⇒ String ⇒ Boolean = Locate.definesClass _
+    val definesClass: File => String => Boolean = Locate.definesClass _
         
     val inputs = Inputs(
       cp.map(_.getCanonicalFile),

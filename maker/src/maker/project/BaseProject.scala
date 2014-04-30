@@ -185,7 +185,7 @@ trait BaseProject {
     var lastTaskTime :Option[Long] = None
 
     def allSourceFiles : List[File] = allUpstreamModules.flatMap{
-      proj ⇒ 
+      proj => 
         proj.compilePhase.sourceFiles++ proj.testCompilePhase.sourceFiles
     }
 
@@ -217,20 +217,20 @@ trait BaseProject {
       (lastTaskTime,  lastSrcModificationTime, lastFileCount, sourceFileCount, lastSourceFileNames, sourceFileNames) match {
         case (None, _, _, _, _, _) => { rerunTask }                        // Task has never been run
         case (Some(t1), Some(t2), _, _, _, _) if t1 < t2 => { rerunTask }  // Code has changed since task last run
-        case (_, _, m, n, _, _) if m != n ⇒ { rerunTask }                  // Source file has been added or deleted
-        case (_, _, _, _, a, b) if a != b ⇒ { rerunTask }                  // Source file has been renamed
+        case (_, _, m, n, _, _) if m != n => { rerunTask }                  // Source file has been added or deleted
+        case (_, _, _, _, a, b) if a != b => { rerunTask }                  // Source file has been renamed
         case _ =>                                                    // Either no code yet or code has not changed
       }
     }
   }
 
 
-  lazy val isAccessibleScalaTestSuite : (String ⇒ Boolean) = {
+  lazy val isAccessibleScalaTestSuite : (String => Boolean) = {
     lazy val loader = new URLClassLoader(
-      allUpstreamModules.flatMap{p ⇒ p.classpathJars.toSet + p.testOutputDir + p.outputDir}.map(_.toURI.toURL).toArray,
+      allUpstreamModules.flatMap{p => p.classpathJars.toSet + p.testOutputDir + p.outputDir}.map(_.toURI.toURL).toArray,
       null
     )
-    (className: String) ⇒  {
+    (className: String) =>  {
       val suiteClass = loader.loadClass("org.scalatest.Suite")
       val emptyClassArray = new Array[java.lang.Class[T] forSome {type T}](0)
       val clazz = loader.loadClass(className)

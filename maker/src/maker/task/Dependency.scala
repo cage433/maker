@@ -36,13 +36,13 @@ object Dependency{
 
     def leaves = nodes.filterNot(edges.map(_.downstream))
     def innerNodes = nodes.filterNot(leaves)
-    def filter(predicate : Task ⇒ Boolean) = Graph(
+    def filter(predicate : Task => Boolean) = Graph(
       nodes.filter(predicate),
-      edges.filter{o ⇒ predicate(o.downstream) && predicate(o.upstream)}
+      edges.filter{o => predicate(o.downstream) && predicate(o.upstream)}
     )
-    def filterNot(predicate : Task ⇒ Boolean) = Graph(
+    def filterNot(predicate : Task => Boolean) = Graph(
       nodes.filterNot(predicate),
-      edges.filterNot{o ⇒ predicate(o.downstream) || predicate(o.upstream)}
+      edges.filterNot{o => predicate(o.downstream) || predicate(o.upstream)}
     )
     def upstreams(node : Task) = edges.filter(_.downstream == node).map(_.upstream)
     def ++ (rhs : Graph) = Graph(nodes ++ rhs.nodes, edges ++ rhs.edges)

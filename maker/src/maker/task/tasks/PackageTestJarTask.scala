@@ -43,12 +43,12 @@ case class PackageTestJarTask(module : Module)
     case class WrappedCommand(cmd : Command, ignoreFailure : Boolean){
       def exec : Int = {
         (cmd.exec(), ignoreFailure) match {
-          case  (0, _) ⇒ 0
-          case (errorNo, true) ⇒ {
+          case  (0, _) => 0
+          case (errorNo, true) => {
             log.warn("Ignoring  error in " + cmd + ". Artifact may be missing content")
             0
           }
-          case (errorNo, _) ⇒ errorNo
+          case (errorNo, _) => errorNo
         }
       }
     }
@@ -66,8 +66,8 @@ case class PackageTestJarTask(module : Module)
     val cmds : List[WrappedCommand] = createTestJarCommand(testDirs.head) :: testDirs.tail.map(updateTestJarCommand)
 
     cmds.find(_.exec != 0) match {
-      case Some(failingCommand) ⇒ TaskResult.failure(this, sw, message = Some(failingCommand.cmd.savedOutput))
-      case None ⇒ TaskResult.success(this, sw)
+      case Some(failingCommand) => TaskResult.failure(this, sw, message = Some(failingCommand.cmd.savedOutput))
+      case None => TaskResult.success(this, sw)
     }
   }
 }
