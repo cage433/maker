@@ -80,7 +80,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
   object CompilationCache extends EmptyString
 
-
   /*
    * Switches off sundry output with testing maker
    */
