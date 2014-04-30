@@ -81,6 +81,11 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object CompilationCache extends EmptyString
 
 
+  /*
+   * Switches off sundry output with testing maker
+   */
+  object RunningInMakerTest extends SystemPropertyWithDefault("maker.running.within.test", false) with IsBoolean
+
   // Show compiler output - normally switched off for tests
   object ShowCompilerOutput extends SystemPropertyWithDefault("show.compiler.output", true) with IsBoolean
 
@@ -94,6 +99,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object ResourceCacheDirectory extends Default(file(System.getenv("HOME"), ".maker-resource-cache").makeDirs()) with IsFile
 
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), "updateOrCreate")) with IsFile
+
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{

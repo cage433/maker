@@ -68,6 +68,8 @@ case class RunUnitTestsTask(
       return TaskResult.success(this, sw)
     }
 
+    val consoleReporterArg = if (props.RunningInMakerTest()) Nil else List("-o")
+
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
     val systemProperties = (props.JavaSystemProperties.asMap + "scala.usejavacp" → "true").map{
       case (key, value) ⇒ "-D" + key + "=" + value
@@ -78,14 +80,15 @@ case class RunUnitTestsTask(
       "-XX:MaxPermSize=200m", 
       "-Dmaker.test.output=" + baseProject.testOutputFile,
       "-Dlogback.configurationFile=" + props.LogbackTestConfigFile(),
-      "-Dsbt.log.format=false"
+      "-Dsbt.log.format=false",
+      props.RunningInMakerTest.toCommandLine("true")
     ) ::: systemProperties
     val testParameters =
       if(!verbose)
-        List("-o", "-P", "-C", "maker.utils.MakerTestReporter")
+        List("-P", "-C", "maker.utils.MakerTestReporter")
       else
-        List("-oF", "-P", "-C", "maker.utils.MakerTestReporter")
-    val args = testParameters ++ suiteParameters
+        List("-F", "-P", "-C", "maker.utils.MakerTestReporter")
+    val args = testParameters ++ suiteParameters ++ consoleReporterArg
     val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 
