@@ -48,8 +48,8 @@ case class BuildResult(
     val clockTime = results.map(_.endTime).max - results.map(_.startTime).min
     val cpuTime = results.map{tr => tr.endTime - tr.startTime}.sum
     println
-    println("Clock time  = %.1f (s)".format(clockTime / 1000000000))
-    println("CPU time    = %.1f (s)" .format(cpuTime / 1000000000))
+    println("Clock time  = %.1f (s)".format(clockTime * 1.0 / 1000000000))
+    println("CPU time    = %.1f (s)" .format(cpuTime * 1.0 / 1000000000))
     println("Parallelism = %.1f".format((cpuTime  * 1.0 / clockTime)))
   }
 
