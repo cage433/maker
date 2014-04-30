@@ -110,7 +110,7 @@ case class Build(
                   e.printStackTrace
                   TaskResult.failure(pt, sw, exception = Some(e))
               }
-              sw.snapshotTime(TaskResult.TASK_END)
+              sw.snapshot(TaskResult.TASK_END)
               monitor.addResult(pt, result)
               log.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
             } catch {

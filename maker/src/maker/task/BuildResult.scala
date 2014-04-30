@@ -42,11 +42,14 @@ case class BuildResult(
     }
   }
   def reportTopLevelTiming{
+    if (failed || results.isEmpty){
+      return
+    }
     val clockTime = results.map(_.endTime).max - results.map(_.startTime).min
     val cpuTime = results.map{tr => tr.endTime - tr.startTime}.sum
-    println("Clock time  (ms) = " + (clockTime / 1000000))
+    println("\nClock time  (ms) = " + (clockTime / 1000000))
     println("CPU time    (ms) = " + (cpuTime / 1000000))
-    println("Parallelism (%)  = " + (cpuTime / clockTime) * 100.0)
+    println("Parallelism      = %.2f".format((cpuTime  * 1.0 / clockTime)))
   }
 
   override def toString = {
