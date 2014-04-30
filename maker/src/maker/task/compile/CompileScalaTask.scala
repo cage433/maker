@@ -8,6 +8,8 @@ import xsbti.compile.CompileOrder
 import sbt.compiler.CompileFailed
 import sbt.inc.Analysis
 import sbt.inc.Locate
+import maker.utils.FileUtils._
+import java.io.BufferedWriter
 
 case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
 
@@ -56,8 +58,18 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
       Right(analysis)
     } catch {
       case e : CompileFailed => 
+        CompileScalaTask.appendCompileOutputToTopLevel(modulePhase)
         Left(e)
     }
     result
+  }
+}
+
+object CompileScalaTask{
+  def appendCompileOutputToTopLevel(modulePhase : ModuleCompilePhase) = synchronized {
+    withFileAppender(modulePhase.module.props.VimErrorFile()){
+      writer : BufferedWriter =>
+        modulePhase.vimCompileOutputFile.readLines.foreach(writer.println)
+    }
   }
 }

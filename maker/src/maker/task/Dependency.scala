@@ -1,6 +1,7 @@
 package maker.task
 
 import maker.project.BaseProject
+import maker.task.compile.CompileScalaTask
 
 object Dependency{
 
@@ -51,6 +52,10 @@ object Dependency{
     }
     def size = nodes.size
     def subGraphOf(rhs : Graph) = nodes.subsetOf(rhs.nodes) && edges.subsetOf(rhs.edges)
+    def includesCompileTask = nodes.find {
+      case _ : CompileScalaTask => true
+      case _ => false
+    }.isDefined
   }
 
   object Graph{

@@ -9,8 +9,7 @@ import maker.utils.RichString._
 import maker.utils.os.Command
 import maker.utils.os.CommandOutputHandler
 
-trait TmuxIntegration{
-  self : BaseProject ⇒ 
+trait TmuxIntegration extends BaseProject{
 
     private lazy val hasTmux = Command(props, CommandOutputHandler.NULL, None, "which", "tmux").withNoOutput.exec == 0
     def tmux(args : String*){
@@ -28,7 +27,8 @@ trait TmuxIntegration{
 
     // Run exactly once BEFORE this task is called from a module - NOT once for
     // each task in the dependency tree
-    def setUp(graph : Dependency.Graph){
+    override def setUp(graph : Dependency.Graph){
+      super.setUp(graph)
       tmux("set-option", "-gq", "status-left-length", "100")
       tmux("refresh-client")
       tmuxClearStatusLeft
@@ -56,6 +56,6 @@ trait TmuxIntegration{
 
     def tearDown(graph : Dependency.Graph, result : BuildResult){
       tmuxReportResult(result)
-      outputCompilationToVimErrorFile(result)
+      //outputCompilationToVimErrorFile(result)
     }
 }

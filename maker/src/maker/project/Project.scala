@@ -13,7 +13,7 @@ case class Project(
     "ShowCompilerOutput", "false"
   ),
   topLevelExcludedFolders:List[String] = Nil
-) extends BaseProject  with TmuxIntegration{
+) extends TmuxIntegration{
   
   val upstreamModulesForBuild = immediateUpstreamModules
   override def toString = name

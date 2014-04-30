@@ -17,13 +17,18 @@ import java.lang.reflect.Modifier
 import maker.utils.MakerTestResults
 import maker.ivy.IvyUtils
 import scala.xml.Elem
+import maker.task.compile.CompileScalaTask
 
 trait BaseProject {
   protected def root : File
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
-  def setUp(graph : Dependency.Graph) : Unit
+  def setUp(graph : Dependency.Graph) : Unit = {
+    if (graph.includesCompileTask){
+      props.VimErrorFile().delete
+    }
+  }
   def tearDown(graph : Dependency.Graph, result : BuildResult) : Unit
   def extraUpstreamTasks(task : Task) : Set[Task] = Set.empty
   def extraDownstreamTasks(task : Task) : Set[Task] = Set.empty
