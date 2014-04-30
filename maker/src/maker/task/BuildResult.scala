@@ -47,9 +47,10 @@ case class BuildResult(
     }
     val clockTime = results.map(_.endTime).max - results.map(_.startTime).min
     val cpuTime = results.map{tr => tr.endTime - tr.startTime}.sum
-    println("\nClock time  (ms) = " + (clockTime / 1000000))
-    println("CPU time    (ms) = " + (cpuTime / 1000000))
-    println("Parallelism      = %.2f".format((cpuTime  * 1.0 / clockTime)))
+    println
+    println("Clock time  = %.1f (s)".format(clockTime / 1000000000))
+    println("CPU time    = %.1f (s)" .format(cpuTime / 1000000000))
+    println("Parallelism = %.1f".format((cpuTime  * 1.0 / clockTime)))
   }
 
   override def toString = {
