@@ -54,14 +54,15 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     )
 
 
-    sw.startInterval(CompileTask.INTERVAL_NAME)
+    sw.startInterval(CompileTask.CALL_TO_COMPILER)
     val result = try {
       val analysis = Module.compiler.compile(inputs)(modulePhase.compilerLogger)
       modulePhase.module.analyses.put(outputDir, analysis)
-      sw.endInterval(CompileTask.INTERVAL_NAME)
+      sw.endInterval(CompileTask.CALL_TO_COMPILER)
       Right(analysis)
     } catch {
       case e : CompileFailed => 
+        sw.endInterval(CompileTask.CALL_TO_COMPILER)
         CompileScalaTask.appendCompileOutputToTopLevel(modulePhase)
         Left(e)
     }

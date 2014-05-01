@@ -178,6 +178,7 @@ trait BaseProject {
     if (! props.RunningInMakerTest()){
       result.reportTopLevelTiming
       result.reportTimingsByTaskType
+      result.reportSlowTestSuites
     }
     result
   }

@@ -103,7 +103,8 @@ case class Build(
                 print(".")
                 monitor.addLaunch(pt)
                 log.debug("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
-                pt.exec(resultsSoFar.toList, sw)
+                val res = pt.exec(resultsSoFar.toList, sw)
+                res
               } catch {
                 case e =>
                   log.warn("exception thrown:" + e + " when running task " + pt)

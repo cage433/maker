@@ -93,8 +93,7 @@ object TaskResult{
     exception = exception
   )
 
-  val TASK_START = "TASK_START"
-  val TASK_END = "TASK_END"
+  def TASK_END = "TASK_END"
 }
 
 

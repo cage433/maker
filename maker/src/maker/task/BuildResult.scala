@@ -7,6 +7,7 @@ import maker.utils.RichString._
 import maker.MakerProps
 import java.util.concurrent.atomic.AtomicReference
 import maker.utils.RichIterable._
+import maker.utils.MakerTestResults
 
 
 case class BuildResult(
@@ -42,6 +43,7 @@ case class BuildResult(
     }
   }
 
+  private val NANOS_PER_SECOND = 1000000000
   def reportTopLevelTiming{
     if (failed || results.isEmpty){
       return
@@ -49,8 +51,8 @@ case class BuildResult(
     val clockTime = results.map(_.endTime).max - results.map(_.startTime).min
     val cpuTime = results.map(_.time).sum
     println
-    println("Clock time  = %.1f (s)".format(clockTime * 1.0 / 1000000000))
-    println("CPU time    = %.1f (s)" .format(cpuTime * 1.0 / 1000000000))
+    println("Clock time  = %.1f (s)".format(clockTime * 1.0 / NANOS_PER_SECOND))
+    println("CPU time    = %.1f (s)" .format(cpuTime * 1.0 / NANOS_PER_SECOND))
     println("Parallelism = %.1f".format((cpuTime  * 1.0 / clockTime)))
   }
 
@@ -73,15 +75,33 @@ case class BuildResult(
     }.toList
     timesByType.sortWith(_._2 > _._2).foreach{
       case (typeName, totalTime, netIntervals) =>
-        println(typeName + " took " + (totalTime / 1000000) + " (ms)")
+        println(typeName + " took " + (totalTime / NANOS_PER_SECOND) + " (s)")
         if (netIntervals.nonEmpty){
           netIntervals.toList.sortWith(_._2 > _._2).foreach{
             case (intervalName, time) =>
-              println("\t" + intervalName + " took " + (time / 1000000) + " (ms)")
+              println("\t" + intervalName + " took " + (time / NANOS_PER_SECOND) + " (s)")
           }
         }
     }
   }
+  def testResults = {
+    val testResultsList : List[MakerTestResults] = results.collect{
+      case TaskResult(_, _, _, Some(mtr : MakerTestResults), _, _) => mtr
+    }.toList
+    val combinedTestResults = testResultsList.fold(MakerTestResults())(_++_)
+    combinedTestResults
+  }
+  def reportSlowTestSuites{
+    println("\nSlowest 5 test suites")
+    println("Suite".padRight(30) + "Clock Time".padRight(10) + "\t" + "CPU Time".padRight(10) + "\tNum Tests")
+    testResults.orderedSuiteTimes.take(5).foreach{
+      case (suite, clockTime, cpuTime, numTests) =>
+      println(
+        suite.toString.padRight(30) + clockTime.toString.padRight(10) + "\t" + cpuTime.toString.padRight(10) + "\t" + numTests
+      )
+    }
+  }
+
   override def toString = {
     // Nasty hack to get colourization to work in the repl
     println(toString_)

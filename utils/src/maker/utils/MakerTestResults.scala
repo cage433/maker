@@ -147,6 +147,27 @@ case class MakerTestResults (
       (id, endTime - startTimeInNanos(id))
     }.toList.sortWith(_._2 > _._2)
     
+  def orderedSuiteTimes : List[(String, Long, Long, Int)] /*(suite, clock time, cpu time, num tests) */ = {
+    var suiteTimes : Map[String, (Long, Long, Long, Int)] = endTimeInNanos.keySet.map(_.suite).map{
+      case suite => 
+        (suite, (0l, java.lang.Long.MAX_VALUE, 0l, 0))  // (cpu time, start time, end time, num tests)
+    }.toMap
+    val NANOS_PER_SECOND = 1000000000
+    endTimeInNanos.foreach{
+      case (id, testEndTime) => 
+        val testCpuTime = (testEndTime - startTimeInNanos(id)) / NANOS_PER_SECOND
+        val (suiteTime, suiteStartTime, suiteEndTime, numSuiteTests) = suiteTimes(id.suite)
+          suiteTimes += (id.suite ->
+          (suiteTime + testCpuTime, 
+           suiteStartTime min startTimeInNanos(id),
+           suiteEndTime max testEndTime,
+           numSuiteTests + 1))
+    }
+    suiteTimes.map{
+      case (suite, (suiteCpuTime, suiteStartTime, suiteEndTime, numTests)) => (suite, (suiteEndTime - suiteStartTime) / NANOS_PER_SECOND, suiteCpuTime, numTests)
+    }.toList.sortWith(_._2 > _._2)
+  }
+
   def toString_ = {
     val buffer = new StringBuffer
     if (succeeded){

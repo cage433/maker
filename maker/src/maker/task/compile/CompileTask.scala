@@ -137,7 +137,7 @@ case class TestCompileTask(module : Module) extends CompileTask{
 }
 
 object CompileTask{
-  def INTERVAL_NAME = "CALL TO SCALA COMPILER"
+  def CALL_TO_COMPILER = "CALL TO SCALA COMPILER"
   def apply(module : Module, phase : CompilePhase) : CompileTask = {
     phase match{
       case SourceCompilePhase => SourceCompileTask(module)
