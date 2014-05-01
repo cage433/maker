@@ -8,6 +8,7 @@ import maker.task.compile.CompilationInfo
 import maker.task.tasks.RunUnitTestsTask
 import maker.utils.TaskInfo
 import maker.utils.RichThrowable._
+import maker.task.tasks.UpdateTask
 
 case class TaskResult(
   task : Task, 
@@ -46,7 +47,7 @@ case class TaskResult(
       task + " " + status
     else {
       val b = new StringBuffer
-      b.append(super.toString + message.map(". " + _).getOrElse(""))
+      b.append(task.toString + message.map(". " + _).getOrElse(""))
 
       (task, exception) match {
         case (_, Some(e)) =>
@@ -55,6 +56,10 @@ case class TaskResult(
           b.addLine("Stack trace")
           b.addLine(e.stackTraceAsString.indent(2))
         case (_ : RunUnitTestsTask, _) => info.foreach(b.append)
+        case (_ : UpdateTask, _) =>
+          val errors = info.get.asInstanceOf[List[(Int, String)]]
+          b.addLine("\n" + "Return Code".padRight(15) + "Command")
+          errors.foreach{case (returnCode, command) => b.addLine(returnCode.toString.padRight(15) + command)}
         case _ =>
       }
       b.toString

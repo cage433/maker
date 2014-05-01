@@ -38,29 +38,29 @@ case class UpdateTask(module : Module)
 
   def upstreamTasks : List[Task] = Nil
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    // delete old resource files
+  private def removeRedundantResourceFiles(){
     module.resources().map(_.resourceFile).groupBy(_.dirname).foreach{
       case (dir, expectedResourceFiles) => 
         val actualResourceFiles = dir.safeListFiles.map(_.asAbsoluteFile).toSet
         (actualResourceFiles -- expectedResourceFiles.map(_.asAbsoluteFile)).foreach(_.delete)
     }
-    val missingResources = module.resources().filterNot(_.resourceFile.exists)
-    // update any missing resources
-    val (_, failures) = missingResources.partition(Exec(_).apply())
-    failures match {
-      case Nil => 
-        TaskResult.success(this, sw)
-      case _ => 
-        TaskResult.failure(this, sw, message = Some("Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t")))
-    }
   }
 
-  private case class Exec(resource : Resource){
-    def apply() : Boolean = {
-      resource.update()
-      resource.resourceFile.exists || resource.classifier == Some("sources")
-    }
+  private def missingResources() = module.resources().filterNot(_.resourceFile.exists)
+
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+    removeRedundantResourceFiles()
+    val errors : List[(Int, String)] = missingResources().flatMap(_.update().flatten)
+
+    if (errors.isEmpty)
+      TaskResult.success(this, sw)
+    else
+      TaskResult.failure(
+        this, 
+        sw, 
+        message = Some("Failed to update resource(s) "),
+        info = Some(errors)
+      )
   }
 
 }

@@ -28,10 +28,6 @@ case class BuildResult(
 
     val buffer = new StringBuffer
 
-    def reportNumberOfScalaFilesCompiled{
-      println("Debug: BuildResult: TODO reportNumberOfScalaFilesCompiled")
-    }
-
     if (succeeded){
       buffer.append(name + " succeeded")
       buffer.toString inBlue
@@ -39,7 +35,6 @@ case class BuildResult(
       val firstFailure : TaskResult = maybeFirstFailure.get
       buffer.append(name + " failed. First failing upstream task is\n\n")
       buffer.append(firstFailure + "")
-      reportNumberOfScalaFilesCompiled
       buffer.toString inRed
     }
   }
