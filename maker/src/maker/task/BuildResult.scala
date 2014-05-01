@@ -53,6 +53,8 @@ case class BuildResult(
   }
 
   def reportTimingsByTaskType{
+    if (failed)
+      return
     val resultsByType = results.groupBy{
       case taskResult => taskResult.task.getClass.getSimpleName
     }
@@ -89,6 +91,8 @@ case class BuildResult(
   }
 
   def reportSlowTestSuites{
+    if (failed)
+      return
     println("\nSlowest 5 test suites")
     println("Suite".padRight(30) + "Suite Time".padRight(10) + "\t" + "Test Time".padRight(10) + "\tNum Tests")
     testResults.orderedSuiteTimes.take(5).foreach{
@@ -100,6 +104,8 @@ case class BuildResult(
   }
 
   def reportSlowUnitTests{
+    if (failed)
+      return
     println("\nSlowest 5 tests")
     println("Suite".padRight(30) + "Test".padRight(30) + "\t" + "Clock Time")
     testResults.testsOrderedByTime.take(5).foreach{

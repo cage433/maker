@@ -18,6 +18,7 @@ import maker.utils.MakerTestResults
 import maker.ivy.IvyUtils
 import scala.xml.Elem
 import maker.task.compile.CompileScalaTask
+import maker.utils.ScreenUtils
 
 trait BaseProject {
   protected def root : File
@@ -176,6 +177,7 @@ trait BaseProject {
     }
     BuildResult.lastResult.set(Some(result))
     if (! props.RunningInMakerTest()){
+      ScreenUtils.clear
       result.reportTopLevelTiming
       result.reportTimingsByTaskType
       result.reportSlowTestSuites

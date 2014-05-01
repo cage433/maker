@@ -9,6 +9,7 @@ import maker.task.tasks.RunUnitTestsTask
 import maker.utils.TaskInfo
 import maker.utils.RichThrowable._
 import maker.task.tasks.UpdateTask
+import scala.collection.JavaConversions._
 
 case class TaskResult(
   task : Task, 
@@ -60,6 +61,11 @@ case class TaskResult(
           val errors = info.get.asInstanceOf[List[(Int, String)]]
           b.addLine("\n" + "Return Code".padRight(15) + "Command")
           errors.foreach{case (returnCode, command) => b.addLine(returnCode.toString.padRight(15) + command)}
+          b.addLine("\n\nProxy settings may be the cause - env vars are ")
+          System.getenv().foreach{
+            case (variable, value) => 
+            b.addLine(variable.padRight(20) + "" + value)
+          }
         case _ =>
       }
       b.toString
