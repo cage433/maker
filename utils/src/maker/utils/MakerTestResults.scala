@@ -142,11 +142,13 @@ case class MakerTestResults (
   def time = (endTime - startTime) / 1.0e9
   def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
 
-  def testsOrderedByTime : List[(TestIdentifier, Long)] = endTimeInNanos.map{
-    case (id, endTime) => 
-      (id, endTime - startTimeInNanos(id))
-    }.toList.sortWith(_._2 > _._2)
-    
+  def testsOrderedByTime : List[(TestIdentifier, Long)] = {
+    endTimeInNanos.map{
+      case (id, endTime) => 
+        (id, endTime - startTimeInNanos(id))
+      }.toList.sortWith(_._2 > _._2)
+  }
+
   def orderedSuiteTimes : List[(String, Long, Long, Int)] /*(suite, clock time, cpu time, num tests) */ = {
     var suiteTimes : Map[String, (Long, Long, Long, Int)] = endTimeInNanos.keySet.map(_.suite).map{
       case suite => 

@@ -179,6 +179,7 @@ trait BaseProject {
       result.reportTopLevelTiming
       result.reportTimingsByTaskType
       result.reportSlowTestSuites
+      result.reportSlowUnitTests
     }
     result
   }

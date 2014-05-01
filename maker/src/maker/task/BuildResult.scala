@@ -8,6 +8,7 @@ import maker.MakerProps
 import java.util.concurrent.atomic.AtomicReference
 import maker.utils.RichIterable._
 import maker.utils.MakerTestResults
+import maker.utils.TestIdentifier
 
 
 case class BuildResult(
@@ -91,14 +92,26 @@ case class BuildResult(
     val combinedTestResults = testResultsList.fold(MakerTestResults())(_++_)
     combinedTestResults
   }
+
   def reportSlowTestSuites{
     println("\nSlowest 5 test suites")
-    println("Suite".padRight(30) + "Clock Time".padRight(10) + "\t" + "CPU Time".padRight(10) + "\tNum Tests")
+    println("Suite".padRight(30) + "Suite Time".padRight(10) + "\t" + "Test Time".padRight(10) + "\tNum Tests")
     testResults.orderedSuiteTimes.take(5).foreach{
       case (suite, clockTime, cpuTime, numTests) =>
       println(
         suite.toString.padRight(30) + clockTime.toString.padRight(10) + "\t" + cpuTime.toString.padRight(10) + "\t" + numTests
       )
+    }
+  }
+
+  def reportSlowUnitTests{
+    println("\nSlowest 5 tests")
+    println("Suite".padRight(30) + "Test".padRight(30) + "\t" + "Clock Time")
+    testResults.testsOrderedByTime.take(5).foreach{
+      case (TestIdentifier(suite, _, test), clockTime) => 
+        println(
+          suite.padRight(30) + test.take(30).padRight(30) + "\t" + (clockTime / NANOS_PER_SECOND)
+        )
     }
   }
 
