@@ -11,6 +11,15 @@ import maker.utils.MakerTestResults
 import maker.utils.TestIdentifier
 import maker.utils.TableBuilder
 import maker.utils.TestFailure
+import maker.task.compile.CompilationInfo
+import maker.task.compile.CompileTask
+import maker.task.compile.CompilationFailedInfo
+import sbt.compiler.CompileFailed
+import xsbti.Position
+import maker.utils.FileUtils._
+import xsbti.Severity
+import maker.project.Module
+import xsbti.Problem
 
 
 case class BuildResult(
@@ -156,6 +165,49 @@ case class ReportBuildResult(br : BuildResult){
     println(tb.toString)
   }
 
+  def reportCompilationFailures{
+    def position(prob : Problem) = {
+      val p = prob.position
+      var text = ""
+      if (! p.sourceFile.isDefined)
+        ("Unknown", "Unknown")
+      else if (! p.line.isDefined)
+        (p.sourceFile.get.basename, "Unknown")
+      else
+        (p.sourceFile.get.basename, p.line.get.toString)
+    }
+
+    val failures : List[(Module, String, String, String)] = br.results.collect{
+      case TaskResult(
+        task : CompileTask,
+        false,
+        _,
+        Some(CompilationFailedInfo(compFailed)),
+        _,
+        _
+      ) =>
+        val severeProblems = compFailed.problems.filter(_.severity == Severity.Error)
+        severeProblems.map{
+          prob =>
+            val (sourceFile, lineNo) = position(prob)
+            (task.baseProject, prob.message, sourceFile, lineNo)
+        }
+    }.toList.flatten
+
+    if (failures.nonEmpty){
+      val tb = TableBuilder(
+        "Module       ",
+        "Message                              ", 
+        "Line  ",
+        "File                    ")
+      failures.foreach{
+        case (module, message, sourceFile, lineNo) => 
+            tb.addRow(module, message, lineNo, sourceFile)
+      }
+      println(tb)
+    }
+  }
+
   def report(){
     if (br.failed){
       val bf = new StringBuffer
@@ -181,9 +233,12 @@ case class ReportBuildResult(br : BuildResult){
         println("\nEnter BuildResult.lastResults for more information on failing tests\n\n".inRed)
       }
 
+      reportCompilationFailures
+
+
     } else {
 
-      println((br.name + " succeeded").inGreen)
+      println(("Build succeeded").inGreen)
 
       println("\nTimings by task".inBlue)
       println(timingsTable)
