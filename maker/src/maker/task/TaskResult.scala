@@ -11,6 +11,7 @@ import maker.utils.RichThrowable._
 import maker.task.tasks.UpdateTask
 import scala.collection.JavaConversions._
 import maker.utils.TableBuilder
+import maker.task.compile.CompileTask
 
 case class TaskResult(
   task : Task, 
@@ -27,6 +28,14 @@ case class TaskResult(
   def endTime = stopwatch.snapshotTime(TaskResult.TASK_END).getOrElse(startTime)
   def time = endTime - startTime
 
+  def isTestResult = task match {
+    case _ : RunUnitTestsTask => true
+    case _ => false
+  }
+  def isCompileResult = task match {
+    case _ : CompileTask => true
+    case _ => false
+  }
   def intervalNames : List[String] = stopwatch.snapshots.collect{
     case ((name : String, _), _) => name
   }.toList
@@ -61,7 +70,6 @@ case class TaskResult(
         case (_ : UpdateTask, _) =>
           val tb = TableBuilder("Return Code   ", "Command")
           val errors = info.get.asInstanceOf[List[(Int, String)]]
-        //b.addLine("\n" + "Return Code".padRight(15) + "Command")
           errors.foreach{
             case (returnCode, command) => 
               tb.addRow(returnCode.toString, command)

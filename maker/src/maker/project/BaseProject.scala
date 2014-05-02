@@ -178,10 +178,7 @@ trait BaseProject {
     BuildResult.lastResult.set(Some(result))
     if (! props.RunningInMakerTest()){
       ScreenUtils.clear
-      result.reportTopLevelTiming
-      result.reportTimingsByTaskType
-      result.reportSlowTestSuites
-      result.reportSlowUnitTests
+      result.reportResult
     }
     result
   }

@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 import maker.utils.RichIterable._
 import maker.utils.MakerTestResults
 import maker.utils.TestIdentifier
+import maker.utils.TableBuilder
 
 
 case class BuildResult(
@@ -23,65 +24,116 @@ case class BuildResult(
   def failed = !succeeded
 
   def maybeFirstFailure : Option[TaskResult] = results.reverse.find(_.failed)
-  def toString_ = {
-    assert(results.size > 0, "Expected some tasks to execute")
 
-    val buffer = new StringBuffer
+  class Report{
+    private val NANOS_PER_SECOND = 1000000000
+    private val COLUMN_WIDTHS = List(30, 25, 15, 15)
 
-    if (succeeded){
-      buffer.append(name + " succeeded")
-      buffer.toString inBlue
-    } else {
-      val firstFailure : TaskResult = maybeFirstFailure.get
-      buffer.append(name + " failed. First failing upstream task is\n\n")
-      buffer.append(firstFailure + "")
-      buffer.toString inRed
-    }
-  }
+    def fmt(timeInNanos : Long) = "%.1f".format(timeInNanos * 1.0 / NANOS_PER_SECOND)
 
-  private val NANOS_PER_SECOND = 1000000000
-  def reportTopLevelTiming{
-    if (failed || results.isEmpty){
-      return
-    }
-    val clockTime = results.map(_.endTime).max - results.map(_.startTime).min
-    val cpuTime = results.map(_.time).sum
-    println
-    println("Clock time  = %.1f (s)".format(clockTime * 1.0 / NANOS_PER_SECOND))
-    println("CPU time    = %.1f (s)" .format(cpuTime * 1.0 / NANOS_PER_SECOND))
-    println("Parallelism = %.1f".format((cpuTime  * 1.0 / clockTime)))
-  }
+    def timingsTable : TableBuilder = {
+      val tb = TableBuilder(
+        "Task".padRight(COLUMN_WIDTHS(0)), 
+        "Interval".padRight(COLUMN_WIDTHS(1)), 
+        "CPU Time".padRight(COLUMN_WIDTHS(2)),
+        "Clock Time") 
+      val totalClockTime = results.map(_.endTime).max - results.map(_.startTime).min
+      val totalCpuTime = results.map(_.time).sum
 
-  def reportTimingsByTaskType{
-    if (failed)
-      return
-    val resultsByType = results.groupBy{
-      case taskResult => taskResult.task.getClass.getSimpleName
-    }
-    val timesByType : List[(String, Long, Map[String, Long])] = resultsByType.map{
-      case (typeName, resultsForType) =>
-        val totalTime = resultsForType.map(_.time).sum
-        val intervalMaps : List[Map[String, Long]] = resultsForType.map(_.intervalTimings)
-        val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
+      tb.addRow("All", "", fmt(totalClockTime), fmt(totalCpuTime))
 
-        val netIntervals = intervalNames.map{
-          name => 
-            val time = intervalMaps.map(_.getOrElse(name, 0l)).sum
-            name -> time
-        }.toMap
-        (typeName, totalTime, netIntervals)
-    }.toList
-    timesByType.sortWith(_._2 > _._2).foreach{
-      case (typeName, totalTime, netIntervals) =>
-        println(typeName + " took " + (totalTime / NANOS_PER_SECOND) + " (s)")
-        if (netIntervals.nonEmpty){
-          netIntervals.toList.sortWith(_._2 > _._2).foreach{
-            case (intervalName, time) =>
-              println("\t" + intervalName + " took " + (time / NANOS_PER_SECOND) + " (s)")
+      val resultsByType = results.groupBy{
+        case taskResult => taskResult.task.getClass.getSimpleName
+      }
+      val timesByType : List[(String, Long, Map[String, Long])] = resultsByType.map{
+        case (typeName, resultsForType) =>
+          val totalTime = resultsForType.map(_.time).sum
+          val intervalMaps : List[Map[String, Long]] = resultsForType.map(_.intervalTimings)
+          val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
+
+          val netIntervals = intervalNames.map{
+            name => 
+              val time = intervalMaps.map(_.getOrElse(name, 0l)).sum
+              name -> time
+          }.toMap
+          (typeName, totalTime, netIntervals)
+      }.toList
+      timesByType.sortWith(_._2 > _._2).foreach{
+        case (typeName, totalTime, netIntervals) =>
+          tb.addRow(typeName, "Total", fmt(totalTime), "")
+          if (netIntervals.nonEmpty){
+            netIntervals.toList.sortWith(_._2 > _._2).foreach{
+              case (intervalName, time) =>
+                tb.addRow(typeName, intervalName, fmt(time), "")
+            }
           }
-        }
+      }
+      tb
     }
+
+    def reportSlowTestSuites{
+      println("\nSlowest 5 test suites".inBlue)
+      val tb = TableBuilder(
+        "Suite".padRight(COLUMN_WIDTHS(0)), 
+        "Num Tests".padRight(COLUMN_WIDTHS(1)),
+        "CPU Time".padRight(COLUMN_WIDTHS(2)),
+        "Clock Time"
+      )
+      testResults.orderedSuiteTimes.take(5).foreach{
+        case (suite, clockTime, cpuTime, numTests) =>
+          tb.addRow(
+            suite,
+            numTests,
+            fmt(cpuTime),
+            fmt(clockTime)
+          )
+      }
+      println(tb.toString)
+    }
+
+    def reportSlowUnitTests{
+      println("\nSlowest 5 tests".inBlue)
+      val tb = TableBuilder(
+        "Suite".padRight(COLUMN_WIDTHS(0)), 
+        "Test".padRight(COLUMN_WIDTHS(1) + COLUMN_WIDTHS(2)), 
+        "Clock Time")
+      testResults.testsOrderedByTime.take(5).foreach{
+        case (TestIdentifier(suite, _, test), clockTime) => 
+          tb.addRow(
+            suite,
+            test,
+            fmt(clockTime)
+          )
+      }
+      println(tb.toString)
+    }
+
+    def report(){
+      if (failed){
+        val bf = new StringBuffer
+        val firstFailure : TaskResult = maybeFirstFailure.get
+        bf.addLine((name + " failed. First failing upstream task is\n").inRed)
+        bf.append(firstFailure.toString.inRed)
+        println(bf.toString)
+      } else {
+
+        println((name + " succeeded").inGreen)
+
+        println("\nTimings by task".inBlue)
+        println(timingsTable)
+        if (results.exists(_.isTestResult)){
+          reportSlowTestSuites
+          reportSlowUnitTests
+        } 
+      }
+    }
+
   }
+  def reportResult{
+    new Report().report()
+  }
+
+
   def testResults = {
     val testResultsList : List[MakerTestResults] = results.collect{
       case TaskResult(_, _, _, Some(mtr : MakerTestResults), _, _) => mtr
@@ -90,36 +142,9 @@ case class BuildResult(
     combinedTestResults
   }
 
-  def reportSlowTestSuites{
-    if (failed)
-      return
-    println("\nSlowest 5 test suites")
-    println("Suite".padRight(30) + "Suite Time".padRight(10) + "\t" + "Test Time".padRight(10) + "\tNum Tests")
-    testResults.orderedSuiteTimes.take(5).foreach{
-      case (suite, clockTime, cpuTime, numTests) =>
-      println(
-        suite.toString.padRight(30) + clockTime.toString.padRight(10) + "\t" + cpuTime.toString.padRight(10) + "\t" + numTests
-      )
-    }
-  }
-
-  def reportSlowUnitTests{
-    if (failed)
-      return
-    println("\nSlowest 5 tests")
-    println("Suite".padRight(30) + "Test".padRight(30) + "\t" + "Clock Time")
-    testResults.testsOrderedByTime.take(5).foreach{
-      case (TestIdentifier(suite, _, test), clockTime) => 
-        println(
-          suite.padRight(30) + test.take(30).padRight(30) + "\t" + (clockTime / NANOS_PER_SECOND)
-        )
-    }
-  }
 
   override def toString = {
-    // Nasty hack to get colourization to work in the repl
-    println(toString_)
-    ""
+    name + (if (succeeded) " succeeded " else " failed")
   }
 
   def withResult(taskResult : List[TaskResult]) =

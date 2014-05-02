@@ -157,7 +157,7 @@ case class MakerTestResults (
     val NANOS_PER_SECOND = 1000000000
     endTimeInNanos.foreach{
       case (id, testEndTime) => 
-        val testCpuTime = (testEndTime - startTimeInNanos(id)) / NANOS_PER_SECOND
+        val testCpuTime = (testEndTime - startTimeInNanos(id)) 
         val (suiteTime, suiteStartTime, suiteEndTime, numSuiteTests) = suiteTimes(id.suite)
           suiteTimes += (id.suite ->
           (suiteTime + testCpuTime, 
@@ -166,7 +166,7 @@ case class MakerTestResults (
            numSuiteTests + 1))
     }
     suiteTimes.map{
-      case (suite, (suiteCpuTime, suiteStartTime, suiteEndTime, numTests)) => (suite, (suiteEndTime - suiteStartTime) / NANOS_PER_SECOND, suiteCpuTime, numTests)
+      case (suite, (suiteCpuTime, suiteStartTime, suiteEndTime, numTests)) => (suite, suiteEndTime - suiteStartTime, suiteCpuTime, numTests)
     }.toList.sortWith(_._2 > _._2)
   }
 
