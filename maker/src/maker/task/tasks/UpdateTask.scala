@@ -30,6 +30,9 @@ import maker.utils.FileUtils._
 import maker.task._
 import maker.utils.Stopwatch
 import maker.Resource
+import maker.utils.TableBuilder
+import maker.utils.RichString._
+import scala.collection.JavaConversions._
 
 case class UpdateTask(module : Module) 
   extends SingleModuleTask(module)
@@ -53,14 +56,53 @@ case class UpdateTask(module : Module)
     val errors : List[(Int, String)] = missingResources().flatMap(_.update().flatten)
 
     if (errors.isEmpty)
-      TaskResult.success(this, sw)
-    else
-      TaskResult.failure(
-        this, 
+      UpdateTaskResult(
+        this,
+        true,
         sw, 
-        message = Some("Failed to update resource(s) "),
-        info = Some(errors)
+        Nil
+      )
+    else
+      UpdateTaskResult(
+        this,
+        false,
+        sw, 
+        errors,
+        message = Some("Failed to update resource(s) ")
       )
   }
-
 }
+
+object UpdateTask{
+  def reportOnUpdateFailures(taskResults : List[TaskResult]){
+    val failures : List[(Int, String)] = taskResults.collect{
+      case u : UpdateTaskResult => u.failures
+    }.flatten
+    if (failures.nonEmpty){
+      val b = new StringBuffer
+      val tb = TableBuilder("Return Code   ", "Command")
+      failures.foreach{
+        case (returnCode, command) => 
+          tb.addRow(returnCode.toString, command)
+      }
+      b.addLine("\n" + tb.toString)
+      b.addLine("\n\n" + "Proxy settings may be the cause - env vars are ".inRed)
+      val etb = TableBuilder("Variable              ", "Value")
+      System.getenv().filterKeys(_.toLowerCase.contains("proxy")).foreach{
+        case (variable, value) => 
+          etb.addRow(variable, value.truncate(100))
+      }
+      b.addLine(etb.toString)
+      println(b)
+    }
+  }
+}
+
+case class UpdateTaskResult(
+  task : UpdateTask, 
+  succeeded : Boolean, 
+  stopwatch : Stopwatch,
+  failures : List[(Int, String)],
+  override val message : Option[String] = None, 
+  override val exception : Option[Throwable] = None
+) extends TaskResult

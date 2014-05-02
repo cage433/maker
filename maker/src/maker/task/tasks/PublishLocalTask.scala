@@ -60,6 +60,6 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
       case m : Module =>
         copyFileToDirectory(m.outputArtifact, m.publishLocalJarDir)
     }
-    TaskResult.success(this, sw)
+    DefaultTaskResult(this, true, sw)
   }
 }

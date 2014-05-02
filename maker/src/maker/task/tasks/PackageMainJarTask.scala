@@ -9,6 +9,7 @@ import maker.utils.FileUtils._
 import java.io.File
 import maker.task.compile._
 import maker.task.SingleModuleTask
+import maker.task.DefaultTaskResult
 
 case class PackageMainJarTask(module : Module) 
   extends SingleModuleTask(module)
@@ -28,7 +29,7 @@ case class PackageMainJarTask(module : Module)
     synchronized{
       if (fileIsLaterThan(module.outputArtifact, mainDirsToPack)) {
         log.info("Packaging up to date for " + module.name + ", skipping...")
-        TaskResult.success(this, sw)
+        DefaultTaskResult(this, true, sw)
       } else {
         doPackage(results, sw)
       }
@@ -64,8 +65,8 @@ case class PackageMainJarTask(module : Module)
     val cmds : List[WrappedCommand] = createJarCommand(mainDirsToPack.head) :: mainDirsToPack.tail.map(updateJarCommand)
 
     cmds.find(_.exec != 0) match {
-      case Some(failingCommand) => TaskResult.failure(this, sw, message = Some(failingCommand.cmd.savedOutput))
-      case None => TaskResult.success(this, sw)
+      case Some(failingCommand) => DefaultTaskResult(this, false, sw, message = Some(failingCommand.cmd.savedOutput))
+      case None => DefaultTaskResult(this, true, sw)
     }
   }
 }

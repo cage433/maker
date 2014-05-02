@@ -46,7 +46,7 @@ class BuildResultTests extends FunSuite {
     def copy_(p : Module) = copy(baseProject = p)
     def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
       assert(false, "should not run task!")
-      TaskResult.success(this, sw)
+      DefaultTaskResult(this, true, sw)
     }
   }
   test("buildResultsShouldCompose") {
@@ -62,11 +62,14 @@ class BuildResultTests extends FunSuite {
       val sw = new Stopwatch()
 
       // some success build results
-      val br1 = BuildResult("foo", List(success(CleanTask(p1), sw), success(CleanTask(p3), sw)), emptyGraph)
-      val br2 = BuildResult("foo", List(success(SourceCompileTask(p2), sw)), emptyGraph)
+      val br1 = BuildResult("foo", 
+        List(
+          DefaultTaskResult(CleanTask(p1), true, sw), 
+          DefaultTaskResult(CleanTask(p3), true, sw)), emptyGraph)
+      val br2 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2), true, sw)), emptyGraph)
 
       // and some failures
-      val fr1 = BuildResult("foo", List(failure(SourceCompileTask(p2), sw, message = Some("was broke"))), emptyGraph)
+      val fr1 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2), false, sw, message = Some("was broke"))), emptyGraph)
 
       val r1 = for {
         w <- br1

@@ -18,9 +18,9 @@ class CachedCompilationTests extends FunSuite {
   }
   def checkCompile(module:Module, expectedState :CompilationState) {
     val r = module.compile
-    val info = r.results(0).info.get.asInstanceOf[CompilationInfo]
+
     assert(
-      info.state === expectedState,
+      r.results(0).asInstanceOf[CompileTaskResult].state === expectedState,
       "Error when compiling " + module
     )
   }

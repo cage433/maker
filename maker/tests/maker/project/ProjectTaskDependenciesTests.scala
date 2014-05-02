@@ -12,6 +12,7 @@ import maker.task.BuildResult
 import maker.task.tasks.RunUnitTestsTask
 import maker.task.compile._
 import maker.task.SingleModuleTask
+import maker.task.DefaultTaskResult
 
 class ProjectTaskDependenciesTests extends FunSuite{
   case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") 
@@ -22,7 +23,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
     def upstreamTasks = Nil
     def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
       exec
-      TaskResult.success(WriteClassCountToFile.this, sw)
+      DefaultTaskResult(WriteClassCountToFile.this, true, sw)
     }
     def exec = {
       writeToFile(file(module.rootAbsoluteFile, basename), module.compilePhase.classFiles.size + "")
