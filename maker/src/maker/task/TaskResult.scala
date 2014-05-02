@@ -10,6 +10,7 @@ import maker.utils.TaskInfo
 import maker.utils.RichThrowable._
 import maker.task.tasks.UpdateTask
 import scala.collection.JavaConversions._
+import maker.utils.TableBuilder
 
 case class TaskResult(
   task : Task, 
@@ -58,14 +59,21 @@ case class TaskResult(
           b.addLine(e.stackTraceAsString.indent(2))
         case (_ : RunUnitTestsTask, _) => info.foreach(b.append)
         case (_ : UpdateTask, _) =>
+          val tb = TableBuilder("Return Code   ", "Command")
           val errors = info.get.asInstanceOf[List[(Int, String)]]
-          b.addLine("\n" + "Return Code".padRight(15) + "Command")
-          errors.foreach{case (returnCode, command) => b.addLine(returnCode.toString.padRight(15) + command)}
-          b.addLine("\n\nProxy settings may be the cause - env vars are ")
-          System.getenv().foreach{
-            case (variable, value) => 
-            b.addLine(variable.padRight(20) + "" + value)
+        //b.addLine("\n" + "Return Code".padRight(15) + "Command")
+          errors.foreach{
+            case (returnCode, command) => 
+              tb.addRow(returnCode.toString, command)
           }
+          b.addLine("\n" + tb.toString)
+          b.addLine("\n\n" + "Proxy settings may be the cause - env vars are ".inRed)
+          val etb = TableBuilder("Variable              ", "Value")
+          System.getenv().filterKeys(_.toLowerCase.contains("proxy")).foreach{
+            case (variable, value) => 
+              etb.addRow(variable, value.truncate(100))
+          }
+          b.addLine(etb.toString)
         case _ =>
       }
       b.toString
