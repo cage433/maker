@@ -66,7 +66,7 @@ case class TaskResult(
           b.addLine(Option(e.getMessage).getOrElse("").indent(2))
           b.addLine("Stack trace")
           b.addLine(e.stackTraceAsString.indent(2))
-        case (_ : RunUnitTestsTask, _) => info.foreach(b.append)
+        case (_ : RunUnitTestsTask, _) => //info.foreach(b.append)
         case (_ : UpdateTask, _) =>
           val tb = TableBuilder("Return Code   ", "Command")
           val errors = info.get.asInstanceOf[List[(Int, String)]]

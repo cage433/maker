@@ -37,6 +37,7 @@ import maker.utils.MakerTestResults
 import maker.task.compile.TestCompileTask
 import maker.utils.StringUtils
 import com.sun.org.apache.xpath.internal.operations.Bool
+import maker.utils.RichString._
 
 
 case class RunUnitTestsTask(
@@ -137,14 +138,14 @@ object RunUnitTestsTask{
     val classNames = classNamesOrAbbreviations.toList.flatMap(resolveClassName)
     if (classNames.isEmpty)
       RunUnitTestsTask(
-        baseProject.name + " test all",
+        "run all tests",
         baseProject,
         None,
         verbose
       )
     else
       RunUnitTestsTask(
-        "Test class " + classNames.mkString(", "),
+        "test class(es) " + classNames.mkString(", "),
         baseProject,
         Some(classNames),
         verbose

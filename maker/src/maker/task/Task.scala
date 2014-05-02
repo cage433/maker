@@ -36,6 +36,7 @@ trait Task {
   def failureHaltsTaskManager : Boolean = true
   def baseProject : BaseProject
 
+  override def toString = baseProject + " - " + name
   /**
    * Tasks that normally need to run BEFORE this one does 
    */
