@@ -473,7 +473,7 @@ class SomeClass extends SomeTrait{
   }
 
   test("Adding parameter to constructor causes recompilation of downstream file"){
-    withTempDir{
+    withTestDir{
       dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
         val A = new TestModule(file(dir, "A"), "A", analyses = analyses)
@@ -506,62 +506,8 @@ class SomeClass extends SomeTrait{
           """
         )
 
-        assert(B.compile.failed)
+        assert(B.compile.failed, "Expected compilation to fail")
     }
   }
-
-//  test("Compilation only of upstream module shouldn't prevent downstream module from being recompiled"){
-//    withTempDir{
-//      dir => 
-//        val analyses = new ConcurrentHashMap[File, Analysis]()
-//        val A = new TestModule(file(dir, "A"), "A", analyses = analyses)
-//        val B = new TestModule(file(dir, "B"), "B", List(A), analyses = analyses)
-//
-//        A.writeSrc(
-//          "foo/Foo.scala",
-//          """
-//          package foo
-//          case class Foo(x : Int)
-//          """
-//        )
-//    
-//        A.writeSrc(
-//          "foo/Bar.scala",
-//          """
-//          package foo
-//          case class Bar(x : Int)
-//          """
-//        )
-//        B.writeSrc(
-//          "bar/Baz.scala",
-//          """
-//          import foo.Foo
-//
-//          case class Baz(x : Int){
-//            val foo = Foo(3).x
-//          }
-//          """
-//        )
-//
-//        assert(B.compile.succeeded, "B should compile")
-//        sleepToNextSecond
-//
-//        // Change A in a way that will break B, but compile A only
-//        A.writeSrc(
-//          "foo/Foo.scala",
-//          """
-//          package foo
-//          case class Foo(x : Int, y : String)
-//          """
-//        )
-//
-//        assert(A.compile.succeeded, "A should compile")
-//
-//        // Now compile B - it should fail
-//        val result = B.compile
-//        assert(result.failed, "B should not compile")
-//    
-//    }
-//  }
 
 }

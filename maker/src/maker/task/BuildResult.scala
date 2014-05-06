@@ -86,8 +86,6 @@ case class BuildResult(
 
   def failures = results.filter(_.failed)
 
-  def compilationInfos = results.flatMap(_.compilationInfo)
-
 }
 
 case class LastResult(result : BuildResult){

@@ -40,7 +40,7 @@ abstract class CompileTask extends Task{
   private def successfulResult(sw : Stopwatch, state : CompilationState) = CompileTaskResult(
     this, succeeded = true, 
     stopwatch = sw, 
-    state = CachedCompilation
+    state = state
   )
   private def cachedCompilation(sw : Stopwatch) : Option[TaskResult] = {
     classesCache collect {
@@ -54,7 +54,12 @@ abstract class CompileTask extends Task{
 
   def compilationRequired(upstreamTaskResults : Iterable[TaskResult]) = {
     def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation.nonEmpty
-    def upstreamCompilation = upstreamTaskResults.flatMap(_.compilationInfo).exists(_.state != CompilationNotRequired)
+
+    def upstreamCompilation = upstreamTaskResults.exists{
+      case r : CompileTaskResult if r.state != CompilationNotRequired => true
+      case _ => false
+    }
+
     def modificationSinceLastCompilation = (modulePhase.lastSourceModifcationTime, modulePhase.lastCompilationTime) match {
       case (Some(t1), Some(t2)) => t1 > t2
       case _ => true

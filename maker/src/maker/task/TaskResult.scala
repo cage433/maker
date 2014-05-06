@@ -47,11 +47,6 @@ trait TaskResult{
     }.toMap
   }
 
-  def compilationInfo : Option[CompilationInfo] = info match {
-    case Some(x) if x.isInstanceOf[CompilationInfo] => Some(x.asInstanceOf[CompilationInfo])
-    case _ => None
-  }
-
   override def toString = {
     if (succeeded)
       task + " " + status
