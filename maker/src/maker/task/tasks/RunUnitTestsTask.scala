@@ -126,7 +126,7 @@ case class RunUnitTestsTask(
 }
 
 object RunUnitTestsTask{
-  import Task.{COLUMN_WIDTHS, fmtNanos}
+  import TaskResult.{COLUMN_WIDTHS, fmtNanos}
   def apply(baseProject : BaseProject, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
     def resolveClassName(cn : String) : List[String] = {
       if (cn.contains('.'))

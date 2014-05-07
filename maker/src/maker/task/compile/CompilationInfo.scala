@@ -9,21 +9,3 @@ case object CompilationSucceeded extends CompilationState
 case object CompilationNotRequired extends CompilationState
 
 case class CompilationFailed(error : String) extends CompilationState
-
-case class CompilationInfo(task : CompileTask, state : CompilationState) extends TaskInfo{
-  def module = task.module
-  def phase = task.phase
-
-  override def toString = {
-    val b = new StringBuffer
-    b.addLine("CompilationInfo")
-    b.addLine("  Task :" + task)
-    b.addLine("  State : " + state)
-    b.toString
-  }
-  def toShortString = toString
-  def toLongString = toString
-}
-
-
-

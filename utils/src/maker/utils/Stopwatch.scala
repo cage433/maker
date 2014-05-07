@@ -49,6 +49,11 @@ case class Stopwatch(
     case (Some(t1), Some(t2)) => Some(t2 - t1)
     case _ => None
   }
+  def intervalStartAndEndTime(name : String) = (snapshotTime((name, START)), snapshotTime((name, END))) match {
+    case (Some(t1), Some(t2)) => Some((t1, t2))
+    case _ => None
+  }
+
   def currentTime() = System.nanoTime
   def nanos() = currentTime - startTime
   def ms() : Long = (nanos) / 1000000

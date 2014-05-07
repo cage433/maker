@@ -4,7 +4,6 @@ import java.io.File
 import maker.utils.RichString._
 import maker.utils.Stopwatch
 import maker.utils.Utils
-import maker.task.compile.CompilationInfo
 import maker.task.tasks.RunUnitTestsTask
 import maker.utils.TaskInfo
 import maker.utils.RichThrowable._
@@ -12,6 +11,7 @@ import maker.task.tasks.UpdateTask
 import scala.collection.JavaConversions._
 import maker.utils.TableBuilder
 import maker.task.compile.CompileTask
+import maker.utils.Timings
 
 trait TaskResult{
   def task : Task
@@ -44,6 +44,14 @@ trait TaskResult{
       name => 
         val time : Long = stopwatch.intervalTime(name).getOrElse(-1)
         name -> time
+    }.toMap
+  }
+  def intervalStartAndEndTime : Map[String, (Long, Long)] = {
+    intervalNames.flatMap{
+      name => 
+        stopwatch.intervalStartAndEndTime(name).map{
+          case (t1, t2) => (name -> (t1, t2))
+        }
     }.toMap
   }
 
@@ -93,6 +101,53 @@ case class DefaultTaskResult(
 object TaskResult{
   def TASK_END = "TASK_END"
 
+  private def NANOS_PER_SECOND = 1000000000
+  def fmtNanos(timeInNanos : Long) = "%.1f".format(timeInNanos * 1.0 / NANOS_PER_SECOND)
+  def COLUMN_WIDTHS = List(30, 25, 15, 15)
+
+  def clockAndCPUTime(tr : List[TaskResult]) : (Long, Long) = {
+    val taskTimes = tr.map{case tr => (tr.startTime, tr.endTime)}
+    Timings(taskTimes).clockAndCPUTime
+  }
+
+  def reportOnTaskTimings(taskResults : List[TaskResult]){
+    val tb = TableBuilder(
+      "Task".padRight(COLUMN_WIDTHS(0)), 
+      "Interval".padRight(COLUMN_WIDTHS(1)), 
+      "CPU Time".padRight(COLUMN_WIDTHS(2)),
+      "Clock Time") 
+
+
+
+    val resultsByType = taskResults.groupBy{
+      case taskResult => taskResult.task.getClass.getSimpleName
+    }
+    resultsByType.foreach{
+      case (typeName, resultsForType) =>
+        val (clockTime, cpuTime) = clockAndCPUTime(resultsForType)
+        tb.addRow(typeName, "", fmtNanos(cpuTime), fmtNanos(clockTime))
+
+        val intervalMaps : List[Map[String, (Long, Long)]] = resultsForType.map(_.intervalStartAndEndTime)
+        val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
+
+        intervalNames.foreach{
+          name => 
+            val intervalStartAndEndTimes : List[(Long, Long)] = intervalMaps.map(_.get(name)).collect{
+              case Some((t1, t2)) => (t1, t2)
+            }
+            val (intervalClockTime, intervalCPUTime) = Timings(intervalStartAndEndTimes).clockAndCPUTime
+            tb.addRow(typeName, name, fmtNanos(intervalCPUTime), fmtNanos(intervalClockTime))
+        }
+    }
+    val (totalClockTime, totalCpuTime) = clockAndCPUTime(taskResults)
+    tb.addRow("All Tasks", "", fmtNanos(totalCpuTime), fmtNanos(totalClockTime))
+    println(tb)
+  }
+
+  def reportOnFirstFailingTask(taskResults : List[TaskResult]){
+    val failing = taskResults.find(_.failed).get
+    println(("First failure was " + failing.task + "\n").inRed)
+  }
 
 } 
 

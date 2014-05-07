@@ -35,15 +35,17 @@ case class BuildResult(
   def reportResult{
     if (failed){
       println("Build failed".inRed)
-      Task.reportOnFirstFailingTask(results)
+      println
+      TaskResult.reportOnFirstFailingTask(results)
       UpdateTask.reportOnUpdateFailures(results)
       RunUnitTestsTask.reportOnFailingTests(results)
       CompileTask.reportOnCompilationErrors(results)
     } else {
 
       println(("Build succeeded").inGreen)
+      println
 
-      Task.reportOnTaskTimings(results)
+      TaskResult.reportOnTaskTimings(results)
       RunUnitTestsTask.reportOnSlowTests(results)
     }
   }

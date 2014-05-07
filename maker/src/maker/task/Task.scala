@@ -52,55 +52,6 @@ abstract class SingleModuleTask(module : Module)
 }
 
 object Task {
-  val termSym = "ctrl-]"
   val termChar = 29 // ctrl-]
 
-  private val NANOS_PER_SECOND = 1000000000
-  def fmtNanos(timeInNanos : Long) = "%.1f".format(timeInNanos * 1.0 / NANOS_PER_SECOND)
-  val COLUMN_WIDTHS = List(30, 25, 15, 15)
-
-  def reportOnTaskTimings(taskResults : List[TaskResult]){
-    val tb = TableBuilder(
-      "Task".padRight(COLUMN_WIDTHS(0)), 
-      "Interval".padRight(COLUMN_WIDTHS(1)), 
-      "CPU Time".padRight(COLUMN_WIDTHS(2)),
-      "Clock Time") 
-    val totalClockTime = taskResults.map(_.endTime).max - taskResults.map(_.startTime).min
-    val totalCpuTime = taskResults.map(_.time).sum
-
-    tb.addRow("All", "", fmtNanos(totalCpuTime), fmtNanos(totalClockTime))
-
-    val resultsByType = taskResults.groupBy{
-      case taskResult => taskResult.task.getClass.getSimpleName
-    }
-    val timesByType : List[(String, Long, Map[String, Long])] = resultsByType.map{
-      case (typeName, resultsForType) =>
-        val totalTime = resultsForType.map(_.time).sum
-        val intervalMaps : List[Map[String, Long]] = resultsForType.map(_.intervalTimings)
-        val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
-
-        val netIntervals = intervalNames.map{
-          name => 
-            val time = intervalMaps.map(_.getOrElse(name, 0l)).sum
-            name -> time
-        }.toMap
-        (typeName, totalTime, netIntervals)
-    }.toList
-    timesByType.sortWith(_._2 > _._2).foreach{
-      case (typeName, totalTime, netIntervals) =>
-        tb.addRow(typeName, "Total", fmtNanos(totalTime), "")
-        if (netIntervals.nonEmpty){
-          netIntervals.toList.sortWith(_._2 > _._2).foreach{
-            case (intervalName, time) =>
-              tb.addRow(typeName, intervalName, fmtNanos(time), "")
-          }
-        }
-    }
-    println(tb)
-  }
-
-  def reportOnFirstFailingTask(taskResults : List[TaskResult]){
-    val failing = taskResults.find(_.failed).get
-    println(("First failure was " + failing.task + "\n").inRed)
-  }
 }
