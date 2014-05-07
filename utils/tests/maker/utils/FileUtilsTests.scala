@@ -33,7 +33,7 @@ class FileUtilsTests extends FunSuite{
   test("With temp dir"){
     var savedDir : File = null
     FileUtils.withTempDir{
-      dir ⇒
+      dir =>
         savedDir = dir
         assert(dir.exists)
     }
@@ -48,7 +48,7 @@ class FileUtilsTests extends FunSuite{
 
   test("clean files leaves directories alone"){
     withTempDir{
-      dir ⇒ 
+      dir => 
        val fred = file(dir, "fred")
        fred.createNewFile
        val subDir = file(dir, "subdir")

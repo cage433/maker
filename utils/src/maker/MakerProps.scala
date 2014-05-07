@@ -1,6 +1,6 @@
 package maker
 
-import scala.collection.mutable.{Map ⇒ MMap}
+import scala.collection.mutable.{Map => MMap}
 import java.io.File
 import java.util.Properties
 import scala.collection.JavaConversions
@@ -46,19 +46,19 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
   object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
-  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-0.12.4.jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-0.12.4-sources.jar")) with IsFile
+  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-0.12.1.jar")) with IsFile
+  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-0.12.1-sources.jar")) with IsFile
 
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {
       val properties = new java.util.Properties()
-        apply().foreach{file ⇒ properties.load(new FileInputStream(file))}
+        apply().foreach{file => properties.load(new FileInputStream(file))}
       properties
     }
     def asMap = {
       val ps = properties
       JavaConversions.asScalaSet(ps.stringPropertyNames).map{
-        p ⇒ p → ps.getProperty(p)
+        p => p -> ps.getProperty(p)
       }.toMap
     }
   }
@@ -80,6 +80,10 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
   object CompilationCache extends EmptyString
 
+  /*
+   * Switches off sundry output with testing maker
+   */
+  object RunningInMakerTest extends SystemPropertyWithDefault("maker.running.within.test", false) with IsBoolean
 
   // Show compiler output - normally switched off for tests
   object ShowCompilerOutput extends SystemPropertyWithDefault("show.compiler.output", true) with IsBoolean
@@ -95,10 +99,11 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), "updateOrCreate")) with IsFile
 
+
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
-      case List(k, v) ⇒ k → v
-      case other ⇒ throw new Exception("Needs matching numbers of keys and values")
+      case List(k, v) => k -> v
+      case other => throw new Exception("Needs matching numbers of keys and values")
     }.toMap
     copy(overrides = overrides ++  moreOverridesAsMap)
   }

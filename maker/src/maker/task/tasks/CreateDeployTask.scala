@@ -40,6 +40,7 @@ case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) exte
   def name = "Create Deploy"
   val log = baseProject.log
 
+  def module = baseProject
   def upstreamTasks = baseProject.allUpstreamModules.map(PackageMainJarTask) ::: {
     if (buildTests) baseProject.allUpstreamModules.map(PackageTestJarTask)
     else Nil
@@ -134,6 +135,6 @@ case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) exte
       case m : Module =>
         throw new IllegalStateException("Should not be run on a module")
     }
-    TaskResult.success(this, sw)
+    DefaultTaskResult(this, true, sw)
   }
 }

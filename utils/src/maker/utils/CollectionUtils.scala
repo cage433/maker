@@ -31,7 +31,7 @@ object CollectionUtils{
   }
   def classFileToSource(sourceToClass : Map[File, Set[File]]) : Map[File, File] = {
     sourceToClass.flatMap{
-      case (sourceFile, classFiles) ⇒ 
+      case (sourceFile, classFiles) => 
         classFiles.map((_, sourceFile))
     }.toMap
   }

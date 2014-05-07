@@ -41,6 +41,8 @@ import maker.task.tasks.RunUnitTestsTask
 import maker.task.tasks.UpdateTask
 import maker.Resource
 import maker.PomUtils
+import maker.task.BuildResult
+import maker.task.Task
 
 /**
   * Corresponds to a module in IntelliJ
@@ -58,7 +60,7 @@ class Module(
   with TmuxIntegration
 {
 
-  val modules = List(this)
+  protected val upstreamModulesForBuild = List(this)
 
   val resourcesFile = file(root, "external-resources")
 
@@ -77,13 +79,13 @@ class Module(
    */
    override def equals(rhs : Any) = {
      rhs match {
-       case p : Module if p.root == root ⇒ {
+       case p : Module if p.root == root => {
          //I believe this assertion should always hold. It's really here so that
          //this overriden equals method never returns true on differing modules.
          assert(this eq p, "Shouldn't have two modules pointing to the same root")
          true
        }
-       case _ ⇒ false
+       case _ => false
      }
    }
 
@@ -91,12 +93,12 @@ class Module(
 
   private def warnOfRedundantDependencies() {
     immediateUpstreamModules.foreach{
-      module ⇒
+      module =>
         val otherUpstreamModules = immediateUpstreamModules.filterNot(_ == module)
         otherUpstreamModules.find(_.allUpstreamModules.contains(module)) match {
-          case Some(otherUpstreamModule) ⇒
+          case Some(otherUpstreamModule) =>
           log.warn(name + " shouldn't depend on " + module.name + " as it is inherited via " + otherUpstreamModule.name)
-          case None ⇒
+          case None =>
         }
     }
   }
@@ -118,44 +120,29 @@ class Module(
   *       TASKS
   **************************/
 
-  lazy val CleanOnly = Build(
-    "Clean only " + name, 
-    () ⇒ Dependency.Graph(CleanTask(this)), 
-    this,
-    "cleanOnly",
-    "Deletes classes (source and test) for module " + name + ", leaving upstream module untouched"
-  )
+  /**
+    * Execute just this single task, none of its upstream 
+    * dependencies. 
+    * In general should only be used by devs at the REPL - should
+    * not be used as the basis for more complex builds
+    */
+  private def executeSansDependencies(task : Task) : BuildResult = {
+    val build = Build(
+      task.name + " for " + name + " only",
+      Dependency.Graph(task),
+      props.NumberOfTaskThreads()
+    )
+    execute(build)
+  }
 
-  def TestOnly(verbose : Boolean) = Build(
-    "Test " + name + " only", 
-    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask(this, verbose)),
-    this,
-    "testOnly (<verbose>)",
-    "Runs all tests in the module " + name + ". Tests from upstream modules are _not_ run."
+  def cleanOnly = executeSansDependencies(CleanTask(this))
+  def testOnly(verbose : Boolean) : BuildResult = executeWithDependencies(RunUnitTestsTask(this, verbose))
+  def testOnly :BuildResult = testOnly(false)
+  def testFailuredSuitesOnly(verbose : Boolean) : BuildResult = executeSansDependencies(
+    RunUnitTestsTask.failingTests(this, verbose)
   )
-
-  def TestFailedSuitesOnly(verbose : Boolean) = Build(
-    "Run failing test suites for " + name + " only", 
-    () ⇒ Dependency.Graph.transitiveClosure(this, RunUnitTestsTask.failingTests(this, verbose)),
-    this,
-    "testFailuresOnly",
-    "Runs all failed tests in the module " + name
-  )
-
-  lazy val UpdateOnly =  Build(
-    "Update libraries for " + name + " only",
-    () ⇒ Dependency.Graph(UpdateTask(this)),
-    this,
-    "updateOnly (<verbose>)",
-    "Update libraries for " + name + " only"
-  )
-
-  def cleanOnly = CleanOnly.execute
-  def testOnly = TestOnly(false).execute
-  def testOnly(verbose : Boolean) = TestOnly(verbose).execute
-  def testFailuredSuitesOnly = TestFailedSuitesOnly(false).execute
-  def testFailuredSuitesOnly(verbose : Boolean) = TestFailedSuitesOnly(verbose).execute
-  def updateOnly = UpdateOnly.execute
+  def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(false)
+  def updateOnly = executeSansDependencies(UpdateTask(this))
 
 
   /********************
@@ -227,25 +214,25 @@ object Module{
     val log = proj.log
 
     proj.immediateUpstreamModules.foreach{
-      p ⇒ 
+      p => 
         proj.immediateUpstreamModules.filterNot(_ == p).find(_.allUpstreamModules.contains(p)).foreach{
-          p1 ⇒ 
+          p1 => 
             log.warn("Module " + proj.name + " doesn't need to depend on " + p.name + " as it is already inherited from " + p1.name)
         }
     }
 
 
     proj.immediateUpstreamTestModules.foreach{
-      p ⇒ 
+      p => 
         proj.immediateUpstreamTestModules.filterNot(_ == p).find(_.allUpstreamTestModules.contains(p)).foreach{
-          p1 ⇒ 
+          p1 => 
             log.warn("Module " + proj.name + " doesn't need a test dependency on " + p.name + " as it is already inherited from " + p1.name)
         }
     }
 
     val jarNames = proj.managedJars.map(_.getName).toSet
     proj.immediateUpstreamModules.foreach{
-      upstreamModule ⇒
+      upstreamModule =>
         val upstreamJarNames = upstreamModule.allUpstreamModules.flatMap(_.managedJars).map(_.getName).toSet
         val redundantJarNames = upstreamJarNames intersect jarNames
         if (redundantJarNames.nonEmpty)

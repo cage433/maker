@@ -8,19 +8,23 @@ import xsbti.compile.CompileOrder
 import sbt.compiler.CompileFailed
 import sbt.inc.Analysis
 import sbt.inc.Locate
+import maker.utils.FileUtils._
+import java.io.BufferedWriter
+import maker.utils.Stopwatch
 
 case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
+  import CompileScalaTask._
 
   val log = modulePhase.log
 
   val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
 
-  def exec : Either[CompileFailed, Analysis] = {
+  def exec(sw : Stopwatch) : Either[CompileFailed, Analysis] = {
     val upstreamProjectPhases = modulePhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
-      case pp : ModuleCompilePhase ⇒
-        upstreamCaches += (pp.outputDir → pp.compilationCacheFile)
+      case pp : ModuleCompilePhase =>
+        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
     }
     
     val sourceFiles : Seq[File] = modulePhase.sourceFiles.toList
@@ -30,7 +34,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     val scalacOptions : Seq[String] = Nil // List("-deprecation", "-unchecked", "–Xcheck-null")
     val javacOptions : Seq[String] = Nil // List("-deprecation", "-Xlint")
     val analyses : Map[File, Analysis] = Map[File, Analysis]() ++ modulePhase.module.analyses
-    val definesClass: File ⇒ String ⇒ Boolean = Locate.definesClass _
+    val definesClass: File => String => Boolean = Locate.definesClass _
         
     val inputs = Inputs(
       cp.map(_.getCanonicalFile),
@@ -50,14 +54,27 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
     )
 
 
+    sw.startInterval(CompileTask.CALL_TO_COMPILER)
     val result = try {
       val analysis = Module.compiler.compile(inputs)(modulePhase.compilerLogger)
       modulePhase.module.analyses.put(outputDir, analysis)
+      sw.endInterval(CompileTask.CALL_TO_COMPILER)
       Right(analysis)
     } catch {
       case e : CompileFailed => 
+        sw.endInterval(CompileTask.CALL_TO_COMPILER)
+        CompileScalaTask.appendCompileOutputToTopLevel(modulePhase)
         Left(e)
     }
     result
+  }
+}
+
+object CompileScalaTask{
+  def appendCompileOutputToTopLevel(modulePhase : ModuleCompilePhase) = synchronized {
+    withFileAppender(modulePhase.module.props.VimErrorFile()){
+      writer : BufferedWriter =>
+        modulePhase.vimCompileOutputFile.readLines.foreach(writer.println)
+    }
   }
 }

@@ -11,15 +11,19 @@ import maker.utils.FileUtils._
 import maker.task.BuildResult
 import maker.task.tasks.RunUnitTestsTask
 import maker.task.compile._
+import maker.task.SingleModuleTask
+import maker.task.DefaultTaskResult
 
 class ProjectTaskDependenciesTests extends FunSuite{
-  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task{
+  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") 
+    extends SingleModuleTask(module)
+  {
     def name = "Write class count "
     def copy_(p : Module) = copy(module = p)
     def upstreamTasks = Nil
     def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
       exec
-      TaskResult.success(WriteClassCountToFile.this, sw)
+      DefaultTaskResult(WriteClassCountToFile.this, true, sw)
     }
     def exec = {
       writeToFile(file(module.rootAbsoluteFile, basename), module.compilePhase.classFiles.size + "")
@@ -28,20 +32,20 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("Can add custom task to run before standard task"){
     def moduleWithCustomTaskAfterClean(root : File, name : String) = new TestModule(root,name){
-      self ⇒  
+      self =>  
       val extraUpstreamTask = WriteClassCountToFile(this)
       override def extraUpstreamTasks(task : Task) = task match {
-        case _ : CleanTask ⇒ Set(WriteClassCountToFile(self, "BeforeClean"))
-        case _ ⇒ Set.empty
+        case _ : CleanTask => Set(WriteClassCountToFile(self, "BeforeClean"))
+        case _ => Set.empty
       }
       override def extraDownstreamTasks(task : Task) = task match {
-        case _ : CleanTask ⇒ Set(WriteClassCountToFile(self, "AfterClean"))
-        case _ ⇒ Set.empty
+        case _ : CleanTask => Set(WriteClassCountToFile(self, "AfterClean"))
+        case _ => Set.empty
       }
     }
 
     withTempDir{
-      dir ⇒ 
+      dir => 
         val module = moduleWithCustomTaskAfterClean(dir, "CustomTask")
         module.writeSrc(
           "foo/Fred.scala",
@@ -82,8 +86,8 @@ class ProjectTaskDependenciesTests extends FunSuite{
       val tearDownClassCountFile= file(rootAbsoluteFile, "teardown")
       def graphContainsClean(graph : Dependency.Graph) = {
         graph.nodes.exists {
-          case _ : CleanTask ⇒ true
-          case _ ⇒ false
+          case _ : CleanTask => true
+          case _ => false
         }
       }
       override def setUp(graph : Dependency.Graph){
@@ -104,7 +108,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
       def tearDownClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
     }
     withTempDir{
-      dir ⇒ 
+      dir => 
         val upstreamModule = moduleWithSetupAndTeardowns(file(dir, "upstream"))
         val downstreamModule = moduleWithSetupAndTeardowns(file(dir, "downstream"))
         upstreamModule.writeSrc(
@@ -126,7 +130,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
         )
         // Initially there should be no class count files
         List(upstreamModule, downstreamModule).foreach{
-          proj ⇒ 
+          proj => 
             assert(!proj.setUpClassCountFile.exists)
             assert(!proj.tearDownClassCountFile.exists)
         }
@@ -142,21 +146,21 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("TestCompile by default doesn't depend on upstream modules TestCompile"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val A = new TestModule(file(dir, "upstream"), "A")
         val B = new TestModule(file(dir, "downstream"), "B", List(A))
         val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
 
         assert(
-          !B.TestCompile.graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
+          !B.moduleBuild(TestCompileTask(_)).graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
-          C.TestCompile.graph.upstreams(TestCompileTask(C)).contains(TestCompileTask(A)),
+          C.moduleBuild(TestCompileTask(_)).graph.upstreams(TestCompileTask(C)).contains(TestCompileTask(A)),
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
-          B.Compile.graph.upstreams(SourceCompileTask(B)).contains(SourceCompileTask(A)),
+          B.moduleBuild(SourceCompileTask(_)).graph.upstreams(SourceCompileTask(B)).contains(SourceCompileTask(A)),
           "Upstream source compilation is a dependency"  
         )
 
@@ -165,7 +169,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("test dependencies are observed in classpaths"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val A = new TestModule(file(dir, "A"), "A")
         val B = new TestModule(file(dir, "B"), "B", List(A))
         val C = new TestModule(file(dir, "C"), "C", List(A), List(A))
@@ -188,7 +192,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
 
   test("Upstream module tests are associated tasks"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {
           new TestModule(file(dir, name), name, upstreams, testUpstreams)
         }
@@ -198,18 +202,19 @@ class ProjectTaskDependenciesTests extends FunSuite{
         val D = module("D", List(C))
 
         List(A, B, C).foreach{
-          proj ⇒ 
-            assert(proj.Test(false).graph.nodes.exists{
-              case RunUnitTestsTask(_, `proj`, _, false) ⇒ true
-              case _ ⇒ false
+          proj => 
+            assert(proj.moduleBuild(RunUnitTestsTask(_, verbose = false)).graph.nodes.exists{
+              case RunUnitTestsTask(_, `proj`, _, false) => true
+              case _ => false
             })
         }
         import Dependency.Edge
-        assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
-        assert(D.Test(false).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
-        assert(!D.TestCompile.graph.edges.contains(Edge(TestCompileTask(B), TestCompileTask(C))))
+        assert(!D.moduleBuild(TestCompileTask(_)).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
 
-        assert(D.TestCompile.graph.subGraphOf(D.test.graph))
+        assert(D.testBuild(verbose = false).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
+        assert(!D.moduleBuild(TestCompileTask(_)).graph.edges.contains(Edge(TestCompileTask(B), TestCompileTask(C))))
+
+        assert(D.moduleBuild(TestCompileTask(_)).graph.subGraphOf(D.test.graph))
         
     }
     

@@ -30,7 +30,7 @@ case class TestFailure(message : String, throwable : List[String]) {
       buffer.append("No stack trace")
     } else {
       val highlightedThrowable = throwable.map{
-        line ⇒ if (line.contains(classToHighlight)) line.inReverseRed else line.inRed
+        line => if (line.contains(classToHighlight)) line.inReverseRed else line.inRed
       }
       buffer.append("\nStack trace:\n")
       buffer.append(highlightedThrowable.mkString("\n\t", "\n\t", "\n"))
@@ -42,12 +42,16 @@ case class TestFailure(message : String, throwable : List[String]) {
 
 object MakerTestResults{
  
-  def decode(s : String) : String = {
-    if (s == "")
-      return s
-    val delimiter = s.head
-    s.tail.split(delimiter).toList.mkString("\n")
+  def splitFields(line : String) : List[String] = {
+    val fieldSep = 28.toChar.toString
+    line.split(fieldSep).toList
   }
+
+  def splitGroups(field : String) : String = {
+    val grpSep = 29.toChar.toString
+    field.split(grpSep).toList.mkString("\n")
+  }
+
   def apply(props : MakerProps, file : File) : MakerTestResults = {
 
     val startTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
@@ -55,25 +59,25 @@ object MakerTestResults{
     var failures : List[(TestIdentifier, TestFailure)] = Nil
     
     withFileLineReader(file){
-      line ⇒ 
-        val split = line.split("\t").toList.map(decode)
+      line =>
+        val fields = splitFields(line).map(splitGroups)
         try {
-        split.head match {
-          case "START" ⇒ 
-            val List(suite, suiteClass, test, time) = split.tail
-            startTimeInNanos += TestIdentifier(suite, suiteClass, test) → time.toLong
-          case "END" ⇒ 
-            val List(suite, suiteClass, test, time) = split.tail
-            endTimeInNanos += TestIdentifier(suite, suiteClass, test) → time.toLong
-          case "FAILURE" ⇒ 
-            val suite :: suiteClass :: test :: message :: throwable = split.tail
+        fields.head match {
+          case "START" => 
+            val List(suite, suiteClass, test, time) = fields.tail
+            startTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
+          case "END" => 
+            val List(suite, suiteClass, test, time) = fields.tail
+            endTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
+          case "FAILURE" => 
+            val suite :: suiteClass :: test :: message :: throwable = fields.tail
             failures ::= (TestIdentifier(suite, suiteClass, test), TestFailure(message, throwable))
         }
       } catch {
-        case e ⇒
+        case e =>
           error("problem with test-output file, file is: " + file.getAbsolutePath)
-          error("head was [" + split.head + "]")
-          error("split was [" + split.mkString("\n") + "]")
+          error("head was [" + fields.head + "]")
+          error("split was [" + fields.mkString("\n") + "]")
           error("line was [" + line + "]")
           throw e
       }
@@ -82,8 +86,8 @@ object MakerTestResults{
   }
 
   def outputFile : File = Properties.propOrNone("maker.test.output") match {
-    case Some(f) ⇒ new File(f)
-    case None ⇒ throw new Exception(" maker must have maker.test.output set")
+    case Some(f) => new File(f)
+    case None => throw new Exception(" maker must have maker.test.output set")
   }
 
   // Note we don't use log4j here as this runs in the user's classpath.
@@ -91,8 +95,8 @@ object MakerTestResults{
   val dateFormat = new SimpleDateFormat("HH:mm:ss")
   def indent : String = {
     Properties.propOrElse("maker.level", "0").toInt match {
-      case 0 ⇒ ""
-      case i ⇒ " " * 8 * i + "L" + i + ": "
+      case 0 => ""
+      case i => " " * 8 * i + "L" + i + ": "
     }
   }
   def info(msg : String){
@@ -137,13 +141,30 @@ case class MakerTestResults (
   def startTime :Long = endTimeInNanos.values.toList.sortWith(_<_).headOption.getOrElse(0L)
   def time = (endTime - startTime) / 1.0e9
   def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
-  def unfinishedTests = startTimeInNanos.keySet -- endTimeInNanos.keySet
 
-  def testsOrderedByTime : List[(TestIdentifier, Long)] = endTimeInNanos.map{
-    case (id, endTime) ⇒ 
-      (id, endTime - startTimeInNanos(id))
+  def testsOrderedByTime : List[(TestIdentifier, Long)] = {
+    endTimeInNanos.map{
+      case (id, endTime) => 
+        (id, endTime - startTimeInNanos(id))
+      }.toList.sortWith(_._2 > _._2)
+  }
+
+  def orderedSuiteTimes : List[(String, Long, Long, Int)] /*(suite, clock time, cpu time, num tests) */ = {
+    var testTimesBySuite = Map[String, List[(Long, Long)]]()
+
+    endTimeInNanos.foreach{
+      case (id, testEndTime) =>
+        val testStartTime = startTimeInNanos(id)
+        testTimesBySuite += (id.suite -> ((testStartTime, testEndTime) :: testTimesBySuite.getOrElse(id.suite, Nil)))
+    }
+    testTimesBySuite.map{
+      case (suite, testTimes) => 
+        val (clockTime, cpuTime) = Timings(testTimes).clockAndCPUTime
+        (suite, clockTime, cpuTime, testTimes.size)
     }.toList.sortWith(_._2 > _._2)
-    
+
+  }
+
   def toString_ = {
     val buffer = new StringBuffer
     if (succeeded){
@@ -154,14 +175,14 @@ case class MakerTestResults (
       ).asTable(2) + "\n")
       buffer.append("Slowest test(s)\n")
       buffer.append(testsOrderedByTime.take(3).flatMap{
-        case (TestIdentifier(_, suiteClass, test), timeInNanos) ⇒
+        case (TestIdentifier(_, suiteClass, test), timeInNanos) =>
           List(suiteClass, test, "%.2f (s)" % (timeInNanos / 1.0e9))
       }.asTable(3) + "\n")
     } else {
-      if (unfinishedTests.nonEmpty){
+      if (unfinished.nonEmpty){
         buffer.append("Unfinished\n")
         var lastSuite : String = ""
-        unfinishedTests.foreach{
+        unfinished.foreach{
           case TestIdentifier(suite, _, test) => 
             if (suite != lastSuite){
               buffer.append("\n  " + suite + "\n")
@@ -175,7 +196,7 @@ case class MakerTestResults (
         buffer.append("Failures\n")
         var lastSuite : String = ""
         failures.zipWithIndex.foreach{
-          case ((TestIdentifier(suite, _, test), TestFailure(msg, _)), i) ⇒ 
+          case ((TestIdentifier(suite, _, test), TestFailure(msg, _)), i) => 
             if (suite != lastSuite){
               buffer.append("\n  " + suite + "\n")
               lastSuite = suite

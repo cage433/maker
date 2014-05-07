@@ -40,6 +40,7 @@ import maker.utils.maven.IvyLock
 case class PublishTask(baseProject : BaseProject, resolverName : String, version : String) extends Task {
 
   def name = "Publish"
+  def module = baseProject
   def upstreamTasks = PublishLocalTask(baseProject, version = version) :: baseProject.immediateUpstreamModules.map(PublishTask(_, resolverName, version))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
@@ -85,12 +86,12 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
         resolverName,
         po)
 
-      TaskResult.success(this, sw)
+      DefaultTaskResult(this, true, sw)
     }
     catch {
       case e =>
         e.printStackTrace
-        TaskResult.failure(this, sw, e)
+        DefaultTaskResult(this, false, sw, exception = Some(e))
     }
   }
 }

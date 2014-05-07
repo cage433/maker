@@ -27,6 +27,8 @@ package maker.utils
 
 import scalaz.syntax.id._
 import scala.collection.immutable.TreeMap
+import java.io.StringWriter
+import java.io.PrintWriter
 
 
 object RichString {
@@ -67,10 +69,11 @@ object RichString {
   }
   case class RichString(s: String){
 		def % (args: Any*) = String.format(s, box(nullsafe(args)):_*)
-    def inGreen = "\033[1;32m" + s + "\033[0m"
-    def inRed = "\033[1;31m" + s + "\033[0m"
+    //def inGreen = "\033[1;32m" + s + "\033[0m"
+    def inGreen = "\033[32m" + s + "\033[0m"
+    def inRed = "\033[31m" + s + "\033[0m"
     def inReverseRed = "\033[7;31m" + s + "\033[0m"
-    def inBlue = "\033[1;34m" + s + "\033[0m"
+    def inBlue = "\033[34m" + s + "\033[0m"
     def justified : String = {
       val n = 2
       if (n == 0 || s.length % n == 0)
@@ -100,5 +103,26 @@ object RichString {
       else
         s
     }
+
+    def truncate(n : Int) : String = {
+      if (s.length > n)
+        s.take(n - 3) + "..."
+      else
+        s
+    }
 	}
+
+
+}
+
+object RichThrowable{
+  implicit def throwable2RichThrowable(th : Throwable) = RichThrowable(th)
+  case class RichThrowable(th : Throwable){
+    def stackTraceAsString = {        
+      val sw = new StringWriter()
+      val w = new PrintWriter(sw)
+      th.printStackTrace(w)
+      sw.toString
+    }
+  }
 }

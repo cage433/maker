@@ -28,7 +28,7 @@ package maker
 import maker.utils.FileUtils._
 import maker.utils.RichString._
 import java.io.File
-import scala.collection.mutable.{Map ⇒ MMap}
+import scala.collection.mutable.{Map => MMap}
 import ch.qos.logback.classic.Level
 import xml.{XML, NodeSeq}
 import scala.util.Properties
@@ -46,7 +46,7 @@ trait PropsTrait extends DelayedInit{
    DelayedInit ensures overrides are constructed before 
    their values are checked
   */
-  def delayedInit(x : ⇒ Unit){
+  def delayedInit(x : => Unit){
     x
     checkForInvalidProperties
   }
@@ -61,7 +61,7 @@ trait PropsTrait extends DelayedInit{
         try {
           buffer.append(m.invoke(this) + "\n")
         } catch {
-          case e ⇒ 
+          case e => 
             buffer.append(m.getName + " threw " + e + "\n")
         }
       )
@@ -83,19 +83,19 @@ trait PropsTrait extends DelayedInit{
       val valueAsString = try {
         apply().toString
       } catch {
-        case _ : PropertyNotSetException ⇒ "Property no set"
+        case _ : PropertyNotSetException => "Property no set"
       }
       name + "=" + valueAsString
     }
     def := (newValue : String){
-      overrides += (name → newValue)
+      overrides += (name -> newValue)
     }
     def := (newValue : T){
-      overrides += (name → newValue.toString)
+      overrides += (name -> newValue.toString)
     }
   }
 
-  abstract class Default(default : ⇒ Any) extends Property{
+  abstract class Default(default : => Any) extends Property{
     override def stringValue = overrides.getOrElse(name, default.toString)
   }
 
@@ -104,7 +104,7 @@ trait PropsTrait extends DelayedInit{
     override def stringValue = overrides.getOrElse(name, systemValue.getOrElse{throw new Exception("Required System property " + name + " not set")})
     def toCommandLine(value : String) = "-D%s=%s" % (key, value)
     def toCommandLine = "-D%s=%s" % (key, apply())
-    def toCommandLine(appender : T ⇒ String) = "-D%s=%s" % (key, appender(apply()))
+    def toCommandLine(appender : T => String) = "-D%s=%s" % (key, appender(apply()))
   }
 
   abstract class SystemPropertyWithDefault(key : String, default : Any) extends SystemProperty(key){
@@ -114,26 +114,26 @@ trait PropsTrait extends DelayedInit{
   }
 
   trait IsString{
-    self: Property ⇒ 
+    self: Property => 
     type T = String
     def apply() = self.stringValue
   }
 
   trait IsFile{
-    self: Property ⇒ 
+    self: Property => 
     type T = File
     def apply() = file(self.stringValue)
   }
 
 
   trait IsBoolean{
-    self: Property ⇒ 
+    self: Property => 
     type T = Boolean
     def apply() = java.lang.Boolean.parseBoolean(stringValue)
   }
 
   trait IsXml{
-    self: Property ⇒
+    self: Property =>
     type T = NodeSeq
     def apply() = XML.loadString(self.stringValue)
   }
@@ -149,12 +149,12 @@ trait PropsTrait extends DelayedInit{
     def apply() = overrides.get(name).map(file)
   }
   trait IsInt{
-    self: Property ⇒ 
+    self: Property => 
     type T = Int
     def apply() = self.stringValue.toInt
   }
   trait IsLogLevel{
-    self: Property ⇒ 
+    self: Property => 
     type T = Level
     def apply() = Level.toLevel(stringValue)
   }
@@ -163,7 +163,7 @@ trait PropsTrait extends DelayedInit{
   
   abstract class EnvProperty(vars : String*) extends Property{
     override def stringValue = vars.toList.flatMap{
-      v ⇒ Option(System.getenv(v))
+      v => Option(System.getenv(v))
     }.headOption.getOrElse{throw new PropertyNotSetException(vars.toList.mkString(","))}
   }
 }

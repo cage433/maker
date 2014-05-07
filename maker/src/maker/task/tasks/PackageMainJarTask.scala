@@ -8,8 +8,12 @@ import maker.utils.os.Command
 import maker.utils.FileUtils._
 import java.io.File
 import maker.task.compile._
+import maker.task.SingleModuleTask
+import maker.task.DefaultTaskResult
 
-case class PackageMainJarTask(module : Module) extends Task {
+case class PackageMainJarTask(module : Module) 
+  extends SingleModuleTask(module)
+{
   def name = "Package Jar"
   val props = module.props
   val log = props.log
@@ -25,7 +29,7 @@ case class PackageMainJarTask(module : Module) extends Task {
     synchronized{
       if (fileIsLaterThan(module.outputArtifact, mainDirsToPack)) {
         log.info("Packaging up to date for " + module.name + ", skipping...")
-        TaskResult.success(this, sw)
+        DefaultTaskResult(this, true, sw)
       } else {
         doPackage(results, sw)
       }
@@ -38,12 +42,12 @@ case class PackageMainJarTask(module : Module) extends Task {
     case class WrappedCommand(cmd : Command, ignoreFailure : Boolean){
       def exec : Int = {
         (cmd.exec(), ignoreFailure) match {
-          case  (0, _) ⇒ 0
-          case (errorNo, true) ⇒ {
+          case  (0, _) => 0
+          case (errorNo, true) => {
             log.warn("Ignoring  error in " + cmd + ". Artifact may be missing content")
             0
           }
-          case (errorNo, _) ⇒ errorNo
+          case (errorNo, _) => errorNo
         }
       }
     }
@@ -61,8 +65,8 @@ case class PackageMainJarTask(module : Module) extends Task {
     val cmds : List[WrappedCommand] = createJarCommand(mainDirsToPack.head) :: mainDirsToPack.tail.map(updateJarCommand)
 
     cmds.find(_.exec != 0) match {
-      case Some(failingCommand) ⇒ TaskResult.failure(this, sw, failingCommand.cmd.savedOutput)
-      case None ⇒ TaskResult.success(this, sw)
+      case Some(failingCommand) => DefaultTaskResult(this, false, sw, message = Some(failingCommand.cmd.savedOutput))
+      case None => DefaultTaskResult(this, true, sw)
     }
   }
 }

@@ -1,19 +1,28 @@
 package maker.task
 
 import java.io.File
-import maker.task.TaskResult._
-import maker.utils.Stopwatch
-import maker.utils.RichString._
-import maker.MakerProps
 import java.util.concurrent.atomic.AtomicReference
+import maker.MakerProps
+import maker.project.Module
+import maker.task.compile._
+import maker.task.TaskResult._
+import maker.utils.FileUtils._
 import maker.utils.RichIterable._
+import maker.utils.RichString._
+import maker.utils._
+import sbt.compiler.CompileFailed
+import xsbti.Position
+import xsbti.Problem
+import xsbti.Severity
+import maker.task.tasks.RunUnitTestsTaskResult
+import maker.task.tasks.UpdateTask
+import maker.task.tasks.RunUnitTestsTask
 
 
 case class BuildResult(
   name : String,
   results : List[TaskResult],
-  graph : Dependency.Graph,
-  props : MakerProps
+  graph : Dependency.Graph
 ) {
 
   self =>
@@ -21,39 +30,37 @@ case class BuildResult(
   def succeeded = results.forall(_.succeeded)
   def failed = !succeeded
 
-  def linearTime : Long = results.map(_.timeTaken(EXEC_COMPLETE)).toList.sum
-  def taskCompletedTimes = results.map(r => (r, Stopwatch.milliToHumanString(r.timeTaken(TaskResult.TASK_COMPLETE) / 1000 * 1000))).sortWith(_._2 > _._2)
-
-  //def result : TaskResult = if (succeeded)
-  //results.find(r => r.task == originalTask).get
-  //else
-  //results.find(!_.succeeded).get
-
   def maybeFirstFailure : Option[TaskResult] = results.reverse.find(_.failed)
-  def toString_ = {
-    assert(results.size > 0, "Expected some tasks to execute")
 
-    val buffer = new StringBuffer
-
-    def reportNumberOfScalaFilesCompiled{
-      println("Debug: BuildResult: TODO reportNumberOfScalaFilesCompiled")
-    }
-
-    if (succeeded){
-      buffer.append(name + " succeeded")
-      buffer.toString inBlue
+  def reportResult{
+    if (failed){
+      println("Build failed".inRed)
+      println
+      TaskResult.reportOnFirstFailingTask(results)
+      UpdateTask.reportOnUpdateFailures(results)
+      RunUnitTestsTask.reportOnFailingTests(results)
+      CompileTask.reportOnCompilationErrors(results)
     } else {
-      val firstFailure : TaskResult = maybeFirstFailure.get
-      buffer.append(name + " failed. First failing upstream task is\n\n")
-      buffer.append(firstFailure + "")
-      reportNumberOfScalaFilesCompiled
-      buffer.toString inRed
+
+      println(("Build succeeded").inGreen)
+      println
+
+      TaskResult.reportOnTaskTimings(results)
+      RunUnitTestsTask.reportOnSlowTests(results)
     }
   }
+
+  def testResults = {
+    val testResultsList : List[MakerTestResults] = results.collect{
+      case r : RunUnitTestsTaskResult => r.testResults
+    }.toList
+    val combinedTestResults = testResultsList.fold(MakerTestResults())(_++_)
+    combinedTestResults
+  }
+
+
   override def toString = {
-    // Nasty hack to get colourization to work in the repl
-    println(toString_)
-    ""
+    name + (if (succeeded) " succeeded " else " failed")
   }
 
   def withResult(taskResult : List[TaskResult]) =
@@ -81,8 +88,6 @@ case class BuildResult(
 
   def failures = results.filter(_.failed)
 
-  def compilationInfos = results.flatMap(_.compilationInfo)
-
 }
 
 case class LastResult(result : BuildResult){
@@ -101,15 +106,13 @@ case class LastResult(result : BuildResult){
     addLine("list       - show a list of each result")
     addLine("apply(i)   - shows result 'i'")
     addLine("result(i)  - returns result 'i'")
-    addLine("info(i)    - shows info for result 'i'")
-    addLine("info       - shows info on the first failing task")
     b.toString
   }
 
   def list {
     implicit val b = new StringBuffer
     result.results.zipWithIndex.foreach{
-      case (taskResult, i) ⇒ 
+      case (taskResult, i) => 
         addLine("  " + i + ": " + taskResult.status + " " + taskResult.task)
     }
     println(b.toString)
@@ -122,18 +125,6 @@ case class LastResult(result : BuildResult){
   }
 
   def result(i : Int) : TaskResult = result.results(i)
-  def info(i : Int){
-    result(i).info match {
-      case Some(info) ⇒ println(info.toShortString)
-      case None ⇒ println("No info available")
-    }
-  }
-  def info{
-    result.maybeFirstFailure.flatMap(_.info) match {
-      case Some(info) ⇒ println(info.toShortString)
-      case None ⇒ println("No info available")
-    }
-  }
 
 }
 
@@ -144,8 +135,8 @@ object BuildResult{
   def recordCompiledFiles(files : Set[File]){
     synchronized{
       files.foreach{
-        f ⇒ 
-          compiledFiles += (f → (compiledFiles.getOrElse(f, 0) + 1))
+        f => 
+          compiledFiles += (f -> (compiledFiles.getOrElse(f, 0) + 1))
       }
     }
   }
@@ -159,7 +150,7 @@ object BuildResult{
     b.addLine("Compiled File Count")
     val byCount = compiledFiles.keySet.groupBy(compiledFiles(_))
     val counts = byCount.keySet.toList.sortWith(_>_).foreach{
-      c ⇒ 
+      c => 
         b.addLine("  " + c)
         b.addLine(byCount(c).map(_.getName).toList.sortWith(_<_).asTable(3).indent("    "))
     }
@@ -174,14 +165,14 @@ object BuildResult{
     val keysAsSet = keys.toSet
     synchronized{
       val newTime : Long = timings.getOrElse(keysAsSet, 0L) + time
-      timings += (keysAsSet → newTime)
+      timings += (keysAsSet -> newTime)
     }
   }
   def printTimings{
    timingKeys.toList.map{
-     k ⇒ (k, totalTiming(k))
+     k => (k, totalTiming(k))
    }.sortWith(_._2 < _._2).foreach{
-      case (k, t) ⇒ 
+      case (k, t) => 
         val indent = (50 - k.size) max 2
         println(k + (" " * indent) + t)
     }

@@ -30,35 +30,79 @@ import maker.utils.FileUtils._
 import maker.task._
 import maker.utils.Stopwatch
 import maker.Resource
+import maker.utils.TableBuilder
+import maker.utils.RichString._
+import scala.collection.JavaConversions._
 
-case class UpdateTask(module : Module) extends Task {
+case class UpdateTask(module : Module) 
+  extends SingleModuleTask(module)
+{
   def name = "Update " + module
 
   def upstreamTasks : List[Task] = Nil
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    // delete old resource files
+  private def removeRedundantResourceFiles(){
     module.resources().map(_.resourceFile).groupBy(_.dirname).foreach{
       case (dir, expectedResourceFiles) => 
         val actualResourceFiles = dir.safeListFiles.map(_.asAbsoluteFile).toSet
         (actualResourceFiles -- expectedResourceFiles.map(_.asAbsoluteFile)).foreach(_.delete)
     }
-    val missingResources = module.resources().filterNot(_.resourceFile.exists)
-    // update any missing resources
-    val (_, failures) = missingResources.partition(Exec(_).apply())
-    failures match {
-      case Nil => 
-        TaskResult.success(this, sw)
-      case _ => 
-        TaskResult.failure(this, sw, "Failed to update resource(s) " + failures.mkString("\n\t", "\n\t", "\n\t"))
-    }
   }
 
-  private case class Exec(resource : Resource){
-    def apply() : Boolean = {
-      resource.update()
-      resource.resourceFile.exists || resource.classifier == Some("sources")
-    }
-  }
+  private def missingResources() = module.resources().filterNot(_.resourceFile.exists)
 
+  def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
+    removeRedundantResourceFiles()
+    val errors : List[(Int, String)] = missingResources().flatMap(_.update().flatten)
+
+    if (errors.isEmpty)
+      UpdateTaskResult(
+        this,
+        true,
+        sw, 
+        Nil
+      )
+    else
+      UpdateTaskResult(
+        this,
+        false,
+        sw, 
+        errors,
+        message = Some("Failed to update resource(s) ")
+      )
+  }
 }
+
+object UpdateTask{
+  def reportOnUpdateFailures(taskResults : List[TaskResult]){
+    val failures : List[(Int, String)] = taskResults.collect{
+      case u : UpdateTaskResult => u.failures
+    }.flatten
+    if (failures.nonEmpty){
+      val b = new StringBuffer
+      val tb = TableBuilder("Return Code   ", "Command")
+      failures.foreach{
+        case (returnCode, command) => 
+          tb.addRow(returnCode.toString, command)
+      }
+      b.addLine("\n" + tb.toString)
+      b.addLine("\n\n" + "Proxy settings may be the cause - env vars are ".inRed)
+      val etb = TableBuilder("Variable              ", "Value")
+      System.getenv().filterKeys(_.toLowerCase.contains("proxy")).foreach{
+        case (variable, value) => 
+          etb.addRow(variable, value.truncate(100))
+      }
+      b.addLine(etb.toString)
+      println(b)
+    }
+  }
+}
+
+case class UpdateTaskResult(
+  task : UpdateTask, 
+  succeeded : Boolean, 
+  stopwatch : Stopwatch,
+  failures : List[(Int, String)],
+  override val message : Option[String] = None, 
+  override val exception : Option[Throwable] = None
+) extends TaskResult

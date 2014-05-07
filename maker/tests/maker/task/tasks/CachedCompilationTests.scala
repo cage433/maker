@@ -18,9 +18,9 @@ class CachedCompilationTests extends FunSuite {
   }
   def checkCompile(module:Module, expectedState :CompilationState) {
     val r = module.compile
-    val info = r.results(0).info.get.asInstanceOf[CompilationInfo]
+
     assert(
-      info.state === expectedState,
+      r.results(0).asInstanceOf[CompileTaskResult].state === expectedState,
       "Error when compiling " + module
     )
   }
@@ -31,7 +31,7 @@ class CachedCompilationTests extends FunSuite {
     //assert the next compilation uses cache
 
       withTempDir{
-      dir ⇒ {
+      dir => {
         val overrideProps = Some(TestModule.makeTestProps(dir) ++ ("CompilationCache","file"))
         val projU = new TestModule(new File(dir, "u"), "CachedCompilationTests-u", overrideProps = overrideProps)
         val v1 = "package foo\nobject Sample { def hello():Int = 1 }"

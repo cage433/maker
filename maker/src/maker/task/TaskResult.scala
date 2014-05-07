@@ -4,135 +4,150 @@ import java.io.File
 import maker.utils.RichString._
 import maker.utils.Stopwatch
 import maker.utils.Utils
-import maker.task.compile.CompilationInfo
 import maker.task.tasks.RunUnitTestsTask
 import maker.utils.TaskInfo
+import maker.utils.RichThrowable._
+import maker.task.tasks.UpdateTask
+import scala.collection.JavaConversions._
+import maker.utils.TableBuilder
+import maker.task.compile.CompileTask
+import maker.utils.Timings
 
-
-trait TaskResult {
+trait TaskResult{
   def task : Task
-  def sw : Stopwatch
   def succeeded : Boolean
+  def stopwatch : Stopwatch
+  private def info : Option[Any] = None
+  def message : Option[String] 
+  def exception : Option[Throwable] 
   def failed = !succeeded
   def status = if (succeeded) "succeeded" else "failed"
-  def timeTaken(name : String) = (timeAt(name) - sw.startTime) / 1000000
-  def timeAt(name : String) = sw.snapshotTime(name).get
-  def info : Option[TaskInfo]
 
-  protected def copy_(
-    task : Task = task, 
-    sw : Stopwatch = sw,
-    info : Option[TaskInfo] = info
-  ) : TaskResult
+  def startTime = stopwatch.startTime
+  def endTime = stopwatch.snapshotTime(TaskResult.TASK_END).getOrElse(startTime)
+  def time = endTime - startTime
 
-  def withInfo(info : TaskInfo) = copy_(info = Some(info))
-  def withoutInfo = copy_(info = None)
-  def withTask(newTask : Task) : TaskResult = copy_(task = newTask)
-  def snapshot(name : String) = copy_(sw = sw.snapshot(name))
-  def compilationInfo : Option[CompilationInfo] = info match {
-    case Some(x) if x.isInstanceOf[CompilationInfo] ⇒ Some(x.asInstanceOf[CompilationInfo])
-    case _ ⇒ None
+  def isTestResult = task match {
+    case _ : RunUnitTestsTask => true
+    case _ => false
+  }
+  def isCompileResult = task match {
+    case _ : CompileTask => true
+    case _ => false
+  }
+  def intervalNames : List[String] = stopwatch.snapshots.collect{
+    case ((name : String, _), _) => name
+  }.toList
+
+  def intervalTimings : Map[String, Long] = {
+    intervalNames.map{
+      name => 
+        val time : Long = stopwatch.intervalTime(name).getOrElse(-1)
+        name -> time
+    }.toMap
+  }
+  def intervalStartAndEndTime : Map[String, (Long, Long)] = {
+    intervalNames.flatMap{
+      name => 
+        stopwatch.intervalStartAndEndTime(name).map{
+          case (t1, t2) => (name -> (t1, t2))
+        }
+    }.toMap
   }
 
-  override def toString = task + " " + status
+  override def toString = {
+    if (succeeded)
+      task + " " + status
+    else {
+      val b = new StringBuffer
+      b.append(task.toString + message.map(". " + _).getOrElse(""))
+
+      (task, exception) match {
+        case (_, Some(e)) =>
+          b.addLine("Exception message")
+          b.addLine(Option(e.getMessage).getOrElse("").indent(2))
+          b.addLine("Stack trace")
+          b.addLine(e.stackTraceAsString.indent(2))
+        case _ =>
+      }
+      b.toString
+    }
+  }
+
 
   override def hashCode = task.hashCode
   override def equals(rhs : Any) = {
     rhs match {
-      case p : TaskResult if task == p.task && (succeeded == p.succeeded) ⇒ {
+      case p : TaskResult if task == p.task && (succeeded == p.succeeded) => {
         //I believe this assertion should always hold. It's really here so that
         //this overriden equals method never returns true on differing TaskResults
         assert(this eq p, "Shouldn't have two task results pointing to the same task")
         true
       }
-      case _ ⇒ false
+      case _ => false
     }
   }
 }
 
-case class TaskSucceeded(
-  task : Task,
-  sw : Stopwatch,
-  info : Option[TaskInfo] = None	  
-) extends TaskResult {
-
-  val succeeded = true
-
-  protected def copy_(
-    task : Task = task, 
-    sw : Stopwatch = sw,
-    info : Option[TaskInfo] = info
-  ) : TaskResult = copy(
-    task = task, 
-    sw = sw,
-    info = info
-  )
-
-}
-
-case class TaskFailed(
-  task : Task,
-  sw : Stopwatch,
-  reasonForFailure : Option[String] = None,
-  exception : Option[Throwable] = None,
-  info : Option[TaskInfo] = None
-) extends TaskResult {
-
-  protected def copy_(
-    task : Task = task, 
-    sw : Stopwatch = sw,
-    info : Option[TaskInfo] = info
-  ) : TaskResult = copy(
-    task = task, 
-    sw = sw,
-    info = info
-  )
-
-  val succeeded = false
-
-  override def toString = {
-    val b = new StringBuffer
-    b.append(super.toString + reasonForFailure.map(". " + _).getOrElse(""))
-    
-    (task, exception) match {
-      case (_, Some(e)) ⇒ 
-        b.addLine("Exception message")
-        b.addLine(Option(e.getMessage).getOrElse("").indent(2))
-        b.addLine("Stack trace")
-        b.addLine(Utils.stackTraceAsString(e).indent(2))
-      case (_ : RunUnitTestsTask, _) ⇒ info.foreach(b.append)
-      case _ ⇒ 
-    }
-    b.toString
-  }
-
-  def filesWithChangedSigs : Set[File] = Set[File]()
-}
+case class DefaultTaskResult(
+  task : Task, 
+  succeeded : Boolean, 
+  stopwatch : Stopwatch,
+  val info : Option[Any] = None, 
+  override val message : Option[String] = None, 
+  override val exception : Option[Throwable] = None
+) extends TaskResult
 
 object TaskResult{
-  def success(task : Task, sw : Stopwatch) : TaskResult = TaskSucceeded(
-    task,
-    sw
-  ).snapshot(EXEC_COMPLETE)
+  def TASK_END = "TASK_END"
 
-  def failure(task : Task, sw : Stopwatch, reason : String) : TaskResult = TaskFailed(
-    task,
-    sw,
-    reasonForFailure = Some(reason)
-  ).snapshot(EXEC_COMPLETE)
+  private def NANOS_PER_SECOND = 1000000000
+  def fmtNanos(timeInNanos : Long) = "%.1f".format(timeInNanos * 1.0 / NANOS_PER_SECOND)
+  def COLUMN_WIDTHS = List(30, 25, 15, 15)
 
-  def failure(task : Task, sw : Stopwatch, exception : Throwable) : TaskResult = TaskFailed(
-    task,
-    sw,
-    reasonForFailure = Some(exception.getMessage),
-    exception = Some(exception)
-  ).snapshot(EXEC_COMPLETE)
+  def clockAndCPUTime(tr : List[TaskResult]) : (Long, Long) = {
+    val taskTimes = tr.map{case tr => (tr.startTime, tr.endTime)}
+    Timings(taskTimes).clockAndCPUTime
+  }
 
-  val EXEC_START = "Exec start"
-  val EXEC_COMPLETE = "Exec complete"
-  val TASK_COMPLETE = "Task complete"
-  val TASK_LAUNCHED = "Task launched"
-  val WORKER_RECEIVED = "Worked received"
-  val WORKER_COMPLETE = "Worked complete"
-}
+  def reportOnTaskTimings(taskResults : List[TaskResult]){
+    val tb = TableBuilder(
+      "Task".padRight(COLUMN_WIDTHS(0)), 
+      "Interval".padRight(COLUMN_WIDTHS(1)), 
+      "CPU Time".padRight(COLUMN_WIDTHS(2)),
+      "Clock Time") 
+
+
+
+    val resultsByType = taskResults.groupBy{
+      case taskResult => taskResult.task.getClass.getSimpleName
+    }
+    resultsByType.foreach{
+      case (typeName, resultsForType) =>
+        val (clockTime, cpuTime) = clockAndCPUTime(resultsForType)
+        tb.addRow(typeName, "", fmtNanos(cpuTime), fmtNanos(clockTime))
+
+        val intervalMaps : List[Map[String, (Long, Long)]] = resultsForType.map(_.intervalStartAndEndTime)
+        val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
+
+        intervalNames.foreach{
+          name => 
+            val intervalStartAndEndTimes : List[(Long, Long)] = intervalMaps.map(_.get(name)).collect{
+              case Some((t1, t2)) => (t1, t2)
+            }
+            val (intervalClockTime, intervalCPUTime) = Timings(intervalStartAndEndTimes).clockAndCPUTime
+            tb.addRow(typeName, name, fmtNanos(intervalCPUTime), fmtNanos(intervalClockTime))
+        }
+    }
+    val (totalClockTime, totalCpuTime) = clockAndCPUTime(taskResults)
+    tb.addRow("All Tasks", "", fmtNanos(totalCpuTime), fmtNanos(totalClockTime))
+    println(tb)
+  }
+
+  def reportOnFirstFailingTask(taskResults : List[TaskResult]){
+    val failing = taskResults.find(_.failed).get
+    println(("First failure was " + failing.task + "\n").inRed)
+  }
+
+} 
 

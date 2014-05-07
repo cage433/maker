@@ -13,14 +13,15 @@ case class Project(
     "ShowCompilerOutput", "false"
   ),
   topLevelExcludedFolders:List[String] = Nil
-) extends BaseProject  with TmuxIntegration{
+) extends TmuxIntegration{
   
+  val upstreamModulesForBuild = immediateUpstreamModules
   override def toString = name
 
   def constructorCodeAsString : String = {
     val b = new StringBuffer
     allUpstreamModules.foreach{
-      m ⇒ 
+      m => 
         b.addLine(m.constructorCodeAsString)
     }
     b.addLine("""val %s = Project("%s", file("%s"), %s)""" % (name, name, root.getAbsolutePath.toString, allUpstreamModules.mkString("List(", ", ", ")")))

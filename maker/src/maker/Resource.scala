@@ -94,8 +94,9 @@ case class Resource(
    * simply don't exist, and trying to download them every time we get an update can become
    * expensive if there are Nexus problems
    */
-  def update(){
+  def update() = {
 
+    var errors : Option[List[(Int, String)]] = None
     resourceFile.dirname.makeDirs
 
     val cachedFile = file(props.ResourceCacheDirectory(), resourceFile.basename)
@@ -103,8 +104,9 @@ case class Resource(
     if (resourceFile.doesNotExist && cachedFile.exists)
       ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile.dirname)
 
-    if (resourceFile.doesNotExist && !isSourceJarResource) 
-      download()
+    if (resourceFile.doesNotExist && !isSourceJarResource) {
+      errors = download()
+    }
 
     if (resourceFile.exists && cachedFile.doesNotExist){
       withTempDir{
@@ -114,32 +116,53 @@ case class Resource(
           ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
       }
     }
+    errors
   }
 
-  private def download() {
-    (preferredRepository.toList ::: props.resourceResolvers().values.toList).find{
-      repository =>
+  def urls() : List[String] = {
+    (preferredRepository.toList ::: props.resourceResolvers().values.toList).map{
+      repository => 
+        repository + "/" + relativeURL
+    }
+  }
+
+  private def downloadOrErrors() : Option[List[(Int, String)]] = {
+    var errors = List[(Int, String)]()  // (curl return code, cmd)
+    urls.find{
+      url =>
         val cmd = Command(
           props, 
           "curl",
           "-s",
           "-H", "Pragma: no-cache",
-          repository + "/" + relativeURL,
+          url,
           "-f",
           "-o",
           resourceFile.getAbsolutePath
         )
-        log.info("Downloading " + basename)
-        log.info("" + cmd)
-        cmd.exec 
+        val returnCode = cmd.exec 
+        if (!resourceFile.exists)
+          errors ::= (returnCode, cmd.asString)
         resourceFile.exists
     }
-    downloadAssociatedSourceJar()
+    if (resourceFile.exists){
+      None
+    } else {
+      Some(errors.reverse)
+    }
   }
 
-  private def downloadAssociatedSourceJar(){
-    if (isBinaryJarResource)
-      copy(classifier = Some("sources")).download()
+  private def download() = {
+    log.info("Downloading " + basename)
+    val errors = downloadOrErrors()
+    errors match {
+      case None if isBinaryJarResource => 
+        // Only try to download source the first time the binary is. Ignore
+        // any errors.
+        copy(classifier = Some("sources")).downloadOrErrors()
+      case _ =>
+    }
+    errors
   }
 }
 

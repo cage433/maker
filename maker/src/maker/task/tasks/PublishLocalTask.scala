@@ -39,6 +39,7 @@ import maker.PomUtils
 case class PublishLocalTask(baseProject : BaseProject, version : String) extends Task {
   def name = "Publish Local"
 
+  def module = baseProject
   def upstreamTasks = baseProject match {
     case _ : Project => baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
     case m : Module => PackageMainJarTask(m) :: baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
@@ -59,6 +60,6 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
       case m : Module =>
         copyFileToDirectory(m.outputArtifact, m.publishLocalJarDir)
     }
-    TaskResult.success(this, sw)
+    DefaultTaskResult(this, true, sw)
   }
 }

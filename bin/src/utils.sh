@@ -97,7 +97,7 @@ update_resource(){
   fi
 
   if [ ! -e $resource ]; then
-    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO Failed to update $line - url was $url"
+    add_error "$(basename ${BASH_SOURCE[0]}) $LINENO Failed to update $line"
     return 1
   fi
 }

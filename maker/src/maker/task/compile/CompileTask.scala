@@ -4,15 +4,20 @@ import maker.project._
 import maker.task.Task
 import maker.task.TaskResult
 import maker.utils.FileUtils._
+import maker.utils.RichString._
 import maker.utils._
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
 import sbt.compiler.CompileFailed
 import maker.task.tasks.UpdateTask
+import maker.task.SingleModuleTask
+import xsbti.Problem
+import xsbti.Severity
 
 abstract class CompileTask extends Task{
   
   def module : Module
+  def baseProject = module
   def phase : CompilePhase
   val props = module.props
 
@@ -32,22 +37,32 @@ abstract class CompileTask extends Task{
   }
   def inputsHash = HashCache.hash(modulePhase.compilationDependencies())
 
+  private def successfulResult(sw : Stopwatch, state : CompilationState) = CompileTaskResult(
+    this, succeeded = true, 
+    stopwatch = sw, 
+    state = state
+  )
   private def cachedCompilation(sw : Stopwatch) : Option[TaskResult] = {
     classesCache collect {
-      case cache if cache.contains(inputsHash) ⇒ {
+      case cache if cache.contains(inputsHash) => {
         val files = CompilationCache.lookup(cache, inputsHash).get
         files.copyTo(modulePhase.module.rootAbsoluteFile, modulePhase.outputDir, modulePhase.phaseDirectory)
-        success(this, sw).withInfo(CompilationInfo(this, CachedCompilation))
+        successfulResult(sw, CachedCompilation)
       }
     }
   }
 
   def compilationRequired(upstreamTaskResults : Iterable[TaskResult]) = {
     def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation.nonEmpty
-    def upstreamCompilation = upstreamTaskResults.flatMap(_.compilationInfo).exists(_.state != CompilationNotRequired)
+
+    def upstreamCompilation = upstreamTaskResults.exists{
+      case r : CompileTaskResult if r.state != CompilationNotRequired => true
+      case _ => false
+    }
+
     def modificationSinceLastCompilation = (modulePhase.lastSourceModifcationTime, modulePhase.lastCompilationTime) match {
-      case (Some(t1), Some(t2)) ⇒ t1 > t2
-      case _ ⇒ true
+      case (Some(t1), Some(t2)) => t1 > t2
+      case _ => true
     }
     hasDeletedSourceFiles ||  upstreamCompilation || modificationSinceLastCompilation
   }
@@ -58,7 +73,7 @@ abstract class CompileTask extends Task{
     if (modulePhase.sourceFiles.isEmpty){
       cleanRegularFilesLeavingDirectories(modulePhase.outputDir)
       modulePhase.compilationCacheFile.delete
-      return success(this, sw).withInfo(CompilationInfo(this, CompilationNotRequired))
+      return successfulResult(sw, CompilationNotRequired)
     }
     copyResourcesToTargetDirIfNecessary()
     val result = cachedCompilation(sw).getOrElse{
@@ -67,29 +82,36 @@ abstract class CompileTask extends Task{
           case "zinc" => 
             val exitCode = ZincCompile(modulePhase)
             if (exitCode == 0)
-              success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
+              successfulResult(sw, CompilationSucceeded)
             else 
-              failure(this, sw, "compilation failure")
+              CompileTaskResult(
+                this, succeeded = false,
+                stopwatch = sw, state = CompilationFailed("compilation failure")
+              )
           case "scalac" => 
-            CompileScalaTask(modulePhase).exec match {
-              case Left(e) ⇒ {
-                failure(this, sw, "compilation failure").withInfo(CompilationFailedInfo(e))
+            CompileScalaTask(modulePhase).exec(sw) match {
+              case Left(e) => {
+                CompileTaskResult(
+                  this, succeeded = false,
+                  stopwatch = sw, state = CompilationFailed("compilation failure"),
+                  maybeCompileFailed = Some(e)
+                )
               }
-              case Right(a) ⇒ {
-                success(this, sw).withInfo(CompilationInfo(this, CompilationSucceeded))
+              case Right(a) => {
+                successfulResult(sw, CompilationSucceeded)
               }
             }
           case "dummy-test-compiler" =>
             DummyCompileTask(modulePhase).exec
-            success(this, sw)
+            successfulResult(sw, CompilationSucceeded)
 
         }
       } else {
-        success(this, sw).withInfo(CompilationInfo(this, CompilationNotRequired))
+        successfulResult(sw, CompilationNotRequired)
       }
     }
     classesCache.foreach{
-      cache ⇒  CompilationCache.save(cache, module.rootAbsoluteFile, inputsHash, modulePhase.outputDir, modulePhase.phaseDirectory)
+      cache =>  CompilationCache.save(cache, module.rootAbsoluteFile, inputsHash, modulePhase.outputDir, modulePhase.phaseDirectory)
     }
     result
   }
@@ -135,10 +157,66 @@ case class TestCompileTask(module : Module) extends CompileTask{
 }
 
 object CompileTask{
+  def CALL_TO_COMPILER = "CALL TO SCALA COMPILER"
   def apply(module : Module, phase : CompilePhase) : CompileTask = {
     phase match{
-      case SourceCompilePhase ⇒ SourceCompileTask(module)
-      case TestCompilePhase ⇒ TestCompileTask(module)
+      case SourceCompilePhase => SourceCompileTask(module)
+      case TestCompilePhase => TestCompileTask(module)
+    }
+  }
+
+  def reportOnCompilationErrors(taskResults : List[TaskResult]){
+    def position(prob : Problem) = {
+      val p = prob.position
+      var text = ""
+      if (! p.sourceFile.isDefined)
+        ("Unknown", "Unknown")
+      else if (! p.line.isDefined)
+        (p.sourceFile.get.basename, "Unknown")
+      else
+        (p.sourceFile.get.basename, p.line.get.toString)
+    }
+
+    val failures : List[(Module, String, String, String)] = taskResults.collect{
+      case CompileTaskResult(
+        task : CompileTask,
+        false,
+        _,
+        _,
+        Some(compFailed),
+        _,
+        _
+      ) =>
+        val severeProblems = compFailed.problems.filter(_.severity == Severity.Error)
+        severeProblems.map{
+          prob =>
+            val (sourceFile, lineNo) = position(prob)
+            (task.baseProject, prob.message, sourceFile, lineNo)
+        }
+    }.toList.flatten
+
+    if (failures.nonEmpty){
+      val tb = TableBuilder(
+        "Module       ",
+        "Message                              ", 
+        "Line  ",
+        "File                    ")
+      failures.foreach{
+        case (module, message, sourceFile, lineNo) => 
+            tb.addRow(module, message, lineNo, sourceFile)
+      }
+      println("Compiler errors".inBlue)
+      println(tb)
     }
   }
 }
+
+case class CompileTaskResult(
+  task : CompileTask, 
+  succeeded : Boolean, 
+  stopwatch : Stopwatch,
+  state : CompilationState,
+  maybeCompileFailed : Option[CompileFailed] = None,
+  message : Option[String] = None, 
+  exception : Option[Throwable] = None
+) extends TaskResult

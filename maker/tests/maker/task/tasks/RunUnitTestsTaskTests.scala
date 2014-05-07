@@ -7,10 +7,10 @@ import org.scalatest.ParallelTestExecution
 import maker.project.Module
 import maker.MakerProps
 
-class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
+class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
   test("Test reports picks up failure"){
     withTempDir{
-      dir ⇒ 
+      dir => 
         val proj = new TestModule(dir, "RunUnitTestsTaskTests")
         proj.writeTest(
           "foo/Test.scala",
@@ -27,6 +27,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
           """
         )
         proj.test
+
         assert(proj.testOutputFile.exists, "Test output should exist")
     }
   }
@@ -34,7 +35,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
 
   test("Unit test runs"){
     withTempDir{
-      root ⇒ 
+      root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
 
         proj.writeSrc(
@@ -67,7 +68,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
 
   test("Failing test fails again"){
     withTempDir{
-      root ⇒ 
+      root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
         proj.writeSrc(
           "foo/Foo.scala", 
@@ -101,7 +102,7 @@ class RunUnitTestsTaskTests extends FunSuite with ParallelTestExecution{
 
   test("Can re-run failing tests"){
     withTempDir{
-      root ⇒ 
+      root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
 
         proj.writeTest(

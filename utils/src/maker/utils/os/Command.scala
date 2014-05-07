@@ -43,7 +43,7 @@ case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWri
   def savedOutput = buffer.fold(_.toString, "")
   def processLine(line : String){
     writer.foreach{
-      w ⇒
+      w =>
         w.println(line)
         w.flush()
     }
@@ -65,7 +65,7 @@ case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWri
       def nextLine : String = try {
         br.readLine()
       } catch {
-        case _ : IOException ⇒ null
+        case _ : IOException => null
       }
       line = nextLine
       while (line != null) {

@@ -37,16 +37,9 @@ import maker.project.BaseProject
 
 case class Build(
   name : String,
-  graph_ : () ⇒ Dependency.Graph,
-  module : BaseProject,
-  invokingMethod : String,
-  helpText : String
+  graph : Dependency.Graph,
+  numberOfWorkers : Int
 ) {
-
-  def help() {
-    println(name + " - (Executed with method " + invokingMethod + ")\n")
-    println(helpText)
-  }
 
   override def toString = "Build " + name
 
@@ -57,17 +50,13 @@ case class Build(
     buf.toString
   }
   
-
-  val props = module.props
-  val log = props.log
-
-  lazy val graph = graph_()
+  val log = MakerLog()
 
   def execute = new Execute().execute
   class Execute{
 
     val executor = {
-      val nWorkers = props.NumberOfTaskThreads()
+      val nWorkers = numberOfWorkers
       val taskNumber = Build.taskCount.getAndIncrement
       val threadCount = new AtomicInteger(0)
       new ThreadPoolExecutor(
@@ -90,29 +79,17 @@ case class Build(
 
     def execute : BuildResult = {
 
-      val taskResults = log.infoWithTime("" + this){
-        module.setUp(graph)
-        execTasksInGraph()
-      }
+      val taskResults = execTasksInGraph()
       val buildResult = BuildResult(
         name,
         taskResults.toList,
-        graph,
-        props
+        graph
       )
-      module.tearDown(graph, buildResult)
-      if (buildResult.failed && props.ExecMode()){
-        log.error(this + " failed ")
-        System.exit(-1)
-      }
-      BuildResult.lastResult.set(Some(buildResult))
       buildResult
-
     }
 
     private def passToExecutor(pt : Task, resultsSoFar : Set[TaskResult]){
       val sw = new Stopwatch
-      sw.snapshot(TaskResult.TASK_LAUNCHED)
       monitor.addToQueue(pt)
       executor.execute(
         new Runnable() {
@@ -126,18 +103,19 @@ case class Build(
                 print(".")
                 monitor.addLaunch(pt)
                 log.debug("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
-                pt.exec(resultsSoFar.toList, sw)
+                val res = pt.exec(resultsSoFar.toList, sw)
+                res
               } catch {
                 case e =>
                   log.warn("exception thrown:" + e + " when running task " + pt)
                   e.printStackTrace
-                  TaskResult.failure(pt, sw, e)
+                  DefaultTaskResult(pt, false, sw, exception = Some(e))
               }
-              sw.snapshot(TaskResult.TASK_COMPLETE)
+              sw.takeSnapshot(TaskResult.TASK_END)
               monitor.addResult(pt, result)
               log.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
             } catch {
-              case e ⇒ 
+              case e => 
                 log.warn("Exception " + e + " thrown during " + pt)
                 e.printStackTrace
                 System.exit(-1)
@@ -159,7 +137,7 @@ case class Build(
         val (next, results) = monitor.nextAndResultsSoFar
 
         next.foreach {
-          pt ⇒ 
+          pt => 
             passToExecutor(pt, results)
         }
 
@@ -188,6 +166,16 @@ case class Build(
 object Build{
   val taskCount = new AtomicInteger(0)
 
+  def apply(project : BaseProject, tasks : Task*) : Build = {
+    Build(
+      tasks.toList.headOption.map(_.name).getOrElse("No Tasks"),
+      Dependency.Graph.transitiveClosure(project, tasks.toList),
+      numberOfWorkers = project.props.NumberOfTaskThreads()
+    )
+  }
+
+  def apply(task : Task) : Build = apply(task.baseProject, task)
+
   class TaskMonitor(log : MakerLog, graph : Dependency.Graph, executor : ThreadPoolExecutor){
     private val lock = new Object
     var results = List[TaskResult]()
@@ -199,7 +187,7 @@ object Build{
     private var taskLaunchCounter = 0
 
     def isComplete = lock.synchronized{
-      completed.size == graph.size || results.exists{r ⇒ r.failed && r.task.failureHaltsTaskManager}
+      completed.size == graph.size || results.exists{r => r.failed && r.task.failureHaltsTaskManager}
     }
 
     def isRunning = lock.synchronized{
@@ -243,7 +231,7 @@ object Build{
 
     def nextAndResultsSoFar = lock.synchronized{
       val next = remaining.leaves.filter{
-        pt ⇒ 
+        pt => 
           graph.upstreams(pt).subsetOf(completed)
       }
       (next, Set[TaskResult]() ++ results)

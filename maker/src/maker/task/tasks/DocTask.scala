@@ -43,6 +43,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
   
   def name = "Doc " + baseProject.name
   def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask).toList
+  def module = baseProject
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
     val log = props.log
@@ -80,13 +81,13 @@ case class DocTask(baseProject : BaseProject) extends Task {
         optsFile)
 
       cmd.exec() match {
-        case 0 => TaskResult.success(this, sw)
-        case _ => TaskResult.failure(this, sw, cmd.savedOutput)
+        case 0 => DefaultTaskResult(this, true, sw)
+        case _ => DefaultTaskResult(this, false, sw, message = Some(cmd.savedOutput))
       }
     }
     else {
       log.debug("not generating doc for module " + baseProject.toString)
-      TaskResult.success(this, sw)
+      DefaultTaskResult(this, true, sw)
     }
   }
 }
