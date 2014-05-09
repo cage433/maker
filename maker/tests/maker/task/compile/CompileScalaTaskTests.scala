@@ -473,7 +473,7 @@ class SomeClass extends SomeTrait{
   }
 
   test("Adding parameter to constructor causes recompilation of downstream file"){
-    withTestDir{
+    withTempDir{
       dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
         val A = new TestModule(file(dir, "A"), "A", analyses = analyses)

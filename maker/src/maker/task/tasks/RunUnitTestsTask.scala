@@ -73,7 +73,6 @@ case class RunUnitTestsTask(
       return DefaultTaskResult(this, true, sw)
     }
 
-    val consoleReporterArg = if (props.RunningInMakerTest()) Nil else List("-o")
 
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
     val systemProperties = (props.JavaSystemProperties.asMap + ("scala.usejavacp" -> "true")).map{
@@ -88,12 +87,18 @@ case class RunUnitTestsTask(
       "-Dsbt.log.format=false",
       props.RunningInMakerTest.toCommandLine("true")
     ) ::: systemProperties
-    val testParameters =
-      if(!verbose)
-        List("-P", "-C", "maker.utils.MakerTestReporter")
-      else
-        List("-F", "-P", "-C", "maker.utils.MakerTestReporter")
-    val args = testParameters ++ suiteParameters ++ consoleReporterArg
+
+    val testParameters = {
+      val consoleReporterArgs = if (props.RunningInMakerTest()) 
+        Nil
+      else if (verbose)
+        List("-oF")
+      else 
+        List("-o")
+      consoleReporterArgs ::: List("-P", "-C", "maker.utils.MakerTestReporter") 
+    }
+
+    val args = testParameters ++ suiteParameters 
     val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 

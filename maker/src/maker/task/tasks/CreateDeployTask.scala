@@ -124,6 +124,7 @@ case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) exte
           ,"logback-unit-tests.xml"
           ,"logback-perf-tests.xml"
           ,"logback-stork.xml"
+          ,"javaVersion"
         ) foreach { n =>
           copyFile(file(p.rootAbsoluteFile, n),file(baseOutputDir, n))
         }
