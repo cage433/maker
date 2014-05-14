@@ -45,6 +45,7 @@ case class BuildResult(
       println(("Build succeeded").inGreen)
       println
 
+      FailingTests.clear()
       TaskResult.reportOnTaskTimings(results)
       RunUnitTestsTask.reportOnSlowTests(results)
     }

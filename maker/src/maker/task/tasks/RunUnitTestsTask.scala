@@ -42,6 +42,7 @@ import maker.task.DefaultTaskResult
 import maker.utils.TestIdentifier
 import maker.utils.TestFailure
 import maker.utils.TableBuilder
+import maker.task.FailingTests
 
 
 case class RunUnitTestsTask(
@@ -182,24 +183,12 @@ object RunUnitTestsTask{
       case r : RunUnitTestsTaskResult => r.testResults
     }.fold(MakerTestResults())(_++_)
   }
+
   def reportOnFailingTests(taskResults : List[TaskResult]){
     val mergedTestResults = testResults(taskResults)
     val failures : List[(TestIdentifier, TestFailure)] = mergedTestResults.failures
-    if (failures.nonEmpty){
-      val tb = TableBuilder(
-        "No  ",
-        "Suite                   ",
-        "Test                              ",
-        "Message"
-      )
-      failures.zipWithIndex.foreach{
-        case ((TestIdentifier(suite, _, test), TestFailure(message, _)), i) => 
-          tb.addRow(i, suite, test, message)
-      }
-      println("Failing Tests".inBlue)
-      println(tb)
-      println("\nEnter BuildResult.lastResults for more information on failing tests\n\n".inRed)
-    }
+    FailingTests.setFailures(failures)
+    FailingTests.report
   }
 
   def reportOnSlowTests(taskResults : List[TaskResult]){

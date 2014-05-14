@@ -8,12 +8,19 @@ import maker.utils.TableBuilder
 
 
 object FailingTests{
-  private val last : AtomicReference[Option[List[(TestIdentifier, TestFailure)]]] = new AtomicReference(None)
+  private var mostRecentFailures : List[(TestIdentifier, TestFailure)] = Nil
 
-  private def failures : List[(TestIdentifier, TestFailure)] = last.get.getOrElse(Nil)
+  def setFailures(failures : List[(TestIdentifier, TestFailure)]) = synchronized{
+    mostRecentFailures = failures
+  }
+
+  def clear(){
+    setFailures(Nil)
+  }
+
 
   def report {
-    if (failures.isEmpty){
+    if (mostRecentFailures.isEmpty){
       println("There were no failing tests".inBlue)
       return
     }
@@ -23,17 +30,23 @@ object FailingTests{
       "Test                              ",
       "Message"
     )
-    failures.zipWithIndex.foreach{
+    mostRecentFailures.zipWithIndex.foreach{
       case ((TestIdentifier(suite, _, test), TestFailure(message, _)), i) => 
         tb.addRow(i, suite, test, message)
     }
     println("Failing Tests".inBlue)
     println(tb)
-    println("\nEnter maker.task.FailingTests.report(i) for more information on the i'th failing test\n\n".inRed)
+    println("\nEnter maker.task.FailingTests.failure(i) for more information on the i'th failing test\n\n".inRed)
   }
 
-  def report(i : Int){
-    val (testID, testFailure) = failures(i)
-    println(testFailure.formatted(testID.suiteClass))
+  def failure(i : Int){
+    if (mostRecentFailures.isEmpty)
+      println("There were no failing tests")
+    else if (mostRecentFailures.size < i + 1)
+      println("There were only " + mostRecentFailures.size + " failing tests")
+    else {
+      val (testID, testFailure) = mostRecentFailures(i)
+      println(testFailure.formatted(testID.suiteClass))
+    }
   }
 }
