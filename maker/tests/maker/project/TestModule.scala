@@ -79,7 +79,8 @@ object TestModule{
       "TmuxMessaging", "false",
       "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
       "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath,
-    "MakerTestReporterJar", props.MakerTestReporterJar().getPath
+    "MakerTestReporterJar", props.MakerTestReporterJar().getPath,
+    "RunningInMakerTest", "true"
     )
   }
 
