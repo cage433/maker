@@ -73,7 +73,12 @@ class Module(
     val sourceResources = resources.filter(_.extension == "jar").map(_.copy(classifier = Some("sources")))
     (resources ::: sourceResources).distinct
   }
+
+
   Module.warnOfUnnecessaryDependencies(this)
+
+  def javacOptions : List[String] = Nil 
+  def scalacOptions : List[String] = Nil
   /**
    * The standard equals method was slow, making Dependency operations very expensive.
    */
