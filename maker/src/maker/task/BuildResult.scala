@@ -45,6 +45,7 @@ case class BuildResult(
       println(("Build succeeded").inGreen)
       println
 
+      FailingTests.clear()
       TaskResult.reportOnTaskTimings(results)
       RunUnitTestsTask.reportOnSlowTests(results)
     }
@@ -131,52 +132,5 @@ case class LastResult(result : BuildResult){
 object BuildResult{
   val lastResult : AtomicReference[Option[BuildResult]] = new AtomicReference(None)
   def last = LastResult(lastResult.get.get)
-  private var compiledFiles = Map[File, Int]()
-  def recordCompiledFiles(files : Set[File]){
-    synchronized{
-      files.foreach{
-        f => 
-          compiledFiles += (f -> (compiledFiles.getOrElse(f, 0) + 1))
-      }
-    }
-  }
-  def clear(){
-    compiledFiles = Map[File, Int]()
-    timings = Map[Set[String], Long]()
-  }
-
-  def printCompiledFiles{
-    val b = new StringBuffer
-    b.addLine("Compiled File Count")
-    val byCount = compiledFiles.keySet.groupBy(compiledFiles(_))
-    val counts = byCount.keySet.toList.sortWith(_>_).foreach{
-      c => 
-        b.addLine("  " + c)
-        b.addLine(byCount(c).map(_.getName).toList.sortWith(_<_).asTable(3).indent("    "))
-    }
-    println(b.toString)
-  }
-
-  private var timings = Map[Set[String], Long]()
-  def timingKeys = timings.keySet.flatten
-  def totalTiming(key : String) = breakdown(key).values.sum
-  def breakdown(key : String) = timings.filterKeys(_.contains(key))
-  def addTiming(time : Long, keys : String*){
-    val keysAsSet = keys.toSet
-    synchronized{
-      val newTime : Long = timings.getOrElse(keysAsSet, 0L) + time
-      timings += (keysAsSet -> newTime)
-    }
-  }
-  def printTimings{
-   timingKeys.toList.map{
-     k => (k, totalTiming(k))
-   }.sortWith(_._2 < _._2).foreach{
-      case (k, t) => 
-        val indent = (50 - k.size) max 2
-        println(k + (" " * indent) + t)
-    }
-  }
-
 }
 

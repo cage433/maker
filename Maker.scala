@@ -34,3 +34,4 @@ import maker.Maker._
 
 def pid = maker.utils.os.ProcessID().id
 import topLevel._
+import maker.task.FailingTests._
