@@ -49,7 +49,9 @@ case class IDEAProjectGenerator(props : MakerProps) {
 
     val content = """<?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/never-created-classes" />
+    <output-test url="file://$MODULE_DIR$/never-created-test-classes" />
     <exclude-output />
 %s
     <orderEntry type="inheritedJdk" />
