@@ -5,9 +5,10 @@ import maker.utils.FileUtils._
 import maker.utils.RichString._
 import maker.project.TestModule
 import maker.Resource
+import maker.utils.FileUtils
 
 class UpdateTaskTests extends FreeSpec {
-  "test resources" in {
+  "Update task should download resources" in {
     withTempDir{
       dir => 
         writeToFile(
@@ -60,6 +61,53 @@ class UpdateTaskTests extends FreeSpec {
         assert(oldJar.exists, oldJar + " should exist")
         module.updateOnly
         assert(oldJar.doesNotExist, oldJar + " should not exist")
+    }
+  }
+
+  "Update task should cause all upstream modules to update" in {
+    withTempDir{
+      dir => 
+        val aDir = FileUtils.mkdir(file(dir, "a"))
+        val bDir = FileUtils.mkdir(file(dir, "b"))
+        writeToFile(
+          file(aDir, "external-resources"),
+          """|org.foo bar {sbt_version}
+             |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
+        )
+        val versionsFile = file(dir, "versions")
+        writeToFile(
+          versionsFile,
+          """|scala_version 2.9.2
+             |sbt_version 0.12.1
+             |scalatest_version 1.8""".stripMargin
+        )
+        val resolversFile = file(dir, "resolvers")
+
+        writeToFile(
+          resolversFile, 
+          ("""|default file://%s/RESOLVER/
+             |second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
+        )
+        val resolverDir = file(dir, "RESOLVER").makeDir
+
+        writeToFile(
+          file(dir, "/RESOLVER2//com/mike/fred_2.9.2/1.8/fred_2.9.2-1.8.jar"),
+          "foo"
+        )
+        writeToFile(
+          file(dir, "/RESOLVER//org/foo/bar/0.12.1/bar-0.12.1.jar"),
+          "bar"
+        )
+        val props = TestModule.makeTestProps(aDir) ++ ("VersionsFile", versionsFile.getAbsolutePath, "ResolversFile", resolversFile.getAbsolutePath)
+
+        val a = new TestModule(aDir, "a", overrideProps = Some(props))
+        val b = new TestModule(bDir, "b", overrideProps = Some(props), upstreamProjects = List(a))
+
+        b.update
+        a.resources.filter(_.isBinaryJarResource).foreach{
+          resource => 
+            assert(resource.resourceFile.exists, "Resource " + resource + " should exist")
+        }
     }
   }
 }
