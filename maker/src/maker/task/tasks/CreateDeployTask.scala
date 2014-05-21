@@ -119,6 +119,11 @@ case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) exte
           copyDirectory(file(p.rootAbsoluteFile, "services/cs/TrinityService/files/"), file(baseOutputDir, "services/cs/TrinityService/files/"))
         }
 
+        // this is a hack to get round the building and packaging in the booter package.
+        copyDirectory(file(p.rootAbsoluteFile, "/booter/target-maker/classes/"), file(baseOutputDir, "/booter/target-maker/classes/"))
+        copyDirectory(file(p.rootAbsoluteFile, "/booter/resources/"), file(baseOutputDir, "/booter/resources/"))
+
+
         List(
           "logback.xml"
           ,"logback-unit-tests.xml"
