@@ -1,6 +1,6 @@
-# The logback file used by the maker repl
-# In normal use maker shouldn't log much, if at all, however
-# logging isn't switched off in case of messages from other libraries
+<!--The logback file used by the maker repl
+    In normal use maker shouldn't log much, if at all, however
+    logging isn't switched off in case of messages from other libraries-->
 
 <configuration scan="true" scanPeriod="3 seconds">
 
