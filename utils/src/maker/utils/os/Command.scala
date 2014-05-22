@@ -107,7 +107,7 @@ case class Command(outputHandler : CommandOutputHandler, workingDirectory : Opti
   private def startProc() : Process = {
     val procBuilder = new ProcessBuilder(args : _*)
     procBuilder.redirectErrorStream(true)
-    workingDirectory.map(procBuilder.directory)
+    workingDirectory.foreach(procBuilder.directory(_))
     procBuilder.start
   }
 
