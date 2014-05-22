@@ -163,7 +163,7 @@ launch_maker_repl(){
 
   if [ -z $PROJECT_FILE ];
   then
-    scala_files=( `ls *.scala > /dev/null 2>&1` )
+    scala_files=( `ls *.scala ` )
     if [ ${#scala_files[@]} -ne 1 ]; then
       echo
       echo "Error!"

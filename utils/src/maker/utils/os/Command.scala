@@ -94,7 +94,6 @@ object CommandOutputHandler{
 
 case class Command(props : MakerProps, outputHandler : CommandOutputHandler, workingDirectory : Option[File], args : String*) {
 
-  private lazy val log = props.log
   def savedOutput = outputHandler.savedOutput
   def withOutput(handler : CommandOutputHandler) = new Command(
     props,
@@ -107,12 +106,9 @@ case class Command(props : MakerProps, outputHandler : CommandOutputHandler, wor
   def withNoOutput = withOutput(CommandOutputHandler.NULL)
 
   private def startProc() : Process = {
-    if (args.exists(_.trim == ""))
-      log.debug("Passed an empty argument in '" + this + "' you probably didn't wan't this")
     val procBuilder = new ProcessBuilder(args : _*)
     procBuilder.redirectErrorStream(true)
     workingDirectory.map(procBuilder.directory)
-    log.debug("cwd set to " + workingDirectory.map(_.getAbsolutePath))
     procBuilder.start
   }
 

@@ -1,0 +1,12 @@
+# Defines resolvers and short names for binary versions.
+
+# Resolvers use the syntax 'r: <short-name> <resolver-url>'
+# Version syntax is 'v: <name> <version>'
+#
+# All other lines are ignored
+
+
+r: default http://repo1.maven.org/maven2/
+
+v: scalatest_version 1.9.2
+v: scala_version 2.9.2
