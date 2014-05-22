@@ -31,9 +31,9 @@ object OsUtils {
   def isLinux = Properties.osName.toLowerCase.contains("linux")
   def isOSX = Properties.osName.toLowerCase.contains("os x")
   def isUnix = isLinux || isOSX
-  def isPortUsed(props : MakerProps, port : Int) = {
+  def isPortUsed(port : Int) = {
     List("tcp", "udp").exists{ t => 
-      Command(props, "fuser", port + "/" + t).withNoOutput.exec == 0
+      Command("fuser", port + "/" + t).withNoOutput.exec == 0
     }
   }
 }

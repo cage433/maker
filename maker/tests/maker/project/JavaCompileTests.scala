@@ -62,7 +62,7 @@ class JavaCompileTests extends FunSuite with TestUtils {
         assert(proj.compilePhase.classFiles.size === 1)
         val classfile = file(proj.compilePhase.outputDir, "foo", "Foo.class")
         assert(classfile.exists, "Foo.class should exist")
-        val cmd = Command(proj.props, "file", classfile.getAbsolutePath).withNoOutput.withSavedOutput
+        val cmd = Command("file", classfile.getAbsolutePath).withNoOutput.withSavedOutput
         cmd.exec
         assert(cmd.savedOutput.contains("compiled Java class data, version 50.0 (Java 1.6)"))
 

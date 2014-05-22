@@ -136,7 +136,6 @@ case class Resource(
     urls.find{
       url =>
         val cmd = Command(
-          props, 
           "curl",
           "-s",
           "-H", "Pragma: no-cache",
