@@ -1,3 +1,7 @@
+# The logback file used by the maker repl
+# In normal use maker shouldn't log much, if at all, however
+# logging isn't switched off in case of messages from other libraries
+
 <configuration scan="true" scanPeriod="3 seconds">
 
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
@@ -18,7 +22,7 @@
       <immediateFlush>true</immediateFlush>
     </encoder>
     <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-      <level>ERROR</level>
+      <level>INFO</level>
     </filter>
   </appender>
 
