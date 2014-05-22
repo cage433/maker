@@ -41,7 +41,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
    * Maker has its own logback file which applies during compilation, 
    * this is the one that is used when running tests and main methods
    */
-  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
+  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback/logback-unit-tests.xml")) with IsFile
 
   object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
