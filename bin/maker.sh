@@ -67,8 +67,7 @@ update_external_jars(){
   echo "Updating external jars"
 
   mkdir -p $GLOBAL_RESOURCE_CACHE
-  GLOBAL_RESOURCE_RESOLVERS="$MAKER_ROOT_DIR/resource-resolvers" 
-  GLOBAL_RESOURCE_VERSIONS="$MAKER_ROOT_DIR/resource-versions" 
+  GLOBAL_RESOURCE_CONFIG="$MAKER_ROOT_DIR/external-resource-config" 
 
   for dir in "test-reporter" "utils"; do 
     update_resources $MAKER_ROOT_DIR/$dir/lib_managed $MAKER_ROOT_DIR/$dir/external-resources
@@ -90,8 +89,6 @@ org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-comp
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
-  GLOBAL_RESOURCE_RESOLVERS="$PROJECT_ROOT_DIR/resource-resolvers" 
-  GLOBAL_RESOURCE_VERSIONS="$PROJECT_ROOT_DIR/resource-versions" 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   rm dynamic-scala-resource-list
   rm dynamic-zinc-resource-list
