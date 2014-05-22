@@ -25,17 +25,18 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-library-2.9.2" level="project" />
+
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/lib_managed/org.scalatest-scalatest_2.9.2-1.8.jar!/" />
+          <root url="jar://$MODULE_DIR$/lib_managed/org.scalatest-scalatest_2.9.2-1.9.2.jar!/" />
         </CLASSES>
         <JAVADOC />
-        <SOURCES>
-          <root url="jar://$MODULE_DIR$/lib_src_managed/org.scalatest-scalatest_2.9.2-1.8-sources.jar!/" />
-        </SOURCES>
+        <SOURCES />
       </library>
     </orderEntry>
+
+
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>
@@ -56,4 +57,4 @@
     </orderEntry>
   </component>
 </module>
-
+                        
