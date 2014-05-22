@@ -1,4 +1,12 @@
-How hard is it to replace SBT?
+How hard could it be to replace SBT?
+====================================
+
+
+Purpose
+-------
+
+Maker is a scala build tool, written out of frustration with the complexity of SBT. It performs similar tasks, namely compile, test, publish etc - its main aim is to speed up the code/compile/test cycle.
+
 
 Running Maker
 -------------
