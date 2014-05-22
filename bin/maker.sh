@@ -163,9 +163,12 @@ launch_maker_repl(){
 
   if [ -z $PROJECT_FILE ];
   then
-    scala_files=( `ls *.scala` )
+    scala_files=( `ls *.scala > /dev/null 2>&1` )
     if [ ${#scala_files[@]} -ne 1 ]; then
+      echo
+      echo "Error!"
       echo "Either specify project file or have a single Scala file in the top level"
+      echo
       exit -1
     fi
     PROJECT_FILE=${scala_files[0]}
@@ -189,9 +192,9 @@ launch_maker_repl(){
 
 recompile_project_if_required(){
 
-  if [ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
+  if [ -e $PROJECT_DEFINITION_SRC_DIR ] && ([ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
      has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
-     [ ! -z $MAKER_RECOMPILE_PROJECT ]; 
+     [ ! -z $MAKER_RECOMPILE_PROJECT ]); 
   then
     echo "Recompiling project"
     PROJECT_DEFINITION_SRC_FILES=`ls $PROJECT_DEFINITION_SRC_DIR/*.scala | xargs`

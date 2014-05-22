@@ -13,9 +13,13 @@ add_error(){
 
 has_newer_src_files(){
   read src_dir file_to_compare <<<$(echo $*)
-  num_newer=$(find $src_dir -name '*.scala' -newer $file_to_compare | wc -l)
-  (( ${num_newer:-"0"} > 0 ))
-  return $?
+  if [ -e "$src_dir" ] && [ -e "$file_to_compare" ]; then
+    num_newer=$(find $src_dir -name '*.scala' -newer $file_to_compare | wc -l)
+    (( ${num_newer:-"0"} > 0 ))
+    return $?
+  else
+    return 1
+  fi
 }
 
 resource_basename(){
