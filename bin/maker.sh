@@ -179,7 +179,7 @@ launch_maker_repl(){
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
-    -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback/logback.xml \
+    -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback-config/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
     $EXTRA_REPL_ARGS \
