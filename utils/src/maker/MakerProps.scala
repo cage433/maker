@@ -7,6 +7,7 @@ import scala.collection.JavaConversions
 import maker.utils.MakerLog
 import java.io.FileInputStream
 import maker.utils.FileUtils._
+import maker.utils.FileUtils
 
 
 case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
@@ -20,6 +21,18 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object MakerTestReporterJar extends Default(MakerHome() + "/maker-scalatest-reporter.jar") with IsFile
 
 
+  case class ExternalResourceConfig(configFile : File){
+    private def extractMap(prefix : String) : Map[String, String] = {
+      configFile.readLines.filter(_.startsWith(prefix)).map{
+        line => 
+          val List(key, value) = line.split(' ').filterNot(_.isEmpty).drop(1).toList
+          key -> value
+      }.toMap
+    }
+    def resourceVersions() = extractMap("v:")
+    def resourceResolvers() = extractMap("r:")
+  }
+
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
@@ -31,10 +44,11 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
   object Compiler extends Default("scalac") with IsString
-  object ResolversFile extends Default(file("resource-resolvers")) with IsFile
-  object VersionsFile extends Default(file("resource-versions")) with IsFile
-  def resourceVersions() = MakerProps.propsFileToMap(VersionsFile())
-  def resourceResolvers() : Map[String, String] = MakerProps.propsFileToMap(ResolversFile())
+  object ExternalResourceConfigFile extends Default(file("external-resource-config")) with IsFile
+  //object ResolversFile extends Default(file("resource-resolvers")) with IsFile
+  //object VersionsFile extends Default(file("resource-versions")) with IsFile
+  def resourceVersions() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceVersions()
+  def resourceResolvers() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceResolvers()
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
 
   /**

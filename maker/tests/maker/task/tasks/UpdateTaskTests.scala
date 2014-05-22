@@ -16,23 +16,25 @@ class UpdateTaskTests extends FreeSpec {
           """|org.foo bar {sbt_version}
              |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
         )
-        val versionsFile = file(dir, "versions")
-        writeToFile(
-          versionsFile,
-          """|scala_version 2.9.2
-             |sbt_version 0.12.1
-             |scalatest_version 1.8""".stripMargin
-        )
-        val resolversFile = file(dir, "resolvers")
 
+        val externalResourceConfigFile = file(dir, "external-resource-config")
         writeToFile(
-          resolversFile, 
-          ("""|default file://%s/RESOLVER/
-             |second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
+          externalResourceConfigFile,
+          """|v: scala_version 2.9.2
+             |v: sbt_version 0.12.1
+             |v: scalatest_version 1.8
+             |""".stripMargin
         )
+
+        appendToFile(
+          externalResourceConfigFile,
+          ("""|r: default file://%s/RESOLVER/
+              |r: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
+        )
+
         val resolverDir = file(dir, "RESOLVER").makeDir
 
-        val props = TestModule.makeTestProps(dir) ++ ("VersionsFile", versionsFile.getAbsolutePath, "ResolversFile", resolversFile.getAbsolutePath)
+        val props = TestModule.makeTestProps(dir) ++ ("ExternalResourceConfigFile", externalResourceConfigFile.getAbsolutePath)
 
         val module = new TestModule(dir, "testResources", overrideProps = Some(props))
 
@@ -65,7 +67,7 @@ class UpdateTaskTests extends FreeSpec {
   }
 
   "Update task should cause all upstream modules to update" in {
-    withTempDir{
+    withTestDir{
       dir => 
         val aDir = FileUtils.mkdir(file(dir, "a"))
         val bDir = FileUtils.mkdir(file(dir, "b"))
@@ -74,19 +76,19 @@ class UpdateTaskTests extends FreeSpec {
           """|org.foo bar {sbt_version}
              |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
         )
-        val versionsFile = file(dir, "versions")
+        val externalResourceConfigFile = file(dir, "external-resource-config")
         writeToFile(
-          versionsFile,
-          """|scala_version 2.9.2
-             |sbt_version 0.12.1
-             |scalatest_version 1.8""".stripMargin
+          externalResourceConfigFile,
+          """|v: scala_version 2.9.2
+             |v: sbt_version 0.12.1
+             |v: scalatest_version 1.8
+             |""".stripMargin
         )
-        val resolversFile = file(dir, "resolvers")
 
-        writeToFile(
-          resolversFile, 
-          ("""|default file://%s/RESOLVER/
-             |second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
+        appendToFile(
+          externalResourceConfigFile, 
+          ("""|r: default file://%s/RESOLVER/
+             |r: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
         )
         val resolverDir = file(dir, "RESOLVER").makeDir
 
@@ -98,7 +100,7 @@ class UpdateTaskTests extends FreeSpec {
           file(dir, "/RESOLVER//org/foo/bar/0.12.1/bar-0.12.1.jar"),
           "bar"
         )
-        val props = TestModule.makeTestProps(aDir) ++ ("VersionsFile", versionsFile.getAbsolutePath, "ResolversFile", resolversFile.getAbsolutePath)
+        val props = TestModule.makeTestProps(aDir) ++ ("ExternalResourceConfigFile", externalResourceConfigFile.getAbsolutePath)
 
         val a = new TestModule(aDir, "a", overrideProps = Some(props))
         val b = new TestModule(bDir, "b", overrideProps = Some(props), upstreamProjects = List(a))

@@ -1,0 +1,16 @@
+# Defines resolvers and short names for binary versions.
+
+# Resolvers use the syntax 'r: <short-name> <resolver-url>'
+# Version syntax is 'v: <name> <version>'
+#
+# All other lines are ignored
+
+
+r: default http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror
+r: maven http://repo1.maven.org/maven2/
+
+
+v: scala_version 2.9.2
+v: sbt_version 0.12.1
+v: scalatest_version 1.9.2
+v: jetty_version 7.6.3.v20120416
