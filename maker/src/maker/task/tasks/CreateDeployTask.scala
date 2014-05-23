@@ -35,7 +35,7 @@ import org.apache.commons.io.FileUtils._
 /**
  * Creates jars that are ready for deployment.
  */
-case class CreateDeployTask(project: Project, buildTests: Boolean) extends Task {
+case class CreateDeployTask(project: Project, buildTests: Boolean, version: Option[String] = None) extends Task {
   def baseProject = project
 
   private val log = project.log
@@ -96,6 +96,7 @@ case class CreateDeployTask(project: Project, buildTests: Boolean) extends Task 
 
       val testClasspathString = (appJars ::: tpJars ::: testJars).distinct.mkString(":")
       writeToFile(file(baseOutputDir, "/bin/deploy-test-classpath.sh"), "export CLASSPATH=" + testClasspathString)
+      version.foreach(v => writeToFile(file(project.rootAbsoluteFile, "/version.txt"), v))
     }
   }
 }
