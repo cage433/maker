@@ -1,6 +1,6 @@
 .idea/workspace.xml
 .idea/misc.xml
-*/.maker
+.maker
 .maker/lib
 .maker/scala
 tags
