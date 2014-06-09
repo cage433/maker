@@ -76,23 +76,25 @@ case class RunUnitTestsTask(
 
 
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
-    var systemProperties : List[String] = {
-      (props.JavaSystemProperties.asMap ++ Map(
-        "scala.usejavacp" -> "true",
-        "maker.test.output" -> baseProject.testOutputFile,
-        "logback.configurationFile" -> props.LogbackTestConfigFile(),
-        "sbt.log.format" -> "false"
-      )).map{
+    val systemPropertiesArguments = {
+      var s = props.JavaSystemProperties.asMap
+      s += "scala.usejavacp" -> "true"
+      s += "logback.configurationFile" -> props.LogbackTestConfigFile().getAbsolutePath
+      s += "maker.test.output" -> baseProject.testOutputFile.toString
+      s += "sbt.log.format" -> "=false"
+      s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
       }.toList
     }
 
-    baseProject.testOutputFile.delete
-    val opts = List(
-      "-Xmx" + props.TestProcessMemoryInMB() + "m", 
+    val memoryArguments = List(
+      "-Xmx" + props.TestProcessMemoryInMB() + "m",
       "-XX:MaxPermSize=200m"
-    ) ::: systemProperties
+    )
 
+    baseProject.testOutputFile.delete
+    val opts = memoryArguments ::: systemPropertiesArguments
+ 
     val testParameters = {
       val consoleReporterArgs = if (props.RunningInMakerTest()) 
         Nil

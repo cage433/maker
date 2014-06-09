@@ -47,7 +47,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
   def upstreamTasks = baseProject.allUpstreamModules.map(TestCompileTask(_))
 
 
-  val runLogFile = file("runlog.out")
+  val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
     val log = props.log
@@ -70,7 +70,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
       mainArgs 
     )
 
-    writeToFile(file("runcmd.sh"), "#!/bin/bash\n" + cmd.asString)
+    writeToFile(file(baseProject.rootAbsoluteFile, "runcmd.sh"), "#!/bin/bash\n" + cmd.asString)
     log.info("Running, press ctrl-] to terminate running process...")
 
     val procHandle = cmd.execAsync()

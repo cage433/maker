@@ -67,8 +67,7 @@ update_external_jars(){
   echo "Updating external jars"
 
   mkdir -p $GLOBAL_RESOURCE_CACHE
-  GLOBAL_RESOURCE_RESOLVERS="$MAKER_ROOT_DIR/resource-resolvers" 
-  GLOBAL_RESOURCE_VERSIONS="$MAKER_ROOT_DIR/resource-versions" 
+  GLOBAL_RESOURCE_CONFIG="$MAKER_ROOT_DIR/external-resource-config" 
 
   for dir in "test-reporter" "utils"; do 
     update_resources $MAKER_ROOT_DIR/$dir/lib_managed $MAKER_ROOT_DIR/$dir/external-resources
@@ -90,8 +89,6 @@ org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-comp
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
-  GLOBAL_RESOURCE_RESOLVERS="$PROJECT_ROOT_DIR/resource-resolvers" 
-  GLOBAL_RESOURCE_VERSIONS="$PROJECT_ROOT_DIR/resource-versions" 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   rm dynamic-scala-resource-list
   rm dynamic-zinc-resource-list
@@ -166,9 +163,12 @@ launch_maker_repl(){
 
   if [ -z $PROJECT_FILE ];
   then
-    scala_files=( `ls *.scala` )
+    scala_files=( `ls *.scala ` )
     if [ ${#scala_files[@]} -ne 1 ]; then
+      echo
+      echo "Error!"
       echo "Either specify project file or have a single Scala file in the top level"
+      echo
       exit -1
     fi
     PROJECT_FILE=${scala_files[0]}
@@ -179,7 +179,7 @@ launch_maker_repl(){
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
-    -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback.xml \
+    -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback-config/logback.xml \
     -Dscala.usejavacp=true \
     $MAKER_ARGS \
     $EXTRA_REPL_ARGS \
@@ -192,9 +192,9 @@ launch_maker_repl(){
 
 recompile_project_if_required(){
 
-  if [ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
+  if [ -e $PROJECT_DEFINITION_SRC_DIR ] && ([ ! -e $PROJECT_DEFINITION_CLASS_DIR ] || \
      has_newer_src_files $PROJECT_DEFINITION_SRC_DIR $PROJECT_DEFINITION_CLASS_DIR || \
-     [ ! -z $MAKER_RECOMPILE_PROJECT ]; 
+     [ ! -z $MAKER_RECOMPILE_PROJECT ]); 
   then
     echo "Recompiling project"
     PROJECT_DEFINITION_SRC_FILES=`ls $PROJECT_DEFINITION_SRC_DIR/*.scala | xargs`

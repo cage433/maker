@@ -72,8 +72,8 @@ test_update_downloads_non_cached_resource()
   GLOBAL_RESOURCE_CACHE="CACHE"
   mkdir $GLOBAL_RESOURCE_CACHE
 
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  echo "default file://`pwd`/RESOLVER" > $GLOBAL_RESOURCE_RESOLVERS
+  GLOBAL_RESOURCE_CONFIG=resolvers
+  echo "r: default file://`pwd`/RESOLVER" > $GLOBAL_RESOURCE_CONFIG
 
   mkdir LIB
   resourceId="org.apache.commons commons-lang3 3.1"
@@ -87,10 +87,10 @@ test_update_downloads_non_cached_resource()
 }
 
 test_can_resolve_versions(){
-  GLOBAL_RESOURCE_VERSIONS=versions
-  cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
-scala_version 2.9.2
-jetty_version 7.6.3.v20120416
+  GLOBAL_RESOURCE_CONFIG=versions
+  cat > $GLOBAL_RESOURCE_CONFIG <<HERE
+v: scala_version 2.9.2
+v: jetty_version 7.6.3.v20120416
 HERE
 
   assertEquals "foo2.9.2" $(resolve_version "foo{scala_version}")
@@ -100,10 +100,10 @@ HERE
 test_can_parse_resolver_list()
 {
 
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  cat > $GLOBAL_RESOURCE_RESOLVERS <<HERE
-default file://RESOLVER
-other file://OTHER-RESOLVER
+  GLOBAL_RESOURCE_CONFIG=resolvers
+  cat > $GLOBAL_RESOURCE_CONFIG <<HERE
+r: default file://RESOLVER
+r: other file://OTHER-RESOLVER
 HERE
 
   assertEquals "file://RESOLVER" "$(find_resolver "")"
@@ -113,14 +113,14 @@ HERE
 
 test_update_resources()
 {
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  echo "default file://`pwd`/RESOLVER" >> $GLOBAL_RESOURCE_RESOLVERS
 
-  GLOBAL_RESOURCE_VERSIONS=versions
-  cat > $GLOBAL_RESOURCE_VERSIONS <<HERE
-scala_version 2.9.2
-jetty_version 7.6.3.v20120416
+  GLOBAL_RESOURCE_CONFIG=config
+  cat > $GLOBAL_RESOURCE_CONFIG <<HERE
+v: scala_version 2.9.2
+v: jetty_version 7.6.3.v20120416
 HERE
+
+  echo "r: default file://`pwd`/RESOLVER" >> $GLOBAL_RESOURCE_CONFIG
 
    cat > resources <<HERE
 org.apache.commons commons-lang3 3.1 resolver:default classifier:sources
@@ -147,8 +147,8 @@ HERE
 }
 
 test_jar_not_created_when_update_fails(){
-  GLOBAL_RESOURCE_RESOLVERS=resolvers
-  echo "default file://`pwd`/MISSING-RESOLVER" >> $GLOBAL_RESOURCE_RESOLVERS
+  GLOBAL_RESOURCE_CONFIG=config
+  echo "r: default file://`pwd`/MISSING-RESOLVER" >> $GLOBAL_RESOURCE_CONFIG
   mkdir CACHE
   mkdir LIB
   resourceId="org.apache.commons commons-lang3 3.1"

@@ -26,8 +26,13 @@ import maker.utils.FileUtils._
 
     It would be stored locally at 
 
-    ./<project-dir>/lib_managed/org.scalacheck-scalacheck_2.9.2-1.9.jar
+      ./<project-dir>/lib_managed/org.scalacheck-scalacheck_2.9.2-1.9.jar
+
+    The jar will be cached at
+
+      ~/.maker-resource-cache/org.scalacheck-scalacheck_2.9.2-1.9.jar
 */
+
 case class Resource(
   module : Module,
   groupId : String, 
@@ -131,7 +136,6 @@ case class Resource(
     urls.find{
       url =>
         val cmd = Command(
-          props, 
           "curl",
           "-s",
           "-H", "Pragma: no-cache",

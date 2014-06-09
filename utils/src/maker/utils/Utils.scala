@@ -38,19 +38,19 @@ object Utils {
   /** this assumes gnome for linux
    *  can add cmd line view (lynx) and WM detection later
    */
-  def openHtmlFile(props : MakerProps, f : File) = {
+  def openHtmlFile(f : File) = {
     if (isLinux)
-      Command(props, "gnome-open", f.getAbsolutePath).execAsync
+      Command("gnome-open", f.getAbsolutePath).execAsync
     else // assume OSX until we want to support other OSes such as windows
-      Command(props, "open", f.getAbsolutePath).exec()
+      Command("open", f.getAbsolutePath).exec()
     f
   }
 
-  def showImage(props : MakerProps, f : File) = {
+  def showImage(f : File) = {
     if (isLinux)
-      Command(props, "xdg-open", f.getAbsolutePath).execAsync
+      Command("xdg-open", f.getAbsolutePath).execAsync
     else // assume OSX until we want to support other OSes such as windows
-      Command(props, "open", f.getAbsolutePath).exec()
+      Command("open", f.getAbsolutePath).exec()
     f
   }
   def stackTraceAsString(t : Throwable) = {

@@ -13,9 +13,13 @@ add_error(){
 
 has_newer_src_files(){
   read src_dir file_to_compare <<<$(echo $*)
-  num_newer=$(find $src_dir -name '*.scala' -newer $file_to_compare | wc -l)
-  (( ${num_newer:-"0"} > 0 ))
-  return $?
+  if [ -e "$src_dir" ] && [ -e "$file_to_compare" ]; then
+    num_newer=$(find $src_dir -name '*.scala' -newer $file_to_compare | wc -l)
+    (( ${num_newer:-"0"} > 0 ))
+    return $?
+  else
+    return 1
+  fi
 }
 
 resource_basename(){
@@ -115,9 +119,11 @@ update_resources(){
 
 resolve_version(){
   line=$*
-  version_file=$(eval_file_variable GLOBAL_RESOURCE_VERSIONS) 
-  cat $version_file 2>/dev/null | ( while read key version; do
-    line=`echo $line | sed "s/{$key}/$version/g"`
+  version_file=$(eval_file_variable GLOBAL_RESOURCE_CONFIG) 
+  cat $version_file 2>/dev/null | ( while read config_type key version; do
+    if [ "$config_type" = "version:" ]; then
+      line=`echo $line | sed "s/{$key}/$version/g"`
+    fi
   done
   echo $line )
 }
@@ -126,12 +132,12 @@ find_resolver(){
   resolver_name=$(lookup_value "resolver" $*)
   resolver_name=${resolver_name:-"default"}
 
-  while read short_name long_name; do
-    if [ $resolver_name = $short_name ]; then
+  while read config_type short_name long_name; do
+    if [ "$config_type" = "resolver:" ] && [ $resolver_name = $short_name ]; then
       echo $long_name
       return 0
     fi
-  done < $(eval_file_variable GLOBAL_RESOURCE_RESOLVERS)
+  done < $(eval_file_variable GLOBAL_RESOURCE_CONFIG)
   add_error "$(basename ${BASH_SOURCE[0]}) $LINENO: Unable to find resolver"
   return 1
 }

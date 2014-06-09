@@ -1,0 +1,17 @@
+products:
+   tests/single/FooTests.scala -> target-maker/test-classes/single/FooTests$$anonfun$1$$anonfun$apply$mcV$sp$1.class
+   tests/single/FooTests.scala -> target-maker/test-classes/single/FooTests$$anonfun$1.class
+   tests/single/FooTests.scala -> target-maker/test-classes/single/FooTests.class
+binary dependencies:
+   tests/single/FooTests.scala -> /home/alex/repos/maker/scala-libs/scala-library-2.9.2.jar
+   tests/single/FooTests.scala -> /home/alex/repos/maker/test-reporter/lib_managed/org.scalatest-scalatest_2.9.2-1.9.2.jar
+   tests/single/FooTests.scala -> target-maker/classes/single/Foo$.class
+   tests/single/FooTests.scala -> target-maker/classes/single/Foo.class
+source dependencies:
+
+external dependencies:
+
+class names:
+   tests/single/FooTests.scala -> single.FooTests
+   tests/single/FooTests.scala -> single.FooTests$$anonfun$1
+   tests/single/FooTests.scala -> single.FooTests$$anonfun$1$$anonfun$apply$mcV$sp$1

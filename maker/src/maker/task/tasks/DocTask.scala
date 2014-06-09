@@ -72,7 +72,6 @@ case class DocTask(baseProject : BaseProject) extends Task {
       val scalaToolsClasspath = baseProject.props.ProjectScalaCompilerJar().getAbsolutePath + ":" + baseProject.props.ProjectScalaLibraryJar().getAbsolutePath
 
       val cmd = ScalaDocCmd(
-        props,
         new CommandOutputHandler(Some(writer)).withSavedOutput,
         docDir,
         props.Java().getAbsolutePath,

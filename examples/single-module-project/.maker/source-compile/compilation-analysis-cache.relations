@@ -1,0 +1,13 @@
+products:
+   src/single/Foo.scala -> target-maker/classes/single/Foo$.class
+   src/single/Foo.scala -> target-maker/classes/single/Foo.class
+binary dependencies:
+   src/single/Foo.scala -> /home/alex/repos/maker/scala-libs/scala-library-2.9.2.jar
+   src/single/Foo.scala -> /usr/local/jdk1.7.0_51/jre/lib/rt.jar
+source dependencies:
+
+external dependencies:
+
+class names:
+   src/single/Foo.scala -> single.Foo
+   src/single/Foo.scala -> single.Foo$

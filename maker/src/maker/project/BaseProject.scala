@@ -145,7 +145,7 @@ trait BaseProject {
 
   def pack = executeWithDependencies(PackageMainJarTask(_))
 
-  def update = executeWithDependencies(UpdateTask(_))
+  def update = execute(moduleBuild(UpdateTask(_), allUpstreamModules))
 
   def createDeploy(buildTests: Boolean = true) = 
     executeWithDependencies(CreateDeployTask(this, buildTests))

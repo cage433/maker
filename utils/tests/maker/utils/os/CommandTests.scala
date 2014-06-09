@@ -32,13 +32,12 @@ import maker.MakerProps
 
 class CommandTests extends FunSuite{
 
-  val props = MakerProps()
   test("synchronous command runs"){
     withTempDir{
       dir =>
         val f = file(dir, "foo")
         assert(! f.exists)
-        val cmd = Command(props, CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
+        val cmd = Command(CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
         cmd.exec
         assert(f.exists)
     }
@@ -49,7 +48,7 @@ class CommandTests extends FunSuite{
       dir =>
         val f = file(dir, "foo")
         assert(! f.exists)
-        val cmd = Command(props, CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
+        val cmd = Command(CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
         val (_, future) = cmd.execAsync
         val result = Futures.awaitAll(1000, future).head
         assert(f.exists)
@@ -62,7 +61,7 @@ class CommandTests extends FunSuite{
       dir =>
         val outputFile = file(dir, "output")
         assert(! outputFile.exists)
-        val cmd = Command(props, CommandOutputHandler(outputFile), None, "echo", "HELLO")
+        val cmd = Command(CommandOutputHandler(outputFile), None, "echo", "HELLO")
         cmd.exec
         assert(outputFile.exists)
         val lines = outputFile.readLines.toList
@@ -73,7 +72,7 @@ class CommandTests extends FunSuite{
   test("Output is saved"){
     withTempDir{
       dir =>
-        val cmd = Command(props, CommandOutputHandler.NULL.withSavedOutput, None, "echo", "HELLO")
+        val cmd = Command(CommandOutputHandler.NULL.withSavedOutput, None, "echo", "HELLO")
         cmd.exec
         assert(cmd.savedOutput === "HELLO\n")
     }
@@ -91,14 +90,14 @@ class CommandTests extends FunSuite{
           done
           """
         )
-        val cmd = new Command(props, new CommandOutputHandler().withSavedOutput, Some(dir), "bash", "main.sh")
+        val cmd = new Command(new CommandOutputHandler().withSavedOutput, Some(dir), "bash", "main.sh")
         val (proc, future) = cmd.execAsync
         val procID = ProcessID(proc)
-        assert(procID.isRunning(props))
+        assert(procID.isRunning())
         assert(! future.isSet)
         proc.destroy
         Futures.awaitAll(10000, future)
-        assert(!procID.isRunning(props), "Process should have died")
+        assert(!procID.isRunning(), "Process should have died")
         assert(future.isSet)
     }
   }
@@ -119,14 +118,14 @@ class CommandTests extends FunSuite{
           done
           """
         )
-        val cmd = new Command(props, CommandOutputHandler.NO_CONSUME_PROCESS_OUTPUT, Some(dir), "bash", "main.sh")
+        val cmd = new Command(CommandOutputHandler.NO_CONSUME_PROCESS_OUTPUT, Some(dir), "bash", "main.sh")
         val (proc, future) = cmd.execAsync
         val procID = ProcessID(proc)
-        assert(procID.isRunning(props))
+        assert(procID.isRunning())
         assert(! future.isSet)
         proc.destroy
         Futures.awaitAll(10000, future)
-        assert(!procID.isRunning(props), "Process should have died")
+        assert(!procID.isRunning(), "Process should have died")
         assert(future.isSet)
     }
   }
