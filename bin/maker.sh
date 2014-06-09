@@ -335,6 +335,9 @@ function saveStty() {
   fi
 }
 
+# this won't work if the terminal is resized
+export MAKER_TERM_LINES=`tput lines`
+
 scala_exit_status=127
 main $*
 onExit
