@@ -60,8 +60,6 @@ class EnsimeGenerator(props: MakerProps) {
           val from = new File(m.managedLibSourceDir, dep)
           writer.append("        \"" + from.getAbsolutePath + "\"\n")
         }
-      // WORKAROUND https://github.com/ensime/ensime-src/issues/365
-      m.immediateUpstreamModules.foreach(appendDepRefSrcs)
     }
     appendDepRefSrcs(module)
     writer.append("      )\n")
