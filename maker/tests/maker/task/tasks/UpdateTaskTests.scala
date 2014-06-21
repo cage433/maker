@@ -20,16 +20,16 @@ class UpdateTaskTests extends FreeSpec {
         val externalResourceConfigFile = file(dir, "external-resource-config")
         writeToFile(
           externalResourceConfigFile,
-          """|v: scala_version 2.9.2
-             |v: sbt_version 0.12.1
-             |v: scalatest_version 1.8
+          """|version: scala_version 2.9.2
+             |version: sbt_version 0.12.1
+             |version: scalatest_version 1.8
              |""".stripMargin
         )
 
         appendToFile(
           externalResourceConfigFile,
-          ("""|r: default file://%s/RESOLVER/
-              |r: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
+          ("""|resolver: default file://%s/RESOLVER/
+              |resolver: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
         )
 
         val resolverDir = file(dir, "RESOLVER").makeDir
@@ -79,16 +79,16 @@ class UpdateTaskTests extends FreeSpec {
         val externalResourceConfigFile = file(dir, "external-resource-config")
         writeToFile(
           externalResourceConfigFile,
-          """|v: scala_version 2.9.2
-             |v: sbt_version 0.12.1
-             |v: scalatest_version 1.8
+          """|version: scala_version 2.9.2
+             |version: sbt_version 0.12.1
+             |version: scalatest_version 1.8
              |""".stripMargin
         )
 
         appendToFile(
           externalResourceConfigFile, 
-          ("""|r: default file://%s/RESOLVER/
-             |r: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
+          ("""|resolver: default file://%s/RESOLVER/
+             |resolver: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
         )
         val resolverDir = file(dir, "RESOLVER").makeDir
 

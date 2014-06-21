@@ -47,7 +47,10 @@ import scala.util.Properties
  */
 object Maker {
 
-  private val props = MakerProps() ++ ("GroupId", "com.google.code.maker")
+  private val props = MakerProps() ++ (
+    "GroupId", "com.google.code.maker",
+    "LogbackTestConfigFile", "logback-config/logback-unit-tests.xml"
+  )
 
   def module(name : String, upstreamProjects : Module*) = {
     val root = file(name).asAbsoluteFile

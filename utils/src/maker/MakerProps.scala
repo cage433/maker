@@ -29,8 +29,8 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
           key -> value
       }.toMap
     }
-    def resourceVersions() = extractMap("v:")
-    def resourceResolvers() = extractMap("r:")
+    def resourceVersions() = extractMap("version:")
+    def resourceResolvers() = extractMap("resolver:")
   }
 
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
@@ -45,8 +45,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object GroupId extends Property with IsString
   object Compiler extends Default("scalac") with IsString
   object ExternalResourceConfigFile extends Default(file("external-resource-config")) with IsFile
-  //object ResolversFile extends Default(file("resource-resolvers")) with IsFile
-  //object VersionsFile extends Default(file("resource-versions")) with IsFile
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceVersions()
   def resourceResolvers() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceResolvers()
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
@@ -55,7 +53,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
    * Maker has its own logback file which applies during compilation, 
    * this is the one that is used when running tests and main methods
    */
-  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-config/logback-unit-tests.xml")) with IsFile
+  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
 
   object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile

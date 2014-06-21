@@ -121,7 +121,7 @@ resolve_version(){
   line=$*
   version_file=$(eval_file_variable GLOBAL_RESOURCE_CONFIG) 
   cat $version_file 2>/dev/null | ( while read config_type key version; do
-    if [ "$config_type" = "v:" ]; then
+    if [ "$config_type" = "version:" ]; then
       line=`echo $line | sed "s/{$key}/$version/g"`
     fi
   done
@@ -133,7 +133,7 @@ find_resolver(){
   resolver_name=${resolver_name:-"default"}
 
   while read config_type short_name long_name; do
-    if [ "$config_type" = "r:" ] && [ $resolver_name = $short_name ]; then
+    if [ "$config_type" = "resolver:" ] && [ $resolver_name = $short_name ]; then
       echo $long_name
       return 0
     fi

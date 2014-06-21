@@ -1,13 +1,23 @@
-# Defines resolvers and short names for binary versions.
-
-# Resolvers use the syntax 'r: <short-name> <resolver-url>'
-# Version syntax is 'v: <name> <version>'
+# Configures where external resources are obtained from, and what versions
+# are used. Note that a project will have its own resource config file, 
+# distinct from maker's own. Both can be overridden independently when launching 
+# maker
 #
-# All other lines are ignored
+# Only lines that begin with one of 'resolver:', 'version:' matter - all others 
+# are treated as comments
 
+#----------------------------------------------------------------------------
+# resolver:
+# 'default' is used for all resources that don't specify a particular resolver
+#----------------------------------------------------------------------------
+resolver: default http://repo1.maven.org/maven2/
 
-r: default http://repo1.maven.org/maven2/
-
-v: scalatest_version 1.9.2
-v: scala_version 2.9.2
+#----------------------------------------------------------------------------
+# version:
+# Used in each module's external-resources file
+# versions _can_ be hard coded in external-resources if
+# there is a good reason
+#----------------------------------------------------------------------------
+version: scalatest_version 1.9.2
+version: scala_version 2.9.2
 
