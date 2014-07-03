@@ -190,6 +190,7 @@ class Module(
   def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Iterable[File] = List(file(rootAbsoluteFile, "lib"))
+  def warnUnnecessaryResources = true
 }
 
 
@@ -239,7 +240,7 @@ object Module{
       upstreamModule =>
         val upstreamJarNames = upstreamModule.allUpstreamModules.flatMap(_.managedJars).map(_.getName).toSet
         val redundantJarNames = upstreamJarNames intersect jarNames
-        if (redundantJarNames.nonEmpty)
+        if (redundantJarNames.nonEmpty && proj.warnUnnecessaryResources)
           log.warn("Module " + proj.name + " doesn't need jars " + redundantJarNames.mkString(", ") + " as they are supplied by " + upstreamModule.name)
     }
 

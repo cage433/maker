@@ -37,6 +37,12 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     d
   }
 
+  def managedResourceDir: File = {
+    val d = module.managedResourceDir
+    d.mkdirs
+    d
+  }
+
   def scalaFiles = findFilesWithExtension("scala", sourceDir)
   def javaFiles = findFilesWithExtension("java", sourceDir)
 
@@ -92,7 +98,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   def classpathDirectoriesAndJars : Iterable[File] = {
     upstreamProjectPhases.flatMap{
       pp => 
-        pp.module.classpathJars.toSet + pp.resourceDir + pp.outputDir
+        pp.module.classpathJars.toSet + pp.resourceDir + pp.outputDir + pp.managedResourceDir
     }
   }
   def classpathJars = classpathDirectoriesAndJars.filter(_.isJar)
@@ -148,4 +154,3 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     }.toMap
 
 }
-

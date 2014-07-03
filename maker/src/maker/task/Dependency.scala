@@ -12,8 +12,8 @@ object Dependency{
   }
   object Edge{
     def edges(baseProject : BaseProject, task : Task) = {
-      val upstreams = (task.upstreamTasks ++ baseProject.extraUpstreamTasks(task)).map(Edge(_, task))
-      val downstreams = baseProject.extraDownstreamTasks(task).map(Edge(task, _))
+      val upstreams = (task.upstreamTasks ++ task.baseProject.extraUpstreamTasks(task)).map(Edge(_, task))
+      val downstreams = task.baseProject.extraDownstreamTasks(task).map(Edge(task, _))
       upstreams ++ downstreams
     }
   }

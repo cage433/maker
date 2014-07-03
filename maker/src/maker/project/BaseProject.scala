@@ -31,8 +31,12 @@ trait BaseProject {
     }
   }
   def tearDown(graph : Dependency.Graph, result : BuildResult) : Unit
-  def extraUpstreamTasks(task : Task) : Set[Task] = Set.empty
-  def extraDownstreamTasks(task : Task) : Set[Task] = Set.empty
+  def extraUpstreamTasks(task : Task) : Set[Task] =
+    extraUpstreamTasksMatcher.lift(task).getOrElse(Set.empty)
+  def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
+  def extraDownstreamTasks(task : Task) : Set[Task] =
+    extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty)
+  def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def props : MakerProps
   def log = props.log
 
@@ -284,4 +288,3 @@ trait BaseProject {
 
   def delete = recursiveDelete(rootAbsoluteFile)
 }
-

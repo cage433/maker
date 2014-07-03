@@ -52,7 +52,7 @@ case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) exte
       doPublish(baseProject, results, sw)
     }
   }
-  
+
   private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
 
     baseProject match {
@@ -118,6 +118,13 @@ case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) exte
           copyDirectory(file(p.rootAbsoluteFile, "/launcher/resource_managed/"), file(baseOutputDir, "/launcher/resource_managed/"))
           copyDirectory(file(p.rootAbsoluteFile, "services/cs/TrinityService/files/"), file(baseOutputDir, "services/cs/TrinityService/files/"))
         }
+
+//        copyDirectory(file(p.rootAbsoluteFile, "/services/resource_managed/"), file(baseOutputDir, "/services/resource_managed/"))
+
+//        copyDirectory(file(p.rootAbsoluteFile, "/lib/"), file(baseOutputDir, "/lib/"))
+
+//        copyFile(file(p.rootAbsoluteFile, "GUI_CHECKSUM"), file(baseOutputDir, "GUI_CHECKSUM"))
+//        copyFile(file(p.rootAbsoluteFile, "FATGUI_CHECKSUM"), file(baseOutputDir, "GUI_CHECKSUM"))
 
         List(
           "logback.xml"

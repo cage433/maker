@@ -34,13 +34,11 @@ class ProjectTaskDependenciesTests extends FunSuite{
     def moduleWithCustomTaskAfterClean(root : File, name : String) = new TestModule(root,name){
       self =>  
       val extraUpstreamTask = WriteClassCountToFile(this)
-      override def extraUpstreamTasks(task : Task) = task match {
+      override def extraUpstreamTasksMatcher = {
         case _ : CleanTask => Set(WriteClassCountToFile(self, "BeforeClean"))
-        case _ => Set.empty
       }
-      override def extraDownstreamTasks(task : Task) = task match {
+      override def extraDownstreamTasksMatcher = {
         case _ : CleanTask => Set(WriteClassCountToFile(self, "AfterClean"))
-        case _ => Set.empty
       }
     }
 
