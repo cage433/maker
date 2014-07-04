@@ -61,7 +61,7 @@ trait PropsTrait extends DelayedInit{
         try {
           buffer.append(m.invoke(this) + "\n")
         } catch {
-          case e => 
+          case e: Throwable ⇒
             buffer.append(m.getName + " threw " + e + "\n")
         }
       )

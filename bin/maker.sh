@@ -75,7 +75,7 @@ update_external_jars(){
   
 
   cat > dynamic-zinc-resource-list <<HERE
-com.typesafe.sbt compiler-interface 0.12.1 classifier:sources 
+com.typesafe.sbt compiler-interface {sbt_version} classifier:sources 
 com.typesafe.sbt incremental-compiler {sbt_version} 
 com.typesafe.sbt sbt-interface {sbt_version}
 HERE
@@ -87,6 +87,9 @@ org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.
 org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version}.jar
 org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
 HERE
+# NEEDED FOR 2.10.4
+#org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
+#org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  

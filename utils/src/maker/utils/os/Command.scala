@@ -27,20 +27,19 @@ package maker.utils.os
 
 import java.lang.ProcessBuilder
 import java.io.{File, InputStreamReader, BufferedReader, PrintWriter}
-import actors.Future
-import actors.Futures._
+import concurrent.Future
 import java.io.FileWriter
 import scalaz.syntax.std.option._
 import java.io.IOException
 import maker.MakerProps
 import maker.utils.FileUtils._
-
+import scala.concurrent.ExecutionContext_Implicits_global
 
 case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWriter(System.out)),
                                 buffer : Option[StringBuffer] = None,
                                 closeWriter : Boolean = false) {
   def withSavedOutput = copy(buffer = Some(new StringBuffer()))
-  def savedOutput = buffer.fold(_.toString, "")
+  def savedOutput = buffer.cata(_.toString, "")
   def processLine(line : String){
     writer.foreach{
       w =>
@@ -120,7 +119,7 @@ case class Command(outputHandler : CommandOutputHandler, workingDirectory : Opti
     val proc = startProc()
     val outputThread = new Thread(outputHandler.redirectOutputRunnable(proc))
     outputThread.start()
-    (proc, future {outputThread.join(); proc.waitFor})
+    (proc, Future {outputThread.join(); proc.waitFor})
   }
 
   def exec() : Int = {

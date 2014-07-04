@@ -106,7 +106,7 @@ case class Build(
                 val res = pt.exec(resultsSoFar.toList, sw)
                 res
               } catch {
-                case e =>
+                case e: Throwable =>
                   log.warn("exception thrown:" + e + " when running task " + pt)
                   e.printStackTrace
                   DefaultTaskResult(pt, false, sw, exception = Some(e))
@@ -115,7 +115,7 @@ case class Build(
               monitor.addResult(pt, result)
               log.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
             } catch {
-              case e => 
+              case e: Throwable ⇒
                 log.warn("Exception " + e + " thrown during " + pt)
                 e.printStackTrace
                 System.exit(-1)

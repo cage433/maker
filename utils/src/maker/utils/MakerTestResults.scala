@@ -74,7 +74,7 @@ object MakerTestResults{
             failures ::= (TestIdentifier(suite, suiteClass, test), TestFailure(message, throwable))
         }
       } catch {
-        case e =>
+        case e: Throwable ⇒
           error("problem with test-output file, file is: " + file.getAbsolutePath)
           error("head was [" + fields.head + "]")
           error("split was [" + fields.mkString("\n") + "]")

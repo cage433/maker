@@ -199,13 +199,16 @@ object Module{
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
   val props = MakerProps()
-  private val setup = Setup.create(
+
+  // commented code is for 2.10 with zinc 0.3.x
+  private val setup = Setup.create/*setup*/(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),
-    Nil, 
+    /*props.ProjectScalaReflectJar() ::*/ Nil, 
     props.SbtInterfaceJar(),
     props.CompilerInterfaceSourcesJar(),
-    props.JavaHome()
+    props.JavaHome() //Some(props.JavaHome()),
+    //forkJava = true
   )
 
   val compiler = Compiler.create(setup, logger)
