@@ -1,5 +1,7 @@
 package maker.project
 
+import maker.task.BuildResult
+import maker.task.tasks.CreateDeployTask
 import maker.utils.FileUtils._
 import java.io.File
 import maker.MakerProps
@@ -14,8 +16,11 @@ case class Project(
   ),
   topLevelExcludedFolders:List[String] = Nil
 ) extends TmuxIntegration{
-  
-  val upstreamModulesForBuild = immediateUpstreamModules
+
+  override def createDeploy(buildTests: Boolean = true): BuildResult =
+    executeWithDependencies(CreateDeployTask(this, buildTests))
+
+  val upstreamModulesForBuild = allUpstreamModules
   override def toString = name
 
   def constructorCodeAsString : String = {

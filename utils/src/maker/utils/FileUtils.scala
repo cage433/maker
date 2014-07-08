@@ -3,13 +3,13 @@
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met: 
+ * modification, are permitted provided that the following conditions are met:
  *
  * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer. 
+ *    list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution. 
+ *    and/or other materials provided with the distribution.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -30,6 +30,17 @@ import java.io.FileWriter
 import java.io.BufferedWriter
 import java.io.BufferedReader
 import java.io.FileReader
+import java.io.IOException
+import java.nio.file.CopyOption
+import java.nio.file.FileVisitOption
+import java.nio.file.FileVisitResult
+import java.nio.file.FileVisitor
+import java.nio.file.Paths
+import java.nio.file.{Files => NioFiles}
+import java.nio.file.{Path => Path}
+import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.EnumSet
 import java.util.concurrent.atomic.AtomicBoolean
 import maker.MakerProps
 import scala.util.Properties
@@ -41,7 +52,7 @@ object FileUtils extends Asserting{
     new File(f)
   }
   def file(f : File, d : String*) : File = {
-    assert(f != null)  // Because Java will happily ignore a null f 
+    assert(f != null)  // Because Java will happily ignore a null f
     d.toList match {
       case Nil => f
       case x::rest => file(new File(f, x), rest : _*)
@@ -65,8 +76,8 @@ object FileUtils extends Asserting{
     def isContainedIn(dir : File) = {
       def recurse(f : File) : Boolean = {
         if (f == null) false
-        else if (f == dir) true 
-        else if (f == new File("/")) false 
+        else if (f == dir) true
+        else if (f == new File("/")) false
         else recurse(f.getParentFile)
       }
       recurse(plainFile)
@@ -86,17 +97,9 @@ object FileUtils extends Asserting{
     def asAbsoluteFile = asserting[File](file(plainFile.getAbsolutePath), _.isAbsolute)
 
     def relativeTo(dir: File) : File = {
-      def pathComponents(f : File) = {
-        f.getAbsolutePath.split(File.separator.replace("\\", "\\\\")).filterNot{component =>  component == "" || component == "."}.toList
-      }
-      val dirComponents = pathComponents(dir)
-      val fileComponents = pathComponents(plainFile)
-      val commonComponents = dirComponents.zip(fileComponents).takeWhile{
-        case (d, f) => d == f
-      }.map(_._1)
-      val directoriesUp = List.fill(dirComponents.size - commonComponents.size)("..")
-      val relativeComponents = directoriesUp ::: fileComponents.drop(commonComponents.size)
-      file(relativeComponents.mkString(File.separator))
+      val path = Paths.get(plainFile.getAbsolutePath)
+      val base = Paths.get(dir.getAbsolutePath)
+      base.relativize(path).toFile
     }
     def className(classDirectory : File) : String = {
       relativeTo(classDirectory).getPath.split('.').head.replace(File.separator, ".")
@@ -118,7 +121,7 @@ object FileUtils extends Asserting{
     // Taken from http://www.4pmp.com/2009/12/java-touch-set-file-last-modified-time/
     def touch = {
       if (plainFile.exists) {
-          if (!plainFile.setLastModified(System.currentTimeMillis)) 
+          if (!plainFile.setLastModified(System.currentTimeMillis))
               throw new Exception("Could not touch file " + plainFile)
       } else {
         createParentDir(plainFile)
@@ -215,7 +218,7 @@ object FileUtils extends Asserting{
 
   def lastModifiedFile(files : Iterable[File]) =
     files.toList.flatMap(allFiles).sortWith(_.lastModified > _.lastModified).headOption
-  
+
   def fileIsLaterThan(target : File, dirs : List[File]) = {
     target.exists() && (target.lastModified >= lastModifiedFileTime(dirs).getOrElse(0L))
   }
@@ -288,7 +291,7 @@ object FileUtils extends Asserting{
     var res : List[A] = Nil
     if (file.exists()) {
       withFileReader(file){
-        in : BufferedReader => 
+        in : BufferedReader =>
           var line = in.readLine
           while (line != null) {
             res = f(line) :: res
@@ -298,7 +301,7 @@ object FileUtils extends Asserting{
     }
     res.reverse
   }
-  
+
   def tempDir(name : String = "makerTempFile") = {
     val temp = File.createTempFile(name, java.lang.Long.toString(System.nanoTime))
     recursiveDelete(temp)
@@ -338,7 +341,7 @@ object FileUtils extends Asserting{
   }
 
   def withTempFile[A](f : File => A, deleteOnExit : Boolean = true) = {
-    
+
     val file = File.createTempFile("makerTempFile", java.lang.Long.toString(System.nanoTime))
     val result = try {
       f(file)
@@ -352,11 +355,11 @@ object FileUtils extends Asserting{
 
   def withTempDir[A](f : File => A) = {
     withTempFile(
-      {file : File => 
+      {file : File =>
         recursiveDelete(file)
         file.mkdir
         f(file)
-      }, 
+      },
       deleteOnExit = true
     )
   }
@@ -378,7 +381,7 @@ object FileUtils extends Asserting{
     var map = Map[K, V]()
     if (file.exists) {
       withFileLineReader(file) {
-        line : String => 
+        line : String =>
           map += extractor(line)
       }
     }
@@ -410,4 +413,54 @@ object FileUtils extends Asserting{
   def mkdir(dir : File, name : String) : File = {
     mkdir(file(dir, name))
   }
+
+  // I'm sure this will show up in Guava / Apache Commons IO
+  // soon enough, but our dependencies are far too old to have them
+  // NOTE: follows links instead of copying them
+  def copyDirectoryAndPreserve(from: File, to: File) {
+    require(from.exists && from.isDirectory)
+    require(!to.exists, "target directory cannot exist")
+    to.getParentFile.mkdirs()
+
+    // http://docs.oracle.com/javase/tutorial/essential/io/examples/Copy.java
+    class TreeCopier(source: Path, target: Path) extends FileVisitor[Path] {
+      import StandardCopyOption._
+      import FileVisitResult._
+
+      def preVisitDirectory(dir: Path, a: BasicFileAttributes): FileVisitResult = {
+        val newDir: Path = target.resolve(source.relativize(dir))
+        NioFiles.copy(dir, newDir, COPY_ATTRIBUTES)
+        CONTINUE
+      }
+
+      def visitFile(file: Path, a: BasicFileAttributes): FileVisitResult = {
+        val newFile = target.resolve(source.relativize(file))
+        if (NioFiles.isSymbolicLink(file)) {
+          val linkTarget = NioFiles.readSymbolicLink(file)
+          NioFiles.createSymbolicLink(newFile, linkTarget)
+        } else {
+          NioFiles.copy(file, newFile, COPY_ATTRIBUTES)
+        }
+        CONTINUE
+      }
+
+      def postVisitDirectory(dir: Path, e: IOException): FileVisitResult = {
+        if (e == null) {
+          val newDir = target.resolve(source.relativize(dir))
+          val time = NioFiles.getLastModifiedTime(dir)
+          NioFiles.setLastModifiedTime(newDir, time)
+        }
+        CONTINUE
+      }
+
+      def visitFileFailed(file: Path, e: IOException): FileVisitResult = {
+        CONTINUE
+      }
+    }
+
+    val copier = new TreeCopier(from.toPath, to.toPath)
+//    NioFiles.walkFileTree(from.toPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, copier)
+    NioFiles.walkFileTree(from.toPath, copier)
+  }
+
 }

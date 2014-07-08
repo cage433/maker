@@ -147,10 +147,8 @@ case class SourceCompileTask(module :Module) extends CompileTask{
 }
 
 case class TestCompileTask(module : Module) extends CompileTask{
-  def upstreamTasks = {
-    val tasks : List[Task] = SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
-    tasks
-  }
+  def upstreamTasks: List[Task] =
+      SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
 
   def phase = TestCompilePhase
   override def toShortString = module + ":TC"

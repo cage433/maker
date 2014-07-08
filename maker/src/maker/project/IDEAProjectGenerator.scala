@@ -172,6 +172,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
     val sources = if (
       !projComp.sourceDir.exists && 
       !module.resourceDir.exists &&
+      !module.managedResourceDir.exists &&
       !module.testResourceDir.exists &&
       !projTestComp.sourceDir.exists) {
         """    <content url="file://$MODULE_DIR$" />"""
@@ -181,7 +182,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
         """      <sourceFolder url="file://$MODULE_DIR$/%s" isTestSource="%s" />""".format(relDir, test.toString)
       }
       val sourcesAndResources = (Set(projComp.sourceDir).filter(_.exists)
-              ++ Set(module.resourceDir).filter(_.exists)).map(sourceFolder(_, test = false))
+              ++ Set(module.resourceDir, module.managedResourceDir).filter(_.exists)).map(sourceFolder(_, test = false))
       val testSourcesAndResources = (Set(projTestComp.sourceDir).filter(_.exists)
               ++ Set(module.testResourceDir).filter(_.exists)).map(sourceFolder(_, test = true))
       val outputDirectoryToExclude = module.targetDir.relativeTo(module.rootAbsoluteFile).getPath

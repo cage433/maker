@@ -25,123 +25,77 @@
 
 package maker.task.tasks
 
-import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.task._
+import maker.utils.FileUtils._
 import maker.utils.Stopwatch
 import maker.utils.maven.IvyLock
-import maker.utils.FileUtils._
-import maker.project.Project
+import org.apache.commons.io.FileUtils._
 
 /**
- * publishes poms and packaged artifacts to the local filesystem at ~/.ivy2/maker-local - subject to change
+ * Creates jars that are ready for deployment.
  */
-case class CreateDeployTask(baseProject : BaseProject, buildTests: Boolean) extends Task {
-  def name = "Create Deploy"
-  val log = baseProject.log
+case class CreateDeployTask(project: Project, buildTests: Boolean) extends Task {
+  def baseProject = project
 
-  def module = baseProject
-  def upstreamTasks = baseProject.allUpstreamModules.map(PackageMainJarTask) ::: {
-    if (buildTests) baseProject.allUpstreamModules.map(PackageTestJarTask)
+  private val log = project.log
+  val baseOutputDir = file(project.rootAbsoluteFile, "/target-maker/deploy/")
+  val jarsDir = file(baseOutputDir, "/jars/")
+  val thirdPartyJars = file(baseOutputDir, "/thirdpartyjars/")
+  val binDir = file(baseOutputDir, "/bin/")
+
+  def name = "Create Deploy"
+
+  def module = project
+  def upstreamTasks = project.allUpstreamModules.map(PackageMainJarTask) ::: {
+    if (buildTests) project.allUpstreamModules.map(PackageTestJarTask)
     else Nil
   }
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
+  def exec(results: Iterable[TaskResult], sw: Stopwatch) = {
     println("Running CreateDeployTask")
-    IvyLock.synchronized{
-      doPublish(baseProject, results, sw)
-    }
-  }
-
-  private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
-
-    baseProject match {
-      case p : Project =>
-        val baseOutputDir = file(p.rootAbsoluteFile,"/target-maker/deploy/")
-        log.info("Creating deployment directory: " + baseOutputDir)
-        baseOutputDir.deleteAll()
-        baseOutputDir.mkdirs()
-
-        val jarsDir = file(baseOutputDir,"/jars/")
-        log.info("Creating jars directory: " + jarsDir)
-        jarsDir.mkdirs()
-
-        val thirdPartyJars = file(baseOutputDir,"/thirdpartyjars/")
-        log.info("Creating thirdparty jars directory: " + thirdPartyJars)
-        thirdPartyJars.mkdirs()
-
-        val binDir = file(baseOutputDir,"/bin/")
-        binDir.mkdirs()
-
-        log.info("copying jars to jars directory")
-        p.allUpstreamModules foreach { m =>
-          copyFileToDirectory(m.outputArtifact, jarsDir)
-        }
-
-//        log.info("Copying properties files")
-//        val propsDir = file(baseOutputDir,"/props/envs")
-//        propsDir.mkdirs()
-//        copyDirectory(file(p.rootAbsoluteFile,"/props/envs/"),propsDir)
-
-        log.info("Copying scripts")
-        copyDirectory(file(p.rootAbsoluteFile,"/bin/"),binDir)
-
-        for ( m <- p.allModules ;
-              j <- m.classpathJars)
-          copyFile(j,file(thirdPartyJars,"/" + j.getName))
-
-        val appJars = jarsDir.listFiles().toList.map(_.relativeTo(baseOutputDir)).map(_.getPath).sortWith(_<_)
-        val tpJars = thirdPartyJars.listFiles().toList.map(_.relativeTo(baseOutputDir)).map(_.getPath).sortWith(_<_)
-
-        val classpathString = (appJars ::: tpJars).mkString(":")
-        writeToFile(file(baseOutputDir,"/bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
-
-        if (buildTests) {
-          // test files
-
-          val testJarsDir = file(baseOutputDir, "/testjars/")
-          log.info("Creating jars directory: " + testJarsDir)
-          testJarsDir.mkdirs()
-
-          log.info("copying test jars to testjars directory")
-          p.allUpstreamModules foreach {
-            m =>
-              copyFileToDirectory(m.testOutputArtifact, testJarsDir)
-          }
-
-          val testJars = testJarsDir.listFiles().toList.map(_.relativeTo(baseOutputDir)).map(_.getPath).sortWith(_ < _)
-          val testClasspathString = (appJars ::: tpJars ::: testJars).mkString(":")
-          writeToFile(file(baseOutputDir, "/bin/deploy-test-classpath.sh"), "export CLASSPATH=" + testClasspathString)
-
-          copyDirectory(file(p.rootAbsoluteFile, "/reports.impl/resource_managed/"), file(baseOutputDir, "/reports.impl/resource_managed/"))
-          copyDirectory(file(p.rootAbsoluteFile, "/databases/resource_managed/"), file(baseOutputDir, "/databases/resource_managed/"))
-          copyDirectory(file(p.rootAbsoluteFile, "/launcher/resource_managed/"), file(baseOutputDir, "/launcher/resource_managed/"))
-          copyDirectory(file(p.rootAbsoluteFile, "services/cs/TrinityService/files/"), file(baseOutputDir, "services/cs/TrinityService/files/"))
-        }
-
-        copyDirectory(file(p.rootAbsoluteFile, "/services/resource_managed/"), file(baseOutputDir, "/services/resource_managed/"))
-
-        copyDirectory(file(p.rootAbsoluteFile, "/lib/"), file(baseOutputDir, "/lib/"))
-
-        copyFile(file(p.rootAbsoluteFile, "GUI_CHECKSUM"), file(baseOutputDir, "GUI_CHECKSUM"))
-        copyFile(file(p.rootAbsoluteFile, "FATGUI_CHECKSUM"), file(baseOutputDir, "FATGUI_CHECKSUM"))
-
-        List(
-          "logback.xml"
-          ,"logback-unit-tests.xml"
-          ,"logback-perf-tests.xml"
-          ,"logback-stork.xml"
-          ,"javaVersion"
-        ) foreach { n =>
-          copyFile(file(p.rootAbsoluteFile, n),file(baseOutputDir, n))
-        }
-
-        writeToFile(file(baseOutputDir,"/git.txt"), "USE BINARY DEPLOY")
-
-        log.info("complete")
-      case m : Module =>
-        throw new IllegalStateException("Should not be run on a module")
+    IvyLock.synchronized {
+      doPublish()
     }
     DefaultTaskResult(this, true, sw)
+  }
+
+  protected def doPublish(): Unit = {
+    log.info("Creating deployment directory: " + baseOutputDir)
+    baseOutputDir.deleteAll()
+    baseOutputDir.mkdirs()
+
+    copyDirectoryAndPreserve(file(project.rootAbsoluteFile, "/bin/"), binDir)
+
+    val appJars = project.allUpstreamModules map { m =>
+      val out = file(jarsDir, m.outputArtifact.getName)
+      copyFile(m.outputArtifact, out)
+      out.relativeTo(baseOutputDir).getPath
+    }
+
+    val tpJars = for {
+      m <- project.allModules
+      j <- m.classpathJars
+    } yield {
+      val out = file(thirdPartyJars, "/" + j.getName)
+      copyFile(j, out)
+      out.relativeTo(baseOutputDir).getPath
+    }
+
+    val classpathString = (appJars ::: tpJars).distinct.mkString(":")
+    writeToFile(file(baseOutputDir, "/bin/deploy-classpath.sh"), "export CLASSPATH=" + classpathString)
+
+    if (buildTests) {
+      val testJarsDir = file(baseOutputDir, "/testjars/")
+      testJarsDir.mkdirs()
+      val testJars = project.allUpstreamModules map { m =>
+        val out = file(testJarsDir, m.testOutputArtifact.getName)
+        copyFile(m.testOutputArtifact, out)
+        out.relativeTo(baseOutputDir).getPath
+      }
+
+      val testClasspathString = (appJars ::: tpJars ::: testJars).distinct.mkString(":")
+      writeToFile(file(baseOutputDir, "/bin/deploy-test-classpath.sh"), "export CLASSPATH=" + testClasspathString)
+    }
   }
 }

@@ -1,48 +1,51 @@
 package maker.task.tasks
 
-import maker.task.Task
+import java.io.File
 import maker.project.Module
-import maker.task.TaskResult
+import maker.task.{ DefaultTaskResult, SingleModuleTask, TaskResult }
+import maker.task.compile._
+import maker.utils.FileUtils._
 import maker.utils.Stopwatch
 import maker.utils.os.Command
-import maker.utils.FileUtils._
-import java.io.File
-import maker.task.compile._
-import maker.task.SingleModuleTask
-import maker.task.DefaultTaskResult
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.TrueFileFilter
+import scala.collection.JavaConverters._
 
-case class PackageMainJarTask(module : Module) 
-  extends SingleModuleTask(module)
-{
-  def name = "Package Jar"
-  val props = module.props
-  val log = props.log
-
+case class PackageMainJarTask(module: Module) extends PackageJarTask(module) {
+  def name = "Package Main Jar"
   def upstreamTasks = SourceCompileTask(module) :: module.immediateUpstreamModules.map(PackageMainJarTask)
 
-  // Note: until we support scopes properly we have to be careful what we put on the runtime classpath
-  //   and in package runtime binary artifacts (so test scope content is deliberately excluded here)
-  private lazy val mainDirsToPack : List[File] =  List(module.compilePhase.outputDir, module.resourceDir).filter(_.exists)
+  protected def outputArtifact: File = module.outputArtifact
+  protected def outputDir: File = module.compilePhase.outputDir
+  protected def resourceDir: File = module.resourceDir
+  protected def managedResources: List[File] = allManagedResources.filter(module.includeInMainJar)
+}
 
+abstract class PackageJarTask(module: Module) extends SingleModuleTask(module) {
+  private val props = module.props
+  private val log = props.log
 
-  def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    synchronized{
-      if (fileIsLaterThan(module.outputArtifact, mainDirsToPack)) {
-        log.info("Packaging up to date for " + module.name + ", skipping...")
-        DefaultTaskResult(this, true, sw)
-      } else {
-        doPackage(results, sw)
-      }
-    }
+  def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
+    doPackage(results, sw)
   }
 
-  private def doPackage(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val jar = props.Jar().getAbsolutePath
+  protected def outputArtifact: File
+  protected def outputDir: File
+  protected def resourceDir: File
+  protected def managedResources: List[File]
 
-    case class WrappedCommand(cmd : Command, ignoreFailure : Boolean){
-      def exec : Int = {
+  protected def allManagedResources: List[File] =
+    if (!module.managedResourceDir.exists) Nil
+    else FileUtils.iterateFiles(
+      module.managedResourceDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE
+    ).asScala.filter(_.isFile).toList
+
+  private def doPackage(results: Iterable[TaskResult], sw: Stopwatch) = {
+    // why are we not using the J2SE JarFile API?
+    case class WrappedCommand(cmd: Command, ignoreFailure: Boolean) {
+      def exec: Int = {
         (cmd.exec(), ignoreFailure) match {
-          case  (0, _) => 0
+          case (0, _) => 0
           case (errorNo, true) => {
             log.warn("Ignoring  error in " + cmd + ". Artifact may be missing content")
             0
@@ -51,22 +54,32 @@ case class PackageMainJarTask(module : Module)
         }
       }
     }
-    def jarCommand(updateOrCreate : String,targetFile : File, dir : File) = WrappedCommand(
-      Command(List(jar, updateOrCreate,targetFile.getAbsolutePath, "-C", dir.getAbsolutePath, "."): _*),
-      ignoreFailure = false
-    )
+    val jar = props.Jar().getAbsolutePath
+    def jarCommand(updateOrCreate: String, targetFile: File, baseDir: File, file: File) = {
+      val relativeName = if (file == baseDir) "." else file.relativeTo(baseDir).toString
+      WrappedCommand(Command(
+        List(jar, updateOrCreate, outputArtifact.getAbsolutePath, "-C", baseDir.getAbsolutePath, relativeName): _*
+      ), ignoreFailure = false)
+    }
 
-    def createJarCommand(dir : File) = jarCommand("cf",module.outputArtifact,dir)
-    def updateJarCommand(dir : File) = jarCommand("uf",module.outputArtifact,dir)
+    def createJarCommand(baseDir: File, file: File) = jarCommand("cf", outputArtifact, baseDir, file)
+    def updateJarCommand(baseDir: File, file: File) = jarCommand("uf", outputArtifact, baseDir, file)
+
+    val cmds: List[WrappedCommand] = createJarCommand(outputDir, outputDir) :: {
+      (resourceDir, resourceDir) ::
+      managedResources.map((module.managedResourceDir, _))
+    }.collect {
+      case (base, file) if (file.exists) => updateJarCommand(base, file)
+    }
 
     if (!module.packageDir.exists)
       module.packageDir.mkdirs
 
-    val cmds : List[WrappedCommand] = createJarCommand(mainDirsToPack.head) :: mainDirsToPack.tail.map(updateJarCommand)
-
     cmds.find(_.exec != 0) match {
-      case Some(failingCommand) => DefaultTaskResult(this, false, sw, message = Some(failingCommand.cmd.savedOutput))
-      case None => DefaultTaskResult(this, true, sw)
+      case Some(failingCommand) =>
+        DefaultTaskResult(this, false, sw, message = Some(failingCommand.cmd.savedOutput))
+      case None =>
+        DefaultTaskResult(this, true, sw)
     }
   }
 }

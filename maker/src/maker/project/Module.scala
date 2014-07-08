@@ -171,7 +171,11 @@ class Module(
   def managedJars = findJars(managedLibDir)
   def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar()
 
+
+  // for the managed (non-jar) resources
+  def includeInMainJar(file: File): Boolean = true
   def outputArtifact = file(packageDir.getAbsolutePath, name + ".jar")
+  def includeInTestJar(file: File): Boolean = false
   def testOutputArtifact = file(packageDir.getAbsolutePath, name + "-test.jar")
 
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir

@@ -151,8 +151,8 @@ trait BaseProject {
 
   def update = execute(moduleBuild(UpdateTask(_), allUpstreamModules))
 
-  def createDeploy(buildTests: Boolean = true) = 
-    executeWithDependencies(CreateDeployTask(this, buildTests))
+  def createDeploy(buildTests: Boolean = true): BuildResult =
+    throw new UnsupportedOperationException
 
   def publishLocal(version : String) = 
     executeWithDependencies(PublishLocalTask(this, version))
