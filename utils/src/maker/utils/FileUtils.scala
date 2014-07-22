@@ -83,7 +83,14 @@ object FileUtils extends Asserting{
       recurse(plainFile)
     }
 
-    def readLines : List[String] = if (plainFile.exists) io.Source.fromFile(plainFile).getLines().toList else Nil
+    def readLines : List[String] = {
+      if (plainFile.exists) {
+        val source = io.Source.fromFile(plainFile)
+        try source.getLines().toList
+        finally source.close()
+      }
+      else Nil
+    }
     def append(s:String) {
       val stringToWrite = {
         readLines.toList.lastOption match {
