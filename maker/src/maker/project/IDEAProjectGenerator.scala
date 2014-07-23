@@ -37,7 +37,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
   def generateTopLevelModule(rootDir:File, name:String, excludedFolders:List[String]) {
 
     val formattedExcludedFolders = if (excludedFolders.nonEmpty) {
-      val excludedFoldersString = excludedFolders.map(folder => {
+      val excludedFoldersString = excludedFolders.sorted.map(folder => {
         """      <excludeFolder url="file://$MODULE_DIR$/%s" />""" % folder
       }).mkString("\n")
       """    <content url="file://$MODULE_DIR$">
@@ -105,14 +105,14 @@ case class IDEAProjectGenerator(props : MakerProps) {
     writeToFileIfDifferent(file(librariesDir, "scala_compiler_%s.xml" % scalaVersion.replace('.', '_')), scalaCompilerLibraryContent)
 
     val scalaCompilerContent = """<?xml version="1.0" encoding="UTF-8"?>
-<module version="4">
+<project version="4">
   <component name="ScalacSettings">
     <option name="COMPILER_LIBRARY_NAME" value="scala-compiler-%s" />
     <option name="COMPILER_LIBRARY_LEVEL" value="Project" />
     <option name="MAXIMUM_HEAP_SIZE" value="2048" />
     <option name="FSC_OPTIONS" value="-max-idle 0" />
   </component>
-</module>
+</project>
 """ % scalaVersion
     writeToFileIfDifferent(file(ideaProjectRoot, "scala_compiler.xml"), scalaCompilerContent)
 
@@ -146,22 +146,22 @@ case class IDEAProjectGenerator(props : MakerProps) {
       }
 
       val vcsContent = """<?xml version="1.0" encoding="UTF-8"?>
-<module version="4">
+<project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="%s" vcs="Git" />
   </component>
-</module>
+</project>
 """.format(relDirectory)
       writeToFileIfDifferent(file(ideaProjectRoot, "vcs.xml"), vcsContent)
     }
 
     val highlightingContent = """<?xml version="1.0" encoding="UTF-8"?>
-<module version="4">
+<project version="4">
   <component name="HighlightingAdvisor">
     <option name="SUGGEST_TYPE_AWARE_HIGHLIGHTING" value="false" />
     <option name="TYPE_AWARE_HIGHLIGHTING_ENABLED" value="true" />
   </component>
-</module>
+</project>
 """
     writeToFileIfDifferent(file(ideaProjectRoot, "highlighting.xml"), highlightingContent)
   }
@@ -181,6 +181,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
         val relDir = dir.relativeTo(module.rootAbsoluteFile).getPath
         """      <sourceFolder url="file://$MODULE_DIR$/%s" isTestSource="%s" />""".format(relDir, test.toString)
       }
+      // see note on 'resourcesDirContent' about why we don't use 'java-resources'
       val sourcesAndResources = (Set(projComp.sourceDir).filter(_.exists)
               ++ Set(module.resourceDir, module.managedResourceDir).filter(_.exists)).map(sourceFolder(_, test = false))
       val testSourcesAndResources = (Set(projTestComp.sourceDir).filter(_.exists)
@@ -268,6 +269,14 @@ case class IDEAProjectGenerator(props : MakerProps) {
     <output-test url="file://$MODULE_DIR$/%s" />""".format(relativeOutputDir, relativeTestOutputDir)
     }
 
+    /*
+     IntelliJ 13 added support for java-resource roots, but
+     unfortunately all files are copied into the target directory. In
+     order to agree with maker we don't want to copy any resources,
+     but instead want them added to the classpath. So we do this hack
+     AND add all resource roots as source roots AND explicitly exclude
+     copying any resources from the source roots to the target.
+     */
     def resourcesDirContent(dir:String, test:String) = """    <orderEntry type="module-library" exported=""%s>
       <library>
         <CLASSES>
@@ -278,7 +287,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
       </library>
     </orderEntry>""".format(test, dir)
 
-    val resourceDirectoriesThatExist = Set(module.resourceDir).filter(_.exists)
+    val resourceDirectoriesThatExist = Set(module.resourceDir, module.managedResourceDir).filter(_.exists)
     val resources = resourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(module.rootAbsoluteFile).getPath, "")).toList
     val testResourceDirectoriesThatExist = Set(module.testResourceDir).filter(_.exists)
     val testResources = testResourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(module.rootAbsoluteFile).getPath, """ scope="TEST"""")).toList
@@ -323,17 +332,24 @@ case class IDEAProjectGenerator(props : MakerProps) {
     val moduleEntries = (topLevel :: topLevel.allModules.toList).sortBy(_.name).map(xml(_)).mkString("\n")
 
     val modulesContent = """<?xml version="1.0" encoding="UTF-8"?>
-<module version="4">
+<project version="4">
   <component name="ProjectModuleManager">
     <modules>
 %s
     </modules>
   </component>
-</module>
+</project>
 
 """.format(moduleEntries)
     writeToFileIfDifferent(file(ideaProjectRoot, "modules.xml"), modulesContent)
   }
+
+  @annotation.tailrec
+  private def cleanWhitespace(s: String): String =
+    s.trim.replace("\n\n", "\n") match {
+      case clean if clean == s => s
+      case clean => cleanWhitespace(clean)
+    }
 
   private def writeToFileIfDifferent(file : File, text : String) = {
     def textDiffersMateriallyFromCurrentFile = {
@@ -342,7 +358,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
       currentLines != textLines
     }
     if (! file.exists || textDiffersMateriallyFromCurrentFile)
-        writeToFile(file, text)
+        writeToFile(file, cleanWhitespace(text) + "\n\n")
     file
   }
 
@@ -353,7 +369,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
       !textLines.subsetOf(currentLines)
     }
     if (! file.exists || textContainsNewLines) 
-      writeToFile(file, text)
+      writeToFile(file, cleanWhitespace(text) + "\n\n")
     file
   }
 }
