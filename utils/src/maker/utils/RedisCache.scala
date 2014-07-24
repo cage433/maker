@@ -24,7 +24,9 @@ class RedisPersistentCache(val hostname:String) extends PersistentCache {
   def get(hash: Hash):Option[List[String]] = {
     withJedis { jedis =>
       Option(jedis.get(hash.bytes)).map { bytes => {
-        io.Source.fromInputStream(new GZIPInputStream(new ByteArrayInputStream(bytes))).getLines().toList
+        val source = io.Source.fromInputStream(new GZIPInputStream(new ByteArrayInputStream(bytes)))
+        try source.getLines().toList
+        finally source.close()
       } }
     }
   }
