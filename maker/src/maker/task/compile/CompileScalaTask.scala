@@ -12,6 +12,7 @@ import maker.utils.FileUtils._
 import java.io.BufferedWriter
 import maker.utils.Stopwatch
 
+
 case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
   import CompileScalaTask._
 
@@ -48,6 +49,8 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
       definesClass,
       false,
       CompileOrder.Mixed,
+      // zinc 0.3.5
+      //com.typesafe.zinc.IncOptions(),
       None,
       None,
       mirrorAnalysis = true

@@ -23,7 +23,12 @@ resolver: maven http://repo1.maven.org/maven2/
 # versions _can_ be hard coded in external-resources if
 # there is a good reason
 #----------------------------------------------------------------------------
+
+# this should be the only place where these versions need to be specified
 version: scala_version 2.9.2
-version: sbt_version 0.12.1
+version: scala_version_base 2.9.2
+version: sbt_version 0.12.4
+version: zinc_version 0.2.5
+
 version: scalatest_version 1.9.2
 version: jetty_version 7.6.3.v20120416

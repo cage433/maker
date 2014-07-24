@@ -1,5 +1,7 @@
 package maker.project
 
+import maker.task.BuildResult
+import maker.task.tasks.CreateDeployTask
 import maker.utils.FileUtils._
 import java.io.File
 import maker.MakerProps
@@ -14,8 +16,11 @@ case class Project(
   ),
   topLevelExcludedFolders:List[String] = Nil
 ) extends TmuxIntegration{
-  
-  val upstreamModulesForBuild = immediateUpstreamModules
+
+  override def createDeploy(buildTests: Boolean = true): BuildResult =
+    executeWithDependencies(CreateDeployTask(this, buildTests))
+
+  val upstreamModulesForBuild = allUpstreamModules
   override def toString = name
 
   def constructorCodeAsString : String = {
@@ -47,5 +52,37 @@ case class Project(
   def generateEnsimeProject() {
     val generator = new EnsimeGenerator(props)
     generator.generateModules(rootAbsoluteFile, name, allModules)
+  }
+
+
+  def graphvizDiagram(): String = {
+    def deps(): List[(Module, Module)] = {
+      var seen = Set[Module]()
+      var deps = List[(Module, Module)]()
+      def collect(modules: Iterable[Module]): Unit =
+        for (module <- modules) {
+          if (!seen.contains(module)) {
+            seen += module
+            val upstream = module.immediateUpstreamModules
+            upstream.foreach { upM => deps ::= (module, upM) }
+            collect(upstream)
+          }
+        }
+      collect(immediateUpstreamModules)
+      deps
+    }
+
+    deps().map {
+      case (fromM, toM) => "\t\"" + fromM + "\" -> \"" + toM + "\"\n"
+    }.mkString("digraph \"" + name + "\" {\n", "", "}\n")
+  }
+
+  def createModulesDiagram(): Unit = {
+    withTempFile(dotFile => {
+      writeToFile(dotFile, graphvizDiagram())
+
+      import maker.utils.os.Command
+      Command("dot", "-Tpdf", "-o" + name + ".pdf", dotFile.getAbsolutePath).exec
+    })
   }
 }

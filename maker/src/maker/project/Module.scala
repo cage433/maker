@@ -171,7 +171,11 @@ class Module(
   def managedJars = findJars(managedLibDir)
   def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar()
 
+
+  // for the managed (non-jar) resources
+  def includeInMainJar(file: File): Boolean = true
   def outputArtifact = file(packageDir.getAbsolutePath, name + ".jar")
+  def includeInTestJar(file: File): Boolean = false
   def testOutputArtifact = file(packageDir.getAbsolutePath, name + "-test.jar")
 
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
@@ -190,6 +194,7 @@ class Module(
   def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Iterable[File] = List(file(rootAbsoluteFile, "lib"))
+  def warnUnnecessaryResources = true
 }
 
 
@@ -198,13 +203,16 @@ object Module{
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
   val props = MakerProps()
-  private val setup = Setup.create(
+
+  // commented code is for 2.10 with zinc 0.3.x
+  private val setup = Setup.create/*setup*/(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),
-    Nil, 
+    /*props.ProjectScalaReflectJar() ::*/ Nil, 
     props.SbtInterfaceJar(),
     props.CompilerInterfaceSourcesJar(),
-    props.JavaHome()
+    props.JavaHome() //Some(props.JavaHome()),
+    //forkJava = true
   )
 
   val compiler = Compiler.create(setup, logger)
@@ -239,7 +247,7 @@ object Module{
       upstreamModule =>
         val upstreamJarNames = upstreamModule.allUpstreamModules.flatMap(_.managedJars).map(_.getName).toSet
         val redundantJarNames = upstreamJarNames intersect jarNames
-        if (redundantJarNames.nonEmpty)
+        if (redundantJarNames.nonEmpty && proj.warnUnnecessaryResources)
           log.warn("Module " + proj.name + " doesn't need jars " + redundantJarNames.mkString(", ") + " as they are supplied by " + upstreamModule.name)
     }
 

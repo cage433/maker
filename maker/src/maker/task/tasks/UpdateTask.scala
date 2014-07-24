@@ -53,7 +53,7 @@ case class UpdateTask(module : Module)
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     removeRedundantResourceFiles()
-    val errors : List[(Int, String)] = missingResources().flatMap(_.update().flatten)
+    val errors : List[(Int, String)] = missingResources().flatMap(_.update().toIterable.flatten)
 
     if (errors.isEmpty)
       UpdateTaskResult(

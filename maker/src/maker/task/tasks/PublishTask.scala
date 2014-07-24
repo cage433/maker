@@ -89,7 +89,7 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
       DefaultTaskResult(this, true, sw)
     }
     catch {
-      case e =>
+      case e: Throwable =>
         e.printStackTrace
         DefaultTaskResult(this, false, sw, exception = Some(e))
     }

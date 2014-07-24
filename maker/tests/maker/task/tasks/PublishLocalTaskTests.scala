@@ -8,6 +8,7 @@ import maker.utils.os.CommandOutputHandler
 import maker.Resource
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.project.Project
+import maker.MakerProps
 
 class PublishLocalTaskTests extends FreeSpec{
   
@@ -65,7 +66,7 @@ class PublishLocalTaskTests extends FreeSpec{
               |    <dependency>
               |      <groupId>org.scala-lang</groupId>
               |      <artifactId>scala-library</artifactId>
-              |      <version>2.9.2</version>
+              |      <version>""".stripMargin + MakerProps.DefaultScalaVersion + """</version>
               |      <scope>compile</scope>
               |    </dependency>
               |    <dependency>
@@ -176,7 +177,7 @@ class PublishLocalTaskTests extends FreeSpec{
               |    <dependency>
               |      <groupId>org.scala-lang</groupId>
               |      <artifactId>scala-library</artifactId>
-              |      <version>2.9.2</version>
+              |      <version>""".stripMargin + MakerProps.DefaultScalaVersion + """</version>
               |      <scope>compile</scope>
               |    </dependency>
               |  </dependencies>

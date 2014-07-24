@@ -33,13 +33,14 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
     def resourceResolvers() = extractMap("resolver:")
   }
 
+  import MakerProps._
   object ScalaHome extends EnvProperty("SCALA_HOME") with IsFile
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
   object Javac extends Default(JavaHome() + "/bin/javac") with IsFile
   object Jar extends Default(JavaHome() + "/bin/jar") with IsFile
-  object MakerScalaVersion extends Default("2.9.2") with IsString
-  object ProjectScalaVersion extends Default("2.9.2") with IsString
+  object MakerScalaVersion extends Default(DefaultScalaVersion) with IsString
+  object ProjectScalaVersion extends Default(DefaultScalaVersion) with IsString
   object HomeDir extends SystemProperty("user.home") with IsFile
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
@@ -56,10 +57,11 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
 
   object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaReflectJar extends Default(file("scala-libs/scala-reflect-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
   object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
-  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-0.12.1.jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-0.12.1-sources.jar")) with IsFile
+  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-" + DefaultSbtVersion + ".jar")) with IsFile
+  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-" + DefaultSbtVersion + "-sources.jar")) with IsFile
 
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {
@@ -126,6 +128,17 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 }
 
 object MakerProps {
+
+  val DefaultScalaVersion = hackyReadVersion("scala_version")
+  val DefaultSbtVersion = hackyReadVersion("sbt_version")
+
+  private def hackyReadVersion(libname: String): String = {
+    val source = io.Source.fromFile("external-resource-config")
+    try {
+      source.getLines().find(_.contains(libname)).map(_.split(" ")(2)).get
+    } finally source.close()
+  }
+
   def apply(file : File) : MakerProps = {
     new MakerProps(MMap() ++ propsFileToMap(file))
   }
@@ -144,4 +157,3 @@ object MakerProps {
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 }
-

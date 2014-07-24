@@ -25,9 +25,11 @@
 
 package maker.utils.os
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
-import scala.actors.Futures
 import maker.MakerProps
 
 class CommandTests extends FunSuite{
@@ -50,9 +52,9 @@ class CommandTests extends FunSuite{
         assert(! f.exists)
         val cmd = Command(CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
         val (_, future) = cmd.execAsync
-        val result = Futures.awaitAll(1000, future).head
+        val result = Await.result(future, 1 second)
         assert(f.exists)
-        assert(result == Some(0))
+        assert(result == 0)
     }
   }
 
@@ -93,12 +95,10 @@ class CommandTests extends FunSuite{
         val cmd = new Command(new CommandOutputHandler().withSavedOutput, Some(dir), "bash", "main.sh")
         val (proc, future) = cmd.execAsync
         val procID = ProcessID(proc)
-        assert(procID.isRunning())
-        assert(! future.isSet)
+        assert(procID.isRunning)
         proc.destroy
-        Futures.awaitAll(10000, future)
-        assert(!procID.isRunning(), "Process should have died")
-        assert(future.isSet)
+        Await.result(future, 10 seconds)
+        assert(!procID.isRunning, "Process should have died")
     }
   }
 
@@ -121,12 +121,10 @@ class CommandTests extends FunSuite{
         val cmd = new Command(CommandOutputHandler.NO_CONSUME_PROCESS_OUTPUT, Some(dir), "bash", "main.sh")
         val (proc, future) = cmd.execAsync
         val procID = ProcessID(proc)
-        assert(procID.isRunning())
-        assert(! future.isSet)
+        assert(procID.isRunning)
         proc.destroy
-        Futures.awaitAll(10000, future)
-        assert(!procID.isRunning(), "Process should have died")
-        assert(future.isSet)
+        Await.result(future, 10 seconds)
+        assert(!procID.isRunning, "Process should have died")
     }
   }
 

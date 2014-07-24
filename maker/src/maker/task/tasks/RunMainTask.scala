@@ -76,7 +76,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     val procHandle = cmd.execAsync()
     @tailrec
     def checkRunning(): TaskResult = {
-      if (!procHandle._2.isSet) {
+      if (!procHandle._2.isCompleted) {
         Thread.sleep(1000)
         if (System.in.available > 0 && System.in.read == Task.termChar) {
           log.info("Terminating: " + className)
@@ -87,7 +87,9 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
         else checkRunning()
       }
       else {
-        procHandle._2() match {
+        import concurrent.duration._
+        import concurrent.Await
+        Await.result(procHandle._2, Duration.Zero) match {
           case 0 => DefaultTaskResult(this, true, sw)
           case code => DefaultTaskResult(this, false, sw, message = Some("Run Main failed in " + baseProject))
         }
