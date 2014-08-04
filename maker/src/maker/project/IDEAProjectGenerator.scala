@@ -233,12 +233,19 @@ case class IDEAProjectGenerator(props : MakerProps) {
       })
     }
 
-    def jars(dirs:Iterable[File]) = dirs.flatMap(dir => {
-      if (dir.exists) dir.listFiles.filter(_.getName.endsWith(".jar")).toList else Nil
-    }).toList
+    def jars(dirs:Iterable[File]): List[File] = for {
+      dir <- dirs.toList
+      files <- Option(dir.listFiles).toList // java null awesomeness
+      file <- files
+      if file.getName.endsWith(".jar")
+    } yield file
 
     val managedLibraryJars = jars(List(module.managedLibDir))
-    val managedLibrarySourceJars = jars(List(module.managedLibSourceDir))
+    val managedLibrarySourceJars = managedLibraryJars.map{f =>
+      // ensures that we create an entry for the source, even if we don't have it locally
+      val dir = new File(f.getParentFile.getCanonicalPath.replace("/lib_managed", "/lib_src_managed"))
+      new File(dir, f.getName.replace(".jar", "-sources.jar"))
+    }
     val managedLibraryEntries = libraryEntriesForJars(managedLibraryJars, managedLibrarySourceJars, "").mkString("", "\n", "\n")
 
     val unmanagedLibraryJars = jars(module.unmanagedLibDirs).filterNot(_.getName.endsWith("-sources.jar"))
