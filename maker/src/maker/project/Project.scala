@@ -54,6 +54,9 @@ case class Project(
     generator.generateModules(rootAbsoluteFile, name, allModules)
   }
 
+  def generateSbtProject() {
+    new SbtGenerator().generate(this)
+  }
 
   def graphvizDiagram(): String = {
     def deps(): List[(Module, Module)] = {
