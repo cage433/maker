@@ -17,7 +17,7 @@ case class Project(
   topLevelExcludedFolders:List[String] = Nil
 ) extends TmuxIntegration{
 
-  override def createDeploy(buildTests: Boolean = true): BuildResult =
+  override def createDeploy(buildTests: Boolean = true, version: Option[String] = None): BuildResult =
     executeWithDependencies(CreateDeployTask(this, buildTests))
 
   val upstreamModulesForBuild = allUpstreamModules
