@@ -6,6 +6,7 @@ import maker.Resource
 import maker.utils.FileUtils._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 
+// TODO: resources should not be copied to target stackoverflow.com/questions/25158689
 class SbtGenerator {
 
   def generate(proj: BaseProject): Unit = {
@@ -57,6 +58,8 @@ object MakerCustom {
 // and is made available for user customisations. It will not
 // be over-written.
 
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+
 """
 
   private def build(p: BaseProject): String = {
@@ -77,7 +80,7 @@ object MakerBuild extends Build {
     scalaVersion := """" + props.ProjectScalaVersion() + """"
   )
 
-  lazy val defaultSettings = customiseSettings(Defaults.defaultSettings ++ Seq(
+  lazy val defaultSettings = customiseSettings(Seq(
     resolvers ++= Seq(
       """ + props.resourceResolvers().map {
       case (k, v) => "\"" + k + "\" at \"" + v + "\""
@@ -122,7 +125,7 @@ object MakerBuild extends Build {
   ) settings (
     libraryDependencies ++= List(
       """ +
-    m.resources.map(formatResource).distinct.mkString(",\n" + " " * 6) + """
+    m.resources.filterNot(_.extension == "sources").map(formatResource).distinct.mkString(",\n" + " " * 6) + """
     )
   ))"""
   }
@@ -134,12 +137,12 @@ object MakerBuild extends Build {
         "\" %% \"" + r.artifactId.replace(scalaV, "")
       else
         "\" % \"" + r.artifactId
-    val kind =
-      if (r.isBinaryJarResource) " jar()"
-      else ""
 
-    // all maker resources are intransitive
-    "\"" + r.groupId + artifact + "\" % \"" + r.version + "\"" + kind + " intransitive()"
+    if (r.extension == "jar")
+      "\"" + r.groupId + artifact + "\" % \"" + r.version + "\" jar() intransitive()"
+    else
+      "\"" + r.groupId + artifact + "\" % \"" + r.version + "\"" + "artifacts(Artifact(\"" +
+        r.artifactId + "\",\"" + r.extension + "\",\"" + r.extension + "\")) intransitive()"
   }
 
   private def refName(m: Module) = m.name.replace(".", "_").replace("-", "_")
