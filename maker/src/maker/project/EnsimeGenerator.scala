@@ -13,6 +13,7 @@ class EnsimeGenerator(props: MakerProps) {
       writer.append("(\n")
       writer.append("  :scala-version \"" + props.ProjectScalaVersion.stringValue + "\"\n")
       writer.append("  :java-flags (\"-Xmx8g\" \"-XX:+UseConcMarkSweepGC\" \"-Xss2m\")\n") // hack
+      writer.append("  :java-home \"" + props.JavaHome().getAbsolutePath + "\"\n")
 
       writer.append("  :root-dir \"" + root.getAbsolutePath + "\"\n")
       writer.append("  :name \"" + name + "\"\n")
