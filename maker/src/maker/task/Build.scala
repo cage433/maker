@@ -25,15 +25,15 @@
 
 package maker.task
 
-import maker.utils.Stopwatch
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.LinkedBlockingQueue
-import maker.utils.MakerLog
+import java.lang.Runnable
+import java.util.Comparator
+import java.util.concurrent.{BlockingQueue, Executors, FutureTask}
+import java.util.concurrent.{PriorityBlockingQueue, ThreadFactory, ThreadPoolExecutor, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadFactory
-import maker.project.BaseProject
+import maker.project.{BaseProject, Module}
+import maker.task.compile.{CompileTask, TestCompileTask}
+import maker.task.tasks.{RunUnitTestsTask, UpdateTask}
+import maker.utils.{MakerLog, Stopwatch}
 
 case class Build(
   name : String,
@@ -55,30 +55,11 @@ case class Build(
   def execute = new Execute().execute
   class Execute{
 
-    val executor = {
-      val nWorkers = numberOfWorkers
-      val taskNumber = Build.taskCount.getAndIncrement
-      val threadCount = new AtomicInteger(0)
-      new ThreadPoolExecutor(
-        nWorkers, 
-        nWorkers, 
-        Long.MaxValue, 
-        TimeUnit.NANOSECONDS, 
-        new LinkedBlockingQueue[Runnable](),
-        new ThreadFactory(){
-          def newThread(r : Runnable) = {
-            val thread  = Executors.defaultThreadFactory.newThread(r)
-            thread.setName("Build " + name + "-" + taskNumber + "." + threadCount.getAndIncrement)
-            thread
-          }
-        }
-      )
-    }
+    val executor = Build.PriorityExecutor(numberOfWorkers, name)
 
     val monitor = new Build.TaskMonitor(log, graph, executor)
 
     def execute : BuildResult = {
-
       val taskResults = execTasksInGraph()
       val buildResult = BuildResult(
         name,
@@ -91,10 +72,25 @@ case class Build(
     private def passToExecutor(pt : Task, resultsSoFar : Set[TaskResult]){
       val sw = new Stopwatch
       monitor.addToQueue(pt)
-      executor.execute(
-        new Runnable() {
-          def run() {
-            def threadNumber = Thread.currentThread.getName.last.toString.toInt
+      val priority = pt match {
+        case _: UpdateTask => -1000
+        case task: TestCompileTask =>
+          -100 - task.module.allUpstreamModules.size
+        case task: CompileTask =>
+          -500 - task.module.allUpstreamModules.size
+        case tests: RunUnitTestsTask =>
+          // higher priority for top level tests
+          // (more likely to be slower, integration style, tests)
+          tests.module match {
+            case m: Module => -m.allUpstreamModules.size
+            case _ => -tests.upstreamTasks.size
+          }
+        case _ => 0
+      }
+      log.debug("SUBMITTING " + pt + " with priority " + priority)
+      executor.executeWithPriority(priority){
+        log.debug("EXECUTING " + pt + " with priority " + priority)
+            val threadNumber = Thread.currentThread.getName.last.toString.toInt
             try {
               val result = try {
                 // Reassure the user some activity is happening
@@ -124,8 +120,6 @@ case class Build(
               monitor.synchronized{ monitor.notifyAll }
             }
           }
-        }
-      )
     }
 
 
@@ -175,6 +169,58 @@ object Build{
   }
 
   def apply(task : Task) : Build = apply(task.baseProject, task)
+
+  private class PrioritisedFutureTask(r: Runnable, val priority: Int)
+      extends FutureTask[Unit](r, null) with Comparable[PrioritisedFutureTask] {
+    override def compareTo(o: PrioritisedFutureTask) = priority - o.priority
+  }
+
+  /** `Executor` that can take a priority value (lower is higher
+    * priority) along with a closure which is used when assigning work
+    * to `Thread`s. Tasks without a priority value will be treated as
+    * low priority.
+    *
+    * Note that once a task has been accepted, it will not be stopped, so
+    * a low priority task that has been accepted will continue to run
+    * even if high priority tasks are subsequently submitted.
+    */
+  class PriorityExecutor private(workers: Int, queue: BlockingQueue[Runnable])
+      extends ThreadPoolExecutor(workers, workers, Long.MaxValue, TimeUnit.NANOSECONDS, queue) {
+    def executeWithPriority(priority: Int)(f: => Unit): Unit = {
+      val task = new PrioritisedFutureTask(new Runnable {
+        override def run(): Unit = f
+      }, priority)
+      super.execute(task)
+    }
+  }
+
+  object PriorityExecutor {
+    def apply(workers: Int, name: String): PriorityExecutor = {
+      // should really be a PriorityExecutor[ComparableFutureTask] but
+      // we are forced by invariance to use reflection and handle
+      // Runnables
+      val comparator = new Comparator[Runnable] {
+        type P = PrioritisedFutureTask
+        def compare(a: Runnable, b: Runnable) =
+          if (a.isInstanceOf[P] && b.isInstanceOf[P])
+            a.asInstanceOf[P].compareTo(b.asInstanceOf[P])
+          else if (a.isInstanceOf[P]) -1
+          else if (b.isInstanceOf[P]) 1
+          else 0
+      }
+      val queue = new PriorityBlockingQueue[Runnable](32, comparator)
+      val factory = new ThreadFactory(){
+        val threadCount = new AtomicInteger(0)
+        def newThread(r : Runnable) = {
+          val thread  = Executors.defaultThreadFactory.newThread(r)
+          thread.setName("Build-" + Build.taskCount.getAndIncrement + "-" + name + "." + threadCount.getAndIncrement)
+          thread
+        }
+      }
+      new PriorityExecutor(workers, queue)
+    }
+  }
+
 
   class TaskMonitor(log : MakerLog, graph : Dependency.Graph, executor : ThreadPoolExecutor){
     private val lock = new Object
