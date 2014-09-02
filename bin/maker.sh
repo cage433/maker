@@ -14,6 +14,11 @@
 # in the options. The project definition file is the single scala file in PWD, unless
 # a file is passed in as a parameter
 
+if [ -e ".javahome" ]; then
+  export JAVA_HOME=`cat .javahome`
+  export PATH=$JAVA_HOME/bin:$PATH
+fi
+
 if [ "$OSTYPE" = "msys" ]
 then
   PSEP=';'
