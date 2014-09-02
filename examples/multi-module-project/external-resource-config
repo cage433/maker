@@ -18,8 +18,8 @@ resolver: default http://repo1.maven.org/maven2/
 # versions _can_ be hard coded in external-resources if
 # there is a good reason
 #----------------------------------------------------------------------------
-version: scalatest_version 1.9.2
-version: scala_version 2.9.2
-version: scala_version_base 2.9.2
-version: sbt_version 0.12.4
-version: zinc_version 0.2.5
+version: scalatest_version 2.2.0
+version: scala_version 2.10.4
+version: scala_version_base 2.10
+version: sbt_version 0.13.5
+version: zinc_version 0.3.5

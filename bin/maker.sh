@@ -91,10 +91,11 @@ org.scala-lang scala-library {scala_version} classifier:sources path:scala-libra
 org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.jar
 org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version}.jar
 org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
+org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
+org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
+org.scala-lang jline {scala_version} path:jline-{scala_version}.jar
+org.scala-lang jline {scala_version} classifier:sources path:jline-{scala_version}.jar
 HERE
-# NEEDED FOR 2.10.4
-#org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
-#org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
@@ -121,7 +122,7 @@ build_jar(){
     mkdir -p $TEMP_OUTPUT_DIR
   fi
 
-  java -classpath $(external_jars) \
+  java -classpath $(scala_jars)${PSEP}$(external_jars) \
     -Dscala.usejavacp=true \
     scala.tools.nsc.Main \
     -d $TEMP_OUTPUT_DIR \
@@ -183,7 +184,7 @@ launch_maker_repl(){
   fi
 
   "$JAVA_HOME/bin/java" $JAVA_OPTS \
-    -classpath "$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
+    -classpath $(scala_jars) \
     -Dsbt.log.format="false" \
     -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
@@ -192,6 +193,7 @@ launch_maker_repl(){
     $MAKER_ARGS \
     $EXTRA_REPL_ARGS \
     scala.tools.nsc.MainGenericRunner \
+    -cp "$(maker_classpath)${PSEP}$PROJECT_DEFINITION_CLASS_DIR" \
     -Yrepl-sync -nc \
     -i $PROJECT_FILE \
     $CMDS \
@@ -210,7 +212,7 @@ recompile_project_if_required(){
     rm -rf $PROJECT_DEFINITION_CLASS_DIR
     mkdir -p $PROJECT_DEFINITION_CLASS_DIR
 
-    java -classpath "$(maker_classpath)" -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
+    java -classpath "$(scala_jars)${PSEP}$(maker_classpath)" -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
   fi
 }
 
@@ -231,11 +233,13 @@ maker_classpath(){
 run_command(){
   eval "$1" || (echo "failed to run $1 " && exit -1)
 }
-
+scala_jars() {
+  ls "$MAKER_ROOT_DIR"/scala-libs/*.jar \
+    | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
+}
 external_jars() {
-  ls $MAKER_ROOT_DIR/utils/lib_managed/*.jar \
-     $MAKER_ROOT_DIR/test-reporter/lib_managed/*.jar \
-     $MAKER_ROOT_DIR/scala-libs/*.jar \
+  ls "$MAKER_ROOT_DIR"/utils/lib_managed/*.jar \
+     "$MAKER_ROOT_DIR"/test-reporter/lib_managed/*.jar \
     | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
 }
 
