@@ -50,7 +50,7 @@ case class CompileScalaTask(modulePhase : ModuleCompilePhase) {
       false,
       CompileOrder.Mixed,
       // zinc 0.3.5
-      //com.typesafe.zinc.IncOptions(),
+      com.typesafe.zinc.IncOptions(),
       None,
       None,
       mirrorAnalysis = true

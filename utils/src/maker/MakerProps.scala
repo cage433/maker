@@ -135,7 +135,9 @@ object MakerProps {
   private def hackyReadVersion(libname: String): String = {
     val source = io.Source.fromFile("external-resource-config")
     try {
-      source.getLines().find(_.contains(libname)).map(_.split(" ")(2)).get
+      source.getLines().find(_.contains(libname)).map(_.split(" ")(2)).getOrElse{
+        throw new RuntimeException("Unable to read version of " + libname)
+      }
     } finally source.close()
   }
 

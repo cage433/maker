@@ -27,6 +27,7 @@ org.mortbay.jetty jsp-2.1-glassfish 2.1.v20100127
 org.scalacheck scalacheck_{scala_version_base} 1.10.1
 org.scala-lang jline {scala_version}
 org.scala-lang scala-compiler {scala_version} 
+org.scala-lang scala-reflect {scala_version}
 org.scalaz scalaz-core_{scala_version_base} 7.0.1
 org.slf4j slf4j-api 1.6.1
 redis.clients jedis 2.0.0
