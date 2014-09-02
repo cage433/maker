@@ -169,7 +169,7 @@ class Module(
   def cacheDirectory = mkdirs(makerDirectory, "cache")
 
   def managedJars = findJars(managedLibDir)
-  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar()
+  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() + props.ProjectScalaReflectJar()
 
 
   // for the managed (non-jar) resources
@@ -208,11 +208,11 @@ object Module{
   private val setup = Setup.create/*setup*/(
     props.ProjectScalaCompilerJar(),
     props.ProjectScalaLibraryJar(),
-    /*props.ProjectScalaReflectJar() ::*/ Nil, 
+    List(props.ProjectScalaReflectJar()), 
     props.SbtInterfaceJar(),
     props.CompilerInterfaceSourcesJar(),
-    props.JavaHome() //Some(props.JavaHome()),
-    //forkJava = true
+    props.JavaHome(), 
+    forkJava = false
   )
 
   val compiler = Compiler.create(setup, logger)
