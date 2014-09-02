@@ -88,12 +88,12 @@ class ProjectTaskDependenciesTests extends FunSuite{
           case _ => false
         }
       }
-      override def setUp(graph : Dependency.Graph){
+      override def setUp(graph : Dependency.Graph) = {
         if (graphContainsClean(graph))
           WriteClassCountToFile(this, "setup").exec
         super.setUp(graph)
       }
-      override def tearDown(graph : Dependency.Graph, result : BuildResult){
+      override def tearDown(graph : Dependency.Graph, result : BuildResult) = {
         if (graphContainsClean(graph))
           WriteClassCountToFile(this, "teardown").exec
         super.tearDown(graph, result)

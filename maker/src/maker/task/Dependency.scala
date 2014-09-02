@@ -2,6 +2,8 @@ package maker.task
 
 import maker.project.BaseProject
 import maker.task.compile.CompileTask
+import maker.task.tasks.RunUnitTestsTask
+
 
 object Dependency{
 
@@ -52,10 +54,14 @@ object Dependency{
     }
     def size = nodes.size
     def subGraphOf(rhs : Graph) = nodes.subsetOf(rhs.nodes) && edges.subsetOf(rhs.edges)
-    def includesCompileTask = nodes.find {
+    def includesCompileTask = nodes.exists {
       case _ : CompileTask => true
       case _ => false
-    }.isDefined
+    }
+    def includesTestTask = nodes.exists {
+      case _ : RunUnitTestsTask => true
+      case _ => false
+    }
   }
 
   object Graph{

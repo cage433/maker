@@ -72,7 +72,7 @@ case class Resource(
     def resolve(s : String) : String = {
       s match {
         case Regex(before, versionId, after) => 
-          val resolvedVersion = versions.getOrElse(versionId, throw new RuntimeException("Missing version for " + versionId))
+          val resolvedVersion = versions.getOrElse(versionId, throw new RuntimeException("Missing version for " + s))
           resolve(before + resolvedVersion + after)
         case _ => s
       }

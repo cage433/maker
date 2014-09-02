@@ -14,7 +14,7 @@
 
 
 resolver: default http://repo1.maven.org/maven2/
-resolver: typesafe    http://repo.typesafe.com/typesafe/releases/
+resolver: typesafe http://repo.typesafe.com/typesafe/releases/
 
 
 #----------------------------------------------------------------------------
@@ -25,10 +25,10 @@ resolver: typesafe    http://repo.typesafe.com/typesafe/releases/
 #----------------------------------------------------------------------------
 
 # this should be the only place where these versions need to be specified
-version: scala_version 2.9.2
-version: scala_version_base 2.9.2
-version: sbt_version 0.12.4
-version: zinc_version 0.2.5
+version: scalatest_version 2.2.0
+version: scala_version 2.10.4
+version: scala_version_base 2.10
+version: sbt_version 0.13.5
+version: zinc_version 0.3.5
 
-version: scalatest_version 1.9.2
 version: jetty_version 7.6.3.v20120416

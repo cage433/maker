@@ -27,12 +27,13 @@ trait TmuxIntegration extends BaseProject{
 
     // Run exactly once BEFORE this task is called from a module - NOT once for
     // each task in the dependency tree
-    override def setUp(graph : Dependency.Graph){
-      super.setUp(graph)
+    override def setUp(graph : Dependency.Graph) = {
+      val superResult = super.setUp(graph)
       tmux("set-option", "-gq", "status-left-length", "100")
       tmux("refresh-client")
       tmuxClearStatusLeft
       tmux("set", "-g", "status-bg", "blue")
+      superResult
     }
 
     private def outputCompilationToVimErrorFile(result : BuildResult){
@@ -54,8 +55,8 @@ trait TmuxIntegration extends BaseProject{
       }
     }
 
-    def tearDown(graph : Dependency.Graph, result : BuildResult){
+    def tearDown(graph : Dependency.Graph, result : BuildResult) = {
       tmuxReportResult(result)
-      //outputCompilationToVimErrorFile(result)
+      true
     }
 }

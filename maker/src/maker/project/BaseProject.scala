@@ -26,12 +26,13 @@ trait BaseProject {
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
-  def setUp(graph : Dependency.Graph) : Unit = {
+  def setUp(graph : Dependency.Graph) : Boolean = {
     if (graph.includesCompileTask){
       props.VimErrorFile().delete
     }
+    ! props.VimErrorFile().exists()
   }
-  def tearDown(graph : Dependency.Graph, result : BuildResult) : Unit
+  def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean
   def extraUpstreamTasks(task : Task) : Set[Task] =
     extraUpstreamTasksMatcher.lift(task).getOrElse(Set.empty)
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty

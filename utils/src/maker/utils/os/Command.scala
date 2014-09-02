@@ -33,7 +33,7 @@ import scalaz.syntax.std.option._
 import java.io.IOException
 import maker.MakerProps
 import maker.utils.FileUtils._
-import scala.concurrent.ExecutionContext_Implicits_global
+import scala.concurrent.ExecutionContext.Implicits.global
 
 case class CommandOutputHandler(writer : Option[PrintWriter] = Some(new PrintWriter(System.out)),
                                 buffer : Option[StringBuffer] = None,
