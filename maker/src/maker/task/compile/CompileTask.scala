@@ -140,7 +140,7 @@ case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
 
 case class SourceCompileTask(module :Module) extends CompileTask{
   def upstreamTasks = {
-    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module))
+    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false))
   }
   def phase = SourceCompilePhase
   override def toShortString = module + ":SC"

@@ -10,6 +10,7 @@ import scala.xml.NodeSeq
 import maker.project.Module
 import maker.utils.FileUtils
 import maker.utils.FileUtils._
+import scalaz.syntax.std.boolean._
 
 /*  
     Defines a resource held at some maven/nexus repository
@@ -42,6 +43,7 @@ case class Resource(
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
 ) {
+  import Resource._
   lazy val props = module.props
   lazy val log = module.log
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
@@ -82,6 +84,7 @@ case class Resource(
   def isSourceJarResource = isJarResource && classifier == Some("sources")
   def isBinaryJarResource = isJarResource && ! isSourceJarResource
 
+  def associatedSourceJarResource : Option[Resource] = isBinaryJarResource.option(copy(classifier = Some("sources")))
   lazy val resourceFile = {
     if (isSourceJarResource)
       FileUtils.file(module.managedLibSourceDir, basename)
@@ -99,39 +102,47 @@ case class Resource(
    * simply don't exist, and trying to download them every time we get an update can become
    * expensive if there are Nexus problems
    */
-  def update() = {
+  def update() : Resource.UpdateResult = {
 
-    var errors : Option[List[(Int, String)]] = None
     resourceFile.dirname.makeDirs
 
     val cachedFile = file(props.ResourceCacheDirectory(), resourceFile.basename)
     
-    if (resourceFile.doesNotExist && cachedFile.exists)
+    if (resourceFile.doesNotExist && cachedFile.exists){
       ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile.dirname)
-
-    if (resourceFile.doesNotExist && !isSourceJarResource) {
-      errors = download()
     }
 
-    if (resourceFile.exists && cachedFile.doesNotExist){
-      withTempDir{
-        dir => 
-          ApacheFileUtils.copyFileToDirectory(resourceFile, dir)
-          // Hoping move is atomic
-          ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
+    if (resourceFile.exists){
+      ResourceAlreadyExists
+    } else {
+      val errors = download()
+      if (resourceFile.exists){
+        log.info("Downloaded " + basename)
+        if (cachedFile.doesNotExist)
+          cacheDownloadedResource()
+        ResourceDownloaded
+      } else {
+        ResourceFailedToDownload(errors)
       }
     }
-    errors
   }
 
-  def urls() : List[String] = {
+  private def cacheDownloadedResource(){
+    withTempDir{
+      dir => 
+        ApacheFileUtils.copyFileToDirectory(resourceFile, dir)
+        // Hoping move is atomic
+        ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
+    }
+  }
+  private def urls() : List[String] = {
     (preferredRepository.toList ::: props.resourceResolvers().values.toList).map{
       repository => 
         repository + "/" + relativeURL
     }
   }
 
-  private def downloadOrErrors() : Option[List[(Int, String)]] = {
+  private def download() = {
     var errors = List[(Int, String)]()  // (curl return code, cmd)
     urls.find{
       url =>
@@ -146,31 +157,21 @@ case class Resource(
         )
         val returnCode = cmd.exec 
         if (!resourceFile.exists)
-          errors ::= (returnCode, cmd.asString)
+          errors ::= (returnCode, url)
         resourceFile.exists
     }
-    if (resourceFile.exists){
-      None
-    } else {
-      Some(errors.reverse)
-    }
-  }
-
-  private def download() = {
-    log.info("Downloading " + basename)
-    val errors = downloadOrErrors()
-    errors match {
-      case None if isBinaryJarResource => 
-        // Only try to download source the first time the binary is. Ignore
-        // any errors.
-        copy(classifier = Some("sources")).downloadOrErrors()
-      case _ =>
-    }
-    errors
+    errors.reverse
   }
 }
 
 object Resource{
+  sealed trait UpdateResult{
+    def errors : List[(Int, String)] = Nil // (return code, curl command)
+  }
+  case object ResourceAlreadyExists extends UpdateResult
+  case object ResourceDownloaded extends UpdateResult
+  case class ResourceFailedToDownload(override val errors : List[(Int, String)]) extends UpdateResult
+
   def build(module : Module, s : String, resourceVersions : Map[String, String] = Map.empty, resourceResolvers : Map[String, String] = Map.empty) : Resource = {
     def exitWithBadUsage{
       val errorMessage = """|Valid resource format is 

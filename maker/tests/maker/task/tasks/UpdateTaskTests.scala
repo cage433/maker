@@ -41,9 +41,7 @@ class UpdateTaskTests extends FreeSpec {
         assert(
           module.resources().toSet === Set(
             Resource(module, "org.foo", "bar", "0.12.1"),
-            Resource(module, "org.foo", "bar", "0.12.1", classifier=Some("sources")),
-            Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath)),
-            Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath), classifier=Some("sources"))
+            Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath))
           )
         )
 
@@ -67,7 +65,7 @@ class UpdateTaskTests extends FreeSpec {
   }
 
   "Update task should cause all upstream modules to update" in {
-    withTestDir{
+    withTempDir{
       dir => 
         val aDir = FileUtils.mkdir(file(dir, "a"))
         val bDir = FileUtils.mkdir(file(dir, "b"))
@@ -110,6 +108,73 @@ class UpdateTaskTests extends FreeSpec {
           resource => 
             assert(resource.resourceFile.exists, "Resource " + resource + " should exist")
         }
+    }
+  }
+
+  "Updating source jars" in {
+    withTestDir{
+      dir =>
+
+        writeToFile(
+          file(dir, "external-resources"),
+          """|org.foo bar 1.0
+             |com.mike fred 2.0""".stripMargin
+        )
+
+        val externalResourceConfigFile = file(dir, "external-resource-config")
+        writeToFile(
+          externalResourceConfigFile,
+          """|version: scala_version 2.9.2
+             |version: sbt_version 0.12.1
+             |version: scalatest_version 1.8
+             |""".stripMargin
+        )
+
+        appendToFile(
+          externalResourceConfigFile,
+          ("""resolver: default file://%s/RESOLVER/""".stripMargin) % dir.getAbsolutePath
+        )
+
+        val resolverDir = file(dir, "RESOLVER").makeDir
+
+        val props = TestModule.makeTestProps(dir) ++ ("ExternalResourceConfigFile", externalResourceConfigFile.getAbsolutePath)
+
+        val module = new TestModule(dir, "testSourceJars", overrideProps = Some(props))
+
+        info("Update should also download any available source jars - nor failing when one is missing")
+
+        writeToFile(
+          file(dir, "/RESOLVER//com/mike/fred/2.0/fred-2.0.jar"),
+          "foo"
+        )
+        writeToFile(
+          file(dir, "/RESOLVER//com/mike/fred/2.0/fred-2.0-sources.jar"),
+          "foo"
+        )
+        writeToFile(
+          file(dir, "/RESOLVER//org/foo/bar/1.0/bar-1.0.jar"),
+          "bar"
+        )
+        assert(module.updateOnly.succeeded, "Update should not fail if even if source jars are missing")
+
+        assert(file(dir, "lib_managed/com.mike-fred-2.0.jar").exists)
+        assert(file(dir, "lib_src_managed/com.mike-fred-2.0-sources.jar").exists)
+        assert(file(dir, "lib_managed/org.foo-bar-1.0.jar").exists)
+
+        info("updateSources should fail if source jars are missing")
+        assert(module.updateSources.failed, "Update Source should have failed")
+
+        info("Subsequent updates should not try to download source jars for which binaries exist")
+        writeToFile(
+          file(dir, "/RESOLVER//org/foo/bar/1.0/bar-1.0-sources.jar"),
+          "bar"
+        )
+        assert(module.updateOnly.succeeded, "Update should not fail")
+        assert(! file(dir, "lib_src_managed/org.foo-bar-1.0-sources.jar").exists)
+
+        info("updateSources should try to download missing source jars")
+        assert(module.updateSources.succeeded, "Update Sources should not fail")
+        assert(file(dir, "lib_src_managed/org.foo-bar-1.0-sources.jar").exists)
     }
   }
 }

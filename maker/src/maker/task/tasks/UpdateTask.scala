@@ -34,7 +34,15 @@ import maker.utils.TableBuilder
 import maker.utils.RichString._
 import scala.collection.JavaConversions._
 
-case class UpdateTask(module : Module) 
+/**
+  * Updates any missing resources. If any jars are missing then will try 
+  * to download BOTH the binary and any associated source jar. 
+  * If `forceSourceUpdate` is true then will try to download ALL missing source jars 
+  *
+  * Missing source jars are not treated as a cause for failure unless `forceSourceUpdate`
+  * is true
+  */
+case class UpdateTask(module : Module, forceSourceUpdate : Boolean) 
   extends SingleModuleTask(module)
 {
   def name = "Update " + module
@@ -49,25 +57,29 @@ case class UpdateTask(module : Module)
     }
   }
 
-  private def missingResources() = module.resources().filterNot(_.resourceFile.exists)
+  private def updateResources(resources : List[Resource]) = {
+    resources.flatMap(_.update().errors)
+  }
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     removeRedundantResourceFiles()
-    val errors : List[(Int, String)] = missingResources().flatMap(_.update().toIterable.flatten)
+    val missingResources = module.resources().filterNot(_.resourceFile.exists)
+    var errors : List[(Int, String)] = updateResources(missingResources)
+
+    if (forceSourceUpdate){
+      val sourceJarResources = module.resources().flatMap(_.associatedSourceJarResource)
+      errors :::= updateResources(sourceJarResources)
+    } else {
+      val sourceJarResources = missingResources.flatMap(_.associatedSourceJarResource)
+      updateResources(sourceJarResources)
+    }
+
 
     if (errors.isEmpty)
-      UpdateTaskResult(
-        this,
-        true,
-        sw, 
-        Nil
-      )
+      UpdateTaskResult(this, true, sw, Nil)
     else
       UpdateTaskResult(
-        this,
-        false,
-        sw, 
-        errors,
+        this, false, sw, errors,
         message = Some("Failed to update resource(s) ")
       )
   }
@@ -80,7 +92,7 @@ object UpdateTask{
     }.flatten
     if (failures.nonEmpty){
       val b = new StringBuffer
-      val tb = TableBuilder("Return Code   ", "Command")
+      val tb = TableBuilder("Curl Error Code   ", "URL")
       failures.foreach{
         case (returnCode, command) => 
           tb.addRow(returnCode.toString, command)

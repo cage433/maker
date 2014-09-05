@@ -70,9 +70,9 @@ class Module(
       line => 
         line.startsWith("#") || line.trim.size == 0
     }.map(Resource.build(this, _, props.resourceVersions(), props.resourceResolvers()))
-    val sourceResources = resources.filter(_.extension == "jar").map(_.copy(classifier = Some("sources")))
-    (resources ::: sourceResources).distinct
+    resources.distinct
   }
+
 
 
   Module.warnOfUnnecessaryDependencies(this)
@@ -147,7 +147,7 @@ class Module(
     RunUnitTestsTask.failingTests(this, verbose)
   )
   def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(false)
-  def updateOnly = executeSansDependencies(UpdateTask(this))
+  def updateOnly = executeSansDependencies(UpdateTask(this, forceSourceUpdate = false))
 
 
   /********************
