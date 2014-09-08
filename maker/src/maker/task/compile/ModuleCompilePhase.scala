@@ -13,9 +13,9 @@ import java.io.FileOutputStream
 case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   val log = module.log
 
-  def sourceDir = phase match {
-    case SourceCompilePhase => module.sourceDir
-    case TestCompilePhase => module.testSourceDir
+  def sourceDirs = phase match {
+    case SourceCompilePhase => module.sourceDirs
+    case TestCompilePhase => module.testSourceDirs
   }
 
   def outputDir : File = {
@@ -43,8 +43,8 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     d
   }
 
-  def scalaFiles = findFilesWithExtension("scala", sourceDir)
-  def javaFiles = findFilesWithExtension("java", sourceDir)
+  def scalaFiles = findFilesWithExtension("scala", sourceDirs)
+  def javaFiles = findFilesWithExtension("java", sourceDirs)
 
   def sourceFiles = scalaFiles ++ javaFiles
   def classFiles : Iterable[File] = {

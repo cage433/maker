@@ -91,8 +91,8 @@ class EnsimeGenerator(props: MakerProps) {
     writer.append("      )\n")
 
     writer.append("      :source-roots (\n")
-    writer.append("        \"" + module.sourceDir.getAbsolutePath + "\"\n")
-    writer.append("        \"" + module.testSourceDir.getAbsolutePath + "\"\n")
+    writer.append("        " + module.sourceDirs.map(_.getAbsolutePath).mkString("\"","\" \"","\"") + "\n")
+    writer.append("        " + module.testSourceDirs.map(_.getAbsolutePath).mkString("\"","\" \"","\"") + "\n")
     writer.append("      )\n")
 
     writer.append("      :target \"" + module.outputDir.getAbsolutePath + "\"\n")
