@@ -59,7 +59,7 @@ object Maker {
       name,
       immediateUpstreamModules = upstreamProjects.toList,
       props = props
-    ) 
+    ) with ClassicLayout
   }
 
   lazy val testReporter = module("test-reporter")

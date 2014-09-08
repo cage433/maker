@@ -181,11 +181,12 @@ class Module(
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
   def publishLocalJar = file(publishLocalJarDir, outputArtifact.getName)
 
-  // TODO: use maven layout by default and override in maker/starling
-  def sourceDirs: List[File] = file(rootAbsoluteFile, "src") :: Nil
-  def testSourceDirs: List[File] = file(rootAbsoluteFile, "tests") :: Nil
-  def resourceDir = file(rootAbsoluteFile, "resources")
-  def testResourceDir = file(rootAbsoluteFile, "test-resources")
+  def sourceDirs: List[File] =
+    List(file(rootAbsoluteFile, "src/main/scala"), file(rootAbsoluteFile, "src/main/java"))
+  def testSourceDirs: List[File] =
+    List(file(rootAbsoluteFile, "src/test/scala"), file(rootAbsoluteFile, "src/test/java"))
+  def resourceDir = file(rootAbsoluteFile, "src/main/resources")
+  def testResourceDir = file(rootAbsoluteFile, "src/test/resources")
 
   def targetDir = file(rootAbsoluteFile, "target-maker")
   def outputDir = file(targetDir, "classes")
@@ -197,6 +198,14 @@ class Module(
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Iterable[File] = List(file(rootAbsoluteFile, "lib"))
   def warnUnnecessaryResources = true
+}
+
+trait ClassicLayout {
+  this: Module =>
+  override def sourceDirs: List[File] = file(rootAbsoluteFile, "src") :: Nil
+  override def testSourceDirs: List[File] = file(rootAbsoluteFile, "tests") :: Nil
+  override def resourceDir = file(rootAbsoluteFile, "resources")
+  override def testResourceDir = file(rootAbsoluteFile, "test-resources")
 }
 
 
