@@ -85,6 +85,7 @@ object MakerBuild extends Build {
       """ + props.resourceResolvers().map {
       case (k, v) => "\"" + k + "\" at \"" + v + "\""
     }.mkString("", ",\n" + " " * 6, "") + """),
+    sourcesInBase := false,
     javaSource in Compile <<= baseDirectory(_ / "src"),
     javaSource in Test <<= baseDirectory(_ / "tests"),
     scalaSource in Compile <<= baseDirectory(_ / "src"),
