@@ -9,8 +9,9 @@ import maker.utils.FileUtils._
 case class DummyCompileTask(mp : ModuleCompilePhase) {
   def exec() {
     mp.sourceFiles.foreach{
-      sf =>   
-        val relativeSrcFile = sf.relativeTo(mp.sourceDir)
+      sf =>
+        val root = mp.sourceDirs.find(sf.isContainedIn).get
+        val relativeSrcFile = sf.relativeTo(root)
         val classFile = file(mp.outputDir.getAbsolutePath + "/" + relativeSrcFile.getParentFile.getPath + "/" + relativeSrcFile.getName.replace(".scala", ".class"))
         classFile.touch
     }

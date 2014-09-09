@@ -181,13 +181,16 @@ class Module(
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
   def publishLocalJar = file(publishLocalJarDir, outputArtifact.getName)
 
-  def sourceDir = file(rootAbsoluteFile, "src")
-  def testSourceDir = file(rootAbsoluteFile, "tests")
+  def sourceDirs: List[File] =
+    List(file(rootAbsoluteFile, "src/main/scala"), file(rootAbsoluteFile, "src/main/java"))
+  def testSourceDirs: List[File] =
+    List(file(rootAbsoluteFile, "src/test/scala"), file(rootAbsoluteFile, "src/test/java"))
+  def resourceDir = file(rootAbsoluteFile, "src/main/resources")
+  def testResourceDir = file(rootAbsoluteFile, "src/test/resources")
+
   def targetDir = file(rootAbsoluteFile, "target-maker")
   def outputDir = file(targetDir, "classes")
   def testOutputDir = file(targetDir, "test-classes")
-  def resourceDir = file(rootAbsoluteFile, "resources")
-  def testResourceDir = file(rootAbsoluteFile, "test-resources")
   def docOutputDir = file(targetDir, "docs")
   def packageDir = file(targetDir, "package")
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
@@ -195,6 +198,14 @@ class Module(
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Iterable[File] = List(file(rootAbsoluteFile, "lib"))
   def warnUnnecessaryResources = true
+}
+
+trait ClassicLayout {
+  this: Module =>
+  override def sourceDirs: List[File] = file(rootAbsoluteFile, "src") :: Nil
+  override def testSourceDirs: List[File] = file(rootAbsoluteFile, "tests") :: Nil
+  override def resourceDir = file(rootAbsoluteFile, "resources")
+  override def testResourceDir = file(rootAbsoluteFile, "test-resources")
 }
 
 
