@@ -13,8 +13,8 @@
 #----------------------------------------------------------------------------
 
 
-resolver: default http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror
-resolver: maven http://repo1.maven.org/maven2/
+resolver: default http://repo1.maven.org/maven2/
+resolver: typesafe    http://repo.typesafe.com/typesafe/releases/
 
 
 #----------------------------------------------------------------------------

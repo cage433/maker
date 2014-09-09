@@ -19,6 +19,7 @@ import maker.ivy.IvyUtils
 import scala.xml.Elem
 import maker.task.compile.CompileScalaTask
 import maker.utils.ScreenUtils
+import maker.Resource
 
 trait BaseProject {
   protected def root : File
@@ -149,7 +150,17 @@ trait BaseProject {
 
   def pack = executeWithDependencies(PackageMainJarTask(_))
 
-  def update = execute(moduleBuild(UpdateTask(_), allUpstreamModules))
+  def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
+  def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))
+
+  def missingSourceJars() : List[Resource] = {
+    for {
+      module <- allUpstreamModules
+      resource <- module.resources
+      srcJar <- resource.associatedSourceJarResource
+      if !srcJar.resourceFile.exists
+    } yield srcJar
+  }
 
   def createDeploy(buildTests: Boolean = true, version: Option[String] = None): BuildResult =
     throw new UnsupportedOperationException
