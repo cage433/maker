@@ -41,7 +41,7 @@ case class TestFailure(message : String, throwable : List[String]) {
 }
 
 object MakerTestResults{
- 
+
   def splitFields(line : String) : List[String] = {
     val fieldSep = 28.toChar.toString
     line.split(fieldSep).toList
@@ -105,7 +105,7 @@ object MakerTestResults{
   }
   def error(msg : String){
     if (showTestProgress)
-      Console.err.println("\033[1;31m" + indent + dateFormat.format(new Date()) + " " + msg + "\033[0m")
+      Console.err.println((indent + dateFormat.format(new Date()) + " " + msg).inLightRed)
 
   }
 }

@@ -28,6 +28,10 @@ class MakerTestReporter extends Reporter{
     case None => throw new Exception(" maker must have maker.test.output set")
   }
 
+  private val EscapeChars = sys.env.get("MAKER_ESCAPECHARS").isDefined
+  private val StartColour = if (EscapeChars) "\033[1;31m" else ""
+  private val EndColour = if (EscapeChars) "\033[0m" else ""
+
   object Log{
     val showTestProgress = Properties.propOrFalse("maker.show.test.progress")
     val dateFormat = new SimpleDateFormat("mm:ss,SSS")
@@ -37,10 +41,10 @@ class MakerTestReporter extends Reporter{
     }
     def error(msg : String){
       if (showTestProgress)
-        Console.err.println("\033[1;31m" + dateFormat.format(new Date()) + " " + msg + "\033[0m")
+        Console.err.println(StartColour + dateFormat.format(new Date()) + " " + msg + EndColour)
     }
     def fatal(msg : String){
-      Console.err.println("\033[1;31m" + dateFormat.format(new Date()) + " " + msg + "\033[0m")
+      Console.err.println(StartColour + dateFormat.format(new Date()) + " " + msg + EndColour)
     }
   }
 

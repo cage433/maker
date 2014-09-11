@@ -69,11 +69,14 @@ object RichString {
   }
   case class RichString(s: String){
 		def % (args: Any*) = String.format(s, box(nullsafe(args)):_*)
-    //def inGreen = "\033[1;32m" + s + "\033[0m"
-    def inGreen = "\033[32m" + s + "\033[0m"
-    def inRed = "\033[31m" + s + "\033[0m"
-    def inReverseRed = "\033[7;31m" + s + "\033[0m"
-    def inBlue = "\033[34m" + s + "\033[0m"
+    import ScreenUtils.EscapeChars
+
+    private def inColourCode(code: String) = if (EscapeChars) "\033[" + code + "m" + s + "\033[0m" else s
+    def inGreen = inColourCode("0;32")
+    def inLightRed = inColourCode("1;31")
+    def inRed = inColourCode("0;31")
+    def inReverseRed = inColourCode("7;31")
+    def inBlue = inColourCode("0;34")
     def justified : String = {
       val n = 2
       if (n == 0 || s.length % n == 0)

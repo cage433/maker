@@ -1,7 +1,9 @@
 package maker.utils
 
 object ScreenUtils{
-  def clear(): Unit = {
+  val EscapeChars = sys.env.get("MAKER_ESCAPECHARS").isDefined
+
+  def clear(): Unit = if (EscapeChars)
     sys.env.get("TERM") match {
       case None =>
         // no op
@@ -15,7 +17,6 @@ object ScreenUtils{
       case term =>
         magic()
     }
-  }
 
   private def magic(): Unit = {
     println("\033[2J\033[1000A")
