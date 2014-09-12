@@ -93,8 +93,10 @@ org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version
 org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
 org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
 org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
-org.scala-lang jline {scala_version} path:jline-{scala_version}.jar
-org.scala-lang jline {scala_version} classifier:sources path:jline-{scala_version}.jar
+org.scala-lang jline 2.11.0-M3 path:jline-2.11.0-M3.jar
+org.scala-lang jline 2.11.0-M3 classifier:sources path:jline-2.11.0-M3.jar
+org.scala-lang.modules scala-parser-combinators_2.11 1.0.2 path:scala-parser-combinators-{scala_version}.jar
+org.scala-lang.modules scala-xml_2.11 1.0.2 path:scala-xml-{scala_version}.jar
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
@@ -227,7 +229,8 @@ recompile_project_if_required(){
     rm -rf $PROJECT_DEFINITION_CLASS_DIR
     mkdir -p $PROJECT_DEFINITION_CLASS_DIR
 
-    java -classpath "$(maker_classpath)" -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
+    echo "java -classpath $$(scala_jars)${PSEP}(maker_classpath) -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES"
+    java -classpath "$(scala_jars)${PSEP}$(maker_classpath)" -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
   fi
 }
 
