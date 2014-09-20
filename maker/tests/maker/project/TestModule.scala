@@ -22,7 +22,7 @@ class TestModule(
   upstreamTestProjects, 
   props = overrideProps.getOrElse(TestModule.makeTestProps(root)),
   analyses
-){
+) with ClassicLayout {
   root.mkdirs
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
