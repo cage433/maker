@@ -16,6 +16,7 @@ class EnsimeGenerator(props: MakerProps) {
       writer.append("  :java-home \"" + props.JavaHome().getAbsolutePath + "\"\n")
 
       writer.append("  :root-dir \"" + root.getAbsolutePath + "\"\n")
+      writer.append("  :cache-dir \"" + root.getAbsolutePath + "ensime_cache\"\n")
       writer.append("  :name \"" + name + "\"\n")
 
       // Scala library is shared between all modules
