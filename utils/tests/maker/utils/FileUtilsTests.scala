@@ -44,6 +44,7 @@ class FileUtilsTests extends FunSuite{
     assert(file("/a/b/c/d").relativeTo(file("/a/b")) === file("c/d"))
     assert(file("/a/b/c/d").relativeTo(file("/a/b/")) === file("c/d"))
     assert(file("/a/b/c/d").relativeTo(file("/a/b/x")) === file("../c/d"))
+    assert(file("launcher").relativeTo(file(".")) === file("launcher"))
   }
 
   test("clean files leaves directories alone"){

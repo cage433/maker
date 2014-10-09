@@ -104,8 +104,8 @@ object FileUtils extends Asserting{
     def asAbsoluteFile = asserting[File](file(plainFile.getAbsolutePath), _.isAbsolute)
 
     def relativeTo(dir: File) : File = {
-      val path = Paths.get(plainFile.getAbsolutePath)
-      val base = Paths.get(dir.getAbsolutePath)
+      val path = Paths.get(plainFile.getCanonicalPath)
+      val base = Paths.get(dir.getCanonicalPath)
       base.relativize(path).toFile
     }
     def className(classDirectory : File) : String = {

@@ -49,7 +49,7 @@ import maker.task.Task
   */
 
 class Module(
-    protected val root : File,
+    val root : File,
     val name : String,
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
