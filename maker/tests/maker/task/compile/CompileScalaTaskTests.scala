@@ -512,4 +512,27 @@ class SomeClass extends SomeTrait{
     }
   }
 
+  test("strict warnings causes compilation to fail"){
+    withTempDir{
+      dir => 
+        val a = new TestModule(dir, "a"){
+          override def scalacOptions = List("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings")
+        }
+        a.writeSrc(
+          "foo/Foo.scala",
+          """
+          package foo
+
+          object Foo{
+            def printEither(x : Either[String, Int]){
+              x match {
+                case Left("a") => println(x)
+              }
+            }
+          }
+          """
+        )
+        assert(a.compile.failed)
+    }
+  }
 }
