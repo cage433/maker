@@ -176,17 +176,18 @@ buffer called *maker*projectdir."
   (setq-local
    compilation-error-regexp-alist
    `((,(rx line-start
+           (zero-or-more ".")
            ?[ (or (group "error") (group "warn") ) ?]
            " " (group (zero-or-one letter ":") (1+ (not (any ": "))))
            ?: (group (1+ digit)) ?:)
       3 4 nil (2 . nil) 3 )))
   (setq-local
    compilation-mode-font-lock-keywords
-   '(("^\\[\\(error\\)\\]"
+   '(("^\\.*\\[\\(error\\)\\]"
       (1 maker:error-face))
-     ("^\\[\\(warn\\)\\]"
+     ("^\\.*\\[\\(warn\\)\\]"
       (1 maker:warning-face))
-     ("^\\[\\(success\\)\\]"
+     ("^\\.*\\[\\(success\\)\\]"
       (1 maker:info-face))))
   (compilation-setup t))
 
