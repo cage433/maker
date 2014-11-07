@@ -96,12 +96,7 @@ case class RunUnitTestsTask(
     val opts = memoryArguments ::: systemPropertiesArguments
  
     val testParameters = {
-      val consoleReporterArgs = if (props.RunningInMakerTest()) 
-        Nil
-      else if (verbose)
-        List("-oF")
-      else 
-        List("-o")
+      val consoleReporterArgs = if (verbose) List("-oF") else Nil
       consoleReporterArgs ::: List("-P", "-C", "maker.utils.MakerTestReporter") 
     }
 

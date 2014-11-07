@@ -29,22 +29,21 @@ class MakerTestReporter extends Reporter{
   }
 
   private val EscapeChars = sys.env.get("MAKER_ESCAPECHARS").isDefined
-  private val StartColour = if (EscapeChars) "\033[1;31m" else ""
-  private val EndColour = if (EscapeChars) "\033[0m" else ""
+  private def inColour(code: String, s: String) =
+    if (EscapeChars) "\033[" + code + "m" + s + "\033[0m" else s
+  private val Green = "0;32"
+  private val Red = "0;31"
+  private val LightRed = "1;31"
 
   object Log{
-    val showTestProgress = Properties.propOrFalse("maker.show.test.progress")
-    val dateFormat = new SimpleDateFormat("mm:ss,SSS")
     def info(msg : String){
-      if (showTestProgress)
-        Console.err.println(dateFormat.format(new Date()) + " " + msg)
+      Console.err.println("[info] " + msg)
     }
     def error(msg : String){
-      if (showTestProgress)
-        Console.err.println(StartColour + dateFormat.format(new Date()) + " " + msg + EndColour)
+      Console.err.println("[warn] " + inColour(LightRed, msg))
     }
     def fatal(msg : String){
-      Console.err.println(StartColour + dateFormat.format(new Date()) + " " + msg + EndColour)
+      Console.err.println("[error] " + inColour(LightRed, msg))
     }
   }
 
@@ -82,16 +81,23 @@ class MakerTestReporter extends Reporter{
     val time = System.nanoTime
     event match {
       case t : SuiteStarting => 
-        Log.info("Starting   " + t.suiteClassName.getOrElse(t.suiteName))
+        Log.info("STARTING " + t.suiteClassName.getOrElse(t.suiteName))
       case t : SuiteCompleted => 
-        Log.info("Completed  " + t.suiteClassName.getOrElse(t.suiteName))
+        //Log.info("Completed  " + t.suiteClassName.getOrElse(t.suiteName))
       case t : TestStarting => {
         appendToOutputFile("START", t.suiteName, t.suiteClassName.getOrElse(""), t.testName, time.toString)
       }
       case t : TestSucceeded => {
+        //Log.info(inColour(Green, t.suiteName + "/" + t.testName.take(50)))
         appendToOutputFile("END", t.suiteName, t.suiteClassName.getOrElse(""), t.testName, time.toString)
       }
       case t : TestFailed => {
+        // it would be great to put the full path to the file (and line) here
+        val source = t.suiteClassName match {
+          case Some(clazz) => clazz
+          case None => t.suiteName
+        }
+        Log.error(inColour(Red, "FAILED " + source + " " + t.testName))
         val throwableAsList : List[String] = t.throwable.map(stackTraceAsList).getOrElse(List[String](" ")) // mkstring/split hack
         appendToOutputFile("FAILURE" :: t.suiteName :: t.suiteClassName.getOrElse("") :: t.testName :: t.message :: throwableAsList : _*)
       }

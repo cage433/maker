@@ -24,6 +24,7 @@ object FailingTests{
       println("There were no failing tests".inBlue)
       return
     }
+    val longform = mostRecentFailures.size < 5
     val tb = TableBuilder(
       "No  ",
       "Suite                   ",
@@ -31,8 +32,9 @@ object FailingTests{
       "Message"
     )
     mostRecentFailures.zipWithIndex.foreach{
-      case ((TestIdentifier(suite, _, test), TestFailure(message, _)), i) => 
-        tb.addRow(i, suite, test, message)
+      case ((TestIdentifier(suite, _, test), TestFailure(message, _)), i) =>
+        val msg = if (longform) message else message.take(30).replace("\n", " ") + "..."
+        tb.addRow(i, suite, test, msg)
     }
     println("Failing Tests".inBlue)
     println(tb)
