@@ -42,6 +42,7 @@ import maker.task.DefaultTaskResult
 import maker.utils.TestIdentifier
 import maker.utils.TestFailure
 import maker.utils.TableBuilder
+import maker.utils.Utils.debuggerFlagsFromPortFile
 import maker.task.FailingTests
 
 
@@ -93,7 +94,10 @@ case class RunUnitTestsTask(
     )
 
     baseProject.testOutputFile.delete
-    val opts = memoryArguments ::: systemPropertiesArguments
+
+    val debugArguments = debuggerFlagsFromPortFile(props.DebugPortTest())
+
+    val opts = debugArguments ::: memoryArguments ::: systemPropertiesArguments
  
     val testParameters = {
       val consoleReporterArgs = if (props.RunningInMakerTest()) 
