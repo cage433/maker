@@ -63,6 +63,12 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-" + DefaultSbtVersion + ".jar")) with IsFile
   object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-" + DefaultSbtVersion + "-sources.jar")) with IsFile
 
+  /**
+   * The debug files should contain a single number, indicating the port to use for remote debugging.
+   */
+  object DebugPortMain extends Default(file("DEBUG-PORT-MAIN")) with IsFile
+  object DebugPortTest extends Default(file("DEBUG-PORT-TEST")) with IsFile
+
   object JavaSystemProperties extends IsOptionalFile {
     def properties = {
       val properties = new java.util.Properties()

@@ -35,6 +35,7 @@ import maker.task._
 import maker.utils.Stopwatch
 import maker.task.compile.TestCompileTask
 import maker.project.BaseProject
+import maker.utils.Utils.debuggerFlagsFromPortFile
 
 
 /**
@@ -54,7 +55,10 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     log.info("running main in class " + className)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
-    val optsToUse = List(
+
+    val debugArguments = debuggerFlagsFromPortFile(props.DebugPortMain())
+
+    val optsToUse = debugArguments ::: List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m",
       "-Dlogback.configurationFile=" + "logback.xml"
