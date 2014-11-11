@@ -230,8 +230,18 @@ object Module{
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
 
+  import maker.utils.RichIterable._
+  import maker.utils.FileUtils._
   def asClasspathStr(files : Iterable[File], sep : String = java.io.File.pathSeparator) =
-    files.toList.distinct.toList.map(_.getAbsolutePath).sortWith(_ < _).mkString(sep)
+    files.distinctBy { (f1, f2) =>
+      // distinction rules remove dupe jars (logback really doesn't like dupes)
+      (f1.getAbsolutePath == f2.getAbsolutePath) || (
+        f1.isFile && f2.isFile &&
+          f1.getName == f2.getName &&
+          f1.getName.endsWith(".jar") &&
+          f1.length() == f2.length()
+      )
+    }.map(_.getAbsolutePath).sortWith(_ < _).mkString(sep)
 
   def warnOfUnnecessaryDependencies(proj : Module){
     val log = proj.log

@@ -1,5 +1,7 @@
 package maker.utils
+
 import scala.collection.immutable.TreeMap
+import scala.collection.mutable.ListBuffer
 
 object RichIterable{
   implicit def toRichIterable[A](as : Iterable[A]) = RichIterable(as)
@@ -43,5 +45,16 @@ case class RichIterable[A](as : Iterable[A]){
     }
   }
 
+  def distinctBy[That](f: (A, A) => Boolean): List[A] = {
+    var seen = Set[A]()
+    var builder = new ListBuffer[A]()
+    as.foreach { a =>
+      if (!seen.exists(s => f(a, s))) {
+        seen += a
+        builder += a
+      }
+    }
+    builder.result()
+  }
 
 }
