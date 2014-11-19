@@ -93,7 +93,7 @@ class EnsimeGenerator(props: MakerProps) {
     writer.append("      )\n")
 
     writer.append("      :target \"" + module.outputDir.getAbsolutePath + "\"\n")
-    writer.append("      :test-target \"" + module.testOutputFile.getAbsolutePath + "\"\n")
+    writer.append("      :test-target \"" + module.testOutputDir.getAbsolutePath + "\"\n")
 
     writer.append("    )\n")
   }
