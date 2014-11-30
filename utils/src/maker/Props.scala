@@ -30,7 +30,7 @@ import maker.utils.RichString._
 import java.io.File
 import scala.collection.mutable.{Map => MMap}
 import ch.qos.logback.classic.Level
-import xml.{XML, NodeSeq}
+import scala.xml.{XML, NodeSeq}
 import scala.util.Properties
 
 trait PropsTrait extends DelayedInit{

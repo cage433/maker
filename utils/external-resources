@@ -3,6 +3,7 @@ ch.qos.logback logback-core 1.0.6
 commons-io commons-io 2.1
 commons-pool commons-pool 1.5.5
 com.typesafe.sbt incremental-compiler {sbt_version}
+com.typesafe.sbt sbt-interface {sbt_version}
 com.typesafe.zinc zinc {zinc_version}
 javax.servlet servlet-api 2.5
 org.apache.commons commons-lang3 3.1

@@ -25,7 +25,7 @@
 
 import scala.util.Properties
 
-Properties.setProp("scala.usejavacp", "false")
+Properties.setProp("scala.usejavacp", "true")
 Properties.setProp("log4j.ignoreTCL", "true")
 
 // All maker settings are compiled. This improves startup time consideably.

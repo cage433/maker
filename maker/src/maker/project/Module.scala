@@ -169,7 +169,7 @@ class Module(
   def cacheDirectory = mkdirs(makerDirectory, "cache")
 
   def managedJars = findJars(managedLibDir)
-  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() + props.ProjectScalaReflectJar()
+  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() + props.ProjectScalaReflectJar() + props.ProjectScalaXmlJar()
 
 
   // for the managed (non-jar) resources

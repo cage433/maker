@@ -231,7 +231,12 @@ trait BaseProject {
     printWaitingMessage
     while (true) {
       Thread.sleep(1000)
-      if (System.in.available > 0 && System.in.read == 10) return
+      
+      if (System.in.available > 0){
+        val read = System.in.read
+        if (read == 10 || read == 13) // CR or LF - I've seen both
+          return
+      }
       (lastTaskTime,  lastSrcModificationTime, lastFileCount, sourceFileCount, lastSourceFileNames, sourceFileNames) match {
         case (None, _, _, _, _, _) => { rerunTask }                        // Task has never been run
         case (Some(t1), Some(t2), _, _, _, _) if t1 < t2 => { rerunTask }  // Code has changed since task last run
@@ -241,7 +246,6 @@ trait BaseProject {
       }
     }
   }
-
 
   lazy val isAccessibleScalaTestSuite : (String => Boolean) = {
     lazy val loader = new URLClassLoader(
