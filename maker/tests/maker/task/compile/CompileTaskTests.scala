@@ -42,10 +42,10 @@ import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
 import maker.utils.FileUtils
 
-class CompileScalaTaskTests extends FunSuite with TestUtils {
+class CompileTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
-    val proj : TestModule = new TestModule(root, "CompileScalaTaskTests")
+    val proj : TestModule = new TestModule(root, "CompileTaskTests")
     val outputDir = proj.compilePhase.outputDir
     val files = new {
 
@@ -130,7 +130,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   ignore("Generated class files are deleted before compilation of source"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileTaskTests")
         val fooSrc = file(proj.sourceDirs.head, "foo/Foo.scala")
         writeToFile(
           fooSrc,
@@ -166,7 +166,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
         val dir : File = file(tempDir, "proj")
         dir.mkdirs
         
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileTaskTests")
 
         proj.writeSrc(
           "foo/Foo.scala",
@@ -211,8 +211,8 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     withTempDir{
       dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
-        val one = new TestModule(file(dir, "one"), "CompileScalaTaskTests - one", analyses = analyses)
-        val two = new TestModule(file(dir, "two"), "CompileScalaTaskTests - two", upstreamProjects = List(one), analyses = analyses)
+        val one = new TestModule(file(dir, "one"), "CompileTaskTests - one", analyses = analyses)
+        val two = new TestModule(file(dir, "two"), "CompileTaskTests - two", upstreamProjects = List(one), analyses = analyses)
         
         val fooSrc = one.writeSrc(
           "foo/Foo.scala",
@@ -249,7 +249,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   ignore("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileTaskTests")
         
         val fooSrc = file(proj.sourceDirs.head, "foo/Foo.scala")
         val barSrc = file(proj.sourceDirs.head, "foo/Bar.scala")
@@ -376,7 +376,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   ignore("Compilation of mutually dependent classes works"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileTaskTests")
         val traitSrc = proj.writeSrc(
           "foo/SomeTrait.scala",
           """
@@ -406,7 +406,7 @@ class SomeClass extends SomeTrait{
   ignore("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "CompileScalaTaskTests")
+        val proj = new TestModule(dir, "CompileTaskTests")
         proj.writeSrc(
           "foo/Foo.scala",
           """

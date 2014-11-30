@@ -13,6 +13,7 @@ import maker.task.tasks.UpdateTask
 import maker.task.SingleModuleTask
 import xsbti.Problem
 import xsbti.Severity
+import java.io.BufferedWriter
 
 abstract class CompileTask extends Task{
   
@@ -84,24 +85,11 @@ abstract class CompileTask extends Task{
             if (exitCode == 0)
               successfulResult(sw, CompilationSucceeded)
             else {
-              CompileScalaTask.appendCompileOutputToTopLevel(modulePhase)
+              CompileTask.appendCompileOutputToTopLevel(modulePhase)
               CompileTaskResult(
                 this, succeeded = false,
                 stopwatch = sw, state = CompilationFailed("compilation failure")
               )
-            }
-          case "scalac" => 
-            CompileScalaTask(modulePhase).exec(sw) match {
-              case Left(e) => {
-                CompileTaskResult(
-                  this, succeeded = false,
-                  stopwatch = sw, state = CompilationFailed("compilation failure"),
-                  maybeCompileFailed = Some(e)
-                )
-              }
-              case Right(a) => {
-                successfulResult(sw, CompilationSucceeded)
-              }
             }
           case "dummy-test-compiler" =>
             DummyCompileTask(modulePhase).exec
@@ -207,6 +195,12 @@ object CompileTask{
       }
       println("Compiler errors".inBlue)
       println(tb)
+    }
+  }
+  def appendCompileOutputToTopLevel(modulePhase : ModuleCompilePhase) = synchronized {
+    withFileAppender(modulePhase.module.props.VimErrorFile()){
+      writer : BufferedWriter =>
+        modulePhase.vimCompileOutputFile.readLines.foreach(writer.println)
     }
   }
 }
