@@ -93,8 +93,9 @@ org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version
 org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
 org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
 org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
-org.scala-lang jline {scala_version} path:jline-{scala_version}.jar
-org.scala-lang jline {scala_version} classifier:sources path:jline-{scala_version}.jar
+jline jline {scala_version_base} path:jline-{scala_version}.jar
+org.scala-lang.modules scala-xml_{scala_version_base} 1.0.2
+org.scala-lang.modules scala-parser-combinators_{scala_version_base} 1.0.2
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
 
