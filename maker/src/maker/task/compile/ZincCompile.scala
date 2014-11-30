@@ -45,6 +45,7 @@ object ZincCompile{
       "-analysis-cache",
       projectPhase.compilationCacheFile.getAbsolutePath
     ) :::
+    projectPhase.module.scalacOptions.map("-S" +_) :::
     analysisMapArguments ::: 
     projectPhase.sourceFiles.toList.map(_.getAbsolutePath)
 

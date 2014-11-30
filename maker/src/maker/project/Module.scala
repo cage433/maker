@@ -169,7 +169,7 @@ class Module(
   def cacheDirectory = mkdirs(makerDirectory, "cache")
 
   def managedJars = findJars(managedLibDir)
-  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() + props.ProjectScalaReflectJar() + props.ProjectScalaXmlJar()
+  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet
 
 
   // for the managed (non-jar) resources
@@ -214,19 +214,6 @@ object Module{
   private val logger = ConsoleLogger()
   logger.setLevel(sbt.Level.Debug)
   val props = MakerProps()
-
-  // commented code is for 2.10 with zinc 0.3.x
-  private val setup = Setup.create/*setup*/(
-    props.ProjectScalaCompilerJar(),
-    props.ProjectScalaLibraryJar(),
-    List(props.ProjectScalaReflectJar()), 
-    props.SbtInterfaceJar(),
-    props.CompilerInterfaceSourcesJar(),
-    props.JavaHome(), 
-    forkJava = false
-  )
-
-  val compiler = Compiler.create(setup, logger)
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
 

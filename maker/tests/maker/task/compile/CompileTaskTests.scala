@@ -87,7 +87,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
     (proj, files)
   }
 
-  ignore("Compilation makes class files, writes dependencies, and package makes jar"){
+  test("Compilation makes class files, writes dependencies, and package makes jar"){
     withTempDir {
       dir => 
         val (proj, _) = simpleProject(dir)
@@ -105,7 +105,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
   }
 
 
-  ignore("Deletion of source file causes deletion of class files"){
+  test("Deletion of source file causes deletion of class files"){
     withTempDir{
       dir => 
         val (proj, files) = simpleProject(dir)
@@ -127,7 +127,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Generated class files are deleted before compilation of source"){
+  test("Generated class files are deleted before compilation of source"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileTaskTests")
@@ -160,7 +160,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Recompilation of test source is done if signature of dependent source file changes"){
+  test("Recompilation of test source is done if signature of dependent source file changes"){
     withTempDir{
       tempDir => 
         val dir : File = file(tempDir, "proj")
@@ -207,7 +207,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Compilation across dependent modules works"){
+  test("Compilation across dependent modules works"){
     withTempDir{
       dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
@@ -246,7 +246,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("When two files are broken fixing one doesn't alow compilation to succeed"){
+  test("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileTaskTests")
@@ -303,7 +303,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
   }
 
   /// add test for suspected problem underlying bug #57
-  ignore("Compilation across dependent modules and scopes works correctly"){
+  test("Compilation across dependent modules and scopes works correctly"){
     withTempDir{
       dir =>
         val analyses = new ConcurrentHashMap[File, Analysis]()
@@ -373,7 +373,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  ignore("Compilation of mutually dependent classes works"){
+  test("Compilation of mutually dependent classes works"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileTaskTests")
@@ -403,6 +403,7 @@ class SomeClass extends SomeTrait{
   }
 
 
+  // TODO - this is broken by a zinc bug
   ignore("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir => 
@@ -430,9 +431,17 @@ class SomeClass extends SomeTrait{
         assert(proj.compilePhase.classFiles.size === 0)
 
         assert(proj.compile.succeeded)
+        assert(proj.compilePhase.classFiles.size === 2)
 
         // now update the base trait to invalidate implementations, check it fails
-        val compilationTime = proj.compilePhase.lastCompilationTime.get
+        def compilationTime = {
+          proj.compilePhase.sourceFiles.foreach(println)
+          proj.compilePhase.classFiles.foreach{
+            f => 
+              println(f + " -> " + f.lastModified)
+          }
+          proj.compilePhase.lastCompilationTime.get
+        }
         sleepToNextSecond
         proj.writeSrc(
           "foo/Foo.scala",
@@ -453,7 +462,7 @@ class SomeClass extends SomeTrait{
 
         // Apparently the new incremental compiler doesn't create class files if there is any failure
         // NOT TRUE ANYMORE
-        // assert(changedClassFiles === Set())
+        assert(changedClassFiles === Set(fooClass))
 
         // now put a matching implementation in and all should be ok again
         proj.writeSrc(
@@ -466,15 +475,36 @@ class SomeClass extends SomeTrait{
           }
           """
         )
+        sleepToNextSecond
 
         assert(proj.compile.succeeded, "compilation failed when should have succeeded")
+        // Zinc broken - the analysis file is touched, however the last compilation time of the
+        // broken file remains unchanged
+        assert(proj.compilePhase.classFiles.toSet.contains(barClass))
 
+        changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
+        assert(changedClassFiles === Set(barClass))
+
+        // Now change implementation in a way that doesn't break the base class
+        // However it should recompile it
+        proj.writeSrc(
+          "foo/Foo.scala",
+          """
+          package foo
+          trait Foo {
+            def bar : String
+            def barbar : String = bar + bar
+          }
+          """
+        )
+        assert(proj.compile.succeeded, "compilation failed when should have succeeded")
+        sleepToNextSecond
         changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
         assert(changedClassFiles === Set(fooClass, barClass))
     }
   }
 
-  ignore("Adding parameter to constructor causes recompilation of downstream file"){
+  test("Adding parameter to constructor causes recompilation of downstream file"){
     withTempDir{
       dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
