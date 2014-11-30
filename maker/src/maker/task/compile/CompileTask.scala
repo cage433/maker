@@ -83,11 +83,13 @@ abstract class CompileTask extends Task{
             val exitCode = ZincCompile(modulePhase)
             if (exitCode == 0)
               successfulResult(sw, CompilationSucceeded)
-            else 
+            else {
+              CompileScalaTask.appendCompileOutputToTopLevel(modulePhase)
               CompileTaskResult(
                 this, succeeded = false,
                 stopwatch = sw, state = CompilationFailed("compilation failure")
               )
+            }
           case "scalac" => 
             CompileScalaTask(modulePhase).exec(sw) match {
               case Left(e) => {
