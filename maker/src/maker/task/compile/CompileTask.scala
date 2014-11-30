@@ -65,7 +65,8 @@ abstract class CompileTask extends Task{
       case (Some(t1), Some(t2)) => t1 > t2
       case _ => true
     }
-    hasDeletedSourceFiles ||  upstreamCompilation || modificationSinceLastCompilation
+    def lastCompilationFailed = modulePhase.compilationFailedMarker.exists
+    hasDeletedSourceFiles ||  upstreamCompilation || modificationSinceLastCompilation || lastCompilationFailed
   }
 
 
@@ -81,10 +82,12 @@ abstract class CompileTask extends Task{
       if (compilationRequired(upstreamTaskResults)){
         props.Compiler() match {
           case "zinc" => 
+            modulePhase.compilationFailedMarker.delete
             val exitCode = ZincCompile(modulePhase)
             if (exitCode == 0)
               successfulResult(sw, CompilationSucceeded)
             else {
+              modulePhase.compilationFailedMarker.touch
               CompileTask.appendCompileOutputToTopLevel(modulePhase)
               CompileTaskResult(
                 this, succeeded = false,

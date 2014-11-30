@@ -404,7 +404,7 @@ class SomeClass extends SomeTrait{
 
 
   // TODO - this is broken by a zinc bug
-  ignore("Incremental compilation recompiles implementation of changed interfaces"){
+  test("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileTaskTests")
@@ -435,11 +435,6 @@ class SomeClass extends SomeTrait{
 
         // now update the base trait to invalidate implementations, check it fails
         def compilationTime = {
-          proj.compilePhase.sourceFiles.foreach(println)
-          proj.compilePhase.classFiles.foreach{
-            f => 
-              println(f + " -> " + f.lastModified)
-          }
           proj.compilePhase.lastCompilationTime.get
         }
         sleepToNextSecond
@@ -465,6 +460,7 @@ class SomeClass extends SomeTrait{
         assert(changedClassFiles === Set(fooClass))
 
         // now put a matching implementation in and all should be ok again
+        sleepToNextSecond
         proj.writeSrc(
           "foo/bar/Bar.scala",
           """
@@ -475,7 +471,6 @@ class SomeClass extends SomeTrait{
           }
           """
         )
-        sleepToNextSecond
 
         assert(proj.compile.succeeded, "compilation failed when should have succeeded")
         // Zinc broken - the analysis file is touched, however the last compilation time of the
@@ -483,10 +478,11 @@ class SomeClass extends SomeTrait{
         assert(proj.compilePhase.classFiles.toSet.contains(barClass))
 
         changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
-        assert(changedClassFiles === Set(barClass))
+        assert(changedClassFiles === Set(fooClass, barClass))
 
         // Now change implementation in a way that doesn't break the base class
         // However it should recompile it
+        sleepToNextSecond
         proj.writeSrc(
           "foo/Foo.scala",
           """
@@ -498,9 +494,8 @@ class SomeClass extends SomeTrait{
           """
         )
         assert(proj.compile.succeeded, "compilation failed when should have succeeded")
-        sleepToNextSecond
         changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
-        assert(changedClassFiles === Set(fooClass, barClass))
+        assert(Vector(fooClass, barClass).forall(changedClassFiles.toSet.contains(_)))
     }
   }
 

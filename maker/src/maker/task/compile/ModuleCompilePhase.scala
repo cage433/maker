@@ -69,9 +69,9 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def lastCompilationTime : Option[Long] = {
     if (compilationCacheFile.exists)
-      lastModifiedProperFileTime(Set(compilationCacheFile))
+      lastModifiedProperFileTime(classFiles ++ Set(compilationCacheFile))
     else
-      None
+      lastModifiedProperFileTime(classFiles)
   }
 
   def lastSourceModifcationTime : Option[Long] = lastModifiedProperFileTime(sourceFiles)
@@ -108,6 +108,8 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   val compilationCacheFile = {
     file(phaseDirectory, "compilation-analysis-cache")
   }
+  val compilationFailedMarker = file(phaseDirectory, "compilation-failed-marker")
+  def lastCompilationFailed() = compilationFailedMarker.exists
 
   def compilerLogger = {
     val lgr = ConsoleLogger(compilationOutputStream)
