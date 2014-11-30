@@ -46,6 +46,7 @@ object ZincCompile{
       projectPhase.compilationCacheFile.getAbsolutePath
     ) :::
     projectPhase.module.scalacOptions.map("-S" +_) :::
+    projectPhase.module.javacOptions.map("-C" +_) :::
     analysisMapArguments ::: 
     projectPhase.sourceFiles.toList.map(_.getAbsolutePath)
 
@@ -70,6 +71,7 @@ object ZincCompile{
 
 
     try {
+      println("Running compiler")
       val result = zinc.run(arguments, projectPhase.module.rootAbsoluteFile, projectPhase.compilationOutputStream, projectPhase.compilationOutputStream)
       val analysis = Compiler.analysis(projectPhase.compilationCacheFile)
       projectPhase.module.analyses.put(projectPhase.outputDir, analysis)
