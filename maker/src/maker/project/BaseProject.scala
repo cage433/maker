@@ -17,7 +17,6 @@ import java.lang.reflect.Modifier
 import maker.utils.MakerTestResults
 import maker.ivy.IvyUtils
 import scala.xml.Elem
-import maker.task.compile.CompileScalaTask
 import maker.utils.ScreenUtils
 import maker.Resource
 

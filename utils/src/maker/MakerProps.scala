@@ -44,7 +44,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object HomeDir extends SystemProperty("user.home") with IsFile
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
-  object Compiler extends Default("scalac") with IsString
+  object Compiler extends Default("zinc") with IsString
   object ExternalResourceConfigFile extends Default(file("external-resource-config")) with IsFile
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceVersions()
   def resourceResolvers() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceResolvers()

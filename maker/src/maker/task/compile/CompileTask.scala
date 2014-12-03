@@ -88,19 +88,6 @@ abstract class CompileTask extends Task{
                 this, succeeded = false,
                 stopwatch = sw, state = CompilationFailed("compilation failure")
               )
-          case "scalac" => 
-            CompileScalaTask(modulePhase).exec(sw) match {
-              case Left(e) => {
-                CompileTaskResult(
-                  this, succeeded = false,
-                  stopwatch = sw, state = CompilationFailed("compilation failure"),
-                  maybeCompileFailed = Some(e)
-                )
-              }
-              case Right(a) => {
-                successfulResult(sw, CompilationSucceeded)
-              }
-            }
           case "dummy-test-compiler" =>
             DummyCompileTask(modulePhase).exec
             successfulResult(sw, CompilationSucceeded)
