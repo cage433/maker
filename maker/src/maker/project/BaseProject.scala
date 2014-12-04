@@ -294,6 +294,7 @@ trait BaseProject {
     buffer.addLine("import maker.utils.FileUtils._")
     buffer.addLine("import java.io.File")
     buffer.addLine(constructorCodeAsString)
+    buffer.addLine("import " + name + "._")
     writeToFile(makerFile, buffer.toString)
   }
 
