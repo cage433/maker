@@ -215,19 +215,6 @@ object Module{
   logger.setLevel(sbt.Level.Debug)
   val props = MakerProps()
 
-  // commented code is for 2.10 with zinc 0.3.x
-  private val setup = Setup.create/*setup*/(
-    props.ProjectScalaCompilerJar(),
-    props.ProjectScalaLibraryJar(),
-    List(props.ProjectScalaReflectJar()), 
-    props.SbtInterfaceJar(),
-    props.CompilerInterfaceSourcesJar(),
-    props.JavaHome(), 
-    forkJava = false
-  )
-
-  val compiler = Compiler.create(setup, logger)
-
   val analyses = new ConcurrentHashMap[File, Analysis]()
 
   import maker.utils.RichIterable._

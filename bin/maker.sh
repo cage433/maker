@@ -79,13 +79,6 @@ update_external_jars(){
   done
   
 
-  cat > dynamic-zinc-resource-list <<HERE
-com.typesafe.sbt compiler-interface {sbt_version} classifier:sources 
-com.typesafe.sbt incremental-compiler {sbt_version} 
-com.typesafe.sbt sbt-interface {sbt_version}
-HERE
-  update_resources $MAKER_ROOT_DIR/zinc-libs dynamic-zinc-resource-list 
-
   cat > dynamic-scala-resource-list <<HERE
 org.scala-lang scala-library {scala_version} classifier:sources path:scala-library-{scala_version}-sources.jar 
 org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.jar
@@ -100,7 +93,6 @@ HERE
 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   rm dynamic-scala-resource-list
-  rm dynamic-zinc-resource-list
 }
 
 build_jar(){

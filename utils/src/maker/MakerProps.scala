@@ -60,8 +60,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object ProjectScalaReflectJar extends Default(file("scala-libs/scala-reflect-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
   object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
-  object SbtInterfaceJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-sbt-interface-" + DefaultSbtVersion + ".jar")) with IsFile
-  object CompilerInterfaceSourcesJar extends Default(file(MakerHome() + "/zinc-libs/com.typesafe.sbt-compiler-interface-" + DefaultSbtVersion + "-sources.jar")) with IsFile
 
   /**
    * The debug files should contain a single number, indicating the port to use for remote debugging.

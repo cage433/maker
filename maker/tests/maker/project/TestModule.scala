@@ -75,8 +75,6 @@ object TestModule{
       "MakerHome", props.MakerHome(),
       "ProjectScalaCompilerJar", props.ProjectScalaCompilerJar().getPath,
       "ProjectScalaLibraryJar", props.ProjectScalaLibraryJar().getPath,
-      "SbtInterfaceJar", props.SbtInterfaceJar().getPath,
-      "CompilerInterfaceSourcesJar", props.CompilerInterfaceSourcesJar().getPath,
       "TmuxMessaging", "false",
       "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
       "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath,
