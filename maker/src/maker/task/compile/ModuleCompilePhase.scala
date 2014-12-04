@@ -108,6 +108,9 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   val compilationCacheFile = {
     file(phaseDirectory, "compilation-analysis-cache")
   }
+  private val compilationFailedMarker = file(phaseDirectory, "compilation-failed-marker")
+  def lastCompilationFailed() = compilationFailedMarker.exists
+  def markCompilatonFailure() = compilationFailedMarker.touch
 
   def compilerLogger = {
     val lgr = ConsoleLogger(compilationOutputStream)

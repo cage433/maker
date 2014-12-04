@@ -64,7 +64,8 @@ abstract class CompileTask extends Task{
       case (Some(t1), Some(t2)) => t1 > t2
       case _ => true
     }
-    hasDeletedSourceFiles ||  upstreamCompilation || modificationSinceLastCompilation
+    def lastCompilationFailed = modulePhase.lastCompilationFailed()
+    hasDeletedSourceFiles ||  upstreamCompilation || modificationSinceLastCompilation || lastCompilationFailed
   }
 
 
@@ -83,11 +84,13 @@ abstract class CompileTask extends Task{
             val exitCode = ZincCompile(modulePhase)
             if (exitCode == 0)
               successfulResult(sw, CompilationSucceeded)
-            else 
+            else {
+              modulePhase.markCompilatonFailure()
               CompileTaskResult(
                 this, succeeded = false,
                 stopwatch = sw, state = CompilationFailed("compilation failure")
               )
+            }
           case "dummy-test-compiler" =>
             DummyCompileTask(modulePhase).exec
             successfulResult(sw, CompilationSucceeded)

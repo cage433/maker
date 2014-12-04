@@ -28,8 +28,10 @@ object ZincCompile{
 
     val arguments = List[String](
       "-log-level",
-      "error",
+      "warn",
       "-no-color",
+      "-java-home",
+      props.JavaHome().getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
       props.ProjectScalaCompilerJar().getAbsolutePath,
       "-scala-library",
@@ -44,6 +46,8 @@ object ZincCompile{
       "-analysis-cache",
       projectPhase.compilationCacheFile.getAbsolutePath
     ) :::
+    projectPhase.module.scalacOptions.map("-S" +_) :::
+    projectPhase.module.javacOptions.map("-C" +_) :::
     analysisMapArguments ::: 
     projectPhase.sourceFiles.toList.map(_.getAbsolutePath)
 

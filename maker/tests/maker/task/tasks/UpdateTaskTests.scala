@@ -112,7 +112,7 @@ class UpdateTaskTests extends FreeSpec {
   }
 
   "Updating source jars" in {
-    withTestDir{
+    withTempDir{
       dir =>
 
         writeToFile(

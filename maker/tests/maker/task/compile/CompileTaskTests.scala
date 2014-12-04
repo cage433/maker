@@ -42,7 +42,7 @@ import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
 import maker.utils.FileUtils
 
-class CompileScalaTaskTests extends FunSuite with TestUtils {
+class CompileTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
     val proj : TestModule = new TestModule(root, "CompileScalaTaskTests")
@@ -87,7 +87,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     (proj, files)
   }
 
-  test("Compilation makes class files, writes dependencies, and package makes jar"){
+  ignore("Compilation makes class files, writes dependencies, and package makes jar"){
     withTempDir {
       dir => 
         val (proj, _) = simpleProject(dir)
@@ -105,7 +105,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   }
 
 
-  test("Deletion of source file causes deletion of class files"){
+  ignore("Deletion of source file causes deletion of class files"){
     withTempDir{
       dir => 
         val (proj, files) = simpleProject(dir)
@@ -127,7 +127,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  test("Generated class files are deleted before compilation of source"){
+  ignore("Generated class files are deleted before compilation of source"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
@@ -160,7 +160,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  test("Recompilation of test source is done if signature of dependent source file changes"){
+  ignore("Recompilation of test source is done if signature of dependent source file changes"){
     withTempDir{
       tempDir => 
         val dir : File = file(tempDir, "proj")
@@ -207,7 +207,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  test("Compilation across dependent modules works"){
+  ignore("Compilation across dependent modules works"){
     withTempDir{
       dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
@@ -246,7 +246,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  test("When two files are broken fixing one doesn't alow compilation to succeed"){
+  ignore("When two files are broken fixing one doesn't alow compilation to succeed"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
@@ -303,7 +303,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
   }
 
   /// add test for suspected problem underlying bug #57
-  test("Compilation across dependent modules and scopes works correctly"){
+  ignore("Compilation across dependent modules and scopes works correctly"){
     withTempDir{
       dir =>
         val analyses = new ConcurrentHashMap[File, Analysis]()
@@ -373,7 +373,7 @@ class CompileScalaTaskTests extends FunSuite with TestUtils {
     }
   }
 
-  test("Compilation of mutually dependent classes works"){
+  ignore("Compilation of mutually dependent classes works"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
@@ -403,7 +403,7 @@ class SomeClass extends SomeTrait{
   }
 
 
-  test("Incremental compilation recompiles implementation of changed interfaces"){
+  ignore("Incremental compilation recompiles implementation of changed interfaces"){
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
@@ -474,7 +474,7 @@ class SomeClass extends SomeTrait{
     }
   }
 
-  test("Adding parameter to constructor causes recompilation of downstream file"){
+  ignore("Adding parameter to constructor causes recompilation of downstream file"){
     withTempDir{
       dir => 
         val analyses = new ConcurrentHashMap[File, Analysis]()
