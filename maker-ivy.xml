@@ -1,0 +1,25 @@
+<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
+
+  <!DOCTYPE ivy-module [
+      <!ENTITY aether.version "1.0.0.v20140518">
+      <!ENTITY maven.version "3.1.0">
+      <!ENTITY wagon.version "1.0">
+      ]>
+  <info organisation="maker" module="maker" revision="1.0" />
+  <dependencies  defaultconfmapping="${ivy.default.conf.mappings}" >
+    {ivyDepsXmlElems}
+  </dependencies>
+</ivy-module>
+
+  <dependencies>
+    <dependency name="org.eclipse.aether" name="aether-api" rev="&aetherVersion;"/>
+    <dependency name="org.eclipse.aether" name="aether-util" rev="&aetherVersion;"/>
+    <dependency name="org.eclipse.aether" name="aether-impl" rev="&aetherVersion;"/>
+    <dependency name="org.eclipse.aether" name="aether-connector-basic" rev="&aetherVersion;"/>
+    <dependency name="org.eclipse.aether" name="aether-transport-file" rev="&aetherVersion;"/>
+    <dependency name="org.eclipse.aether" name="aether-transport-http" rev="&aetherVersion;"/>
+    <dependency name="org.eclipse.aether" name="aether-transport-wagon" rev="&aetherVersion;"/>
+    <dependency name="org.apache.maven" name="maven-aether-provider" rev="&mavenVersion;"/>
+    <dependency name="org.apache.maven.wagon" name="wagon-ssh" rev="&wagonVersion;"/>
+  </dependencies>
+</project>
