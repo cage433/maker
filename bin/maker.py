@@ -5,22 +5,28 @@
 # Launch zinc on a unique port
 
 # Download of scala version should be a maker task
-import re, shutil, sys
+import re, shutil, sys, logging
 from os import path, getenv, makedirs
 from urllib import pathname2url
 from urlparse import urljoin
 from urllib2 import urlopen, URLError, HTTPError, Request
 
+logging.basicConfig( \
+        format= "%(asctime)-15s %(levelname)-10s Maker:%(message)s", \
+        datefmt="%Y-%m-%d %H:%M:%S")
+log = logging.getLogger('maker')
+log.setLevel(logging.INFO)
+
 class MakerResourceConfig(object):
     def __init__(self):
         self.maker_root_directory = path.dirname(path.dirname(path.realpath(__file__)))
-        self.maker_resource_config = path.join(self.maker_root_directory, "external-resource-config")
 
         # Collect versions and resolvers
         self.resource_versions = {}
         resource_resolvers = {}
 
-        with open(self.maker_resource_config) as f:
+        maker_resource_config = path.join(self.maker_root_directory, "external-resource-config")
+        with open(maker_resource_config) as f:
             content = f.readlines()
             for line in content:
                 version_match = re.match(r'^version:\s+(\w+)\s+(\w+)', line)
@@ -42,21 +48,18 @@ class MakerResourceConfig(object):
 class MakerResource(object):
     def __init__(self, org, artifact, version):
         self.org = org
-        self.artifact = artifact
-        self.version = version
         self.config = MakerResourceConfig()
-        self.relative_dir = path.join(org.replace(".", "/"), artifact, version)
         self.basename = artifact + "-" + version + ".jar"
-        self.relative_file = path.join(self.relative_dir, self.basename)
-        self.relative_url = pathname2url(self.relative_file)
-        self.cache_file = path.join(getenv("HOME"), ".maker/cache/", self.relative_file)
-        self.cache_dir = path.dirname(self.cache_file)
-        if not path.isdir(self.cache_dir):
-            makedirs(self.cache_dir)
+        relative_file = path.join(org.replace(".", "/"), artifact, version, self.basename)
+        self.relative_url = pathname2url(relative_file) 
+        self.cache_file = path.join(getenv("HOME"), ".maker/cache/", relative_file)
+        
+        if not path.isdir(path.dirname(self.cache_file)):
+            makedirs(path.dirname(self.cache_file))
 
     def try_to_download_from(self, resolver):
         url = urljoin(resolver, self.relative_url)
-        print "Trying to download " + url
+        log.info("Trying to download %s", url)
         try:
             req = Request(url, None, {'Pragma': 'no-cache'})
             f = urlopen(url)
@@ -64,15 +67,14 @@ class MakerResource(object):
             # Open our local file for writing
             with open(path.basename(url), "wb") as local_file:
                 local_file.write(f.read())
-            print "Downloaded " + url
+            log.info("Downloaded %s", url)
             return True
 
-        #handle errors
         except HTTPError, e:
-            print "HTTP Error:", e.code, url
+            log.info("HTTP Error: %s %s", e.code, url)
             return False
         except URLError, e:
-            print "URL Error:", e.reason, url
+            log.info("URL Error: %s %s", e.reason, url)
             return False
 
     def download_to(self, directory):
@@ -96,13 +98,14 @@ class MakerResource(object):
             shutil.move(self.basename, self.cache_file)
             shutil.copy(self.cache_file, download_file)
         else:
-            print "Not able to download " + self.relative_url
+            log.critical("Not able to download %s", self.relative_url)
             sys.exit(1)
 
 
 config = MakerResourceConfig()
 
 for artifact in ["scala-library", "scala-reflect", "jline"]:
-    MakerResource("org.scala-lang", artifact, "2.10.4").download_to(path.join(config.maker_root_directory, "scala-libs"))
+    scala_lib_dir = path.join(config.maker_root_directory, "scala-libs")
+    MakerResource("org.scala-lang", artifact, "2.10.4").download_to(scala_lib_dir)
 
 
