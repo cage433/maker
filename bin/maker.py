@@ -29,7 +29,7 @@ class MakerResourceConfig(object):
         with open(maker_resource_config) as f:
             content = f.readlines()
             for line in content:
-                version_match = re.match(r'^version:\s+(\w+)\s+(\w+)', line)
+                version_match = re.match(r'^version:\s+(\w+)\s+([0-9a-zA-Z.]+)', line)
                 if version_match:
                     self.resource_versions[version_match.group(1)] = version_match.group(2)
 
@@ -103,9 +103,11 @@ class MakerResource(object):
 
 
 config = MakerResourceConfig()
+maker_lib_dir = path.join(config.maker_root_directory, "maker-libs")
 
 for artifact in ["scala-library", "scala-reflect", "jline"]:
-    scala_lib_dir = path.join(config.maker_root_directory, "scala-libs")
-    MakerResource("org.scala-lang", artifact, "2.10.4").download_to(scala_lib_dir)
+    MakerResource("org.scala-lang", artifact, config.resource_versions["scala_version"]).download_to(maker_lib_dir)
 
+for artifact in ["aether-api", "aether-util", "aether-impl", "aether-connector-basic", "aether-transport-file", "aether-transport-http"]:
+    MakerResource("org.eclipse.aether", artifact, config.resource_versions["aether_version"]).download_to(maker_lib_dir)
 

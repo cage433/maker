@@ -30,5 +30,7 @@ version: scala_version 2.10.4
 version: scala_version_base 2.10
 version: sbt_version 0.13.5
 version: zinc_version 0.3.5
+version: aether_version 1.0.1.v20141111
+version: maven_version 3.1.0
+version: wagon_version 1.0
 
-version: jetty_version 7.6.3.v20120416
