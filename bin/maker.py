@@ -43,12 +43,22 @@ class MakerResourceConfig(object):
         self.resolver_urls = [url for (name, url) in resource_resolvers.viewitems() if name != "default"]
         if resource_resolvers.has_key("default"):
             self.resolver_urls.insert(0, resource_resolvers["default"])
+    def replace_version(self, string):
+        version_match = re.match(r'([^{]*)\{([^}]+)}', string)
+        if version_match:
+            return version_match.group(1) + self.resource_versions[version_match.group(2)]
+        else:
+            return string
+
+
 
 
 class MakerResource(object):
     def __init__(self, org, artifact, version):
         self.org = org
         self.config = MakerResourceConfig()
+        artifact = config.replace_version(artifact)
+        version = config.replace_version(version)
         self.basename = artifact + "-" + version + ".jar"
         relative_file = path.join(org.replace(".", "/"), artifact, version, self.basename)
         self.relative_url = pathname2url(relative_file) 
@@ -103,11 +113,21 @@ class MakerResource(object):
 
 
 config = MakerResourceConfig()
-maker_lib_dir = path.join(config.maker_root_directory, "maker-libs")
+scala_lib_dir = path.join(config.maker_root_directory, "scala-libs")
 
 for artifact in ["scala-library", "scala-reflect", "jline"]:
-    MakerResource("org.scala-lang", artifact, config.resource_versions["scala_version"]).download_to(maker_lib_dir)
+    MakerResource("org.scala-lang", artifact, config.resource_versions["scala_version"]).download_to(scala_lib_dir)
 
-for artifact in ["aether-api", "aether-util", "aether-impl", "aether-connector-basic", "aether-transport-file", "aether-transport-http"]:
-    MakerResource("org.eclipse.aether", artifact, config.resource_versions["aether_version"]).download_to(maker_lib_dir)
+
+
+for module in ["test-reporter", "utils"]:
+    external_resource_file = path.join(config.maker_root_directory, module, "external-resources")
+    lib_dir = path.join(config.maker_root_directory, module, "lib_managed")
+    with open(external_resource_file) as f:
+        for line in f.readlines():
+            resource_match = re.match(r'(\S+)\s+(\S+)\s+(\S+)', line)
+            if resource_match:
+                org, artifact, version = resource_match.groups()
+                MakerResource(org, artifact, version).download_to(lib_dir)
+
 

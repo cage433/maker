@@ -30,4 +30,4 @@ proj-compile-output
 maker-commands.log
 *-classpath.sh
 maker.log
-maker-libs
+scala-libs

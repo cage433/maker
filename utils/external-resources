@@ -10,3 +10,9 @@ org.apache.commons commons-lang3 3.1
 org.apache.ivy ivy 2.3.0-rc2
 org.scalaz scalaz-core_{scala_version_base} 7.0.1
 redis.clients jedis 2.0.0
+org.eclipse.aether aether-api {aether_version}
+org.eclipse.aether aether-util {aether_version}
+org.eclipse.aether aether-impl {aether_version}
+org.eclipse.aether aether-connector-basic {aether_version}
+org.eclipse.aether aether-transport-file {aether_version}
+org.eclipse.aether aether-transport-http {aether_version}
