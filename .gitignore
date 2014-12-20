@@ -28,7 +28,6 @@ Maker.conf
 *vim*compile-output
 proj-compile-output
 maker-commands.log
-scala-libs/
-zinc-libs/
 *-classpath.sh
 maker.log
+maker-libs

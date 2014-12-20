@@ -1,18 +1,12 @@
 ch.qos.logback logback-classic 1.0.6
 ch.qos.logback logback-core 1.0.6
+org.slf4j slf4j-api 1.6.1
 commons-codec commons-codec 1.6
 commons-io commons-io 2.1
 commons-pool commons-pool 1.5.5
 com.typesafe.sbt incremental-compiler {sbt_version}
 com.typesafe.zinc zinc {zinc_version}
-javax.servlet servlet-api 2.5
-net.debasishg sjson_{scala_version_base} 0.19
-org.apache.ant ant 1.8.2
 org.apache.commons commons-lang3 3.1
 org.apache.ivy ivy 2.3.0-rc2
-org.mockito mockito-all 1.8.2
-org.scalacheck scalacheck_{scala_version_base} 1.10.1
 org.scalaz scalaz-core_{scala_version_base} 7.0.1
-org.slf4j slf4j-api 1.6.1
 redis.clients jedis 2.0.0
-com.typesafe.akka akka-actor 2.0.5 resolver:typesafe
