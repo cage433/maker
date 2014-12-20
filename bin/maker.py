@@ -5,8 +5,10 @@
 # Launch zinc on a unique port
 
 # Download of scala version should be a maker task
-import re, shutil, sys, logging
-from os import path, getenv, makedirs
+import re, shutil, sys, logging, tempfile, subprocess
+import fnmatch
+from glob import glob
+from os import path, getenv, makedirs, walk
 from urllib import pathname2url
 from urlparse import urljoin
 from urllib2 import urlopen, URLError, HTTPError, Request
@@ -114,11 +116,11 @@ class MakerResource(object):
 
 config = MakerResourceConfig()
 scala_lib_dir = path.join(config.maker_root_directory, "scala-libs")
-
 for artifact in ["scala-library", "scala-reflect", "jline"]:
     MakerResource("org.scala-lang", artifact, config.resource_versions["scala_version"]).download_to(scala_lib_dir)
 
-
+scala_compiler_dir = "scala-compiler-lib"
+MakerResource("org.scala-lang", "scala-compiler", config.resource_versions["scala_version"]).download_to(scala_compiler_dir)
 
 for module in ["test-reporter", "utils"]:
     external_resource_file = path.join(config.maker_root_directory, module, "external-resources")
@@ -130,4 +132,37 @@ for module in ["test-reporter", "utils"]:
                 org, artifact, version = resource_match.groups()
                 MakerResource(org, artifact, version).download_to(lib_dir)
 
+def build_jar(jar_file, library_dirs, source_file_dirs):
+    tmp_dir = tempfile.mkdtemp()
+    class_path_jars = []
+    for lib_dir in library_dirs + [scala_lib_dir]:
+        class_path_jars += glob(lib_dir + "/*.jar")
+    classpath = ":".join(class_path_jars)
+
+    source_files = []
+    for source_dir in source_file_dirs:
+        for root, dirnames, filenames in walk(source_dir):
+            for filename in fnmatch.filter(filenames, '*.scala'):
+                source_files.append(path.join(root, filename))
+
+    result = subprocess.call([\
+            "java", \
+            "-classpath", classpath, \
+            "-Dscala.usejavacp=true", \
+            "scala.tools.nsc.Main", \
+            "-d", tmp_dir] + source_files)
+    if result != 0:
+        log.critical("Compilation failed when building %s", jar_file)
+        sys.exit(2)
+
+    jar_binary = path.join(getenv("JAVA_HOME"), "bin", "jar")
+    result = subprocess.call([jar_binary, "cf", jar_file, "-C", tmp_dir, "."])
+    if result != 0:
+        log.critical("Failed to build jar ", jar_file)
+        sys.exit(3)
+    shutil.rmtree(tmp_dir)
+
+
+build_jar("maker-scalatest-reporter.jar", ["test-reporter/lib_managed", scala_lib_dir, scala_compiler_dir], ["test-reporter/src"])
+build_jar("maker.jar", ["test-reporter/lib_managed", "utils/lib_managed", scala_lib_dir, scala_compiler_dir], ["utils/src", "maker/src"])
 
