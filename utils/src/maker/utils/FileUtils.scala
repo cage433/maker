@@ -149,9 +149,6 @@ object FileUtils extends Asserting{
       plainFile.mkdirs
       plainFile
     }
-    def hash : String = {
-      Hash.calculateHash(plainFile).hex
-    }
     def subDirs : List[File] = safeListFiles.filter(_.isDirectory)
 
     def doesNotExist = !plainFile.exists
