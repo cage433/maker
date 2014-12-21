@@ -26,8 +26,6 @@ class ResourceConfig(object):
         resource_resolvers = {}
 
         self.cache_directory = path.join(getenv("HOME"), ".maker/cache/")
-        if not path.isdir(self.cache_directory):
-            makedirs(self.cache_directory)
 
         with open(config_file) as f:
             content = f.readlines()
@@ -118,20 +116,31 @@ class Resource(object):
 
 
 class Maker(object):
+
     def __init__(self):
+
         self.root_dir = path.dirname(path.dirname(path.realpath(__file__)))
-        self.test_reporter_jar = path.join(self.root_dir, "maker-scalatest-reporter.jar")
-        self.maker_jar = path.join(self.root_dir, "maker.jar")
-        self.scala_lib_dir = path.join(self.root_dir, "scala-libs")
-        self.resource_config = ResourceConfig(path.join(self.root_dir, "external-resource-config"))
+        def maker_file(*names):
+            return path.join(self.root_dir, *names)
+
+        self.test_reporter_jar = maker_file("maker-scalatest-reporter.jar")
+        self.maker_jar = maker_file("maker.jar")
+        self.scala_lib_dir = maker_file("scala-libs")
+        self.resource_config = ResourceConfig(maker_file("external-resource-config"))
+
+    def maker_file(self, *names):
+        root_dir = path.dirname(path.dirname(path.realpath(__file__)))
+        file_ = path.join(root_dir, *names)
+        return file_
+
+    def download_resources(self):
         for artifact in ["scala-library", "scala-reflect", "jline"]:
             Resource(self.resource_config, "org.scala-lang", artifact, "{scala_version}").download_to(self.scala_lib_dir)
-        self.scala_compiler_dir = "scala-compiler-lib"
-        Resource(self.resource_config, "org.scala-lang", "scala-compiler", "{scala_version}").download_to(self.scala_compiler_dir)
 
         for module in ["test-reporter", "utils"]:
-            external_resource_file = path.join(self.root_dir, module, "external-resources")
-            lib_dir = path.join(self.root_dir, module, "lib_managed")
+            external_resource_file = self.maker_file(module, "external-resources")
+            log.info("Ext res %s", external_resource_file)
+            lib_dir = self.maker_file(module, "lib_managed")
             with open(external_resource_file) as f:
                 for line in f.readlines():
                     resource_match = re.match(r'(\S+)\s+(\S+)\s+(\S+)', line)
@@ -163,14 +172,17 @@ class Maker(object):
 
 
     def bootstrap(self):
+        self.download_resources()
         if self.requires_rebuilding():
-            self.build_jar("maker-scalatest-reporter.jar", ["test-reporter/lib_managed", scala_lib_dir, scala_compiler_dir], ["test-reporter/src"])
-            self.build_jar("maker.jar", ["test-reporter/lib_managed", "utils/lib_managed", scala_lib_dir, scala_compiler_dir], ["utils/src", "maker/src"])
+            self.build_jar("maker-scalatest-reporter.jar", ["test-reporter/lib_managed", self.scala_lib_dir], ["test-reporter/src"])
+            self.build_jar("maker.jar", ["test-reporter/lib_managed", "utils/lib_managed", self.scala_lib_dir], ["utils/src", "maker/src"])
 
     def build_jar(self, jar_file, library_dirs, source_file_dirs):
+        scala_compiler_dir = "scala-compiler-lib"
+        Resource(self.resource_config, "org.scala-lang", "scala-compiler", "{scala_version}").download_to(scala_compiler_dir)
         tmp_dir = tempfile.mkdtemp()
         class_path_jars = []
-        for lib_dir in library_dirs + [scala_lib_dir]:
+        for lib_dir in library_dirs + [self.scala_lib_dir, scala_compiler_dir]:
             class_path_jars += glob(lib_dir + "/*.jar")
         classpath = ":".join(class_path_jars)
 
@@ -196,5 +208,6 @@ class Maker(object):
             log.critical("Failed to build jar ", jar_file)
             sys.exit(3)
         shutil.rmtree(tmp_dir)
+        shutil.rmtree(scala_compiler_dir)
 
 Maker().bootstrap()
