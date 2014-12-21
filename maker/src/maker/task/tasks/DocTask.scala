@@ -27,12 +27,13 @@ package maker.task.tasks
 
 import maker.utils.FileUtils._
 import java.io.PrintWriter
-import maker.utils.TeeToFileOutputStream
+import maker.utils.{TeeToFileOutputStream, Stopwatch}
 import maker.utils.os.{ScalaDocCmd, CommandOutputHandler}
 import maker.task._
-import maker.utils.Stopwatch
 import maker.task.compile._
 import maker.project.BaseProject
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 
 /** Doc generation task - produces scaladocs from module sources
@@ -44,13 +45,13 @@ case class DocTask(baseProject : BaseProject) extends Task {
   def name = "Doc " + baseProject.name
   def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask).toList
   def module = baseProject
+  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
-    val log = props.log
 
     val runDocLogFile = file("rundoc.out")
 
-    log.info("running scala-doc gen for module " + baseProject)
+    logger.info("running scala-doc gen for module " + baseProject)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runDocLogFile))
 
@@ -62,7 +63,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
 
     val docDir = baseProject.docOutputDir
     if (!docDir.exists || lastModifiedFileTime(inputFiles).getOrElse(0L) > lastModifiedFileTime(List(docDir)).getOrElse(0L)) {
-      log.debug("generating doc for module " + baseProject.toString)
+      logger.debug("generating doc for module " + baseProject.toString)
       if (!docDir.exists) docDir.mkdirs else docDir.deleteAll
 
       // make a separate opts file as the args can get too big for a single command
@@ -85,7 +86,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
       }
     }
     else {
-      log.debug("not generating doc for module " + baseProject.toString)
+      logger.debug("not generating doc for module " + baseProject.toString)
       DefaultTaskResult(this, true, sw)
     }
   }

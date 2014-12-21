@@ -1,24 +1,19 @@
 package maker.project
 
-import maker.task.Dependency
-import maker.task.BuildResult
-import maker.task.Task
-import maker.MakerProps
-import maker.task.Build
-import maker.task.compile.SourceCompileTask
+import maker.task._
+import maker.{MakerProps, Resource}
+import maker.task.compile.{SourceCompileTask, TestCompileTask}
 import java.io.File
-import maker.utils.FileUtils
+import maker.utils._
 import maker.utils.FileUtils._
-import maker.task.compile.TestCompileTask
 import maker.task.tasks._
 import maker.utils.RichString._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
-import maker.utils.MakerTestResults
 import maker.ivy.IvyUtils
 import scala.xml.Elem
-import maker.utils.ScreenUtils
-import maker.Resource
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 trait BaseProject {
   protected def root : File
@@ -39,7 +34,7 @@ trait BaseProject {
     extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty)
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def props : MakerProps
-  def log = props.log
+  def logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
   lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)
 
@@ -186,7 +181,7 @@ trait BaseProject {
     val result = bld.execute
     tearDown(bld.graph, result)
     if (result.failed && props.ExecMode()){
-      log.error(bld + " failed ")
+      logger.error(bld + " failed ")
       System.exit(-1)
     }
     BuildResult.lastResult.set(Some(result))

@@ -26,23 +26,17 @@ package maker.project
 
 import java.io.File
 import maker.utils.FileUtils._
-import maker.MakerProps
+import maker.{MakerProps, Resource, PomUtils}
 import sbt.ConsoleLogger
 import scala.collection.JavaConversions._
-import com.typesafe.zinc.Compiler
-import maker.task.Dependency
+import com.typesafe.zinc.{Compiler, Setup}
+import maker.task._
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
-import com.typesafe.zinc.Setup
-import maker.task.Build
-import maker.task.tasks.CleanTask
-import maker.task.tasks.RunUnitTestsTask
-import maker.task.tasks.UpdateTask
-import maker.Resource
-import maker.PomUtils
-import maker.task.BuildResult
-import maker.task.Task
+import maker.task.tasks.{CleanTask, RunUnitTestsTask, UpdateTask}
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 /**
   * Corresponds to a module in IntelliJ
@@ -106,7 +100,7 @@ class Module(
         val otherUpstreamModules = immediateUpstreamModules.filterNot(_ == module)
         otherUpstreamModules.find(_.allUpstreamModules.contains(module)) match {
           case Some(otherUpstreamModule) =>
-          log.warn(name + " shouldn't depend on " + module.name + " as it is inherited via " + otherUpstreamModule.name)
+          logger.warn(name + " shouldn't depend on " + module.name + " as it is inherited via " + otherUpstreamModule.name)
           case None =>
         }
     }
@@ -235,13 +229,13 @@ object Module{
     }.map(_.getAbsolutePath).sortWith(_ < _).mkString(sep)
 
   def warnOfUnnecessaryDependencies(proj : Module){
-    val log = proj.log
+    val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
     proj.immediateUpstreamModules.foreach{
       p => 
         proj.immediateUpstreamModules.filterNot(_ == p).find(_.allUpstreamModules.contains(p)).foreach{
           p1 => 
-            log.warn("Module " + proj.name + " doesn't need to depend on " + p.name + " as it is already inherited from " + p1.name)
+            logger.warn("Module " + proj.name + " doesn't need to depend on " + p.name + " as it is already inherited from " + p1.name)
         }
     }
 
@@ -250,7 +244,7 @@ object Module{
       p => 
         proj.immediateUpstreamTestModules.filterNot(_ == p).find(_.allUpstreamTestModules.contains(p)).foreach{
           p1 => 
-            log.warn("Module " + proj.name + " doesn't need a test dependency on " + p.name + " as it is already inherited from " + p1.name)
+            logger.warn("Module " + proj.name + " doesn't need a test dependency on " + p.name + " as it is already inherited from " + p1.name)
         }
     }
 
@@ -260,7 +254,7 @@ object Module{
         val upstreamJarNames = upstreamModule.allUpstreamModules.flatMap(_.managedJars).map(_.getName).toSet
         val redundantJarNames = upstreamJarNames intersect jarNames
         if (redundantJarNames.nonEmpty && proj.warnUnnecessaryResources)
-          log.warn("Module " + proj.name + " doesn't need jars " + redundantJarNames.mkString(", ") + " as they are supplied by " + upstreamModule.name)
+          logger.warn("Module " + proj.name + " doesn't need jars " + redundantJarNames.mkString(", ") + " as they are supplied by " + upstreamModule.name)
     }
 
   }

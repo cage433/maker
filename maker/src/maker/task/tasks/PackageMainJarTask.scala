@@ -2,14 +2,16 @@ package maker.task.tasks
 
 import java.io.File
 import maker.project.Module
-import maker.task.{ DefaultTaskResult, SingleModuleTask, TaskResult }
+import maker.task.{DefaultTaskResult, SingleModuleTask, TaskResult}
 import maker.task.compile._
 import maker.utils.FileUtils._
-import maker.utils.Stopwatch
+import maker.utils.{Stopwatch, Int}
 import maker.utils.os.Command
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
 import scala.collection.JavaConverters._
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 case class PackageMainJarTask(module: Module) extends PackageJarTask(module) {
   def name = "Package Main Jar"
@@ -23,7 +25,7 @@ case class PackageMainJarTask(module: Module) extends PackageJarTask(module) {
 
 abstract class PackageJarTask(module: Module) extends SingleModuleTask(module) {
   private val props = module.props
-  private val log = props.log
+  private val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
     doPackage(results, sw)
@@ -47,7 +49,7 @@ abstract class PackageJarTask(module: Module) extends SingleModuleTask(module) {
         (cmd.exec(), ignoreFailure) match {
           case (0, _) => 0
           case (errorNo, true) => {
-            log.warn("Ignoring  error in " + cmd + ". Artifact may be missing content")
+            logger.warn("Ignoring  error in " + cmd + ". Artifact may be missing content")
             0
           }
           case (errorNo, _) => errorNo

@@ -27,13 +27,14 @@ package maker.task
 
 import java.lang.Runnable
 import java.util.Comparator
-import java.util.concurrent.{BlockingQueue, Executors, FutureTask}
-import java.util.concurrent.{PriorityBlockingQueue, ThreadFactory, ThreadPoolExecutor, TimeUnit}
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import maker.project.{BaseProject, Module}
 import maker.task.compile.{CompileTask, TestCompileTask}
 import maker.task.tasks.{RunUnitTestsTask, UpdateTask}
-import maker.utils.{MakerLog, Stopwatch}
+import maker.utils.{Stopwatch, Int}
+import org.slf4j.LoggerFactory
+import ch.qos.logback.classic.Logger
 
 case class Build(
   name : String,
@@ -50,14 +51,14 @@ case class Build(
     buf.toString
   }
   
-  val log = MakerLog()
+  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
   def execute = new Execute().execute
   class Execute{
 
     val executor = Build.PriorityExecutor(numberOfWorkers, name)
 
-    val monitor = new Build.TaskMonitor(log, graph, executor)
+    val monitor = new Build.TaskMonitor(graph, executor)
 
     def execute : BuildResult = {
       val taskResults = execTasksInGraph()
@@ -87,9 +88,9 @@ case class Build(
           }
         case _ => 0
       }
-      log.debug("SUBMITTING " + pt + " with priority " + priority)
+      logger.debug("SUBMITTING " + pt + " with priority " + priority)
       executor.executeWithPriority(priority){
-        log.debug("EXECUTING " + pt + " with priority " + priority)
+        logger.debug("EXECUTING " + pt + " with priority " + priority)
             val threadNumber = Thread.currentThread.getName.last.toString.toInt
             try {
               val result = try {
@@ -98,21 +99,21 @@ case class Build(
                   println
                 print(".")
                 monitor.addLaunch(pt)
-                log.debug("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
+                logger.debug("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
                 val res = pt.exec(resultsSoFar.toList, sw)
                 res
               } catch {
                 case e: Throwable =>
-                  log.warn("exception thrown:" + e + " when running task " + pt)
+                  logger.warn("exception thrown:" + e + " when running task " + pt)
                   e.printStackTrace
                   DefaultTaskResult(pt, false, sw, exception = Some(e))
               }
               sw.takeSnapshot(TaskResult.TASK_END)
               monitor.addResult(pt, result)
-              log.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
+              logger.debug("Finished " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
             } catch {
               case e: Throwable ⇒
-                log.warn("Exception " + e + " thrown during " + pt)
+                logger.warn("Exception " + e + " thrown during " + pt)
                 e.printStackTrace
                 System.exit(-1)
             }
@@ -150,7 +151,7 @@ case class Build(
         // We get here if a task failure causes early interruption
         // We still need to wait for other tasks to finish, if not
         // maker's state (e.g. file dependencies) coule be corrupted
-        log.debug("Waiting for tasks to complete")
+        logger.debug("Waiting for tasks to complete")
         Thread.sleep(100)
       }
     }
@@ -158,6 +159,7 @@ case class Build(
 }
 
 object Build{
+  val log = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
   val taskCount = new AtomicInteger(0)
 
   def apply(project : BaseProject, tasks : Task*) : Build = {
@@ -222,7 +224,7 @@ object Build{
   }
 
 
-  class TaskMonitor(log : MakerLog, graph : Dependency.Graph, executor : ThreadPoolExecutor){
+  class TaskMonitor(graph : Dependency.Graph, executor : ThreadPoolExecutor){
     private val lock = new Object
     var results = List[TaskResult]()
     private var completed = Set[Task]()

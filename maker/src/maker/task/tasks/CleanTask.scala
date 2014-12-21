@@ -29,6 +29,8 @@ import maker.project.Module
 import maker.utils.FileUtils._
 import maker.task._
 import maker.utils.Stopwatch
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 
 /** Clean task - cleans up all build artifacts from the classpath
@@ -39,12 +41,12 @@ case class CleanTask(module : Module, deleteManagedLibs : Boolean = false)
   extends SingleModuleTask(module)
 {
   def name = "Clean"
+  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
   def upstreamTasks = (module.immediateUpstreamModules ::: module.immediateUpstreamTestModules).distinct.map(CleanTask(_, deleteManagedLibs))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = module.props
-    val log = props.log
-    log.debug("cleaning " + module)
+    logger.debug("cleaning " + module)
     if (deleteManagedLibs){
       Option(module.managedLibDir.listFiles).foreach(_.foreach(_.delete))
     }

@@ -5,12 +5,12 @@ import maker.utils.RichString._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import java.io.File
 import maker.utils.os.Command
-import scala.xml.Elem
-import scala.xml.NodeSeq
+import scala.xml.{Elem, NodeSeq}
 import maker.project.Module
-import maker.utils.FileUtils
-import maker.utils.FileUtils._
+import maker.utils.{FileUtils, Int}
 import scalaz.syntax.std.boolean._
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 /*  
     Defines a resource held at some maven/nexus repository
@@ -45,8 +45,8 @@ case class Resource(
   preferredRepository : Option[String] = None
 ) {
   import Resource._
-  override def toString = s"Resource: $groupId $artifactId $version $extension $classifier $downloadDirectory"
-  lazy val log = props.log
+  override def toString = s"Resource: $groupId $artifactId $version $extension $classifier $downloadDirectory $preferredRepository"
+  lazy val log = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]  
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
     (groupId.replace('.', '/'), artifactId, version, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
 
@@ -185,7 +185,15 @@ object Resource{
       module.managedLibDir
     else 
       module.managedResourceDir
-    Resource(groupId, artifactId, version, Some(downloadDirectory), module.props, extension, classifier)
+    Resource(
+      groupId, 
+      artifactId, 
+      version, 
+      Some(downloadDirectory), 
+      module.props, 
+      extension, 
+      classifier, 
+      preferredRepository)
   }
 
   def parse(s : String) : Resource = {
@@ -240,12 +248,14 @@ object Resource{
         key -> value
     }.toMap
 
-    Resource.build2(
+    val res = Resource.build2(
       module,
       groupId, artifactId, version,
       extension = optionalArgs.getOrElse("type", "jar"),
       classifier = optionalArgs.get("classifier"),
       preferredRepository = optionalArgs.get("resolver").map(module.props.resourceResolvers()(_))
-    ).resolveVersions(module.props.resourceVersions)
+    )
+    
+    res.resolveVersions(module.props.resourceVersions)
   }
 }

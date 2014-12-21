@@ -1,21 +1,18 @@
 package maker
 
 import scala.collection.mutable.{Map => MMap}
-import java.io.File
+import java.io.{File, FileInputStream}
 import java.util.Properties
 import scala.collection.JavaConversions
-import maker.utils.MakerLog
-import java.io.FileInputStream
+import maker.utils.{FileUtils, Int}
 import maker.utils.FileUtils._
-import maker.utils.FileUtils
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 
 case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   
-  lazy val log = {
-    val log = MakerLog()
-    log
-  }
+  lazy val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
   object MakerHome extends SystemProperty("maker.home") with IsString
   object MakerTestReporterJar extends Default(MakerHome() + "/maker-scalatest-reporter.jar") with IsFile

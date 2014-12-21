@@ -27,7 +27,6 @@ package maker.utils.os
 
 import java.lang.management.ManagementFactory
 import maker.MakerProps
-import maker.utils.MakerLog
 
 case class ProcessID(id : Int){
   def isRunning() = {

@@ -28,14 +28,16 @@ package maker.task.tasks
 import annotation.tailrec
 import maker.utils.FileUtils._
 import java.io.PrintWriter
-import maker.utils.TeeToFileOutputStream
-import maker.utils.os.CommandOutputHandler
-import maker.utils.os.ScalaCommand
+import maker.utils.{TeeToFileOutputStream, Stopwatch}
+import maker.utils.os.{CommandOutputHandler, ScalaCommand}
 import maker.task._
-import maker.utils.Stopwatch
 import maker.task.compile.TestCompileTask
 import maker.project.BaseProject
 import maker.utils.Utils.debuggerFlagsFromPortFile
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
+import scala.concurrent.duration._
+import scala.concurrent.Await
 
 
 /**
@@ -49,10 +51,10 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
 
 
   val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
+  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
-    val log = props.log
-    log.info("running main in class " + className)
+    logger.info("running main in class " + className)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
 
@@ -75,7 +77,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     )
 
     writeToFile(file(baseProject.rootAbsoluteFile, "runcmd.sh"), "#!/bin/bash\n" + cmd.asString)
-    log.info("Running, press ctrl-] to terminate running process...")
+    logger.info("Running, press ctrl-] to terminate running process...")
 
     val procHandle = cmd.execAsync()
     @tailrec
@@ -83,16 +85,14 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
       if (!procHandle._2.isCompleted) {
         Thread.sleep(1000)
         if (System.in.available > 0 && System.in.read == Task.termChar) {
-          log.info("Terminating: " + className)
+          logger.info("Terminating: " + className)
           procHandle._1.destroy()
-          log.info("Terminated process for runMain of class : " + className)
+          logger.info("Terminated process for runMain of class : " + className)
           DefaultTaskResult(this, true, sw)
         }
         else checkRunning()
       }
       else {
-        import concurrent.duration._
-        import concurrent.Await
         Await.result(procHandle._2, Duration.Zero) match {
           case 0 => DefaultTaskResult(this, true, sw)
           case code => DefaultTaskResult(this, false, sw, message = Some("Run Main failed in " + baseProject))

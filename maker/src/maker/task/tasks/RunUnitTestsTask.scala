@@ -25,25 +25,17 @@
 
 package maker.task.tasks
 
-import maker.project.Module
-import maker.utils.os.ScalaCommand
-import maker.task.Task
-import maker.utils.os.CommandOutputHandler
-import maker.task.TaskResult
-import maker.utils.Stopwatch
+import maker.project.{Module, BaseProject}
+import maker.utils.os.{ScalaCommand, CommandOutputHandler}
+import maker.task._
+import maker.utils._
 import maker.utils.RichIterable._
-import maker.project.BaseProject
-import maker.utils.MakerTestResults
 import maker.task.compile.TestCompileTask
-import maker.utils.StringUtils
 import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
-import maker.task.DefaultTaskResult
-import maker.utils.TestIdentifier
-import maker.utils.TestFailure
-import maker.utils.TableBuilder
 import maker.utils.Utils.debuggerFlagsFromPortFile
-import maker.task.FailingTests
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 
 case class RunUnitTestsTask(
@@ -138,6 +130,7 @@ case class RunUnitTestsTask(
 
 object RunUnitTestsTask{
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
+  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
   def apply(baseProject : BaseProject, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
     def resolveClassName(cn : String) : List[String] = {
       if (cn.contains('.'))
@@ -148,11 +141,11 @@ object RunUnitTestsTask{
           baseProject.testClassNames()
         )
         if (matchingTestClasses.isEmpty){
-          baseProject.log.warn("No class matching " + cn + " found")
+          logger.warn("No class matching " + cn + " found")
           Nil
         } else {
           if (matchingTestClasses.size > 1)
-            baseProject.log.info("Multiple matches: " + matchingTestClasses.mkString(", ") + ", using " + matchingTestClasses.head)
+            logger.info("Multiple matches: " + matchingTestClasses.mkString(", ") + ", using " + matchingTestClasses.head)
           matchingTestClasses.take(1)
         }
       }

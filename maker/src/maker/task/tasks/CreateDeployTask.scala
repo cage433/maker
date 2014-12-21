@@ -31,6 +31,8 @@ import maker.utils.FileUtils._
 import maker.utils.Stopwatch
 import maker.utils.maven.IvyLock
 import org.apache.commons.io.FileUtils._
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Creates jars that are ready for deployment.
@@ -38,7 +40,7 @@ import org.apache.commons.io.FileUtils._
 case class CreateDeployTask(project: Project, buildTests: Boolean, version: Option[String] = None) extends Task {
   def baseProject = project
 
-  private val log = project.log
+  private val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
   val baseOutputDir = file(project.rootAbsoluteFile, "/target-maker/deploy/")
   val jarsDir = file(baseOutputDir, "/jars/")
   val thirdPartyJars = file(baseOutputDir, "/thirdpartyjars/")
@@ -61,7 +63,7 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
   }
 
   protected def doPublish(): Unit = {
-    log.info("Creating deployment directory: " + baseOutputDir)
+    logger.info("Creating deployment directory: " + baseOutputDir)
     baseOutputDir.deleteAll()
     baseOutputDir.mkdirs()
 

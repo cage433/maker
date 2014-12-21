@@ -38,12 +38,14 @@ class UpdateTaskTests extends FreeSpec {
 
         val module = new TestModule(dir, "testResources", overrideProps = Some(props))
 
-        assert(
-          module.resources().toSet === Set(
-            Resource.build2(module, "org.foo", "bar", "0.12.1"),
-            Resource.build2(module, "com.mike", "fred_2.9.2", "1.8", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath))
-          )
-        )
+        val expected = Set(
+          Resource("org.foo", "bar", "0.12.1", downloadDirectory = Some(module.managedLibDir)),
+          Resource("com.mike", "fred_2.9.2", "1.8", 
+            preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath),
+            downloadDirectory = Some(module.managedLibDir)
+            )
+        ).map(_.copy(props = props))
+        assert(module.resources().toSet === expected)
 
         assert(module.updateOnly.failed, "Update should fail before resources are available")
         writeToFile(
@@ -64,7 +66,7 @@ class UpdateTaskTests extends FreeSpec {
     }
   }
 
-  "Update task should cause all upstream modules to update" in {
+  "Update task should cause all upstream modules to update" ignore {
     withTempDir{
       dir => 
         val aDir = FileUtils.mkdir(file(dir, "a"))
@@ -111,7 +113,7 @@ class UpdateTaskTests extends FreeSpec {
     }
   }
 
-  "Updating source jars" in {
+  "Updating source jars" ignore {
     withTempDir{
       dir =>
 

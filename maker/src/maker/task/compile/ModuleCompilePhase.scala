@@ -1,17 +1,16 @@
 package maker.task.compile
 
-import java.io.File
 import maker.task.Dependency
 import maker.utils.FileUtils._
 import maker.project.Module
 import sbt.ConsoleLogger
-import java.io.PrintStream
-import org.apache.commons.io.output.TeeOutputStream
-import org.apache.commons.io.output.NullOutputStream
-import java.io.FileOutputStream
+import org.apache.commons.io.output.{TeeOutputStream, NullOutputStream}
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
+import java.io.{File, FileOutputStream, PrintStream}
 
 case class ModuleCompilePhase(module : Module, phase : CompilePhase){
-  val log = module.log
+  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
 
   def sourceDirs = phase match {
     case SourceCompilePhase => module.sourceDirs
