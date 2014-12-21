@@ -69,7 +69,7 @@ class Module(
     val resources = resourcesFile.readLines.toList.filterNot{
       line => 
         line.startsWith("#") || line.trim.size == 0
-    }.map(Resource.build(this, _, props.resourceVersions(), props.resourceResolvers()))
+    }.map(Resource.build3(this, _))
     resources.distinct
   }
 

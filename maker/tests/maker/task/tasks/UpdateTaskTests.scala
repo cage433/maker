@@ -40,8 +40,8 @@ class UpdateTaskTests extends FreeSpec {
 
         assert(
           module.resources().toSet === Set(
-            Resource(module, "org.foo", "bar", "0.12.1"),
-            Resource(module, "com.mike", "fred_2.9.2", "1.8", "jar", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath))
+            Resource("org.foo", "bar", "0.12.1"),
+            Resource("com.mike", "fred_2.9.2", "1.8", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath))
           )
         )
 

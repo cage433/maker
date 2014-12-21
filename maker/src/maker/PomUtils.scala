@@ -37,7 +37,7 @@ object PomUtils{
     baseProject match {
       case _ : Project =>
       case m : Module => {
-        b.addLine(Resource(m, "org.scala-lang", "scala-library", props.ProjectScalaVersion()).pomDependencyXML.indent("    "))
+        b.addLine(Resource.build2(m, "org.scala-lang", "scala-library", props.ProjectScalaVersion()).pomDependencyXML.indent("    "))
         m.resources.foreach(
           r => 
             b.addLine(r.pomDependencyXML.indent("    "))

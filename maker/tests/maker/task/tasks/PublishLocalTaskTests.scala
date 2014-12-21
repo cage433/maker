@@ -30,7 +30,7 @@ class PublishLocalTaskTests extends FreeSpec{
         ){
           override def resources() = resourcesList
         }
-        resourcesList = List(Resource.build(proj, "commons-io commons-io 2.1"))
+        resourcesList = List(Resource.parse("commons-io commons-io 2.1"))
         proj.managedLibDir.makeDir()
         ApacheFileUtils.copyFileToDirectory(anyJar, proj.managedLibDir)
 

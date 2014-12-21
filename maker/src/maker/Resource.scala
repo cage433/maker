@@ -35,17 +35,17 @@ import scalaz.syntax.std.boolean._
 */
 
 case class Resource(
-  module : Module,
   groupId : String, 
   artifactId : String, 
   version : String, 
+  download_directory : File = FileUtils.file("."),
+  props : MakerProps = MakerProps(),
   extension : String = "jar",
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
 ) {
   import Resource._
-  lazy val props = module.props
-  lazy val log = module.log
+  lazy val log = props.log
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
     (groupId.replace('.', '/'), artifactId, version, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
 
@@ -77,7 +77,12 @@ case class Resource(
         case _ => s
       }
     }
-    copy(groupId=resolve(groupId), artifactId=resolve(artifactId), version=resolve(version))
+
+    copy(
+      groupId=resolve(groupId), 
+      artifactId=resolve(artifactId), 
+      version=resolve(version)
+    )
   }
 
   def isJarResource = extension == "jar"
@@ -85,14 +90,7 @@ case class Resource(
   def isBinaryJarResource = isJarResource && ! isSourceJarResource
 
   def associatedSourceJarResource : Option[Resource] = isBinaryJarResource.option(copy(classifier = Some("sources")))
-  lazy val resourceFile = {
-    if (isSourceJarResource)
-      FileUtils.file(module.managedLibSourceDir, basename)
-    else if (isJarResource)
-      FileUtils.file(module.managedLibDir, basename)
-    else
-      FileUtils.file(module.managedResourceDir, basename)
-  }
+  lazy val resourceFile = FileUtils.file(download_directory, basename)
 
   /**
    * If the resource is not already in lib_managed (or equivalent) then try to copy from cache,
@@ -172,7 +170,25 @@ object Resource{
   case object ResourceDownloaded extends UpdateResult
   case class ResourceFailedToDownload(override val errors : List[(Int, String)]) extends UpdateResult
 
-  def build(module : Module, s : String, resourceVersions : Map[String, String] = Map.empty, resourceResolvers : Map[String, String] = Map.empty) : Resource = {
+  def build2(
+    module : Module, 
+    groupId : String, 
+    artifactId : String, 
+    version : String,
+    extension : String = "jar",
+    classifier : Option[String] = None,
+    preferredRepository : Option[String] = None
+  ) : Resource = {
+    val downloadDirectory = if (classifier == Some("sources"))
+      module.managedLibSourceDir
+    else if (extension == "jar")
+      module.managedLibDir
+    else 
+      module.managedResourceDir
+    Resource(groupId, artifactId, version, downloadDirectory, module.props, extension, classifier)
+  }
+
+  def parse(s : String) : Resource = {
     def exitWithBadUsage{
       val errorMessage = """|Valid resource format is 
                             | <group-id> <artifact-id> <version> [resolver:<resolver-name>] [type:<type-name - e.g. jar, xml, gz>]
@@ -197,12 +213,39 @@ object Resource{
         key -> value
     }.toMap
 
-    Resource(
+    Resource(groupId, artifactId, version, extension = optionalArgs.getOrElse("type", "jar"), preferredRepository = optionalArgs.get("resolver"))
+  }
+  def build3(module : Module, s : String) : Resource = {
+    def exitWithBadUsage{
+      val errorMessage = """|Valid resource format is 
+                            | <group-id> <artifact-id> <version> [resolver:<resolver-name>] [type:<type-name - e.g. jar, xml, gz>]
+                            |
+                            | Was given [""".stripMargin + s + "]"
+      throw new RuntimeException(errorMessage)
+    }
+
+    val terms : List[String] = s.split(" ").toList.filterNot(_ == "")
+
+      if (terms.size < 3 
+        || terms.take(3).exists(_.contains(':')) 
+        || !terms.drop(3).forall(_.contains(':')))
+    {
+      exitWithBadUsage
+    }
+
+    val List(groupId, artifactId, version) = terms.take(3)
+
+    val optionalArgs = terms.drop(3).map{term => 
+      val List(key, value) = term.split(':').toList
+        key -> value
+    }.toMap
+
+    Resource.build2(
       module,
       groupId, artifactId, version,
       extension = optionalArgs.getOrElse("type", "jar"),
       classifier = optionalArgs.get("classifier"),
-      preferredRepository = optionalArgs.get("resolver").map(resourceResolvers(_))
-    ).resolveVersions(resourceVersions)
+      preferredRepository = optionalArgs.get("resolver").map(module.props.resourceResolvers()(_))
+    ).resolveVersions(module.props.resourceVersions)
   }
 }
