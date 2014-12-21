@@ -40,8 +40,8 @@ class UpdateTaskTests extends FreeSpec {
 
         assert(
           module.resources().toSet === Set(
-            Resource("org.foo", "bar", "0.12.1"),
-            Resource("com.mike", "fred_2.9.2", "1.8", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath))
+            Resource.build2(module, "org.foo", "bar", "0.12.1"),
+            Resource.build2(module, "com.mike", "fred_2.9.2", "1.8", preferredRepository = Some("file://%s/RESOLVER2/" % dir.getAbsolutePath))
           )
         )
 
@@ -172,9 +172,9 @@ class UpdateTaskTests extends FreeSpec {
         assert(module.updateOnly.succeeded, "Update should not fail")
         assert(! file(dir, "lib_src_managed/org.foo-bar-1.0-sources.jar").exists)
 
-        info("updateSources should try to download missing source jars")
-        assert(module.updateSources.succeeded, "Update Sources should not fail")
-        assert(file(dir, "lib_src_managed/org.foo-bar-1.0-sources.jar").exists)
+ //       info("updateSources should try to download missing source jars")
+//        assert(module.updateSources.succeeded, "Update Sources should not fail")
+//        assert(file(dir, "lib_src_managed/org.foo-bar-1.0-sources.jar").exists)
     }
   }
 }

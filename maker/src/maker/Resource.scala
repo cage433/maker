@@ -38,13 +38,14 @@ case class Resource(
   groupId : String, 
   artifactId : String, 
   version : String, 
-  download_directory : File = FileUtils.file("."),
+  downloadDirectory : Option[File] = None,
   props : MakerProps = MakerProps(),
   extension : String = "jar",
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
 ) {
   import Resource._
+  override def toString = s"Resource: $groupId $artifactId $version $extension $classifier $downloadDirectory"
   lazy val log = props.log
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
     (groupId.replace('.', '/'), artifactId, version, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
@@ -89,8 +90,7 @@ case class Resource(
   def isSourceJarResource = isJarResource && classifier == Some("sources")
   def isBinaryJarResource = isJarResource && ! isSourceJarResource
 
-  def associatedSourceJarResource : Option[Resource] = isBinaryJarResource.option(copy(classifier = Some("sources")))
-  lazy val resourceFile = FileUtils.file(download_directory, basename)
+  lazy val resourceFile = downloadDirectory.map(FileUtils.file(_, basename)).getOrElse(???)
 
   /**
    * If the resource is not already in lib_managed (or equivalent) then try to copy from cache,
@@ -185,7 +185,7 @@ object Resource{
       module.managedLibDir
     else 
       module.managedResourceDir
-    Resource(groupId, artifactId, version, downloadDirectory, module.props, extension, classifier)
+    Resource(groupId, artifactId, version, Some(downloadDirectory), module.props, extension, classifier)
   }
 
   def parse(s : String) : Resource = {

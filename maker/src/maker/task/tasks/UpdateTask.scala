@@ -67,11 +67,17 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
     var errors : List[(Int, String)] = updateResources(missingResources)
 
     if (forceSourceUpdate){
-      val sourceJarResources = module.resources().flatMap(_.associatedSourceJarResource)
-      errors :::= updateResources(sourceJarResources)
+      errors :::= updateResources(module.sourceJarResources())
     } else {
-      val sourceJarResources = missingResources.flatMap(_.associatedSourceJarResource)
-      updateResources(sourceJarResources)
+      val sourceJarsForMissing = module.sourceJarResources().filter{
+        sourceResource => missingResources.exists{
+          resource => 
+            resource.groupId == sourceResource.groupId &&
+            resource.artifactId == sourceResource.artifactId &&
+            resource.version == sourceResource.version
+        }
+      }
+      updateResources(sourceJarsForMissing)
     }
 
 

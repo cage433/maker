@@ -156,8 +156,7 @@ trait BaseProject {
   def missingSourceJars() : List[Resource] = {
     for {
       module <- allUpstreamModules
-      resource <- module.resources
-      srcJar <- resource.associatedSourceJarResource
+      srcJar <- module.sourceJarResources()
       if !srcJar.resourceFile.exists
     } yield srcJar
   }

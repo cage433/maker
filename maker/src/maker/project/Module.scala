@@ -73,6 +73,10 @@ class Module(
     resources.distinct
   }
 
+  def sourceJarResources() : List[Resource] = resources().collect{
+    case r if r.isBinaryJarResource => r.copy(classifier = Some("sources"), downloadDirectory = Some(managedLibSourceDir))
+  }
+
 
 
   Module.warnOfUnnecessaryDependencies(this)
