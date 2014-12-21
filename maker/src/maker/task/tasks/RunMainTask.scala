@@ -51,7 +51,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
 
 
   val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
-  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  val logger = LoggerFactory.getLogger(this.getClass)
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
     logger.info("running main in class " + className)

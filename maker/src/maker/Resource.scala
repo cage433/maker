@@ -9,8 +9,7 @@ import scala.xml.{Elem, NodeSeq}
 import maker.project.Module
 import maker.utils.{FileUtils, Int}
 import scalaz.syntax.std.boolean._
-import ch.qos.logback.classic.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{LoggerFactory, Logger}
 
 /*  
     Defines a resource held at some maven/nexus repository
@@ -39,14 +38,13 @@ case class Resource(
   artifactId : String, 
   version : String, 
   downloadDirectory : Option[File] = None,
-  props : MakerProps = MakerProps(),
   extension : String = "jar",
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
 ) {
   import Resource._
   override def toString = s"Resource: $groupId $artifactId $version $extension $classifier $downloadDirectory $preferredRepository"
-  lazy val log = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]  
+  lazy val log = LoggerFactory.getLogger(this.getClass)
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
     (groupId.replace('.', '/'), artifactId, version, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
 
@@ -100,7 +98,7 @@ case class Resource(
    * simply don't exist, and trying to download them every time we get an update can become
    * expensive if there are Nexus problems
    */
-  def update() : Resource.UpdateResult = {
+  def update(props : MakerProps) : Resource.UpdateResult = {
 
     resourceFile.dirname.makeDirs
 
@@ -113,11 +111,11 @@ case class Resource(
     if (resourceFile.exists){
       ResourceAlreadyExists
     } else {
-      val errors = download()
+      val errors = download(props)
       if (resourceFile.exists){
         log.info("Downloaded " + basename)
         if (cachedFile.doesNotExist)
-          cacheDownloadedResource()
+          cacheDownloadedResource(props)
         ResourceDownloaded
       } else {
         ResourceFailedToDownload(errors)
@@ -125,7 +123,7 @@ case class Resource(
     }
   }
 
-  private def cacheDownloadedResource(){
+  private def cacheDownloadedResource(props : MakerProps){
     withTempDir{
       dir => 
         ApacheFileUtils.copyFileToDirectory(resourceFile, dir)
@@ -133,16 +131,17 @@ case class Resource(
         ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
     }
   }
-  private def urls() : List[String] = {
-    (preferredRepository.toList ::: props.resourceResolvers().values.toList).map{
+  private def urls(props : MakerProps) : List[String] = {
+    val withExplicitVersion = resolveVersions(props.resourceVersions())
+    (preferredRepository.map(props.resourceResolvers()(_)).toList ::: props.resourceResolvers().values.toList).map{
       repository => 
-        repository + "/" + relativeURL
+        repository + "/" + withExplicitVersion.relativeURL
     }
   }
 
-  private def download() = {
+  private def download(props : MakerProps) = {
     var errors = List[(Int, String)]()  // (curl return code, cmd)
-    urls.find{
+    urls(props).find{
       url =>
         val cmd = Command(
           "curl",
@@ -190,7 +189,6 @@ object Resource{
       artifactId, 
       version, 
       Some(downloadDirectory), 
-      module.props, 
       extension, 
       classifier, 
       preferredRepository)
@@ -248,14 +246,13 @@ object Resource{
         key -> value
     }.toMap
 
-    val res = Resource.build2(
+    Resource.build2(
       module,
       groupId, artifactId, version,
       extension = optionalArgs.getOrElse("type", "jar"),
       classifier = optionalArgs.get("classifier"),
-      preferredRepository = optionalArgs.get("resolver").map(module.props.resourceResolvers()(_))
+      preferredRepository = optionalArgs.get("resolver")
     )
     
-    res.resolveVersions(module.props.resourceVersions)
   }
 }

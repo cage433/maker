@@ -35,8 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
 import maker.task.tasks.{CleanTask, RunUnitTestsTask, UpdateTask}
-import ch.qos.logback.classic.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{LoggerFactory, Logger}
 
 /**
   * Corresponds to a module in IntelliJ
@@ -229,7 +228,7 @@ object Module{
     }.map(_.getAbsolutePath).sortWith(_ < _).mkString(sep)
 
   def warnOfUnnecessaryDependencies(proj : Module){
-    val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+    val logger = LoggerFactory.getLogger(this.getClass)
 
     proj.immediateUpstreamModules.foreach{
       p => 

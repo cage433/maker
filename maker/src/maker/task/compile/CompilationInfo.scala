@@ -4,7 +4,6 @@ import maker.utils.RichString._
 import maker.utils.TaskInfo
 
 trait CompilationState
-case object CachedCompilation extends CompilationState 
 case object CompilationSucceeded extends CompilationState
 case object CompilationNotRequired extends CompilationState
 

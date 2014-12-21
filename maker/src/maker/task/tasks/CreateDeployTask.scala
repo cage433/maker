@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory
 case class CreateDeployTask(project: Project, buildTests: Boolean, version: Option[String] = None) extends Task {
   def baseProject = project
 
-  private val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  private val logger = LoggerFactory.getLogger(this.getClass)
   val baseOutputDir = file(project.rootAbsoluteFile, "/target-maker/deploy/")
   val jarsDir = file(baseOutputDir, "/jars/")
   val thirdPartyJars = file(baseOutputDir, "/thirdpartyjars/")

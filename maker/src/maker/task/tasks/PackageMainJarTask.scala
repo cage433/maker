@@ -25,7 +25,7 @@ case class PackageMainJarTask(module: Module) extends PackageJarTask(module) {
 
 abstract class PackageJarTask(module: Module) extends SingleModuleTask(module) {
   private val props = module.props
-  private val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
     doPackage(results, sw)

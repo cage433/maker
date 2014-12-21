@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 
 case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   
-  lazy val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  lazy val logger = LoggerFactory.getLogger(this.getClass)
 
   object MakerHome extends SystemProperty("maker.home") with IsString
   object MakerTestReporterJar extends Default(MakerHome() + "/maker-scalatest-reporter.jar") with IsFile

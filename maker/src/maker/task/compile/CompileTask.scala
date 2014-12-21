@@ -31,27 +31,11 @@ abstract class CompileTask extends Task{
     }
   }
 
-  private val classesCache:Option[PersistentCache] = module.props.CompilationCache() match {
-    case ""|"None"|"No"|"Off" => None
-    case "file" => Some(new FileSystemPersistentCache(module.cacheDirectory))
-    case hostname => Some(RedisPersistentCache.instance(hostname))
-  }
-  def inputsHash = HashCache.hash(modulePhase.compilationDependencies())
-
   private def successfulResult(sw : Stopwatch, state : CompilationState) = CompileTaskResult(
     this, succeeded = true, 
     stopwatch = sw, 
     state = state
   )
-  private def cachedCompilation(sw : Stopwatch) : Option[TaskResult] = {
-    classesCache collect {
-      case cache if cache.contains(inputsHash) => {
-        val files = CompilationCache.lookup(cache, inputsHash).get
-        files.copyTo(modulePhase.module.rootAbsoluteFile, modulePhase.outputDir, modulePhase.phaseDirectory)
-        successfulResult(sw, CachedCompilation)
-      }
-    }
-  }
 
   def compilationRequired(upstreamTaskResults : Iterable[TaskResult]) = {
     def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation.nonEmpty
@@ -78,34 +62,28 @@ abstract class CompileTask extends Task{
       return successfulResult(sw, CompilationNotRequired)
     }
     copyResourcesToTargetDirIfNecessary()
-    val result = cachedCompilation(sw).getOrElse{
-      if (compilationRequired(upstreamTaskResults)){
-        props.Compiler() match {
-          case "zinc" => 
-            val exitCode = ZincCompile(modulePhase)
-            if (exitCode == 0)
-              successfulResult(sw, CompilationSucceeded)
-            else {
-              modulePhase.markCompilatonFailure()
-              CompileTask.appendCompileOutputToTopLevel(modulePhase)
-              CompileTaskResult(
-                this, succeeded = false,
-                stopwatch = sw, state = CompilationFailed("compilation failure")
-              )
-            }
-          case "dummy-test-compiler" =>
-            DummyCompileTask(modulePhase).exec
+    if (compilationRequired(upstreamTaskResults)){
+      props.Compiler() match {
+        case "zinc" => 
+          val exitCode = ZincCompile(modulePhase)
+          if (exitCode == 0)
             successfulResult(sw, CompilationSucceeded)
+          else {
+            modulePhase.markCompilatonFailure()
+            CompileTask.appendCompileOutputToTopLevel(modulePhase)
+            CompileTaskResult(
+              this, succeeded = false,
+              stopwatch = sw, state = CompilationFailed("compilation failure")
+            )
+          }
+        case "dummy-test-compiler" =>
+          DummyCompileTask(modulePhase).exec
+          successfulResult(sw, CompilationSucceeded)
 
-        }
-      } else {
-        successfulResult(sw, CompilationNotRequired)
       }
+    } else {
+      successfulResult(sw, CompilationNotRequired)
     }
-    classesCache.foreach{
-      cache =>  CompilationCache.save(cache, module.rootAbsoluteFile, inputsHash, modulePhase.outputDir, modulePhase.phaseDirectory)
-    }
-    result
   }
 
 

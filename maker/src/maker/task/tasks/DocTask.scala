@@ -45,7 +45,7 @@ case class DocTask(baseProject : BaseProject) extends Task {
   def name = "Doc " + baseProject.name
   def upstreamTasks = baseProject.allUpstreamModules.map(SourceCompileTask).toList
   def module = baseProject
-  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  val logger = LoggerFactory.getLogger(this.getClass)
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
 

@@ -51,7 +51,7 @@ case class Build(
     buf.toString
   }
   
-  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  val logger = LoggerFactory.getLogger(this.getClass)
 
   def execute = new Execute().execute
   class Execute{
@@ -159,7 +159,7 @@ case class Build(
 }
 
 object Build{
-  val log = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  val log = LoggerFactory.getLogger(this.getClass)
   val taskCount = new AtomicInteger(0)
 
   def apply(project : BaseProject, tasks : Task*) : Build = {

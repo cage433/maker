@@ -130,7 +130,7 @@ case class RunUnitTestsTask(
 
 object RunUnitTestsTask{
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
-  val logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  val logger = LoggerFactory.getLogger(this.getClass)
   def apply(baseProject : BaseProject, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
     def resolveClassName(cn : String) : List[String] = {
       if (cn.contains('.'))

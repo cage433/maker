@@ -12,8 +12,7 @@ import java.net.URLClassLoader
 import java.lang.reflect.Modifier
 import maker.ivy.IvyUtils
 import scala.xml.Elem
-import ch.qos.logback.classic.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{LoggerFactory, Logger}
 
 trait BaseProject {
   protected def root : File
@@ -34,7 +33,7 @@ trait BaseProject {
     extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty)
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def props : MakerProps
-  def logger = LoggerFactory.getLogger(this.getClass).asInstanceOf[Logger]
+  def logger = LoggerFactory.getLogger(this.getClass)
 
   lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)
 
