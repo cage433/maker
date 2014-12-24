@@ -36,6 +36,8 @@ object ZincCompile{
       props.ProjectScalaCompilerJar().getAbsolutePath,
       "-scala-library",
       props.ProjectScalaLibraryJar().getAbsolutePath,
+      "-scala-extra",
+      props.ProjectScalaReflectJar().getAbsolutePath,
       "-classpath",
       projectPhase.classpathDirectoriesAndJars.filterNot(_ == projectPhase.outputDir).toList.map(_.getCanonicalFile.getAbsolutePath).mkString(File.pathSeparator),
       "-d",

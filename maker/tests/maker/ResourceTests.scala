@@ -13,12 +13,13 @@ class ResourceTests extends FreeSpec {
  }
 
   "test version resolution" in {
-    val versions = Map("scala_version" -> "2.9.2", "jetty_version" -> "1.6")
-    assert(Resource.parse("org.scalacheck scalacheck_{scala_version} 1.9").resolveVersions(versions) === Resource("org.scalacheck", "scalacheck_2.9.2", "1.9"))
-    assert(Resource.parse("org.scalacheck_{jetty_version}_mike scalacheck_{scala_version}_{jetty_version}_fred 1.9").resolveVersions(versions) === 
+    val versions = Map("scala_version" -> "2.9.2", "jetty_version" -> "1.6", "scala_version_base" -> "2.9", "scalatest_version" -> "1.23")
+    assert(Resource.parse("org.scalacheck scalacheck_{scala_version} 1.9", versions) === Resource("org.scalacheck", "scalacheck_2.9.2", "1.9"))
+    assert(Resource.parse("org.scalatest scalatest_{scala_version_base} {scalatest_version}", versions) === Resource("org.scalatest", "scalatest_2.9", "1.23"))
+    assert(Resource.parse("org.scalacheck_{jetty_version}_mike scalacheck_{scala_version}_{jetty_version}_fred 1.9", versions) === 
       Resource("org.scalacheck_1.6_mike", "scalacheck_2.9.2_1.6_fred", "1.9"))
     try {
-      Resource.parse("foo {unknown_version}_bar 1.6").resolveVersions(versions)
+      Resource.parse("foo {unknown_version}_bar 1.6", versions)
       fail("Should have thrown exception")
     } catch {
       case _ : RuntimeException => 
@@ -33,7 +34,7 @@ class ResourceTests extends FreeSpec {
     List("org foo", "org", "", "org foo 2.0 extra-term", "org foo 1.0 bad-key:34").foreach{
       s => 
         try {
-          Resource.build3(null, s)
+          Resource.parse(s)
           fail(s + " should have failed to parse")
         } catch {
           case _ : RuntimeException => 

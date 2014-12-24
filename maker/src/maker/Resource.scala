@@ -65,7 +65,7 @@ case class Resource(
       {classifier.map(c => <artifact name={artifactId} type="jar" ext="jar" e:classifier={c} />).getOrElse(NodeSeq.Empty)}
     </dependency>
 
-  def resolveVersions(versions : Map[String, String]) : Resource = {
+  private def resolveVersions(versions : Map[String, String]) : Resource = {
 
     val Regex = "([^{]*)\\{([^}]*)\\}(.*)".r
     def resolve(s : String) : String = {
@@ -169,90 +169,36 @@ object Resource{
   case object ResourceDownloaded extends UpdateResult
   case class ResourceFailedToDownload(override val errors : List[(Int, String)]) extends UpdateResult
 
-  def build2(
-    module : Module, 
-    groupId : String, 
-    artifactId : String, 
-    version : String,
-    extension : String = "jar",
-    classifier : Option[String] = None,
-    preferredRepository : Option[String] = None
-  ) : Resource = {
-    val downloadDirectory = if (classifier == Some("sources"))
-      module.managedLibSourceDir
-    else if (extension == "jar")
-      module.managedLibDir
-    else 
-      module.managedResourceDir
+  def parse(s : String, resourceVersions : Map[String, String] = Map.empty, downloadDirectory : Option[File] = None) : Resource = {
+    def exitWithBadUsage{
+      val errorMessage = """|Valid resource format is 
+                            | <group-id> <artifact-id> <version> [resolver:<resolver-name>] [type:<type-name - e.g. jar, xml, gz>]
+                            |
+                            | Was given [""".stripMargin + s + "]"
+      throw new RuntimeException(errorMessage)
+    }
+
+    val terms : List[String] = s.split(" ").toList.filterNot(_ == "")
+
+      if (terms.size < 3 
+        || terms.take(3).exists(_.contains(':')) 
+        || !terms.drop(3).forall(_.contains(':')))
+    {
+      exitWithBadUsage
+    }
+
+    val List(groupId, artifactId, version) = terms.take(3)
+
+    val optionalArgs = terms.drop(3).map{term => 
+      val List(key, value) = term.split(':').toList
+        key -> value
+    }.toMap
+
     Resource(
-      groupId, 
-      artifactId, 
-      version, 
-      Some(downloadDirectory), 
-      extension, 
-      classifier, 
-      preferredRepository)
-  }
-
-  def parse(s : String) : Resource = {
-    def exitWithBadUsage{
-      val errorMessage = """|Valid resource format is 
-                            | <group-id> <artifact-id> <version> [resolver:<resolver-name>] [type:<type-name - e.g. jar, xml, gz>]
-                            |
-                            | Was given [""".stripMargin + s + "]"
-      throw new RuntimeException(errorMessage)
-    }
-
-    val terms : List[String] = s.split(" ").toList.filterNot(_ == "")
-
-      if (terms.size < 3 
-        || terms.take(3).exists(_.contains(':')) 
-        || !terms.drop(3).forall(_.contains(':')))
-    {
-      exitWithBadUsage
-    }
-
-    val List(groupId, artifactId, version) = terms.take(3)
-
-    val optionalArgs = terms.drop(3).map{term => 
-      val List(key, value) = term.split(':').toList
-        key -> value
-    }.toMap
-
-    Resource(groupId, artifactId, version, extension = optionalArgs.getOrElse("type", "jar"), preferredRepository = optionalArgs.get("resolver"))
-  }
-  def build3(module : Module, s : String) : Resource = {
-    def exitWithBadUsage{
-      val errorMessage = """|Valid resource format is 
-                            | <group-id> <artifact-id> <version> [resolver:<resolver-name>] [type:<type-name - e.g. jar, xml, gz>]
-                            |
-                            | Was given [""".stripMargin + s + "]"
-      throw new RuntimeException(errorMessage)
-    }
-
-    val terms : List[String] = s.split(" ").toList.filterNot(_ == "")
-
-      if (terms.size < 3 
-        || terms.take(3).exists(_.contains(':')) 
-        || !terms.drop(3).forall(_.contains(':')))
-    {
-      exitWithBadUsage
-    }
-
-    val List(groupId, artifactId, version) = terms.take(3)
-
-    val optionalArgs = terms.drop(3).map{term => 
-      val List(key, value) = term.split(':').toList
-        key -> value
-    }.toMap
-
-    Resource.build2(
-      module,
-      groupId, artifactId, version,
-      extension = optionalArgs.getOrElse("type", "jar"),
-      classifier = optionalArgs.get("classifier"),
-      preferredRepository = optionalArgs.get("resolver")
-    )
-    
+      groupId, artifactId, version, 
+      extension = optionalArgs.getOrElse("type", "jar"), 
+      preferredRepository = optionalArgs.get("resolver"),
+      downloadDirectory = downloadDirectory
+    ).resolveVersions(resourceVersions)
   }
 }

@@ -62,7 +62,7 @@ class Module(
     val resources = resourcesFile.readLines.toList.filterNot{
       line => 
         line.startsWith("#") || line.trim.size == 0
-    }.map(Resource.build3(this, _))
+    }.map(Resource.parse(_, resourceVersions = props.resourceVersions(), downloadDirectory = Some(managedLibDir)))
     resources.distinct
   }
 
