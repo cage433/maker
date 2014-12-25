@@ -65,7 +65,7 @@ case class Resource(
       {classifier.map(c => <artifact name={artifactId} type="jar" ext="jar" e:classifier={c} />).getOrElse(NodeSeq.Empty)}
     </dependency>
 
-  private def resolveVersions(versions : Map[String, String]) : Resource = {
+  def resolveVersions(versions : Map[String, String]) : Resource = {
 
     val Regex = "([^{]*)\\{([^}]*)\\}(.*)".r
     def resolve(s : String) : String = {

@@ -39,11 +39,11 @@ class UpdateTaskTests extends FreeSpec {
         val module = new TestModule(dir, "testResources", overrideProps = Some(props))
 
         val expected = Set(
-          Resource("org.foo", "bar", "{sbt_version}", downloadDirectory = Some(module.managedLibDir)),
+          Resource("org.foo", "bar", "{sbt_version}", downloadDirectory = Some(module.managedLibDir)).resolveVersions(props.resourceVersions()),
           Resource("com.mike", "fred_{scala_version}", "{scalatest_version}", 
             preferredRepository = Some("second"),
             downloadDirectory = Some(module.managedLibDir)
-            )
+            ).resolveVersions(props.resourceVersions())
         )
         assert(module.resources().toSet === expected)
 

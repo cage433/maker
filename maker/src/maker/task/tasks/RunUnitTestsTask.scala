@@ -75,6 +75,7 @@ case class RunUnitTestsTask(
       s += "logback.configurationFile" -> props.LogbackTestConfigFile().getAbsolutePath
       s += "maker.test.output" -> baseProject.testOutputFile.toString
       s += "sbt.log.format" -> "=false"
+      s += "maker.home" -> props.MakerHome()
       s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
       }.toList
