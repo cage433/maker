@@ -74,7 +74,7 @@ class CommandTests extends FunSuite{
   test("Output is saved"){
     withTempDir{
       dir =>
-        val cmd = Command(CommandOutputHandler.NULL.withSavedOutput, None, "echo", "HELLO")
+        val cmd = Command("echo", "HELLO").withSavedOutput
         cmd.exec
         assert(cmd.savedOutput === "HELLO\n")
     }
@@ -92,7 +92,7 @@ class CommandTests extends FunSuite{
           done
           """
         )
-        val cmd = new Command(new CommandOutputHandler().withSavedOutput, Some(dir), "bash", "main.sh")
+        val cmd = Command(Some(dir), "bash", "main.sh").withSavedOutput
         val (proc, future) = cmd.execAsync
         val procID = ProcessID(proc)
         assert(procID.isRunning)

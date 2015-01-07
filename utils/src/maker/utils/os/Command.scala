@@ -100,7 +100,7 @@ case class Command(outputHandler : CommandOutputHandler, workingDirectory : Opti
     args : _*
   )
 
-  def withSavedOutput = withOutput(outputHandler.withSavedOutput)
+  def withSavedOutput = withOutput(CommandOutputHandler.NULL.withSavedOutput)
   def withNoOutput = withOutput(CommandOutputHandler.NULL)
 
   private def startProc() : Process = {
