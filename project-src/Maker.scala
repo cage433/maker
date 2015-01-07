@@ -48,7 +48,7 @@ import scala.util.Properties
 object Maker {
 
   private val props = MakerProps() ++ (
-    "GroupId", "com.google.code.maker",
+    "GroupId", "com.github.cage433",
     "LogbackTestConfigFile", "logback-config/logback-unit-tests.xml"
   )
 
