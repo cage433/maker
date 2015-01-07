@@ -43,31 +43,18 @@ abstract class PackageJarTask(module: Module) extends SingleModuleTask(module) {
     ).asScala.filter(_.isFile).toList
 
   private def doPackage(results: Iterable[TaskResult], sw: Stopwatch) = {
-    // why are we not using the J2SE JarFile API?
-    case class WrappedCommand(cmd: Command, ignoreFailure: Boolean) {
-      def exec: Int = {
-        (cmd.exec(), ignoreFailure) match {
-          case (0, _) => 0
-          case (errorNo, true) => {
-            logger.warn("Ignoring  error in " + cmd + ". Artifact may be missing content")
-            0
-          }
-          case (errorNo, _) => errorNo
-        }
-      }
-    }
     val jar = props.Jar().getAbsolutePath
     def jarCommand(updateOrCreate: String, targetFile: File, baseDir: File, file: File) = {
       val relativeName = if (file == baseDir) "." else file.relativeTo(baseDir).toString
-      WrappedCommand(Command(
+      Command(
         List(jar, updateOrCreate, outputArtifact.getAbsolutePath, "-C", baseDir.getAbsolutePath, relativeName): _*
-      ), ignoreFailure = false)
+      )
     }
 
     def createJarCommand(baseDir: File, file: File) = jarCommand("cf", outputArtifact, baseDir, file)
     def updateJarCommand(baseDir: File, file: File) = jarCommand("uf", outputArtifact, baseDir, file)
 
-    val cmds: List[WrappedCommand] = createJarCommand(outputDir, outputDir) :: {
+    val cmds: List[Command] = createJarCommand(outputDir, outputDir) :: {
       (resourceDir, resourceDir) ::
       managedResources.map((module.managedResourceDir, _))
     }.collect {
@@ -79,7 +66,7 @@ abstract class PackageJarTask(module: Module) extends SingleModuleTask(module) {
 
     cmds.find(_.exec != 0) match {
       case Some(failingCommand) =>
-        DefaultTaskResult(this, false, sw, message = Some(failingCommand.cmd.savedOutput))
+        DefaultTaskResult(this, false, sw, message = Some(failingCommand.savedOutput))
       case None =>
         DefaultTaskResult(this, true, sw)
     }
