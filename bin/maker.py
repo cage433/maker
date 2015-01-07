@@ -114,7 +114,6 @@ class Resource(object):
 
 
 
-
 class Maker(object):
 
     def __init__(self):
