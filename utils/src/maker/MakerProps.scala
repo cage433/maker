@@ -78,7 +78,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
     }
   }
   object ShowFailingTestException extends Default(false) with IsBoolean
-  object CopyResourcesBeforeCompiling extends Default(false) with IsBoolean
 
   /** 
    * Set to true in maker.sh if we are executing a maker command,

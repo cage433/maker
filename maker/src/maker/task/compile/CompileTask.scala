@@ -24,13 +24,6 @@ abstract class CompileTask extends Task{
 
   val modulePhase = ModuleCompilePhase(module, phase)
 
-  private def copyResourcesToTargetDirIfNecessary(){
-    if (props.CopyResourcesBeforeCompiling()) {
-      val d = module.resourceDir(SourceCompilePhase)
-      if (d.exists) copyDirectoryToDirectory(d, module.targetDir)
-    }
-  }
-
   private def successfulResult(sw : Stopwatch, state : CompilationState) = CompileTaskResult(
     this, succeeded = true, 
     stopwatch = sw, 
@@ -61,7 +54,6 @@ abstract class CompileTask extends Task{
       modulePhase.compilationCacheFile.delete
       return successfulResult(sw, CompilationNotRequired)
     }
-    copyResourcesToTargetDirIfNecessary()
     if (compilationRequired(upstreamTaskResults)){
       props.Compiler() match {
         case "zinc" => 
