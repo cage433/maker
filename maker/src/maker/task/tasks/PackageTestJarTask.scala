@@ -12,5 +12,4 @@ case class PackageTestJarTask(module: Module) extends PackageJarTask(module) {
   protected def outputArtifact: File = module.testOutputArtifact
   protected def outputDir: File = module.testCompilePhase.outputDir
   protected def resourceDir: File = module.testResourceDir
-  protected def managedResources: List[File] = allManagedResources.filter(module.includeInTestJar)
 }

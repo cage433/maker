@@ -1,3 +1,16 @@
+package maker.project
+
+import sbt.inc.Analysis
+import maker.task._
+import maker.task.tasks.{CleanTask, RunUnitTestsTask, UpdateTask}
+import java.util.concurrent.ConcurrentHashMap
+import java.io.File
+import org.slf4j.LoggerFactory
+import maker.{MakerProps, PomUtils, Resource}
+import maker.task.compile.{ModuleCompilePhase, SourceCompilePhase, TestCompilePhase}
+import scala.collection.immutable.Nil
+import sbt.ConsoleLogger
+
 /*
  * Copyright (c) 2011-2012, Alex McGuire, Louis Botterill
  * All rights reserved.
@@ -22,20 +35,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package maker.project
-
-import java.io.File
-import maker.utils.FileUtils._
-import maker.{MakerProps, Resource, PomUtils}
-import sbt.ConsoleLogger
-import scala.collection.JavaConversions._
-import com.typesafe.zinc.{Compiler, Setup}
-import maker.task._
-import java.util.concurrent.ConcurrentHashMap
-import sbt.inc.Analysis
-import maker.task.compile._
-import maker.task.tasks.{CleanTask, RunUnitTestsTask, UpdateTask}
-import org.slf4j.{LoggerFactory, Logger}
 
 /**
   * Corresponds to a module in IntelliJ
@@ -170,9 +169,7 @@ class Module(
 
 
   // for the managed (non-jar) resources
-  def includeInMainJar(file: File): Boolean = true
   def outputArtifact = file(packageDir.getAbsolutePath, name + ".jar")
-  def includeInTestJar(file: File): Boolean = false
   def testOutputArtifact = file(packageDir.getAbsolutePath, name + "-test.jar")
 
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
