@@ -32,6 +32,7 @@ import maker.utils.Stopwatch
 import maker.utils.maven.IvyLock
 import maker.utils.FileUtils
 import maker.PomUtils
+import maker.task.compile.SourceCompilePhase
 
 /**
  * publishes poms and packaged artifacts to the local filesystem at ~/.ivy2/maker-local - subject to change
@@ -42,7 +43,7 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
   def module = baseProject
   def upstreamTasks = baseProject match {
     case _ : Project => baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
-    case m : Module => PackageMainJarTask(m) :: baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
+    case m : Module => PackageJarTask(m, SourceCompilePhase) :: baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
   }
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {

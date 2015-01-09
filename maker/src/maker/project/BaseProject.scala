@@ -1,18 +1,16 @@
 package maker.project
 
 import maker.task._
-import maker.{MakerProps, Resource}
-import maker.task.compile.{SourceCompileTask, TestCompileTask}
-import java.io.File
-import maker.utils._
-import maker.utils.FileUtils._
 import maker.task.tasks._
-import maker.utils.RichString._
+import scala.xml.Elem
+import java.io.File
+import maker.utils.{FileUtils, MakerTestResults, ScreenUtils}
+import maker.ivy.IvyUtils
+import org.slf4j.LoggerFactory
+import maker.{MakerProps, Resource}
+import maker.task.compile.{SourceCompilePhase, SourceCompileTask, TestCompileTask}
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
-import maker.ivy.IvyUtils
-import scala.xml.Elem
-import org.slf4j.{LoggerFactory, Logger}
 
 trait BaseProject {
   protected def root : File
@@ -142,7 +140,7 @@ trait BaseProject {
   }
   def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
 
-  def pack = executeWithDependencies(PackageMainJarTask(_))
+  def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase))
 
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
   def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))
