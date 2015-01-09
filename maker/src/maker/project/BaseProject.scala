@@ -141,6 +141,7 @@ trait BaseProject {
   def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
 
   def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false))
+  def packageAllUpstream = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = true))
 
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
   def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))

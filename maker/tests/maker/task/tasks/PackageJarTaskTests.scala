@@ -5,7 +5,7 @@ import maker.utils.os.Command
 import java.io.File
 import maker.project.{Module, TestModule}
 import maker.utils.FileUtils._
-import maker.utils.CustomMatchers
+import maker.utils.{CustomMatchers, Stopwatch}
 import maker.MakerProps
 import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
@@ -38,20 +38,55 @@ class PackageJarTaskTests extends FreeSpec{
         proj.pack
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj, proj.outputDir(SourceCompilePhase), 
+          proj.outputDir(SourceCompilePhase), 
           proj.outputArtifact(SourceCompilePhase))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj, 
           proj.resourceDir(SourceCompilePhase), 
           proj.outputArtifact(SourceCompilePhase))
     }
   }
+
+  "Can package upstream modules into one big jar" in {
+    withTempDir{
+      dir => 
+        val a = createTestModule(dir, "a")
+        val b = createTestModule(dir, "b", upstreamModules = List(a))
+        val c = createTestModule(dir, "c", upstreamModules = List(b))
+
+
+        a.writeCaseObject("Foo", "foo")
+        a.addUnmanagedResource("a-resource")
+
+        b.writeCaseObject("Bar", "foo")
+        b.addUnmanagedResource("b-resource")
+
+        c.writeCaseObject("Baz", "foo")
+        c.addUnmanagedResource("c-resource")
+
+        c.packageAllUpstream
+
+        val oneBigJar = c.outputArtifact(SourceCompilePhase)
+
+        Vector(a, b, c).foreach{
+          m => 
+            PackageJarTaskTests.checkJarContainsDirectoryContents(
+              m.outputDir(SourceCompilePhase),
+              oneBigJar
+            )
+            PackageJarTaskTests.checkJarContainsDirectoryContents(
+              m.resourceDir(SourceCompilePhase),
+              oneBigJar
+            )
+        }
+    }
+  }
+
 }
 
 object PackageJarTaskTests extends Matchers with CustomMatchers{
-  def checkJarContainsDirectoryContents(module : Module, dir : File, jarFile : File){
+  def checkJarContainsDirectoryContents(dir : File, jarFile : File){
     val jarContents = {
-      val cmd = Command(module.props.Jar().getAbsolutePath, "tvf", jarFile.getPath).withSavedOutput
+      val cmd = Command(MakerProps().Jar().getAbsolutePath, "tvf", jarFile.getPath).withSavedOutput
       cmd.exec
       cmd.savedOutput.split("\n")
     }

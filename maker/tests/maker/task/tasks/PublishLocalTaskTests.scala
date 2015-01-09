@@ -79,8 +79,8 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
         checkPublishedPomMatchesCoordinates(proj, version)
         checkPublishedPomIncludesAllDependencies(proj)
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj, proj.outputDir(SourceCompilePhase), proj.publishLocalJar)
-        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.resourceDir(SourceCompilePhase), proj.publishLocalJar)
+          proj.outputDir(SourceCompilePhase), proj.publishLocalJar)
+        PackageJarTaskTests.checkJarContainsDirectoryContents(proj.resourceDir(SourceCompilePhase), proj.publishLocalJar)
     }
   }
 
