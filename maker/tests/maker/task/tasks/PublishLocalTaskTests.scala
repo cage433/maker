@@ -44,18 +44,6 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     }
   }
 
-  private def checkJarContainsDirectoryContents(module : Module, dir : File){
-    val jarContents = {
-      val cmd = Command(module.props.Jar().getAbsolutePath, "tvf", module.publishLocalJar.getAbsolutePath).withSavedOutput
-      cmd.exec
-      cmd.savedOutput.split("\n")
-    }
-    val relativePaths = allFiles(dir).filter(_.isFile).map(_.relativeTo(dir).getPath)
-    relativePaths should allSatisfy{
-      path : String => jarContents.exists(_.contains(path))
-    }
-  }
-
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
     val moduleRoot = file(dir, name)
     val props = MakerProps(
@@ -71,20 +59,6 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     )
   }
 
-  private def addExternalResource(module : Module, resource : String){
-    appendToFile(file(module.root, "external-resources"), resource)
-  }
-
-  private def addUnmanagedResource(module : Module, filePath : String*){
-    file(module.resourceDir, filePath :_*).touch
-  }
-
-  private def writeSrc(module : Module, path : String*){
-    val pckg = path.dropRight(1).mkString(".")
-    val relativePath = path.mkString("/")
-  }
-
-
   "Simple module should publish as expected" in {
     withTempDir{
       dir =>  
@@ -92,25 +66,18 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
         val version = "1.0-SNAPSHOT"
         val proj = createTestModule(dir, "single-module-publish-local-test")
 
-        addExternalResource(proj, "org.slf4j slf4j-api 1.6.1")
-        addUnmanagedResource(proj, "MainResource1")
-        addUnmanagedResource(proj, "subdir-b", "MainResource2")
+        proj.addExternalResource("org.slf4j slf4j-api 1.6.1")
+        proj.addUnmanagedResource("MainResource1")
+        proj.addUnmanagedResource("subdir-b", "MainResource2")
 
-        proj.writeSrc(
-          "testPublishLocal/Foo.scala",
-          """
-          |package testPublishLocal
-          | 
-          |case object Foo
-          """.stripMargin
-        )
+        proj.writeCaseObject("Foo", "testPublishLocal")
 
         proj.publishLocal(version)
 
         checkPublishedPomMatchesCoordinates(proj, version)
         checkPublishedPomIncludesAllDependencies(proj)
-        checkJarContainsDirectoryContents(proj, proj.outputDir)
-        checkJarContainsDirectoryContents(proj, proj.resourceDir)
+        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.outputDir, proj.publishLocalJar)
+        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.resourceDir, proj.publishLocalJar)
     }
   }
 

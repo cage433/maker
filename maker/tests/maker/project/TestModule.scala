@@ -39,7 +39,30 @@ class TestModule(
     val dir = dirs.head // we know we only have one
     writeToFile(file(dir, relativeSrcPath), code.stripMargin)
   }
+
+  /** A minimal piece of code to guarantee some compilation
+    * is done and at least one class file produced
+    */
+  def writeCaseObject(objectName : String, packagePath : String*){
+    val relativePath = packagePath.mkString("", "/", "/") + objectName + ".scala"
+    val pckg = packagePath.mkString(".")
+    writeSrc(relativePath,
+    s"""
+    |package $pckg
+    |
+    |case object $objectName
+    """.stripMargin
+    )
+
+  }
+
   def writeTest(relativeSrcPath : String, code : String) = writeSrc(relativeSrcPath, code, TestCompilePhase)
+  def addExternalResource(resourceString : String){
+    appendToFile(file(root, "external-resources"), resourceString)
+  }
+  def addUnmanagedResource(path : String*){
+    file(resourceDir, path : _*).touch
+  }
 
   val logFile = file(root, "maker.log")
   val patternLine = "<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>"

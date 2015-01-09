@@ -28,16 +28,17 @@ package maker.task.tasks
 import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.task._
-import maker.utils.Stopwatch
+import maker.utils.{Stopwatch, FileUtils}
 import maker.utils.maven.IvyLock
-import maker.utils.FileUtils
 import maker.PomUtils
 import maker.task.compile.SourceCompilePhase
 
 /**
- * publishes poms and packaged artifacts to the local filesystem at ~/.ivy2/maker-local - subject to change
+ * publishes poms and packaged artifacts to the local filesystem 
+ * Optionally can include upstream modules, in case it's more
+ * convenient to deploy a project as a single jar
  */
-case class PublishLocalTask(baseProject : BaseProject, version : String) extends Task {
+case class PublishLocalTask(baseProject : BaseProject, version : String, includeUpstream : Boolean = false) extends Task {
   def name = "Publish Local"
 
   def module = baseProject
