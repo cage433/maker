@@ -152,7 +152,7 @@ class Module(
 
 
   def testClassNames() = {
-    testCompilePhase.classFiles.map(_.className(testOutputDir)).filterNot(_.contains("$")).filter(isAccessibleScalaTestSuite).toList
+    testCompilePhase.classFiles.map(_.className(outputDir(TestCompilePhase))).filterNot(_.contains("$")).filter(isAccessibleScalaTestSuite).toList
   }
 
   def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
@@ -169,22 +169,32 @@ class Module(
 
 
   // for the managed (non-jar) resources
-  def outputArtifact = file(packageDir.getAbsolutePath, name + ".jar")
-  def testOutputArtifact = file(packageDir.getAbsolutePath, name + "-test.jar")
+  def outputArtifact(compilePhase : CompilePhase) = {
+    val jarBasename = compilePhase match {
+      case SourceCompilePhase => name + ".jar"
+      case TestCompilePhase => name + "-test.jar"
+    }
+    file(packageDir.getAbsolutePath, jarBasename)
+  }
 
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
-  def publishLocalJar = file(publishLocalJarDir, outputArtifact.getName)
+  def publishLocalJar = file(publishLocalJarDir, outputArtifact(SourceCompilePhase).getName)
 
   def sourceDirs: List[File] =
     List(file(rootAbsoluteFile, "src/main/scala"), file(rootAbsoluteFile, "src/main/java"))
   def testSourceDirs: List[File] =
     List(file(rootAbsoluteFile, "src/test/scala"), file(rootAbsoluteFile, "src/test/java"))
-  def resourceDir = file(rootAbsoluteFile, "src/main/resources")
-  def testResourceDir = file(rootAbsoluteFile, "src/test/resources")
+
+  def resourceDir(compilePhase : CompilePhase) = compilePhase match {
+    case SourceCompilePhase => file(rootAbsoluteFile, "src/main/resources")
+    case TestCompilePhase => file(rootAbsoluteFile, "src/test/resources")
+  }
 
   def targetDir = file(rootAbsoluteFile, "target-maker")
-  def outputDir = file(targetDir, "classes")
-  def testOutputDir = file(targetDir, "test-classes")
+  def outputDir(compilePhase : CompilePhase) = compilePhase match {
+    case SourceCompilePhase => file(targetDir, "classes")
+    case TestCompilePhase => file(targetDir, "test-classes")
+  }
   def docOutputDir = file(targetDir, "docs")
   def packageDir = file(targetDir, "package")
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
@@ -198,8 +208,10 @@ trait ClassicLayout {
   this: Module =>
   override def sourceDirs: List[File] = file(rootAbsoluteFile, "src") :: Nil
   override def testSourceDirs: List[File] = file(rootAbsoluteFile, "tests") :: Nil
-  override def resourceDir = file(rootAbsoluteFile, "resources")
-  override def testResourceDir = file(rootAbsoluteFile, "test-resources")
+  override def resourceDir(compilePhase : CompilePhase) = compilePhase match {
+    case SourceCompilePhase => file(rootAbsoluteFile, "resources")
+    case TestCompilePhase => file(rootAbsoluteFile, "test-resources")
+  }
 }
 
 

@@ -171,9 +171,9 @@ case class IDEAProjectGenerator(props : MakerProps) {
     val projTestComp = ModuleCompilePhase(module, TestCompilePhase)
     val sources = if (
       projComp.sourceDirs.map(_.exists).isEmpty &&
-      !module.resourceDir.exists &&
+      !module.resourceDir(SourceCompilePhase).exists &&
       !module.managedResourceDir.exists &&
-      !module.testResourceDir.exists &&
+      !module.resourceDir(TestCompilePhase).exists &&
       projTestComp.sourceDirs.map(_.exists).isEmpty) {
         """    <content url="file://$MODULE_DIR$" />"""
     } else {
@@ -183,9 +183,9 @@ case class IDEAProjectGenerator(props : MakerProps) {
       }
       // see note on 'resourcesDirContent' about why we don't use 'java-resources'
       val sourcesAndResources = (projComp.sourceDirs.toSet.filter(_.exists)
-              ++ Set(module.resourceDir, module.managedResourceDir).filter(_.exists)).map(sourceFolder(_, test = false))
+              ++ Set(module.resourceDir(SourceCompilePhase), module.managedResourceDir).filter(_.exists)).map(sourceFolder(_, test = false))
       val testSourcesAndResources = (projTestComp.sourceDirs.toSet.filter(_.exists)
-              ++ Set(module.testResourceDir).filter(_.exists)).map(sourceFolder(_, test = true))
+              ++ Set(module.resourceDir(TestCompilePhase)).filter(_.exists)).map(sourceFolder(_, test = true))
       val outputDirectoryToExclude = module.targetDir.relativeTo(module.rootAbsoluteFile).getPath
       val allSources = (sourcesAndResources ++ testSourcesAndResources).toList.mkString("\n")
       """    <content url="file://$MODULE_DIR$">
@@ -294,9 +294,9 @@ case class IDEAProjectGenerator(props : MakerProps) {
       </library>
     </orderEntry>""".format(test, dir)
 
-    val resourceDirectoriesThatExist = Set(module.resourceDir, module.managedResourceDir).filter(_.exists)
+    val resourceDirectoriesThatExist = Set(module.resourceDir(SourceCompilePhase), module.managedResourceDir).filter(_.exists)
     val resources = resourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(module.rootAbsoluteFile).getPath, "")).toList
-    val testResourceDirectoriesThatExist = Set(module.testResourceDir).filter(_.exists)
+    val testResourceDirectoriesThatExist = Set(module.resourceDir(TestCompilePhase)).filter(_.exists)
     val testResources = testResourceDirectoriesThatExist.map(file => resourcesDirContent(file.relativeTo(module.rootAbsoluteFile).getPath, """ scope="TEST"""")).toList
     val resourceDirEntry = (resources ::: testResources).mkString("\n")
 

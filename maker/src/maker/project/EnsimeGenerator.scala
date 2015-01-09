@@ -1,9 +1,12 @@
 package maker.project
 
 import com.typesafe.zinc.Compiler
-import java.io.{ File, FileWriter, Writer }
+import java.io.{File, FileWriter, Writer}
 import maker.MakerProps
 import org.apache.commons.io.FileUtils
+import scala.collection.immutable.Nil
+import javax.annotation.Generated
+import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
 
 class EnsimeGenerator(props: MakerProps) {
   def generateModules(root: File, name: String, modules: List[Module]): Unit = {
@@ -92,8 +95,8 @@ class EnsimeGenerator(props: MakerProps) {
     writer.append("        " + module.testSourceDirs.map(_.getAbsolutePath).mkString("\"","\" \"","\"") + "\n")
     writer.append("      )\n")
 
-    writer.append("      :target \"" + module.outputDir.getAbsolutePath + "\"\n")
-    writer.append("      :test-target \"" + module.testOutputDir.getAbsolutePath + "\"\n")
+    writer.append("      :target \"" + module.outputDir(SourceCompilePhase).getAbsolutePath + "\"\n")
+    writer.append("      :test-target \"" + module.outputDir(TestCompilePhase).getAbsolutePath + "\"\n")
 
     writer.append("    )\n")
   }

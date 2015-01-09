@@ -26,7 +26,7 @@ abstract class CompileTask extends Task{
 
   private def copyResourcesToTargetDirIfNecessary(){
     if (props.CopyResourcesBeforeCompiling()) {
-      val d = module.resourceDir
+      val d = module.resourceDir(SourceCompilePhase)
       if (d.exists) copyDirectoryToDirectory(d, module.targetDir)
     }
   }

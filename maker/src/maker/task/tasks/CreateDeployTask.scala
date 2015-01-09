@@ -26,8 +26,8 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
   def name = "Create Deploy"
 
   def module = project
-  def upstreamTasks = project.allUpstreamModules.map(PackageJarTask(_, SourceCompilePhase)) ::: {
-    if (buildTests) project.allUpstreamModules.map(PackageJarTask(_, TestCompilePhase))
+  def upstreamTasks = project.allUpstreamModules.map(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false)) ::: {
+    if (buildTests) project.allUpstreamModules.map(PackageJarTask(_, TestCompilePhase, includeUpstreamModules = false))
     else Nil
   }
 
@@ -47,8 +47,8 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
     copyDirectoryAndPreserve(file(project.rootAbsoluteFile, "/bin/"), binDir)
 
     val appJars = project.allUpstreamModules map { m =>
-      val out = file(jarsDir, m.outputArtifact.getName)
-      copyFile(m.outputArtifact, out)
+      val out = file(jarsDir, m.outputArtifact(SourceCompilePhase).getName)
+      copyFile(m.outputArtifact(SourceCompilePhase), out)
       out.relativeTo(baseOutputDir).getPath
     }
 
@@ -68,8 +68,8 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
       val testJarsDir = file(baseOutputDir, "/testjars/")
       testJarsDir.mkdirs()
       val testJars = project.allUpstreamModules map { m =>
-        val out = file(testJarsDir, m.testOutputArtifact.getName)
-        copyFile(m.testOutputArtifact, out)
+        val out = file(testJarsDir, m.outputArtifact(TestCompilePhase).getName)
+        copyFile(m.outputArtifact(TestCompilePhase), out)
         out.relativeTo(baseOutputDir).getPath
       }
 

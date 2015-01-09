@@ -38,13 +38,14 @@ import maker.task.compile.SourceCompilePhase
  * Optionally can include upstream modules, in case it's more
  * convenient to deploy a project as a single jar
  */
-case class PublishLocalTask(baseProject : BaseProject, version : String, includeUpstream : Boolean = false) extends Task {
+case class PublishLocalTask(baseProject : BaseProject, version : String) extends Task {
   def name = "Publish Local"
 
   def module = baseProject
   def upstreamTasks = baseProject match {
     case _ : Project => baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
-    case m : Module => PackageJarTask(m, SourceCompilePhase) :: baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
+    case m : Module => PackageJarTask(m, SourceCompilePhase, includeUpstreamModules = false) :: 
+      baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version))
   }
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
@@ -60,7 +61,7 @@ case class PublishLocalTask(baseProject : BaseProject, version : String, include
     baseProject match {
       case _ : Project => 
       case m : Module =>
-        copyFileToDirectory(m.outputArtifact, m.publishLocalJarDir)
+        copyFileToDirectory(m.outputArtifact(SourceCompilePhase), m.publishLocalJarDir)
     }
     DefaultTaskResult(this, true, sw)
   }

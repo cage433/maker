@@ -1,16 +1,16 @@
 package maker.project
 
 import maker.task._
-import maker.task.tasks._
-import scala.xml.Elem
 import java.io.File
 import maker.utils.{FileUtils, MakerTestResults, ScreenUtils}
 import maker.ivy.IvyUtils
 import org.slf4j.LoggerFactory
 import maker.{MakerProps, Resource}
-import maker.task.compile.{SourceCompilePhase, SourceCompileTask, TestCompileTask}
+import maker.task.compile._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
+import maker.task.tasks._
+import scala.xml.Elem
 
 trait BaseProject {
   protected def root : File
@@ -140,7 +140,7 @@ trait BaseProject {
   }
   def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
 
-  def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase))
+  def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false))
 
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
   def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))
@@ -235,7 +235,7 @@ trait BaseProject {
 
   lazy val isAccessibleScalaTestSuite : (String => Boolean) = {
     lazy val loader = new URLClassLoader(
-      allUpstreamModules.flatMap{p => p.classpathJars.toSet + p.testOutputDir + p.outputDir}.map(_.toURI.toURL).toArray,
+      allUpstreamModules.flatMap{p => p.classpathJars.toSet + p.outputDir(SourceCompilePhase) + p.outputDir(TestCompilePhase)}.map(_.toURI.toURL).toArray,
       null
     )
     (className: String) =>  {

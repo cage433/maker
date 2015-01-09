@@ -61,7 +61,7 @@ class TestModule(
     appendToFile(file(root, "external-resources"), resourceString)
   }
   def addUnmanagedResource(path : String*){
-    file(resourceDir, path : _*).touch
+    file(resourceDir(SourceCompilePhase), path : _*).touch
   }
 
   val logFile = file(root, "maker.log")

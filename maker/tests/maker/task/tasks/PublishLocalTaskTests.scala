@@ -4,11 +4,13 @@ import org.scalatest.{FreeSpec, Matchers}
 import maker.utils.FileUtils._
 import maker.project._
 import maker.utils.os.{Command, CommandOutputHandler}
-import maker.{Resource, MakerProps}
+import maker._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import scala.xml.{XML, Node}
 import maker.utils.CustomMatchers
 import java.io.File
+import scala.collection.immutable.Nil
+import maker.task.compile.SourceCompilePhase
 
 class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
@@ -76,8 +78,9 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
         checkPublishedPomMatchesCoordinates(proj, version)
         checkPublishedPomIncludesAllDependencies(proj)
-        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.outputDir, proj.publishLocalJar)
-        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.resourceDir, proj.publishLocalJar)
+        PackageJarTaskTests.checkJarContainsDirectoryContents(
+          proj, proj.outputDir(SourceCompilePhase), proj.publishLocalJar)
+        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.resourceDir(SourceCompilePhase), proj.publishLocalJar)
     }
   }
 

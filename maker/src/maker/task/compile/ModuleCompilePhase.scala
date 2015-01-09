@@ -18,20 +18,14 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   }
 
   def outputDir : File = {
-    val f = phase match {
-      case SourceCompilePhase => module.outputDir
-      case TestCompilePhase => module.testOutputDir
-    }
+    val f = module.outputDir(phase)
     f.mkdirs
     f
   }
 
 
   def resourceDir : File = {
-    val d = phase match {
-      case SourceCompilePhase => module.resourceDir
-      case TestCompilePhase => module.testResourceDir
-    }
+    val d = module.resourceDir(phase)
     d.mkdirs
     d
   }

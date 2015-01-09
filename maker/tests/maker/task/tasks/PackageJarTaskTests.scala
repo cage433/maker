@@ -8,6 +8,7 @@ import maker.utils.FileUtils._
 import maker.utils.CustomMatchers
 import maker.MakerProps
 import scala.collection.immutable.Nil
+import maker.task.compile.SourceCompilePhase
 
 class PackageJarTaskTests extends FreeSpec{
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
@@ -36,8 +37,13 @@ class PackageJarTaskTests extends FreeSpec{
 
         proj.pack
 
-        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.outputDir, proj.outputArtifact)
-        PackageJarTaskTests.checkJarContainsDirectoryContents(proj, proj.resourceDir, proj.outputArtifact)
+        PackageJarTaskTests.checkJarContainsDirectoryContents(
+          proj, proj.outputDir(SourceCompilePhase), 
+          proj.outputArtifact(SourceCompilePhase))
+        PackageJarTaskTests.checkJarContainsDirectoryContents(
+          proj, 
+          proj.resourceDir(SourceCompilePhase), 
+          proj.outputArtifact(SourceCompilePhase))
     }
   }
 }
