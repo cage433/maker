@@ -62,8 +62,8 @@ main() {
   update_external_jars && check_for_errors
   if [ -z $MAKER_DEVELOPER_MODE ]; then
     bootstrap_maker_if_required && check_for_errors
-    recompile_project_if_required && check_for_errors
   fi
+  recompile_project_if_required && check_for_errors
 
   launch_maker_repl
 }
