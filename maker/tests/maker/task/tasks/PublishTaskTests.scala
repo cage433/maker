@@ -28,7 +28,7 @@ class PublishTaskTests extends FreeSpec {
               |  </resolvers>
               |</ivysettings>""".stripMargin % publishDir)
 
-        val proj = new TestModule(dir, "testPublish", overrideProps = Some(TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler"))){
+        val proj = new TestModule(dir, "testPublish", overrideProps = Some(TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler", "RunningInMakerTest", "true"))){
           override def ivySettingsFile = ivySettingsFile_
         }
 

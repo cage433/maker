@@ -1,18 +1,18 @@
 package maker.project
 
 import maker.task._
-import java.io.File
-import maker.utils.{FileUtils, MakerTestResults, ScreenUtils}
-import maker.ivy.IvyUtils
-import org.slf4j.LoggerFactory
 import maker.{MakerProps, Resource}
 import maker.task.compile._
+import java.io.File
+import maker.utils.{FileUtils, MakerTestResults, ScreenUtils}
+import maker.utils.FileUtils._
+import maker.task.tasks._
+import maker.utils.RichString._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
-import maker.task.tasks._
+import maker.ivy.IvyUtils
 import scala.xml.Elem
-import maker.utils.FileUtils._
-import maker.utils.RichString._
+import org.slf4j.LoggerFactory
 
 trait BaseProject {
   protected def root : File
@@ -33,7 +33,7 @@ trait BaseProject {
     extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty)
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def props : MakerProps
-  def logger = LoggerFactory.getLogger(this.getClass)
+  val logger = LoggerFactory.getLogger(this.getClass)
 
   lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)
 

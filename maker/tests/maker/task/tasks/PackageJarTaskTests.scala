@@ -14,7 +14,8 @@ class PackageJarTaskTests extends FreeSpec{
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
     val moduleRoot = file(dir, name)
     val props = MakerProps(
-      "Compiler", "dummy-test-compiler"
+      "Compiler", "dummy-test-compiler",
+      "RunningInMakerTest", "true"
     )
     new TestModule(
       moduleRoot,

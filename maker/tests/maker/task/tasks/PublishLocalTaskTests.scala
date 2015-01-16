@@ -51,7 +51,8 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     val props = MakerProps(
       "PublishLocalRootDir", file(moduleRoot, ".publish-local").getAbsolutePath,
       "GroupId",  "maker-test-group",
-      "Compiler", "dummy-test-compiler"
+      "Compiler", "dummy-test-compiler",
+      "RunningInMakerTest", "true"
     )
     new TestModule(
       moduleRoot,
