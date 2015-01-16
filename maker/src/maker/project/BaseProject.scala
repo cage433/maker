@@ -11,6 +11,8 @@ import java.net.URLClassLoader
 import java.lang.reflect.Modifier
 import maker.task.tasks._
 import scala.xml.Elem
+import maker.utils.FileUtils._
+import maker.utils.RichString._
 
 trait BaseProject {
   protected def root : File
