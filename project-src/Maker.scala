@@ -25,20 +25,20 @@ object Maker {
     "LogbackTestConfigFile", "logback-config/logback-unit-tests.xml"
   )
 
-  def module(name : String, upstreamProjects : List[Module] = Nil, upstreamTestProjects : List[Module] = Nil) = {
-    val root = file(name).asAbsoluteFile
+  def module(rootBasename : String, name :Option[String] = None, upstreamProjects : List[Module] = Nil, upstreamTestProjects : List[Module] = Nil) = {
+    val root = file(rootBasename).asAbsoluteFile
     new Module(
       root,
-      name,
+      name.getOrElse(rootBasename),
       immediateUpstreamModules = upstreamProjects,
       immediateUpstreamTestModules = upstreamTestProjects,
       props = props
     ) with ClassicLayout
   }
 
-  lazy val testReporter = module("test-reporter")
-  lazy val utils = module("utils", List(testReporter))
-  lazy val mkr = module("maker", List(utils), List(utils))
+  lazy val testReporter = module("test-reporter", name = Some("maker-test-reporter"))
+  lazy val utils = module("utils", upstreamProjects = List(testReporter))
+  lazy val mkr = module("maker", upstreamProjects = List(utils), upstreamTestProjects = List(utils))
 
   lazy val topLevel = new Project("top-level", file("."), List(mkr), props)
 
