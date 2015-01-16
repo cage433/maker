@@ -153,8 +153,8 @@ class Module(
 
   def sourcePackageJar(compilePhase : CompilePhase) = {
     val jarBasename = compilePhase match {
-      case SourceCompilePhase => name + "-sources.jar"
-      case TestCompilePhase => name + "-test-sources.jar"
+      case SourceCompilePhase => name + "-source.jar"
+      case TestCompilePhase => name + "-test-source.jar"
     }
     file(packageDir.getAbsolutePath, jarBasename)
   }

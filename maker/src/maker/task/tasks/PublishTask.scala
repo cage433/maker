@@ -57,7 +57,8 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
 
       val srcArtifactPattern = List(
         baseProject.publishLocalDir.getAbsolutePath + "/[type]s/pom.xml",
-        baseProject.publishLocalDir.getAbsolutePath + "/[type]s/" + baseProject.artifactId + ".jar")
+        baseProject.publishLocalDir.getAbsolutePath + "/[type]s/" + baseProject.artifactId + "(-[classifier]).jar"
+      )
 
 
       ivy.publish(
