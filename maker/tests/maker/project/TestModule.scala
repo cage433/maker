@@ -32,11 +32,7 @@ class TestModule(
     )
   }
   def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {
-    val dirs = phase match {
-      case SourceCompilePhase => sourceDirs
-      case TestCompilePhase => testSourceDirs
-    }
-    val dir = dirs.head // we know we only have one
+    val dir = sourceDirs(phase).head // we know we only have one
     writeToFile(file(dir, relativeSrcPath), code.stripMargin)
   }
 

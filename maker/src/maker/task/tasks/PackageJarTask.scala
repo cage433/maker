@@ -37,31 +37,39 @@ case class PackageJarTask(
     if (!module.packageDir.exists)
       module.packageDir.mkdirs
 
-    def jarCommand(updateOrCreate: String, baseDir: File) = {
+    def jarCommand(jarFile : File, updateOrCreate: String, baseDir: File) = {
       Command(
         module.props.Jar().getAbsolutePath, 
         updateOrCreate, 
-        module.packageJar(compilePhase).getAbsolutePath,
+        jarFile.getAbsolutePath,
         "-C", baseDir.getAbsolutePath, "."
       )
     }
 
+    def jarDirectoriesCommands(jarFile : File, directories : Seq[File]) = {
+      directories.filter(_.exists) match {
+        case Nil => Nil
+        case head :: tail => 
+          jarCommand(jarFile, "cf", head) :: tail.map(jarCommand(jarFile, "uf", _))
+      }
+    }
     val cmds = {
       val modules = if (includeUpstreamModules)
         module :: module.allUpstreamModules
       else 
         List(module)
 
-      val dirs = modules.flatMap{
-        m => 
-          Vector(m.outputDir(compilePhase), m.resourceDir(compilePhase))
-      }.filter(_.exists)
 
-      dirs match {
-        case Nil => Nil
-        case head :: tail => 
-          jarCommand("cf", head) :: tail.map(jarCommand("uf", _))
-      }
+      val classJarCommands = jarDirectoriesCommands(
+        module.packageJar(compilePhase),
+        modules.map(_.outputDir(compilePhase)) ::: modules.map(_.resourceDir(compilePhase))
+      )
+
+      val sourceJarCommands = jarDirectoriesCommands(
+        module.sourcePackageJar(compilePhase),
+        modules.flatMap(_.sourceDirs(compilePhase))
+      )
+      classJarCommands ::: sourceJarCommands
     }
 
     cmds.find(_.exec != 0) match {

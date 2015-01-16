@@ -47,6 +47,24 @@ class PackageJarTaskTests extends FreeSpec{
     }
   }
 
+  "Simple module should package source" in {
+    withTempDir{
+      dir =>  
+
+        val proj = createTestModule(dir, "single-module-package-jar-test")
+
+        proj.addUnmanagedResource("MainResource1")
+        proj.addUnmanagedResource("subdir-b", "MainResource2")
+
+        proj.writeCaseObject("Foo", "foo")
+
+        proj.pack
+
+        PackageJarTaskTests.checkJarContainsDirectoryContents(
+          proj.sourceDirs(SourceCompilePhase).head,
+          proj.sourcePackageJar(SourceCompilePhase))
+    }
+  }
   "Can package upstream modules into one big jar" in {
     withTempDir{
       dir => 

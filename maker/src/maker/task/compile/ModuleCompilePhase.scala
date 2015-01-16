@@ -12,10 +12,7 @@ import java.io.{File, FileOutputStream, PrintStream}
 case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   val logger = LoggerFactory.getLogger(this.getClass)
 
-  def sourceDirs = phase match {
-    case SourceCompilePhase => module.sourceDirs
-    case TestCompilePhase => module.testSourceDirs
-  }
+  def sourceDirs = module.sourceDirs(phase)
 
   def outputDir : File = {
     val f = module.outputDir(phase)

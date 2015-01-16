@@ -105,7 +105,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
     withTempDir{
       dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
-        val fooSrc = file(proj.sourceDirs.head, "foo/Foo.scala")
+        val fooSrc = file(proj.sourceDirs(SourceCompilePhase).head, "foo/Foo.scala")
         writeToFile(
           fooSrc,
           """
@@ -225,9 +225,9 @@ class CompileTaskTests extends FunSuite with TestUtils {
       dir => 
         val proj = new TestModule(dir, "CompileScalaTaskTests")
         
-        val fooSrc = file(proj.sourceDirs.head, "foo/Foo.scala")
-        val barSrc = file(proj.sourceDirs.head, "foo/Bar.scala")
-        val bazSrc = file(proj.sourceDirs.head, "foo/Baz.scala")
+        val fooSrc = file(proj.sourceDirs(SourceCompilePhase).head, "foo/Foo.scala")
+        val barSrc = file(proj.sourceDirs(SourceCompilePhase).head, "foo/Bar.scala")
+        val bazSrc = file(proj.sourceDirs(SourceCompilePhase).head, "foo/Baz.scala")
         writeToFile(
           fooSrc,
           """

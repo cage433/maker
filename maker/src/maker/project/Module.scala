@@ -151,13 +151,22 @@ class Module(
     file(packageDir.getAbsolutePath, jarBasename)
   }
 
+  def sourcePackageJar(compilePhase : CompilePhase) = {
+    val jarBasename = compilePhase match {
+      case SourceCompilePhase => name + "-sources.jar"
+      case TestCompilePhase => name + "-test-sources.jar"
+    }
+    file(packageDir.getAbsolutePath, jarBasename)
+  }
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
   def publishLocalJar = file(publishLocalJarDir, packageJar(SourceCompilePhase).getName)
 
-  def sourceDirs: List[File] =
-    List(file(rootAbsoluteFile, "src/main/scala"), file(rootAbsoluteFile, "src/main/java"))
-  def testSourceDirs: List[File] =
-    List(file(rootAbsoluteFile, "src/test/scala"), file(rootAbsoluteFile, "src/test/java"))
+  def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {
+    case SourceCompilePhase => 
+      List(file(rootAbsoluteFile, "src/main/scala"), file(rootAbsoluteFile, "src/main/java"))
+    case TestCompilePhase => 
+      List(file(rootAbsoluteFile, "src/test/scala"), file(rootAbsoluteFile, "src/test/java"))
+  }
 
   def resourceDir(compilePhase : CompilePhase) = compilePhase match {
     case SourceCompilePhase => file(rootAbsoluteFile, "src/main/resources")
@@ -180,8 +189,10 @@ class Module(
 
 trait ClassicLayout {
   this: Module =>
-  override def sourceDirs: List[File] = file(rootAbsoluteFile, "src") :: Nil
-  override def testSourceDirs: List[File] = file(rootAbsoluteFile, "tests") :: Nil
+  override def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {
+    case SourceCompilePhase => file(rootAbsoluteFile, "src") :: Nil
+    case TestCompilePhase => file(rootAbsoluteFile, "tests") :: Nil
+  }
   override def resourceDir(compilePhase : CompilePhase) = compilePhase match {
     case SourceCompilePhase => file(rootAbsoluteFile, "resources")
     case TestCompilePhase => file(rootAbsoluteFile, "test-resources")
