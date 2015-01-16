@@ -168,7 +168,6 @@ trait BaseProject {
   def runMain(className : String)(opts : String*)(args : String*) = 
     executeWithDependencies(RunMainTask(this, className, opts.toList, args.toList))
 
-  def doc = executeWithDependencies(DocTask(this))
 
   // Some sugar
   def tcc = testCompileContinuously

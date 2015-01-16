@@ -2,7 +2,7 @@ package maker.project
 
 import sbt.inc.Analysis
 import maker.task._
-import maker.task.tasks.{CleanTask, RunUnitTestsTask, UpdateTask}
+import maker.task.tasks._
 import java.util.concurrent.ConcurrentHashMap
 import java.io.File
 import org.slf4j.LoggerFactory
@@ -179,6 +179,7 @@ class Module(
     case SourceCompilePhase => file(targetDir, "classes")
     case TestCompilePhase => file(targetDir, "test-classes")
   }
+  def doc = executeWithDependencies(DocTask(this))
   def docOutputDir = file(targetDir, "docs")
   def packageDir = file(targetDir, "package")
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
