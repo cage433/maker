@@ -82,6 +82,8 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.outputDir(SourceCompilePhase), proj.publishLocalJar)
         PackageJarTaskTests.checkJarContainsDirectoryContents(proj.resourceDir(SourceCompilePhase), proj.publishLocalJar)
+        PackageJarTaskTests.checkJarContainsDirectoryContents(
+          proj.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar)
     }
   }
 

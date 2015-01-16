@@ -160,6 +160,7 @@ class Module(
   }
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
   def publishLocalJar = file(publishLocalJarDir, packageJar(SourceCompilePhase).getName)
+  def publishLocalSourceJar = file(publishLocalJarDir, sourcePackageJar(SourceCompilePhase).getName)
 
   def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {
     case SourceCompilePhase => 

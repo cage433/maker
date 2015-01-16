@@ -36,7 +36,11 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
     baseProject match {
       case _ : Project => 
       case m : Module =>
-        copyFileToDirectory(m.packageJar(SourceCompilePhase), m.publishLocalJarDir)
+        Vector(m.packageJar(SourceCompilePhase), m.sourcePackageJar(SourceCompilePhase)).foreach{
+          jarFile => 
+            if (jarFile.exists)
+              copyFileToDirectory(jarFile, m.publishLocalJarDir)
+          }
     }
     DefaultTaskResult(this, true, sw)
   }
