@@ -143,9 +143,7 @@ class Module(
   def managedJars = findJars(managedLibDir)
   def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() + props.ProjectScalaReflectJar()
 
-
-  // for the managed (non-jar) resources
-  def outputArtifact(compilePhase : CompilePhase) = {
+  def packageJar(compilePhase : CompilePhase) = {
     val jarBasename = compilePhase match {
       case SourceCompilePhase => name + ".jar"
       case TestCompilePhase => name + "-test.jar"
@@ -154,7 +152,7 @@ class Module(
   }
 
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
-  def publishLocalJar = file(publishLocalJarDir, outputArtifact(SourceCompilePhase).getName)
+  def publishLocalJar = file(publishLocalJarDir, packageJar(SourceCompilePhase).getName)
 
   def sourceDirs: List[File] =
     List(file(rootAbsoluteFile, "src/main/scala"), file(rootAbsoluteFile, "src/main/java"))

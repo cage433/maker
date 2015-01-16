@@ -47,8 +47,8 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
     copyDirectoryAndPreserve(file(project.rootAbsoluteFile, "/bin/"), binDir)
 
     val appJars = project.allUpstreamModules map { m =>
-      val out = file(jarsDir, m.outputArtifact(SourceCompilePhase).getName)
-      copyFile(m.outputArtifact(SourceCompilePhase), out)
+      val out = file(jarsDir, m.packageJar(SourceCompilePhase).getName)
+      copyFile(m.packageJar(SourceCompilePhase), out)
       out.relativeTo(baseOutputDir).getPath
     }
 
@@ -68,8 +68,8 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
       val testJarsDir = file(baseOutputDir, "/testjars/")
       testJarsDir.mkdirs()
       val testJars = project.allUpstreamModules map { m =>
-        val out = file(testJarsDir, m.outputArtifact(TestCompilePhase).getName)
-        copyFile(m.outputArtifact(TestCompilePhase), out)
+        val out = file(testJarsDir, m.packageJar(TestCompilePhase).getName)
+        copyFile(m.packageJar(TestCompilePhase), out)
         out.relativeTo(baseOutputDir).getPath
       }
 

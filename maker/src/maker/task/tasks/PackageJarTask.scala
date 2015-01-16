@@ -33,14 +33,6 @@ case class PackageJarTask(
     doPackage(results, sw)
   }
 
-  val List(outputArtifact, outputDir, resourceDir) = compilePhase match {
-    case SourceCompilePhase => 
-      List(module.outputArtifact(compilePhase), module.compilePhase.outputDir, module.resourceDir(SourceCompilePhase))
-    case TestCompilePhase =>
-      List(module.outputArtifact(compilePhase), module.testCompilePhase.outputDir, module.resourceDir(TestCompilePhase))
-  }
-
-
   private def doPackage(results: Iterable[TaskResult], sw: Stopwatch) = {
     if (!module.packageDir.exists)
       module.packageDir.mkdirs
@@ -49,7 +41,7 @@ case class PackageJarTask(
       Command(
         module.props.Jar().getAbsolutePath, 
         updateOrCreate, 
-        outputArtifact.getAbsolutePath, 
+        module.packageJar(compilePhase).getAbsolutePath,
         "-C", baseDir.getAbsolutePath, "."
       )
     }

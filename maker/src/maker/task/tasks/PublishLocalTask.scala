@@ -36,7 +36,7 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
     baseProject match {
       case _ : Project => 
       case m : Module =>
-        copyFileToDirectory(m.outputArtifact(SourceCompilePhase), m.publishLocalJarDir)
+        copyFileToDirectory(m.packageJar(SourceCompilePhase), m.publishLocalJarDir)
     }
     DefaultTaskResult(this, true, sw)
   }

@@ -51,6 +51,7 @@ case class RunUnitTestsTask(
       s += "maker.test.output" -> baseProject.testOutputFile.toString
       s += "sbt.log.format" -> "=false"
       s += "maker.home" -> props.MakerHome()
+      s += "maker.running.within.test" -> props.RunningInMakerTest().toString
       s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
       }.toList

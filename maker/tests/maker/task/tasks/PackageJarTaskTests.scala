@@ -39,10 +39,10 @@ class PackageJarTaskTests extends FreeSpec{
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.outputDir(SourceCompilePhase), 
-          proj.outputArtifact(SourceCompilePhase))
+          proj.packageJar(SourceCompilePhase))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.resourceDir(SourceCompilePhase), 
-          proj.outputArtifact(SourceCompilePhase))
+          proj.packageJar(SourceCompilePhase))
     }
   }
 
@@ -65,7 +65,7 @@ class PackageJarTaskTests extends FreeSpec{
 
         c.packageAllUpstream
 
-        val oneBigJar = c.outputArtifact(SourceCompilePhase)
+        val oneBigJar = c.packageJar(SourceCompilePhase)
 
         Vector(a, b, c).foreach{
           m => 
