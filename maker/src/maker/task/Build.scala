@@ -148,7 +148,7 @@ object Build{
   def apply(task : Task) : Build = apply(task.baseProject, task)
 
   private class PrioritisedFutureTask(r: Runnable, val priority: Int)
-      extends FutureTask[Unit](r, null) with Comparable[PrioritisedFutureTask] {
+      extends FutureTask[Unit](r, {}) with Comparable[PrioritisedFutureTask] {
     override def compareTo(o: PrioritisedFutureTask) = priority - o.priority
   }
 
