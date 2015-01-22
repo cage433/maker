@@ -92,7 +92,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   }
   object TestProcessMemoryInMB extends Default(defaultTestProcessMemory) with IsInt
   object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
-  object CompilationCache extends EmptyString
 
   /*
    * Switches off sundry output with testing maker
@@ -101,11 +100,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   // Show compiler output - normally switched off for tests
   object ShowCompilerOutput extends SystemPropertyWithDefault("show.compiler.output", true) with IsBoolean
-
-  object LogCompilerClasspath extends SystemPropertyWithDefault("maker.show.compiler.output", false) with IsBoolean
-
-  object LogCommands extends Default(true) with IsBoolean
-  object LogCommandFile extends Default(file("maker-commands.log")) with IsFile
 
   object TmuxMessaging extends Default(true) with IsBoolean
 
