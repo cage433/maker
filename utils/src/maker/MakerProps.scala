@@ -43,6 +43,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object GroupId extends Property with IsString
   object Compiler extends Default("zinc") with IsString
   object ExternalResourceConfigFile extends Default(file("external-resource-config")) with IsFile
+  object ZincPort extends Default(3030) with IsInt
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceVersions()
   def resourceResolvers() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceResolvers()
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))

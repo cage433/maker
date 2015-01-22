@@ -4,10 +4,11 @@ import com.typesafe.zinc._
 import xsbti.compile.CompileOrder
 import java.io.File
 import maker.utils.FileUtils._
+import maker.MakerProps
 
 object ZincCompile{
 
-  lazy val zinc = new ZincClient()
+  lazy val zinc = new ZincClient(MakerProps().ZincPort())
   def apply(projectPhase : ModuleCompilePhase) : Int = {
     val props = projectPhase.module.props
     val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
