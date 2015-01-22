@@ -43,7 +43,8 @@ object IvyUtils {
         <publications>
           <artifact name={artifactId} type="pom"/>
           <artifact name={artifactId} type="jar" ext="jar" conf="default" />
-          <artifact name={artifactId} type="jar" ext="jar" e:classifier="source" conf="default" />
+          <artifact name={artifactId} type="jar" ext="jar" e:classifier="sources" conf="default" />
+          <artifact name={artifactId} type="jar" ext="jar" e:classifier="javadoc" conf="default" />
         </publications>
 
         <dependencies  defaultconfmapping="${ivy.default.conf.mappings}" >

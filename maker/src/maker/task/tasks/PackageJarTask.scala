@@ -2,7 +2,7 @@ package maker.task.tasks
 
 import java.io.File
 import maker.project.Module
-import maker.task.{DefaultTaskResult, SingleModuleTask, TaskResult}
+import maker.task._
 import maker.task.compile._
 import maker.utils.FileUtils._
 import maker.utils.{Stopwatch, Int}
@@ -11,6 +11,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
 import scala.collection.JavaConverters._
 import scalaz.syntax.std.ToBooleanOps
+import scala.collection.immutable.VectorBuilder
 
 case class PackageJarTask(
   module: Module, 
@@ -23,11 +24,16 @@ case class PackageJarTask(
     case SourceCompilePhase => "Package Main Jar"
     case TestCompilePhase => "Package Test Jar"
   }
-  def upstreamTasks = if (includeUpstreamModules)
-    Vector(CompileTask(module, compilePhase))
-  else
-    CompileTask(module, compilePhase) :: 
-      module.immediateUpstreamModules.map(PackageJarTask(_, compilePhase, includeUpstreamModules = false))
+  def upstreamTasks = {
+    var tasks = new VectorBuilder[Task]()
+    tasks += CompileTask(module, compilePhase)
+    if (!includeUpstreamModules)
+      tasks ++= module.immediateUpstreamModules.map(PackageJarTask(_, compilePhase, includeUpstreamModules = false))
+    if (compilePhase == SourceCompilePhase)
+      tasks += DocTask(module)
+
+    tasks.result
+  }
 
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
     doPackage(results, sw)
@@ -69,7 +75,11 @@ case class PackageJarTask(
         module.sourcePackageJar(compilePhase),
         modules.flatMap(_.sourceDirs(compilePhase))
       )
-      classJarCommands ::: sourceJarCommands
+      val docJarCommands = jarDirectoriesCommands(
+        module.docPackageJar,
+        List(module.docOutputDir)
+      )
+      classJarCommands ::: sourceJarCommands ::: docJarCommands
     }
 
     cmds.find(_.exec != 0) match {

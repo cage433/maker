@@ -153,11 +153,12 @@ class Module(
 
   def sourcePackageJar(compilePhase : CompilePhase) = {
     val jarBasename = compilePhase match {
-      case SourceCompilePhase => name + "-source.jar"
-      case TestCompilePhase => name + "-test-source.jar"
+      case SourceCompilePhase => name + "-sources.jar"
+      case TestCompilePhase => name + "-test-sources.jar"
     }
     file(packageDir.getAbsolutePath, jarBasename)
   }
+  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
   def publishLocalJar = file(publishLocalJarDir, packageJar(SourceCompilePhase).getName)
   def publishLocalSourceJar = file(publishLocalJarDir, sourcePackageJar(SourceCompilePhase).getName)

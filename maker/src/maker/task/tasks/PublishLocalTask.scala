@@ -36,7 +36,7 @@ case class PublishLocalTask(baseProject : BaseProject, version : String) extends
     baseProject match {
       case _ : Project => 
       case m : Module =>
-        Vector(m.packageJar(SourceCompilePhase), m.sourcePackageJar(SourceCompilePhase)).filter(_.exists).foreach(
+        Vector(m.packageJar(SourceCompilePhase), m.sourcePackageJar(SourceCompilePhase), m.docPackageJar).filter(_.exists).foreach(
           copyFileToDirectory(_, m.publishLocalJarDir)
         )
     }
