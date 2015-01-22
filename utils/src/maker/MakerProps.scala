@@ -111,7 +111,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   object ResourceCacheDirectory extends Default(file(System.getenv("HOME"), ".maker-resource-cache").makeDirs()) with IsFile
 
-  object PublishLocalRootDir extends Default(file(System.getenv("HOME"), "updateOrCreate")) with IsFile
+  object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
 
   def ++(moreOverrides : String*) = {
