@@ -11,6 +11,7 @@ import maker.utils.Stopwatch
 import maker.MakerProps
 import maker.utils.maven.IvyLock
 import scala.collection.JavaConversions._
+import org.apache.ivy.util.{DefaultMessageLogger, Message}
 
 
 case class PublishTask(baseProject : BaseProject, resolverName : String, version : String) extends Task {
@@ -35,6 +36,8 @@ case class PublishTask(baseProject : BaseProject, resolverName : String, version
 
       val ivy = {
         val ivy = Ivy.newInstance
+        if (props.RunningInMakerTest())
+          ivy.getLoggerEngine.setDefaultLogger(new DefaultMessageLogger(Message.MSG_ERR))
         ivy.getSettings.addAllVariables(System.getProperties)
         ivy.configure(baseProject.ivySettingsFile)
         ivy
