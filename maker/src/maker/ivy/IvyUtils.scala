@@ -9,13 +9,11 @@ import java.io.File
 import maker.project.Module
 
 
-/**
- * utils for ivy, including ivy file generation for a project
- */
 object IvyUtils {
 
-  // TODO - check this is actually necessary, as the 
-  // ivy file produced look somewhat odd
+  /** 
+    * Create the ivy file which describes an artifact, used by Ivy.publish
+    */
   def generateIvyFile(baseProject : BaseProject) : File = {
     val genFile = file(baseProject.rootAbsoluteFile, "ivy-dynamic.xml")
 
