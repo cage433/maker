@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory
 import java.io.{File, FileOutputStream, PrintStream}
 
 case class ModuleCompilePhase(module : Module, phase : CompilePhase){
-  val logger = LoggerFactory.getLogger(this.getClass)
 
   def sourceDirs = module.sourceDirs(phase)
 
@@ -47,7 +46,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def strictlyUpstreamProjectPhases = {
     val task = CompileTask(module, phase)
-    Dependency.Graph.transitiveClosure(module, task).nodes.filterNot(_== task).collect{
+    Dependency.Graph.transitiveClosure(task).nodes.filterNot(_== task).collect{
       case ct : CompileTask => ct.modulePhase
     }
   }
@@ -133,7 +132,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
         case SourceCompilePhase => SourceCompileTask(module)
         case TestCompilePhase => TestCompileTask(module)
       }
-      Dependency.Graph.transitiveClosure(module, compileTask).nodes.filterNot(_ == compileTask).flatMap{
+      Dependency.Graph.transitiveClosure(compileTask).nodes.filterNot(_ == compileTask).flatMap{
         case ct : CompileTask =>  Some(ct.modulePhase.compilationCacheFile)
         case _ =>  None
       }.toList

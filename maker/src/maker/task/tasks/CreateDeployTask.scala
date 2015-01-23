@@ -15,7 +15,7 @@ import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
  * Creates jars that are ready for deployment.
  */
 case class CreateDeployTask(project: Project, buildTests: Boolean, version: Option[String] = None) extends Task {
-  def baseProject = project
+  def baseProjects = Vector(project)
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   val baseOutputDir = file(project.rootAbsoluteFile, "/target-maker/deploy/")

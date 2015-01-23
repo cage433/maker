@@ -24,6 +24,7 @@ case class PublishLocalTask(
 ) extends Task {
   def name = "Publish Local"
 
+  def baseProjects = Vector(baseProject)
   val logger = LoggerFactory.getLogger(this.getClass)
   def module = baseProject
   def upstreamTasks = baseProject match {

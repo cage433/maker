@@ -15,9 +15,8 @@ import xsbti.Problem
 import xsbti.Severity
 import java.io.BufferedWriter
 
-abstract class CompileTask extends Task{
+abstract class CompileTask(val module : Module) extends SingleModuleTask(module){
   
-  def module : Module
   def baseProject = module
   def phase : CompilePhase
   val props = module.props
@@ -100,15 +99,15 @@ case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
 }
 
 
-case class SourceCompileTask(module :Module) extends CompileTask{
+case class SourceCompileTask(override val module :Module) extends CompileTask(module){
   def upstreamTasks = {
     module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false))
   }
   def phase = SourceCompilePhase
   override def toShortString = module + ":SC"
-}
+} 
 
-case class TestCompileTask(module : Module) extends CompileTask{
+case class TestCompileTask(override val module : Module) extends CompileTask(module){
   def upstreamTasks: List[Task] =
       SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
 

@@ -13,9 +13,9 @@ object Dependency{
     def contains(node : Task) = nodes.contains(node)
   }
   object Edge{
-    def edges(baseProject : BaseProject, task : Task) = {
-      val upstreams = (task.upstreamTasks ++ task.baseProject.extraUpstreamTasks(task)).map(Edge(_, task))
-      val downstreams = task.baseProject.extraDownstreamTasks(task).map(Edge(task, _))
+    def edges(task : Task) = {
+      val upstreams = (task.upstreamTasks ++ task.extraUpstreamTasks).map(Edge(_, task))
+      val downstreams = task.extraDownstreamTasks.map(Edge(task, _))
       upstreams ++ downstreams
     }
   }
@@ -66,11 +66,11 @@ object Dependency{
 
   object Graph{
     def empty = Graph(Set.empty, Set.empty)
-    def transitiveClosure(baseProject : BaseProject, task : Task) : Graph = transitiveClosure(baseProject, Set(task))
+    def transitiveClosure(task : Task) : Graph = transitiveClosure(Set(task))
 
-    def transitiveClosure(baseProject : BaseProject, tasks : Iterable[Task]) : Graph = {
+    def transitiveClosure(tasks : Iterable[Task]) : Graph = {
       def recurse(acc : Graph) : Graph = {
-        val newEdges = acc.leaves.flatMap(Edge.edges(baseProject, _)) -- acc.edges
+        val newEdges = acc.leaves.flatMap(Edge.edges(_)) -- acc.edges
         val newNodes = newEdges.flatMap(_.nodes)
         if (newEdges.isEmpty)
           acc

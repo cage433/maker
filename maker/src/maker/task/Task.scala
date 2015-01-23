@@ -11,19 +11,22 @@ trait Task {
   def toShortString = toString
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
   def failureHaltsTaskManager : Boolean = true
-  def baseProject : BaseProject
 
-  override def toString = baseProject + " - " + name
+  protected def baseProjects : Seq[BaseProject] 
+
+  override def toString = baseProjects.head + " - " + name
   /**
    * Tasks that normally need to run BEFORE this one does 
    */
   def upstreamTasks : Iterable[Task] 
+  def extraUpstreamTasks = baseProjects.flatMap(_.extraUpstreamTasks(this))
+  def extraDownstreamTasks = baseProjects.flatMap(_.extraDownstreamTasks(this))
 }
 
 abstract class SingleModuleTask(module : Module)
   extends Task
 {
-  def baseProject = module
+  def baseProjects = Vector(module)
 }
 
 object Task {

@@ -23,6 +23,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
 
   def module = baseProject
   def upstreamTasks = baseProject.allUpstreamModules.map(TestCompileTask(_))
+  def baseProjects = Vector(baseProject)
 
 
   val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")

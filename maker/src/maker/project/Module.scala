@@ -28,6 +28,7 @@ class Module(
   with TmuxIntegration
 {
 
+  import Module.logger
   protected val upstreamModulesForBuild = List(this)
 
   val resourcesFile = file(root, "external-resources")
@@ -205,8 +206,7 @@ trait ClassicLayout {
 
 object Module{
  
-  private val logger = ConsoleLogger()
-  logger.setLevel(sbt.Level.Debug)
+  val logger = LoggerFactory.getLogger(this.getClass)
   val props = MakerProps()
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
@@ -225,7 +225,6 @@ object Module{
     }.map(_.getAbsolutePath).sortWith(_ < _).mkString(sep)
 
   def warnOfUnnecessaryDependencies(proj : Module){
-    val logger = LoggerFactory.getLogger(this.getClass)
 
     proj.immediateUpstreamModules.foreach{
       p => 

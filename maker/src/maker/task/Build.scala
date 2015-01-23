@@ -17,6 +17,7 @@ case class Build(
   numberOfWorkers : Int
 ) {
 
+  import Build.logger
   override def toString = "Build " + name
 
   def toLongString = {
@@ -26,7 +27,6 @@ case class Build(
     buf.toString
   }
   
-  val logger = LoggerFactory.getLogger(this.getClass)
 
   def execute = new Execute().execute
   class Execute{
@@ -57,7 +57,7 @@ case class Build(
         case tests: RunUnitTestsTask =>
           // higher priority for top level tests
           // (more likely to be slower, integration style, tests)
-          tests.module match {
+          tests.baseProject match {
             case m: Module => -m.allUpstreamModules.size
             case _ => -tests.upstreamTasks.size
           }
@@ -134,18 +134,16 @@ case class Build(
 }
 
 object Build{
-  val log = LoggerFactory.getLogger(this.getClass)
+  val logger = LoggerFactory.getLogger(this.getClass)
   val taskCount = new AtomicInteger(0)
 
-  def apply(project : BaseProject, tasks : Task*) : Build = {
+  def apply(numberOfWorkers : Int, tasks : Task*) : Build = {
     Build(
       tasks.toList.headOption.map(_.name).getOrElse("No Tasks"),
-      Dependency.Graph.transitiveClosure(project, tasks.toList),
-      numberOfWorkers = project.props.NumberOfTaskThreads()
+      Dependency.Graph.transitiveClosure(tasks.toList),
+      numberOfWorkers
     )
   }
-
-  def apply(task : Task) : Build = apply(task.baseProject, task)
 
   private class PrioritisedFutureTask(r: Runnable, val priority: Int)
       extends FutureTask[Unit](r, {}) with Comparable[PrioritisedFutureTask] {
@@ -243,11 +241,11 @@ object Build{
       lock.synchronized{
         if (unacknowledged.nonEmpty){
           unacknowledged = Set[Task]()
-          log.debug("Queue size " + executor.getQueue.size)
-          log.debug("queued " + queued.size + queued.toList.mkString("\n\t", "\n\t", ""))
-          log.debug("running " + running.size + running.toList.mkString("\n\t", "\n\t", ""))
-          log.debug("all " + graph.size)
-          log.debug("completed " + completed.size)
+          logger.debug("Queue size " + executor.getQueue.size)
+          logger.debug("queued " + queued.size + queued.toList.mkString("\n\t", "\n\t", ""))
+          logger.debug("running " + running.size + running.toList.mkString("\n\t", "\n\t", ""))
+          logger.debug("all " + graph.size)
+          logger.debug("completed " + completed.size)
         }
       }
     }

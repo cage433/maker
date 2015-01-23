@@ -36,18 +36,6 @@ trait TmuxIntegration extends BaseProject{
       superResult
     }
 
-    private def outputCompilationToVimErrorFile(result : BuildResult){
-      props.VimErrorFile().delete
-      result.results.map(_.task).foreach{
-        case t : CompileTask => 
-          withFileAppender(props.VimErrorFile()){
-            writer : BufferedWriter => 
-              t.modulePhase.vimCompileOutputFile.readLines.foreach(writer.println)
-          }
-        case _ => 
-      }
-    }
-
     private def tmuxReportResult(result : BuildResult){
       tmux("set", "-g", "status-bg", "default")
       if (result.failed){

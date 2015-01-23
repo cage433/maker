@@ -15,7 +15,7 @@ import maker.task.compile._
  */
 class BuildResultTests extends FunSuite {
 
-  case class MyDontRunTask(baseProject : Module) extends Task {
+  case class MyDontRunTask(baseProject : Module) extends SingleModuleTask(baseProject) {
     def name = "Don't run this task"
     def upstreamTasks = Nil
     def copy_(p : Module) = copy(baseProject = p)

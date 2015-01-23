@@ -32,6 +32,8 @@ class IvyUtilsTests extends FreeSpec {
              |  <publications>
              |    <artifact name="b" type="pom"/>
              |    <artifact name="b" type="jar" ext="jar" conf="default"/>
+             |    <artifact name="b" type="jar" ext="jar" e:classifier="sources" conf="default"/>
+             |    <artifact name="b" type="jar" ext="jar" e:classifier="javadoc" conf="default"/>
              |  </publications>
              |  <dependencies defaultconfmapping="${ivy.default.conf.mappings}">
              |    <exclude org="MakerTestGroupID" module="a"/>
@@ -52,6 +54,8 @@ class IvyUtilsTests extends FreeSpec {
              |  <publications>
              |    <artifact name="c" type="pom"/>
              |    <artifact name="c" type="jar" ext="jar" conf="default"/>
+             |    <artifact name="c" type="jar" ext="jar" e:classifier="sources" conf="default"/>
+             |    <artifact name="c" type="jar" ext="jar" e:classifier="javadoc" conf="default"/>
              |  </publications>
              |  <dependencies defaultconfmapping="${ivy.default.conf.mappings}">
              |    <exclude org="MakerTestGroupID" module="a"/>

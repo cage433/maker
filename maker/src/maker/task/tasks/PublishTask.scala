@@ -25,6 +25,7 @@ case class PublishTask(
 
   def name = "Publish"
   def module = baseProject
+  def baseProjects = Vector(baseProject)
   def upstreamTasks = PublishLocalTask(baseProject, version, signArtifacts) :: 
     baseProject.immediateUpstreamModules.map(PublishTask(_, resolverName, version, signArtifacts))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {

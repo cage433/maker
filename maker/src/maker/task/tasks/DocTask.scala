@@ -15,10 +15,9 @@ import org.slf4j.LoggerFactory
   *
   * Outputs scala-docs per module in the "docs" sub-dir of the module target output dir
   */
-case class DocTask(module : Module) extends Task {
+case class DocTask(module : Module) extends SingleModuleTask(module) {
   
   def name = "Doc " + module.name
-  def baseProject = module
   def upstreamTasks = List(SourceCompileTask(module))
   val logger = LoggerFactory.getLogger(this.getClass)
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
@@ -33,7 +32,9 @@ case class DocTask(module : Module) extends Task {
     val inputFiles = module.compilePhase.sourceFiles
 
     val docDir = module.docOutputDir
-    if (!docDir.exists || lastModifiedFileTime(inputFiles).getOrElse(0L) > lastModifiedFileTime(List(docDir)).getOrElse(0L)) {
+    if (inputFiles.nonEmpty && 
+        ( !docDir.exists || 
+          lastModifiedFileTime(inputFiles).getOrElse(0L) > lastModifiedFileTime(List(docDir)).getOrElse(0L))) {
       logger.debug("generating doc for module " + module.toString)
       if (!docDir.exists) docDir.mkdirs else docDir.deleteAll
 
@@ -51,7 +52,6 @@ case class DocTask(module : Module) extends Task {
         Nil,
         optsFile)
 
-      println(cmd)
       cmd.exec() match {
         case 0 => DefaultTaskResult(this, true, sw)
         case _ => DefaultTaskResult(this, false, sw, message = Some(cmd.savedOutput))

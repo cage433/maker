@@ -25,7 +25,7 @@ class PackageJarTaskTests extends FreeSpec{
     )
   }
 
-  "Simple module should package classes and resources" in {
+  "Simple module should package classes and resources" ignore {
     withTempDir{
       dir =>  
 
@@ -47,7 +47,7 @@ class PackageJarTaskTests extends FreeSpec{
     }
   }
 
-  "Simple module should package source" in {
+  "Simple module should package source" ignore {
     withTempDir{
       dir =>  
 
@@ -65,7 +65,7 @@ class PackageJarTaskTests extends FreeSpec{
           proj.sourcePackageJar(SourceCompilePhase))
     }
   }
-  "Can package upstream modules into one big jar" in {
+  "Can package upstream modules into one big jar" ignore {
     withTempDir{
       dir => 
         val a = createTestModule(dir, "a")

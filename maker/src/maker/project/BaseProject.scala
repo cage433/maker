@@ -33,7 +33,6 @@ trait BaseProject {
     extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty)
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def props : MakerProps
-  val logger = LoggerFactory.getLogger(this.getClass)
 
   lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)
 
@@ -71,10 +70,8 @@ trait BaseProject {
     * Makes a Build that is the closure of the task applied to 
     * upstream modules
     */
-  def moduleBuild(task : Module => Task, upstreamModules : List[Module] = upstreamModulesForBuild) = Build(
-    this,
-    upstreamModules.map(task) : _*
-  )
+  def moduleBuild(task : Module => Task, upstreamModules : List[Module] = upstreamModulesForBuild) = 
+    Build.apply(props.NumberOfTaskThreads(), upstreamModules.map(task) : _*)
 
   /** modules that need to be taken into consideration
     * when doing a transitive build */
@@ -95,7 +92,7 @@ trait BaseProject {
   protected def taskBuild(task : Task) = {
     Build(
       task.name,
-      Dependency.Graph.transitiveClosure(this, task),
+      Dependency.Graph.transitiveClosure(task),
       props.NumberOfTaskThreads()
     )
   }
@@ -180,7 +177,7 @@ trait BaseProject {
     val result = bld.execute
     tearDown(bld.graph, result)
     if (result.failed && props.ExecMode()){
-      logger.error(bld + " failed ")
+      BaseProject.logger.error(bld + " failed ")
       System.exit(-1)
     }
     BuildResult.lastResult.set(Some(result))
@@ -292,4 +289,8 @@ trait BaseProject {
   }
 
   def delete = recursiveDelete(rootAbsoluteFile)
+}
+
+object BaseProject{
+  val logger = LoggerFactory.getLogger(this.getClass)
 }
