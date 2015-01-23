@@ -14,11 +14,19 @@ import scala.collection.JavaConversions._
 import org.apache.ivy.util.{DefaultMessageLogger, Message}
 
 
-case class PublishTask(baseProject : BaseProject, resolverName : String, version : String) extends Task {
+case class PublishTask(
+  baseProject : BaseProject, 
+  resolverName : String, 
+  version : String, 
+  signArtifacts : Boolean
+) 
+  extends Task 
+{
 
   def name = "Publish"
   def module = baseProject
-  def upstreamTasks = PublishLocalTask(baseProject, version = version) :: baseProject.immediateUpstreamModules.map(PublishTask(_, resolverName, version))
+  def upstreamTasks = PublishLocalTask(baseProject, version, signArtifacts) :: 
+    baseProject.immediateUpstreamModules.map(PublishTask(_, resolverName, version, signArtifacts))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
       doPublish(baseProject, results, sw)

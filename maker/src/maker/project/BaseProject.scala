@@ -159,11 +159,11 @@ trait BaseProject {
   def createDeploy(buildTests: Boolean = true, version: Option[String] = None): BuildResult =
     throw new UnsupportedOperationException
 
-  def publishLocal(version : String) = 
-    executeWithDependencies(PublishLocalTask(this, version))
+  def publishLocal(version : String, signArtifacts : Boolean = false) = 
+    executeWithDependencies(PublishLocalTask(this, version, signArtifacts))
 
-  def publish(version : String, resolver : String = props.defaultResolver()) = 
-    executeWithDependencies(PublishTask(this, resolver, version))
+  def publish(version : String, resolver : String = props.defaultResolver(), signArtifacts : Boolean = false) = 
+    executeWithDependencies(PublishTask(this, resolver, version, signArtifacts))
 
   def runMain(className : String)(opts : String*)(args : String*) = 
     executeWithDependencies(RunMainTask(this, className, opts.toList, args.toList))

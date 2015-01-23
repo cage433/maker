@@ -78,4 +78,13 @@ class PropsTests extends FunSuite{
     assert(Foo.SP.toCommandLine === "-Dprop=value")
   }
 
+  test("Env property"){
+
+    object Foo extends PropsTrait{
+      val overrides : MMap[String, String] = MMap()
+      object SP extends EnvProperty("fooble") with IsString
+    }
+    Foo.SP
+  }
+
 }

@@ -107,6 +107,8 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
+  object GPG_PassPhrase extends EnvProperty("MAKER_GPG_PASS_PHRASE") with IsString
+
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
@@ -152,4 +154,5 @@ object MakerProps {
     }
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
+
 }

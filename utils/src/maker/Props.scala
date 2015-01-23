@@ -11,7 +11,7 @@ import scala.util.Properties
 trait PropsTrait extends DelayedInit{
   protected def overrides : MMap[String, String]
 
-  protected def checkForInvalidProperties{
+  def checkForInvalidProperties{
     overrides.foreach{
       case (o, _) => 
       assert(propertyMethods.map(_.getName).toSet.contains(o), "Overiding non existant property " + o)
@@ -137,8 +137,12 @@ trait PropsTrait extends DelayedInit{
   class EmptyString extends Default("") with IsString
   
   abstract class EnvProperty(vars : String*) extends Property{
-    override def stringValue = vars.toList.flatMap{
+    def environmentValue = vars.toList.flatMap{
       v => Option(System.getenv(v))
-    }.headOption.getOrElse{throw new PropertyNotSetException(vars.toList.mkString(","))}
+    }.headOption
+    override def stringValue = environmentValue.getOrElse{
+      throw new PropertyNotSetException(vars.toList.mkString(","))
+    }
+    def isSet = environmentValue.isDefined
   }
 }
