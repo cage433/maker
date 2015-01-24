@@ -13,7 +13,7 @@ trait Task {
 
   protected def baseProjects : Seq[BaseProject] 
 
-  override def toString = baseProjects.head + " - " + name
+  override def toString = name
   /**
    * Tasks that normally need to run BEFORE this one does 
    */
@@ -26,6 +26,7 @@ abstract class SingleModuleTask(module : Module)
   extends Task
 {
   def baseProjects = Vector(module)
+  override def toString = module + " - " + name
 }
 
 object Task {
