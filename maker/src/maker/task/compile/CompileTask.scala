@@ -17,7 +17,6 @@ import java.io.BufferedWriter
 
 abstract class CompileTask(val module : Module) extends SingleModuleTask(module){
   
-  def baseProject = module
   def phase : CompilePhase
   val props = module.props
 

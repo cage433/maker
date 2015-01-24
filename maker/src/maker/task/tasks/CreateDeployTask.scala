@@ -14,20 +14,19 @@ import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
 /**
  * Creates jars that are ready for deployment.
  */
-case class CreateDeployTask(project: Project, buildTests: Boolean, version: Option[String] = None) extends Task {
-  def baseProjects = Vector(project)
+case class CreateDeployTask(baseProject: Project, buildTests: Boolean, version: Option[String] = None) extends Task {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
-  val baseOutputDir = file(project.rootAbsoluteFile, "/target-maker/deploy/")
+  val baseOutputDir = file(baseProject.rootAbsoluteFile, "/target-maker/deploy/")
   val jarsDir = file(baseOutputDir, "/jars/")
   val thirdPartyJars = file(baseOutputDir, "/thirdpartyjars/")
   val binDir = file(baseOutputDir, "/bin/")
 
   def name = "Create Deploy"
 
-  def module = project
-  def upstreamTasks = project.allUpstreamModules.map(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false)) ::: {
-    if (buildTests) project.allUpstreamModules.map(PackageJarTask(_, TestCompilePhase, includeUpstreamModules = false))
+  def module = baseProject
+  def upstreamTasks = baseProject.allUpstreamModules.map(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false)) ::: {
+    if (buildTests) baseProject.allUpstreamModules.map(PackageJarTask(_, TestCompilePhase, includeUpstreamModules = false))
     else Nil
   }
 
@@ -44,16 +43,16 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
     baseOutputDir.deleteAll()
     baseOutputDir.mkdirs()
 
-    copyDirectoryAndPreserve(file(project.rootAbsoluteFile, "/bin/"), binDir)
+    copyDirectoryAndPreserve(file(baseProject.rootAbsoluteFile, "/bin/"), binDir)
 
-    val appJars = project.allUpstreamModules map { m =>
+    val appJars = baseProject.allUpstreamModules map { m =>
       val out = file(jarsDir, m.packageJar(SourceCompilePhase).getName)
       copyFile(m.packageJar(SourceCompilePhase), out)
       out.relativeTo(baseOutputDir).getPath
     }
 
     val tpJars = for {
-      m <- project.allModules
+      m <- baseProject.allModules
       j <- m.classpathJars
     } yield {
       val out = file(thirdPartyJars, "/" + j.getName)
@@ -67,7 +66,7 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
     if (buildTests) {
       val testJarsDir = file(baseOutputDir, "/testjars/")
       testJarsDir.mkdirs()
-      val testJars = project.allUpstreamModules map { m =>
+      val testJars = baseProject.allUpstreamModules map { m =>
         val out = file(testJarsDir, m.packageJar(TestCompilePhase).getName)
         copyFile(m.packageJar(TestCompilePhase), out)
         out.relativeTo(baseOutputDir).getPath
@@ -75,7 +74,7 @@ case class CreateDeployTask(project: Project, buildTests: Boolean, version: Opti
 
       val testClasspathString = (appJars ::: tpJars ::: testJars).distinct.mkString(":")
       writeToFile(file(baseOutputDir, "/bin/deploy-test-classpath.sh"), "export CLASSPATH=" + testClasspathString)
-      version.foreach(v => writeToFile(file(project.rootAbsoluteFile, "/version.txt"), v))
+      version.foreach(v => writeToFile(file(baseProject.rootAbsoluteFile, "/version.txt"), v))
     }
   }
 }
