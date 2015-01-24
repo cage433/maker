@@ -8,7 +8,6 @@ import maker.utils.RichString._
 
 trait Task {
   def name : String
-  def toShortString = toString
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
   def failureHaltsTaskManager : Boolean = true
 

@@ -19,13 +19,6 @@ case class Build(
 
   import Build.logger
   override def toString = "Build " + name
-
-  def toLongString = {
-    val buf = new StringBuffer
-    buf.append("Build\n  " + name + "\n")
-    buf.append("  Graph:\n  " + graph.toString.split("\n").mkString("\n  ") + "\n")
-    buf.toString
-  }
   
 
   def execute = new Execute().execute

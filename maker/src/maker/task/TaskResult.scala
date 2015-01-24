@@ -5,7 +5,6 @@ import maker.utils.RichString._
 import maker.utils.Stopwatch
 import maker.utils.Utils
 import maker.task.tasks.RunUnitTestsTask
-import maker.utils.TaskInfo
 import maker.utils.RichThrowable._
 import maker.task.tasks.UpdateTask
 import scala.collection.JavaConversions._

@@ -116,7 +116,7 @@ case class MakerTestResults (
   startTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
   endTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
   failures : List[(TestIdentifier, TestFailure)] = Nil
-) extends TaskInfo {
+) {
   import MakerTestResults._
 
 
@@ -215,9 +215,6 @@ case class MakerTestResults (
     println(toString_)
     ""
   }
-  
-  def toShortString = toString_
-  def toLongString = toString_
 
   def apply(i : Int) = {
     val (TestIdentifier(_, suiteClass, test), testFailure) = failures(i)

@@ -82,19 +82,13 @@ abstract class CompileTask(val module : Module) extends SingleModuleTask(module)
 
 }
 
-case class CompilationFailedInfo(e : CompileFailed) extends TaskInfo{
+case class CompilationFailedInfo(e : CompileFailed) {
   def failingFiles = e.problems.toList.map(_.position.sourceFile).filter(_.isDefined).map(_.get).distinct
   private def toString_(files : List[String]) = {
     val b = new StringBuffer
     b.append("Compilation failed for\n")
     b.append(files.mkString("\n"))
     b.toString
-  }
-  def toShortString = {
-    toString_(failingFiles.map(_.getName))
-  }
-  def toLongString = {
-    toString_(failingFiles.map(_.getPath))
   }
 }
 
@@ -104,7 +98,6 @@ case class SourceCompileTask(override val module :Module) extends CompileTask(mo
     module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false))
   }
   def phase = SourceCompilePhase
-  override def toShortString = module + ":SC"
 } 
 
 case class TestCompileTask(override val module : Module) extends CompileTask(module){
@@ -112,7 +105,6 @@ case class TestCompileTask(override val module : Module) extends CompileTask(mod
       SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
 
   def phase = TestCompilePhase
-  override def toShortString = module + ":TC"
 }
 
 object CompileTask{
