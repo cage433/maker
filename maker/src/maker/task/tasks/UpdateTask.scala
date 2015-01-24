@@ -17,9 +17,9 @@ import scala.collection.JavaConversions._
   * Missing source jars are not treated as a cause for failure unless `forceSourceUpdate`
   * is true
   */
-case class UpdateTask(module : Module, forceSourceUpdate : Boolean) 
-  extends SingleModuleTask(module)
+case class UpdateTask(module : Module, forceSourceUpdate : Boolean) extends Task
 {
+  def baseProject = module
   def name = "Update " + module
 
   def upstreamTasks : List[Task] = Nil

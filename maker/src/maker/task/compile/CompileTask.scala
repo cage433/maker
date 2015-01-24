@@ -10,13 +10,13 @@ import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
 import sbt.compiler.CompileFailed
 import maker.task.tasks.UpdateTask
-import maker.task.SingleModuleTask
 import xsbti.Problem
 import xsbti.Severity
 import java.io.BufferedWriter
 
-abstract class CompileTask(val module : Module) extends SingleModuleTask(module){
+abstract class CompileTask(val module : Module) extends Task{
   
+  def baseProject = module
   def phase : CompilePhase
   val props = module.props
 
@@ -141,7 +141,7 @@ object CompileTask{
         severeProblems.map{
           prob =>
             val (sourceFile, lineNo) = position(prob)
-            (task.baseProject, prob.message, sourceFile, lineNo)
+            (task.module, prob.message, sourceFile, lineNo)
         }
     }.toList.flatten
 

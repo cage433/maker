@@ -12,9 +12,9 @@ import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
   *
   *  removes all build content and directories that contained it
   */
-case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) 
-  extends SingleModuleTask(module)
+case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) extends Task
 {
+  def baseProject = module
   def name = "Clean"
   val logger = LoggerFactory.getLogger(this.getClass)
   def upstreamTasks = (module.immediateUpstreamModules ::: module.immediateUpstreamTestModules).distinct.map(CleanTask(_, deleteManagedLibs))

@@ -15,8 +15,9 @@ import org.slf4j.LoggerFactory
   *
   * Outputs scala-docs per module in the "docs" sub-dir of the module target output dir
   */
-case class DocTask(module : Module) extends SingleModuleTask(module) {
-  
+case class DocTask(module : Module) extends Task{
+    
+  def baseProject = module
   def name = "Doc " + module.name
   def upstreamTasks = List(SourceCompileTask(module))
   val logger = LoggerFactory.getLogger(this.getClass)

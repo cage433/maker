@@ -13,20 +13,13 @@ trait Task {
 
   def baseProject : BaseProject 
 
-  override def toString = name
+  override def toString = baseProject + " - " + name
   /**
    * Tasks that normally need to run BEFORE this one does 
    */
   def upstreamTasks : Iterable[Task] 
   def extraUpstreamTasks = baseProject.extraUpstreamTasks(this)
   def extraDownstreamTasks = baseProject.extraDownstreamTasks(this)
-}
-
-abstract class SingleModuleTask(module : Module)
-  extends Task
-{
-  def baseProject = module
-  override def toString = module + " - " + name
 }
 
 object Task {

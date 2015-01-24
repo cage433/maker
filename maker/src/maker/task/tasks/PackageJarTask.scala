@@ -18,8 +18,9 @@ case class PackageJarTask(
   compilePhase : CompilePhase,
   includeUpstreamModules : Boolean 
 ) 
-  extends SingleModuleTask(module) with ToBooleanOps 
+  extends Task with ToBooleanOps 
 {
+  def baseProject = module
   def name = compilePhase match {
     case SourceCompilePhase => "Package Main Jar"
     case TestCompilePhase => "Package Test Jar"

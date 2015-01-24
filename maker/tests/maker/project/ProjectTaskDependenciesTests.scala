@@ -11,13 +11,11 @@ import maker.utils.FileUtils._
 import maker.task.BuildResult
 import maker.task.tasks.RunUnitTestsTask
 import maker.task.compile._
-import maker.task.SingleModuleTask
 import maker.task.DefaultTaskResult
 
 class ProjectTaskDependenciesTests extends FunSuite{
-  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") 
-    extends SingleModuleTask(module)
-  {
+  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task {
+    def baseProject = module
     def name = "Write class count "
     def copy_(p : Module) = copy(module = p)
     def upstreamTasks = Nil
