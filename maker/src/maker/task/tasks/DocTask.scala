@@ -24,11 +24,7 @@ case class DocTask(module : Module) extends Task{
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = module.props
 
-    val runDocLogFile = file("rundoc.out")
-
     logger.info("running scala-doc gen for module " + module)
-
-    val writer = new PrintWriter(new TeeToFileOutputStream(runDocLogFile))
 
     val inputFiles = module.compilePhase.sourceFiles
 
@@ -46,7 +42,7 @@ case class DocTask(module : Module) extends Task{
       val scalaToolsClasspath = module.props.ProjectScalaCompilerJar().getAbsolutePath + ":" + module.props.ProjectScalaLibraryJar().getAbsolutePath + ":" + module.props.ProjectScalaReflectJar().getAbsolutePath
 
       val cmd = ScalaDocCmd(
-        new CommandOutputHandler(Some(writer)).withSavedOutput,
+        new CommandOutputHandler().withSavedOutput,
         docDir,
         props.Java().getAbsolutePath,
         scalaToolsClasspath,

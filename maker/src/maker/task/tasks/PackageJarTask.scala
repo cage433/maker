@@ -14,13 +14,12 @@ import scalaz.syntax.std.ToBooleanOps
 import scala.collection.immutable.VectorBuilder
 
 case class PackageJarTask(
-  module: BaseProject, 
-  compilePhase : CompilePhase,
-  includeUpstreamModules : Boolean 
+  baseProject: BaseProject, 
+  modules : Seq[Module],
+  compilePhase : CompilePhase
 ) 
   extends Task with ToBooleanOps 
 {
-  def baseProject = module
 
   def name = compilePhase match {
     case SourceCompilePhase => "Package Main Jar"
@@ -29,38 +28,31 @@ case class PackageJarTask(
 
   def upstreamTasks = {
     val tasks = new VectorBuilder[Task]()
-    val docOrCompile : Module => Task = compilePhase match {
+    compilePhase match {
       case SourceCompilePhase => 
-        DocTask(_)
+        tasks ++= modules.map(DocTask(_))
       case TestCompilePhase => 
-        CompileTask(_, TestCompilePhase)
+        tasks ++= modules.map(CompileTask(_, TestCompilePhase))
     }
-    module match {
-      case m : Module => 
-        tasks += docOrCompile(m)
-      case p : Project => 
-        tasks ++= p.immediateUpstreamModules.map(docOrCompile(_))
+    modules.flatMap(_.immediateUpstreamModules).filterNot(modules.contains(_)).foreach{
+      upstreamModule => 
+        tasks += PackageJarTask(upstreamModule, Vector(upstreamModule), compilePhase)
     }
-    (baseProject, includeUpstreamModules) match {
-      case (_ : Project, _) | (_ : Module, false) => 
-        tasks ++= module.immediateUpstreamModules.map(PackageJarTask(_, compilePhase, includeUpstreamModules = false))
-      case _ => 
-    }
-
     tasks.result
   }
 
   // TODO - find out why this is synchronized
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
-    if (!module.packageDir.exists)
-      module.packageDir.mkdirs
+
+    if (!baseProject.packageDir.exists)
+      baseProject.packageDir.mkdirs
 
     def jarDirectories(jarFile : File, directories : Seq[File]) = {
       jarFile.delete
 
       def jarCommand(directory : File) = {
         Command(
-          module.props.Jar().getAbsolutePath, 
+          baseProject.props.Jar().getAbsolutePath, 
           if (jarFile.exists) "uf" else "cf",
           jarFile.getAbsolutePath,
           "-C", directory.getAbsolutePath, "."
@@ -86,23 +78,19 @@ case class PackageJarTask(
       }
     }
 
-    val modules = (baseProject, includeUpstreamModules) match {
-      case (_ : Project, _) | (_, true) => 
-        module.allUpstreamModules
-      case (m : Module, false) => 
-        Vector(m)
-    }
-
-    val maybeError = jarDirectories(
-      module.packageJar(compilePhase),
-      modules.map(_.outputDir(compilePhase)) ++ modules.map(_.resourceDir(compilePhase))
-    ) orElse jarDirectories(
-      module.sourcePackageJar(compilePhase),
-      modules.flatMap(_.sourceDirs(compilePhase))
-    )  orElse jarDirectories(
-      module.docPackageJar,
-      List(module.docOutputDir)
-    )
+    val maybeError = 
+      jarDirectories(
+        baseProject.packageJar(compilePhase),
+        modules.map(_.outputDir(compilePhase)) ++ modules.map(_.resourceDir(compilePhase))
+      ) orElse 
+      jarDirectories(
+        baseProject.sourcePackageJar(compilePhase),
+        modules.flatMap(_.sourceDirs(compilePhase))
+      ) orElse 
+      jarDirectories(
+        baseProject.docPackageJar,
+        List(baseProject.docOutputDir)
+      )
 
     maybeError match {
       case Some(error) =>
@@ -114,17 +102,18 @@ case class PackageJarTask(
 }
 
 object PackageJarTask{
-  def apply2(baseProject: BaseProject, 
+  def apply(baseProject: BaseProject, 
             compilePhase : CompilePhase,
-            includeUpstreamModules : Boolean) = {
+            includeUpstreamModules : Boolean) : PackageJarTask = {
     val modules = (baseProject, includeUpstreamModules) match {
-      case (_ : Project, _) | (_ : Module, true) => 
+      case (_, true)  => 
         baseProject.allUpstreamModules
       case (m : Module, false) => 
         Vector(m)
+      case (_ : Project, false) => 
+        throw new RuntimeException("Project packages must include modules")
     }
-    //PackageJarTask(baseProject, modules, compilePhase)
-    null
+    PackageJarTask(baseProject, modules, compilePhase)
   }
 
 }
