@@ -33,6 +33,7 @@ case class Project(
     b.toString
   }
   def docOutputDir = file(rootAbsoluteFile, "docs")
+  def packageDir = file(rootAbsoluteFile, "package")
   def allUpstreamModules = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct
   def allUpstreamTestModules = allUpstreamModules
   def testClassNames() = {

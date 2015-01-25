@@ -144,22 +144,6 @@ class Module(
   def managedJars = findJars(managedLibDir)
   def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() + props.ProjectScalaReflectJar()
 
-  def packageJar(compilePhase : CompilePhase) = {
-    val jarBasename = compilePhase match {
-      case SourceCompilePhase => name + ".jar"
-      case TestCompilePhase => name + "-test.jar"
-    }
-    file(packageDir.getAbsolutePath, jarBasename)
-  }
-
-  def sourcePackageJar(compilePhase : CompilePhase) = {
-    val jarBasename = compilePhase match {
-      case SourceCompilePhase => name + "-sources.jar"
-      case TestCompilePhase => name + "-test-sources.jar"
-    }
-    file(packageDir.getAbsolutePath, jarBasename)
-  }
-  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
   def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
   def publishLocalJar = file(publishLocalJarDir, packageJar(SourceCompilePhase).getName)
   def publishLocalSourceJar = file(publishLocalJarDir, sourcePackageJar(SourceCompilePhase).getName)

@@ -47,6 +47,23 @@ trait BaseProject {
   def toIvyExclude : Elem = <exclude org={groupId} module={artifactId} />
   def publishLocalDir = file(props.PublishLocalRootDir(), groupId, artifactId).makeDirs
   def publishLocalPomFile = file(file(publishLocalDir, "/poms/").makeDir, "pom.xml")
+  def packageDir : File
+  def packageJar(compilePhase : CompilePhase) = {
+    val jarBasename = compilePhase match {
+      case SourceCompilePhase => name + ".jar"
+      case TestCompilePhase => name + "-test.jar"
+    }
+    file(packageDir.getAbsolutePath, jarBasename)
+  }
+
+  def sourcePackageJar(compilePhase : CompilePhase) = {
+    val jarBasename = compilePhase match {
+      case SourceCompilePhase => name + "-sources.jar"
+      case TestCompilePhase => name + "-test-sources.jar"
+    }
+    file(packageDir.getAbsolutePath, jarBasename)
+  }
+  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
 
   def ivySettingsFile = file("ivysettings.xml") // Note that this is relative to CWD
   def ivyFile = IvyUtils.generateIvyFile(this)
