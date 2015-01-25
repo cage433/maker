@@ -10,7 +10,7 @@ import maker.MakerProps
 import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
 
-class PackageJarTaskTests extends FreeSpec{
+class PackageJarTaskTests extends FreeSpec with Matchers{
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
     val moduleRoot = file(dir, name)
     val props = MakerProps(
@@ -25,8 +25,8 @@ class PackageJarTaskTests extends FreeSpec{
     )
   }
 
-  "Simple module should package classes and resources" ignore {
-    withTempDir{
+  "Simple module should package classes and resources" in {
+    withTestDir{
       dir =>  
 
         val proj = createTestModule(dir, "single-module-package-jar-test")
@@ -36,7 +36,7 @@ class PackageJarTaskTests extends FreeSpec{
 
         proj.writeCaseObject("Foo", "foo")
 
-        proj.pack
+        proj.pack.succeeded should be (true)
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.outputDir(SourceCompilePhase), 
@@ -47,7 +47,7 @@ class PackageJarTaskTests extends FreeSpec{
     }
   }
 
-  "Simple module should package source" ignore {
+  "Simple module should package source" in {
     withTempDir{
       dir =>  
 
@@ -65,7 +65,7 @@ class PackageJarTaskTests extends FreeSpec{
           proj.sourcePackageJar(SourceCompilePhase))
     }
   }
-  "Can package upstream modules into one big jar" ignore {
+  "Can package upstream modules into one big jar" in {
     withTempDir{
       dir => 
         val a = createTestModule(dir, "a")

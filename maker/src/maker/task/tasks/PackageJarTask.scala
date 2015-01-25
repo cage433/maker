@@ -21,10 +21,12 @@ case class PackageJarTask(
   extends Task with ToBooleanOps 
 {
   def baseProject = module
+
   def name = compilePhase match {
     case SourceCompilePhase => "Package Main Jar"
     case TestCompilePhase => "Package Test Jar"
   }
+
   def upstreamTasks = {
     var tasks = new VectorBuilder[Task]()
     tasks += CompileTask(module, compilePhase)
@@ -36,56 +38,61 @@ case class PackageJarTask(
     tasks.result
   }
 
+  // TODO - find out why this is synchronized
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
-    doPackage(results, sw)
-  }
-
-  private def doPackage(results: Iterable[TaskResult], sw: Stopwatch) = {
     if (!module.packageDir.exists)
       module.packageDir.mkdirs
 
-    def jarCommand(jarFile : File, updateOrCreate: String, baseDir: File) = {
-      Command(
-        module.props.Jar().getAbsolutePath, 
-        updateOrCreate, 
-        jarFile.getAbsolutePath,
-        "-C", baseDir.getAbsolutePath, "."
-      )
-    }
+    def jarDirectories(jarFile : File, directories : Seq[File]) = {
+      jarFile.delete
 
-    def jarDirectoriesCommands(jarFile : File, directories : Seq[File]) = {
-      directories.filter(_.exists) match {
-        case Nil => Nil
-        case head :: tail => 
-          jarCommand(jarFile, "cf", head) :: tail.map(jarCommand(jarFile, "uf", _))
+      def jarCommand(directory : File) = {
+        Command(
+          module.props.Jar().getAbsolutePath, 
+          if (jarFile.exists) "uf" else "cf",
+          jarFile.getAbsolutePath,
+          "-C", directory.getAbsolutePath, "."
+        ).withSavedOutput
+      }
+
+      // Add contents of each directory to the jar. Stopping
+      // at the first failure
+      directories.foldLeft(None : Option[String]){
+        case (maybeFailure, directory) => 
+
+          maybeFailure match {
+            case e : Some[_] => e
+            case None => {
+              val cmd = jarCommand(directory)
+              if (cmd.exec == 0)
+                None
+              else
+                Some(cmd.savedOutput)
+            }
+          }
+
       }
     }
-    val cmds = {
-      val modules = if (includeUpstreamModules)
-        module :: module.allUpstreamModules
-      else 
-        List(module)
 
+    val modules = if (includeUpstreamModules)
+      module.allUpstreamModules
+    else 
+      List(module)
 
-      val classJarCommands = jarDirectoriesCommands(
-        module.packageJar(compilePhase),
-        modules.map(_.outputDir(compilePhase)) ::: modules.map(_.resourceDir(compilePhase))
-      )
+    val maybeError = jarDirectories(
+      module.packageJar(compilePhase),
+      modules.map(_.outputDir(compilePhase)) ::: modules.map(_.resourceDir(compilePhase))
+    ) orElse jarDirectories(
+      module.sourcePackageJar(compilePhase),
+      modules.flatMap(_.sourceDirs(compilePhase))
+    )  orElse jarDirectories(
+      module.docPackageJar,
+      List(module.docOutputDir)
+    )
 
-      val sourceJarCommands = jarDirectoriesCommands(
-        module.sourcePackageJar(compilePhase),
-        modules.flatMap(_.sourceDirs(compilePhase))
-      )
-      val docJarCommands = jarDirectoriesCommands(
-        module.docPackageJar,
-        List(module.docOutputDir)
-      )
-      classJarCommands ::: sourceJarCommands ::: docJarCommands
-    }
-
-    cmds.find(_.exec != 0) match {
-      case Some(failingCommand) =>
-        DefaultTaskResult(this, false, sw, message = Some(failingCommand.savedOutput))
+    maybeError match {
+      case Some(error) =>
+        DefaultTaskResult(this, false, sw, message = Some(error))
       case None =>
         DefaultTaskResult(this, true, sw)
     }
