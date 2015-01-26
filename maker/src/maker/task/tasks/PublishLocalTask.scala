@@ -12,13 +12,10 @@ import maker.utils.os.Command
 import org.scalatest.Failed
 import org.slf4j.LoggerFactory
 import maker.utils.FileUtils._
-/**
- * publishes poms and packaged artifacts to the local filesystem 
- * Optionally can include upstream modules, in case it's more
- * convenient to deploy a project as a single jar
- */
+
 case class PublishLocalTask(
   baseProject : BaseProject, 
+  modules : Seq[Module],
   version : String,
   signArtifacts : Boolean
 ) extends Task {
@@ -27,13 +24,7 @@ case class PublishLocalTask(
   def baseProjects = Vector(baseProject)
   val logger = LoggerFactory.getLogger(this.getClass)
   def module = baseProject
-  def upstreamTasks = baseProject match {
-    case _ : Project => baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version, signArtifacts))
-    case m : Module => 
-      val jarTask : Task = PackageJarTask(m, SourceCompilePhase, includeUpstreamModules = false) 
-      val upstreamTasks : List[Task] = baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version, signArtifacts))
-      jarTask :: upstreamTasks
-  }
+  def upstreamTasks : List[Task] = List(PackageJarTask(baseProject, modules, SourceCompilePhase))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
@@ -59,10 +50,9 @@ case class PublishLocalTask(
     if (signArtifacts)
       result = signFile(baseProject.publishLocalPomFile)
 
-    result &&= {baseProject match {
-      case _ : Project => 
-        true
-      case m : Module =>
+    modules.foreach{
+      m => 
+        FileUtils.writeToFile(m.publishLocalPomFile, PomUtils.pomXml(m, version))
         Vector(
           m.packageJar(SourceCompilePhase), 
           m.sourcePackageJar(SourceCompilePhase), 
@@ -75,7 +65,28 @@ case class PublishLocalTask(
             else
               true
         }
-    }}
+    }
     DefaultTaskResult(this, result, sw)
+  }
+}
+
+object PublishLocalTask{
+  def apply2(
+    baseProject : BaseProject, version : String, 
+    signArtifacts : Boolean, includeUpstreamModules : Boolean 
+  ) : PublishLocalTask = {
+    val modules = (baseProject, includeUpstreamModules) match {
+      case (_, true)  => 
+        baseProject.allUpstreamModules
+      case (m : Module, false) => 
+        Vector(m)
+      case (_ : Project, false) => 
+        throw new RuntimeException("Project packages must include modules")
+    }
+    PublishLocalTask(
+      baseProject, 
+      modules,
+      version, signArtifacts
+    )
   }
 }

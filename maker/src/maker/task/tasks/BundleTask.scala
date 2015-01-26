@@ -11,11 +11,7 @@ case class BundleTask(baseProject : BaseProject, version : String) extends Task{
   def baseProjects = Vector(baseProject)
   def module = baseProject
 
-  def upstreamTasks = baseProject match {
-    case _ : Project => baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version, signArtifacts = true))
-    case m : Module => PackageJarTask(m, SourceCompilePhase, includeUpstreamModules = false) :: 
-      baseProject.immediateUpstreamModules.map(PublishLocalTask(_, version, signArtifacts = true))
-  }
+  def upstreamTasks = PublishLocalTask(baseProject, baseProject.allUpstreamModules, version, signArtifacts = true) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val bundleJar = file(baseProject.rootAbsoluteFile, "bundle.jar")

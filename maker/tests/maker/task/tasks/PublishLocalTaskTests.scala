@@ -15,7 +15,7 @@ import maker.task.compile.SourceCompilePhase
 class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
   private def checkPublishedPomMatchesCoordinates(project : BaseProject, version : String){
-    assert(project.publishLocalPomFile.exists)
+    assert(project.publishLocalPomFile.exists, s"${project.publishLocalPomFile} doesn't exist")
 
     val pom = XML.loadFile(project.publishLocalPomFile)
 
@@ -90,10 +90,11 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
   "Top level project should publish each sub module" in {
     withTempDir {
       dir => 
+        val props = TestModule.makeTestProps(dir)
         val version = "1.0-SNAPSHOT"
         val a = createTestModule(dir, "multi-module-publish-local-test-a")
         val b = createTestModule(dir, "multi-module-publish-local-test-b", upstreamModules = List(a))
-        val topLevel = Project("TopLevelProject", dir, List(b), a.props)
+        val topLevel = Project("TopLevelProject", dir, List(b), props)
 
         topLevel.publishLocal(version)
 

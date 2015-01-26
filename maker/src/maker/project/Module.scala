@@ -165,6 +165,9 @@ class Module(
     case SourceCompilePhase => file(targetDir, "classes")
     case TestCompilePhase => file(targetDir, "test-classes")
   }
+  override def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false))
+  def packAll = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = true))
+
   def doc = executeWithDependencies(DocTask(this))
   def docOutputDir = file(targetDir, "docs")
   def packageDir = file(targetDir, "package")

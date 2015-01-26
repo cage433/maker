@@ -1,11 +1,14 @@
 package maker.project
 
 import maker.task.BuildResult
-import maker.task.tasks.CreateDeployTask
+import maker.task.tasks.{CreateDeployTask, PackageJarTask, PublishLocalTask}
 import maker.utils.FileUtils._
 import java.io.File
 import maker.MakerProps
 import maker.utils.RichString._
+import maker.utils.os.Command
+import scala.collection.immutable.Nil
+import maker.task.compile.SourceCompilePhase
 
 case class Project(
   name : String,
@@ -34,6 +37,8 @@ case class Project(
   }
   def docOutputDir = file(rootAbsoluteFile, "docs")
   def packageDir = file(rootAbsoluteFile, "package")
+  override def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false))
+
   def allUpstreamModules = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct
   def allUpstreamTestModules = allUpstreamModules
   def testClassNames() = {

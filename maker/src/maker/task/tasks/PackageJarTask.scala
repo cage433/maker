@@ -27,18 +27,12 @@ case class PackageJarTask(
   }
 
   def upstreamTasks = {
-    val tasks = new VectorBuilder[Task]()
     compilePhase match {
       case SourceCompilePhase => 
-        tasks ++= modules.map(DocTask(_))
+        modules.map(DocTask(_))
       case TestCompilePhase => 
-        tasks ++= modules.map(CompileTask(_, TestCompilePhase))
+        modules.map(CompileTask(_, TestCompilePhase))
     }
-    modules.flatMap(_.immediateUpstreamModules).filterNot(modules.contains(_)).foreach{
-      upstreamModule => 
-        tasks += PackageJarTask(upstreamModule, Vector(upstreamModule), compilePhase)
-    }
-    tasks.result
   }
 
   // TODO - find out why this is synchronized
@@ -61,7 +55,7 @@ case class PackageJarTask(
 
       // Add contents of each directory to the jar. Stopping
       // at the first failure
-      directories.foldLeft(None : Option[String]){
+      directories.filter(_.exists).foldLeft(None : Option[String]){
         case (maybeFailure, directory) => 
 
           maybeFailure match {

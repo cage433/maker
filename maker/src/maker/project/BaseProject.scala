@@ -56,6 +56,22 @@ trait BaseProject {
     file(packageDir.getAbsolutePath, jarBasename)
   }
 
+  def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
+    val tasks = if (includeUpstreamModules)
+        PublishLocalTask(this, allUpstreamModules, version, signArtifacts) :: Nil
+      else
+        PublishLocalTask(this, Nil, version, signArtifacts) :: allUpstreamModules.map{m => PublishLocalTask(m, Vector(m), version, signArtifacts)}
+
+    execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
+  }
+  def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
+    val tasks = if (includeUpstreamModules)
+        PublishTask(this, allUpstreamModules, resolver, version, signArtifacts) :: Nil
+      else
+        PublishTask(this, Nil, resolver, version, signArtifacts) :: allUpstreamModules.map{m => PublishTask(m, Vector(m), resolver, version, signArtifacts)}
+
+    execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
+  }
   def sourcePackageJar(compilePhase : CompilePhase) = {
     val jarBasename = compilePhase match {
       case SourceCompilePhase => name + "-sources.jar"
@@ -156,7 +172,7 @@ trait BaseProject {
   }
   def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
 
-  def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false))
+  def pack : BuildResult
   def packageAllUpstream = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = true))
 
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
@@ -173,11 +189,6 @@ trait BaseProject {
   def createDeploy(buildTests: Boolean = true, version: Option[String] = None): BuildResult =
     throw new UnsupportedOperationException
 
-  def publishLocal(version : String, signArtifacts : Boolean = false) = 
-    executeWithDependencies(PublishLocalTask(this, version, signArtifacts))
-
-  def publish(version : String, resolver : String = props.defaultResolver(), signArtifacts : Boolean = false) = 
-    executeWithDependencies(PublishTask(this, resolver, version, signArtifacts))
 
   def runMain(className : String)(opts : String*)(args : String*) = 
     executeWithDependencies(RunMainTask(this, className, opts.toList, args.toList))

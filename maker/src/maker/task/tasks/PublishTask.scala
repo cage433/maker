@@ -16,6 +16,7 @@ import org.apache.ivy.util.{DefaultMessageLogger, Message}
 
 case class PublishTask(
   baseProject : BaseProject, 
+  modules : Seq[Module],
   resolverName : String, 
   version : String, 
   signArtifacts : Boolean
@@ -26,8 +27,7 @@ case class PublishTask(
   def name = "Publish"
   def module = baseProject
   def baseProjects = Vector(baseProject)
-  def upstreamTasks = PublishLocalTask(baseProject, version, signArtifacts) :: 
-    baseProject.immediateUpstreamModules.map(PublishTask(_, resolverName, version, signArtifacts))
+  def upstreamTasks = PublishLocalTask(baseProject, modules, version, signArtifacts) :: Nil
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
       doPublish(baseProject, results, sw)
