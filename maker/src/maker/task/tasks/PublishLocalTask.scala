@@ -69,24 +69,3 @@ case class PublishLocalTask(
     DefaultTaskResult(this, result, sw)
   }
 }
-
-object PublishLocalTask{
-  def apply2(
-    baseProject : BaseProject, version : String, 
-    signArtifacts : Boolean, includeUpstreamModules : Boolean 
-  ) : PublishLocalTask = {
-    val modules = (baseProject, includeUpstreamModules) match {
-      case (_, true)  => 
-        baseProject.allUpstreamModules
-      case (m : Module, false) => 
-        Vector(m)
-      case (_ : Project, false) => 
-        throw new RuntimeException("Project packages must include modules")
-    }
-    PublishLocalTask(
-      baseProject, 
-      modules,
-      version, signArtifacts
-    )
-  }
-}

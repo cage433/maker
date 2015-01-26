@@ -95,19 +95,3 @@ case class PackageJarTask(
   }
 }
 
-object PackageJarTask{
-  def apply(baseProject: BaseProject, 
-            compilePhase : CompilePhase,
-            includeUpstreamModules : Boolean) : PackageJarTask = {
-    val modules = (baseProject, includeUpstreamModules) match {
-      case (_, true)  => 
-        baseProject.allUpstreamModules
-      case (m : Module, false) => 
-        Vector(m)
-      case (_ : Project, false) => 
-        throw new RuntimeException("Project packages must include modules")
-    }
-    PackageJarTask(baseProject, modules, compilePhase)
-  }
-
-}

@@ -25,8 +25,8 @@ case class CreateDeployTask(baseProject: Project, buildTests: Boolean, version: 
   def name = "Create Deploy"
 
   def module = baseProject
-  def upstreamTasks = baseProject.allUpstreamModules.map(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false)) ::: {
-    if (buildTests) baseProject.allUpstreamModules.map(PackageJarTask(_, TestCompilePhase, includeUpstreamModules = false))
+  def upstreamTasks = baseProject.allUpstreamModules.map{m => PackageJarTask(m, Vector(m), SourceCompilePhase)} ::: {
+    if (buildTests) baseProject.allUpstreamModules.map{m => PackageJarTask(m, Vector(m), TestCompilePhase)}
     else Nil
   }
 

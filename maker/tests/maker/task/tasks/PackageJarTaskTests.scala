@@ -36,7 +36,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
 
         proj.writeCaseObject("Foo", "foo")
 
-        proj.pack.succeeded should be (true)
+        proj.pack().succeeded should be (true)
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.outputDir(SourceCompilePhase), 
@@ -58,7 +58,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
 
         proj.writeCaseObject("Foo", "foo")
 
-        proj.pack
+        proj.pack()
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.sourceDirs(SourceCompilePhase).head,
@@ -82,7 +82,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
         c.writeCaseObject("Baz", "foo")
         c.addUnmanagedResource("c-resource")
 
-        c.packageAllUpstream
+        c.pack(includeUpstreamModules = true)
 
         val oneBigJar = c.packageJar(SourceCompilePhase)
 

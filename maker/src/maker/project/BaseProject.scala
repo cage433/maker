@@ -172,8 +172,14 @@ trait BaseProject {
   }
   def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
 
-  def pack : BuildResult
-  def packageAllUpstream = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = true))
+  def pack(includeUpstreamModules : Boolean = false) : BuildResult = {
+    val tasks = if (includeUpstreamModules)
+        PackageJarTask(this, allUpstreamModules, SourceCompilePhase) :: Nil
+      else
+        allUpstreamModules.map{m => PackageJarTask(m, Vector(m), SourceCompilePhase)}
+
+    execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
+  }
 
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
   def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))

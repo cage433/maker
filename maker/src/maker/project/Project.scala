@@ -37,7 +37,6 @@ case class Project(
   }
   def docOutputDir = file(rootAbsoluteFile, "docs")
   def packageDir = file(rootAbsoluteFile, "package")
-  override def pack = executeWithDependencies(PackageJarTask(_, SourceCompilePhase, includeUpstreamModules = false))
 
   def allUpstreamModules = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct
   def allUpstreamTestModules = allUpstreamModules
