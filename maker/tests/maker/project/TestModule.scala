@@ -87,8 +87,8 @@ class TestModule(
 
 object TestModule{
   def makeTestProps(root : File) : MakerProps = {
-    lazy val props = MakerProps()
-    MakerProps(
+    val props = MakerProps()
+    var props_ : MakerProps = MakerProps(
       "ShowCompilerOutput", "false", 
       "GroupId", "MakerTestGroupID",
       "MakerHome", props.MakerHome(),
@@ -100,6 +100,12 @@ object TestModule{
       "MakerTestReporterJar", props.MakerTestReporterJar().getPath,
       "RunningInMakerTest", "true"
     )
+    Option(System.getenv("MAKER_PGP_PASS_PHRASE")).foreach{
+      passPhrase => 
+        props_ ++= ("GPG_PassPhrase", passPhrase)
+    }
+    props_
+
   }
 
 }

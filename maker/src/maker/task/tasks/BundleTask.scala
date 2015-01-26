@@ -3,20 +3,43 @@ package maker.task.tasks
 import maker.project.{BaseProject, Module, Project}
 import maker.task.compile.SourceCompilePhase
 import maker.utils.Stopwatch
-import maker.task.{Task, TaskResult}
+import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils.FileUtils._
+import scala.collection.immutable.Nil
+import maker.utils.os.Command
 
-case class BundleTask(baseProject : BaseProject, version : String) extends Task{
-  def name = "bundle"
-  def baseProjects = Vector(baseProject)
+case class BundleTask(baseProject : BaseProject, version : String, signArtifacts : Boolean = true) extends Task{
+  def name = s"Bundle $baseProject"
   def module = baseProject
 
-  def upstreamTasks = PublishLocalTask(baseProject, baseProject.allUpstreamModules, version, signArtifacts = true) :: Nil
+  def upstreamTasks = PublishLocalTask(baseProject, baseProject.allUpstreamModules, version, signArtifacts) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val bundleJar = file(baseProject.rootAbsoluteFile, "bundle.jar")
+    import baseProject.{bundleJar, publishLocalPomDir, publishLocalJarDir}
     if (bundleJar.exists)
       bundleJar.delete
-    null
+
+    val maybeError = Vector(publishLocalPomDir, publishLocalJarDir).foldLeft(None : Option[String]){
+      case (Some(error), _) => Some(error)
+      case (None, dir) => 
+        val cmd = Command(
+          baseProject.props.Jar().getAbsolutePath,
+          if (bundleJar.exists) "uf" else "cf",
+          bundleJar.getAbsolutePath,
+          "-C",
+          dir.getAbsolutePath,
+          "."
+        ).withNoOutput
+        if (cmd.exec == 0)
+          None
+        else
+          Some(cmd.savedOutput)
+    }
+    maybeError match {
+      case None => 
+        DefaultTaskResult(this, true, sw)
+      case error  => 
+        DefaultTaskResult(this, false, sw, message = error)
+    }
   }
 }

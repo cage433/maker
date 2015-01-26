@@ -46,7 +46,9 @@ trait BaseProject {
   val artifactId = name
   def toIvyExclude : Elem = <exclude org={groupId} module={artifactId} />
   def publishLocalDir = file(props.PublishLocalRootDir(), groupId, artifactId).makeDirs
-  def publishLocalPomFile = file(file(publishLocalDir, "/poms/").makeDir, "pom.xml")
+  def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
+  def publishLocalPomDir = file(publishLocalDir, "/poms/").makeDir
+  def publishLocalPomFile = file(publishLocalPomDir, "pom.xml")
   def packageDir : File
   def packageJar(compilePhase : CompilePhase) = {
     val jarBasename = compilePhase match {
@@ -56,6 +58,7 @@ trait BaseProject {
     file(packageDir.getAbsolutePath, jarBasename)
   }
 
+  def bundleJar = file(rootAbsoluteFile, "bundle.jar")
   def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
     val tasks = if (includeUpstreamModules)
         PublishLocalTask(this, allUpstreamModules, version, signArtifacts) :: Nil
@@ -181,6 +184,7 @@ trait BaseProject {
     execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
   }
 
+  def bundle(version : String, signArtifacts : Boolean = true) = executeWithDependencies(BundleTask(this, version, signArtifacts))
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
   def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))
 

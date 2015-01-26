@@ -50,21 +50,17 @@ case class PublishLocalTask(
     if (signArtifacts)
       result = signFile(baseProject.publishLocalPomFile)
 
-    modules.foreach{
-      m => 
-        FileUtils.writeToFile(m.publishLocalPomFile, PomUtils.pomXml(m, version))
-        Vector(
-          m.packageJar(SourceCompilePhase), 
-          m.sourcePackageJar(SourceCompilePhase), 
-          m.docPackageJar
-        ).filter(_.exists).forall{
-          jar => 
-            copyFileToDirectory(jar, m.publishLocalJarDir)
-            if (signArtifacts)
-              signFile(file(m.publishLocalJarDir, jar.basename))
-            else
-              true
-        }
+    result &&= Vector(
+      baseProject.packageJar(SourceCompilePhase), 
+      baseProject.sourcePackageJar(SourceCompilePhase), 
+      baseProject.docPackageJar
+    ).filter(_.exists).forall{
+      jar => 
+        copyFileToDirectory(jar, baseProject.publishLocalJarDir)
+        if (signArtifacts)
+          signFile(file(baseProject.publishLocalJarDir, jar.basename))
+        else
+          true
     }
     DefaultTaskResult(this, result, sw)
   }

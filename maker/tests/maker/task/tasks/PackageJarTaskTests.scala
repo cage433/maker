@@ -113,8 +113,13 @@ object PackageJarTaskTests extends Matchers with CustomMatchers{
 
     relativePaths should not be empty // Otherwise why are we testing this
 
-    relativePaths should allSatisfy{
-      path : String => jarContents.exists(_.contains(path))
+    relativePaths.foreach{
+      relPath => 
+        if (! jarContents.exists(_.contains(relPath))){
+          println(s"Could not find $relPath in $jarFile")
+          jarContents.foreach(println)
+          fail(s"Could not find $relPath in $jarFile")
+        }
     }
   }
 }

@@ -62,7 +62,7 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     )
   }
 
-  "Simple module should publish as expected" in {
+  "Simple module should publish as expected" ignore {
     withTempDir{
       dir =>  
 
@@ -87,7 +87,49 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     }
   }
 
-  "Top level project should publish each sub module" in {
+  "Module can publish itself and dependencies as a single artifact" in {
+    withTempDir{
+      dir =>  
+
+        import PackageJarTaskTests.checkJarContainsDirectoryContents
+
+        val version = "1.0-SNAPSHOT"
+        val moduleA = {
+          val proj = createTestModule(dir, "A")
+          proj.addExternalResource("org.slf4j slf4j-api 1.6.1")
+          proj.addUnmanagedResource("MainResource1")
+          proj.addUnmanagedResource("subdir-a", "MainResource2")
+          proj.writeCaseObject("Foo", "foo")
+          proj
+        }
+
+        val moduleB = {
+          val proj = createTestModule(dir, "B", List(moduleA))
+          proj.addExternalResource("org.slf4j slf4j-api 1.6.1")
+          proj.addUnmanagedResource("MainResource3")
+          proj.addUnmanagedResource("subdir-b", "MainResource4")
+          proj.writeCaseObject("Bar", "bar")
+          proj
+        }
+        moduleB.publishLocal(version, includeUpstreamModules = true)
+
+        checkPublishedPomMatchesCoordinates(moduleB, version)
+        checkPublishedPomIncludesAllDependencies(moduleB)
+
+        import moduleB.{publishLocalJar => publishJar, publishLocalSourceJar => publishSourceJar}
+        publishJar should be ('exists)
+
+        Vector(moduleA, moduleB).foreach{
+          module => 
+            checkJarContainsDirectoryContents(
+              module.outputDir(SourceCompilePhase), publishJar)
+            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar)
+            checkJarContainsDirectoryContents(
+              module.sourceDirs(SourceCompilePhase).head, publishSourceJar)
+        }
+    }
+  }
+  "Top level project should publish each sub module" ignore {
     withTempDir {
       dir => 
         val props = TestModule.makeTestProps(dir)
@@ -104,4 +146,5 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
     }
   }
+
 }
