@@ -69,7 +69,7 @@ case class PublishTask(
 
       val srcArtifactPattern = List(
         baseProject.publishLocalDir(version).getAbsolutePath + "/[type]s/pom.xml",
-        baseProject.publishLocalDir(version).getAbsolutePath + "/[type]s/" + baseProject.artifactId + "(-[classifier]).jar"
+        baseProject.publishLocalDir(version).getAbsolutePath + "/[type]s/" + baseProject.artifactId  + "-[revision]" + "(-[classifier]).jar"
       )
 
 
