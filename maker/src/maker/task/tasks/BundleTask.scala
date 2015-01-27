@@ -19,7 +19,7 @@ case class BundleTask(baseProject : BaseProject, version : String, signArtifacts
     if (bundleJar.exists)
       bundleJar.delete
 
-    val maybeError = Vector(publishLocalPomDir, publishLocalJarDir).foldLeft(None : Option[String]){
+    val maybeError = Vector(publishLocalPomDir(version), publishLocalJarDir(version)).foldLeft(None : Option[String]){
       case (Some(error), _) => Some(error)
       case (None, dir) => 
         val cmd = Command(

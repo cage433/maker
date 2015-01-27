@@ -40,7 +40,8 @@ class PublishTaskTests extends FreeSpec {
           |case object Foo
           """.stripMargin
         )
-        proj.publish("1.0-SNAPSHOT", "maker-local")
+        val version = "1.0-SNAPSHOT"
+        proj.publish(version, "maker-local")
 
         val expectedPomText = 
            """|<?xml version="1.0" encoding="UTF-8"?>
@@ -62,7 +63,7 @@ class PublishTaskTests extends FreeSpec {
               |  </dependencies>
               |</project>""".stripMargin
         val publishedPomFile = file(dir, "publish-local/testPublish/1.0-SNAPSHOT/testPublish-1.0-SNAPSHOT.pom")
-        val actualPomText = proj.publishLocalPomFile.readLines.mkString("\n")
+        val actualPomText = proj.publishLocalPomFile(version).readLines.mkString("\n")
         assert(expectedPomText === actualPomText)
 
 

@@ -14,7 +14,7 @@ object IvyUtils {
   /** 
     * Create the ivy file which describes an artifact, used by Ivy.publish
     */
-  def generateIvyFile(baseProject : BaseProject) : File = {
+  def generateIvyFile(baseProject : BaseProject, version : String) : File = {
     val genFile = file(baseProject.rootAbsoluteFile, "ivy-dynamic.xml")
 
     val excludeDeps : List[NodeSeq] = baseProject.allUpstreamBaseProjects.flatMap(_.toIvyExclude).toList
@@ -30,7 +30,7 @@ object IvyUtils {
     // Todo: some of this is currently 'hard-coded' to our build...
     val ivyFileXML =
       <ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
-        <info organisation={groupId} module={artifactId} revision="${maker.module.version}" />
+        <info organisation={groupId} module={artifactId} revision={version}/>
 
         <configurations>
           <conf name="default" transitive="false"/>

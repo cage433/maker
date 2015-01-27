@@ -38,7 +38,7 @@ case class PublishTask(
 
     val props : MakerProps = baseProject.props
 
-    val ivyFile = baseProject.ivyFile
+    val ivyFile = baseProject.ivyFile(version)
     try {
       val confs = Array[String]("default")
 
@@ -68,8 +68,8 @@ case class PublishTask(
                             .setPubdate(new Date())
 
       val srcArtifactPattern = List(
-        baseProject.publishLocalDir.getAbsolutePath + "/[type]s/pom.xml",
-        baseProject.publishLocalDir.getAbsolutePath + "/[type]s/" + baseProject.artifactId + "(-[classifier]).jar"
+        baseProject.publishLocalDir(version).getAbsolutePath + "/[type]s/pom.xml",
+        baseProject.publishLocalDir(version).getAbsolutePath + "/[type]s/" + baseProject.artifactId + "(-[classifier]).jar"
       )
 
 

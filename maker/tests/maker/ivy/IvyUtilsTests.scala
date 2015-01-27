@@ -21,9 +21,9 @@ class IvyUtilsTests extends FreeSpec {
  
         
         assert(
-          IvyUtils.generateIvyFile(b).readLines.mkString("\n") === 
+          IvyUtils.generateIvyFile(b, "0.1").readLines.mkString("\n") === 
           """|<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
-             |  <info organisation="MakerTestGroupID" module="b" revision="${maker.module.version}"/>
+             |  <info organisation="MakerTestGroupID" module="b" revision="0.1"/>
              |  <configurations>
              |    <conf name="default" transitive="false"/>
              |    <conf name="compile" transitive="false"/>
@@ -43,9 +43,9 @@ class IvyUtilsTests extends FreeSpec {
         )
 
         assert(
-          IvyUtils.generateIvyFile(c).readLines.mkString("\n") === 
+          IvyUtils.generateIvyFile(c, "0.1").readLines.mkString("\n") === 
           """|<ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
-             |  <info organisation="MakerTestGroupID" module="c" revision="${maker.module.version}"/>
+             |  <info organisation="MakerTestGroupID" module="c" revision="0.1"/>
              |  <configurations>
              |    <conf name="default" transitive="false"/>
              |    <conf name="compile" transitive="false"/>

@@ -15,9 +15,9 @@ import maker.task.compile.SourceCompilePhase
 class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
   private def checkPublishedPomMatchesCoordinates(project : BaseProject, version : String){
-    assert(project.publishLocalPomFile.exists, s"${project.publishLocalPomFile} doesn't exist")
+    assert(project.publishLocalPomFile(version).exists, s"${project.publishLocalPomFile(version)} doesn't exist")
 
-    val pom = XML.loadFile(project.publishLocalPomFile)
+    val pom = XML.loadFile(project.publishLocalPomFile(version))
 
     List(
       (project.props.GroupId(), "groupId"), 
@@ -30,8 +30,8 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
   }
 
-  private def checkPublishedPomIncludesAllDependencies(module : Module){
-    val pom = XML.loadFile(module.publishLocalPomFile)
+  private def checkPublishedPomIncludesAllDependencies(module : Module, version : String){
+    val pom = XML.loadFile(module.publishLocalPomFile(version))
     val dependencies = pom \\ "dependency"
     val resources = Resource("org.scala-lang", "scala-library", MakerProps.DefaultScalaVersion) :: module.resources
 
@@ -78,12 +78,12 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
         proj.publishLocal(version)
 
         checkPublishedPomMatchesCoordinates(proj, version)
-        checkPublishedPomIncludesAllDependencies(proj)
+        checkPublishedPomIncludesAllDependencies(proj, version)
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj.outputDir(SourceCompilePhase), proj.publishLocalJar)
-        PackageJarTaskTests.checkJarContainsDirectoryContents(proj.resourceDir(SourceCompilePhase), proj.publishLocalJar)
+          proj.outputDir(SourceCompilePhase), proj.publishLocalJar(version))
+        PackageJarTaskTests.checkJarContainsDirectoryContents(proj.resourceDir(SourceCompilePhase), proj.publishLocalJar(version))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar)
+          proj.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version))
     }
   }
 
@@ -114,18 +114,18 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
         moduleB.publishLocal(version, includeUpstreamModules = true)
 
         checkPublishedPomMatchesCoordinates(moduleB, version)
-        checkPublishedPomIncludesAllDependencies(moduleB)
+        checkPublishedPomIncludesAllDependencies(moduleB, version)
 
         import moduleB.{publishLocalJar => publishJar, publishLocalSourceJar => publishSourceJar}
-        publishJar should be ('exists)
+        publishJar(version) should be ('exists)
 
         Vector(moduleA, moduleB).foreach{
           module => 
             checkJarContainsDirectoryContents(
-              module.outputDir(SourceCompilePhase), publishJar)
-            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar)
+              module.outputDir(SourceCompilePhase), publishJar(version))
+            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar(version))
             checkJarContainsDirectoryContents(
-              module.sourceDirs(SourceCompilePhase).head, publishSourceJar)
+              module.sourceDirs(SourceCompilePhase).head, publishSourceJar(version))
         }
     }
   }

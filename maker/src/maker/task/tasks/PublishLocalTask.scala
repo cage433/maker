@@ -45,20 +45,26 @@ case class PublishLocalTask(
 
   private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
   
-    FileUtils.writeToFile(baseProject.publishLocalPomFile, PomUtils.pomXml(baseProject, version))
+    baseProject.publishLocalDir(version).deleteAll()
+    def versionedFilename(file : File) : String = {
+     val basename :: extension :: Nil = file.basename.split('.').toList
+     s"$basename-$version.$extension"
+    }
+    FileUtils.writeToFile(baseProject.publishLocalPomFile(version), PomUtils.pomXml(baseProject, version))
     var result = true
     if (signArtifacts)
-      result = signFile(baseProject.publishLocalPomFile)
+      result = signFile(baseProject.publishLocalPomFile(version))
 
     result &&= Vector(
-      baseProject.packageJar(SourceCompilePhase), 
-      baseProject.sourcePackageJar(SourceCompilePhase), 
-      baseProject.docPackageJar
-    ).filter(_.exists).forall{
-      jar => 
-        copyFileToDirectory(jar, baseProject.publishLocalJarDir)
+      (baseProject.packageJar(SourceCompilePhase), s"${baseProject.name}-$version.jar"),
+      (baseProject.sourcePackageJar(SourceCompilePhase), s"${baseProject.name}-$version-sources.jar"),
+      (baseProject.docPackageJar, s"${baseProject.name}-$version-javadoc.jar")
+    ).filter(_._1.exists).forall{
+      case (jar, versionedBasename) => 
+        val fileWithVersion = file(baseProject.publishLocalJarDir(version), versionedBasename)
+        copyFile(jar, fileWithVersion)
         if (signArtifacts)
-          signFile(file(baseProject.publishLocalJarDir, jar.basename))
+          signFile(fileWithVersion)
         else
           true
     }

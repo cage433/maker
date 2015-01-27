@@ -45,10 +45,10 @@ trait BaseProject {
   lazy val groupId = props.GroupId()
   val artifactId = name
   def toIvyExclude : Elem = <exclude org={groupId} module={artifactId} />
-  def publishLocalDir = file(props.PublishLocalRootDir(), groupId, artifactId).makeDirs
-  def publishLocalJarDir = file(publishLocalDir, "/jars/").makeDir
-  def publishLocalPomDir = file(publishLocalDir, "/poms/").makeDir
-  def publishLocalPomFile = file(publishLocalPomDir, "pom.xml")
+  def publishLocalDir(version : String) = file(props.PublishLocalRootDir(), groupId, artifactId, version).makeDirs
+  def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
+  def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
+  def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
   def packageDir : File
   def packageJar(compilePhase : CompilePhase) = {
     val jarBasename = compilePhase match {
@@ -85,7 +85,7 @@ trait BaseProject {
   def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
 
   def ivySettingsFile = file("ivysettings.xml") // Note that this is relative to CWD
-  def ivyFile = IvyUtils.generateIvyFile(this)
+  def ivyFile(version : String) = IvyUtils.generateIvyFile(this, version)
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 
   def testResults = {

@@ -11,7 +11,8 @@ class BundleTaskTests extends FreeSpec with Matchers{
       dir =>
         val module = new TestModule(dir, "BundleTaskTests.singleModule")
         module.writeCaseObject("foo", "Foo")
-        module.bundle(version = "1.0", signArtifacts = false) should be ('succeeded)
+        val version = "1.0"
+        module.bundle(version, signArtifacts = false) should be ('succeeded)
         module.bundleJar should be ('exists)
 
         val jarCommand = Command(module.props.Jar().getAbsolutePath, "tvf", module.bundleJar.getAbsolutePath).withSavedOutput
@@ -20,7 +21,7 @@ class BundleTaskTests extends FreeSpec with Matchers{
         val contents = jarCommand.savedOutput
         val expectedContents = 
           "pom.xml" :: 
-          List(module.publishLocalJar, module.publishLocalSourceJar,  module.docPackageJar).map(_.basename)
+          List(module.publishLocalJar(version), module.publishLocalSourceJar(version),  module.docPackageJar).map(_.basename)
 
         expectedContents.foreach{
           expected => 
