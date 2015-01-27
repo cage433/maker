@@ -108,6 +108,12 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
   object GPG_PassPhrase extends EnvProperty("MAKER_GPG_PASS_PHRASE") with IsString
+  object PomDeveloperInfo extends IsOptionalString
+  object PomProjectName extends IsOptionalString
+  object PomProjectDescription extends IsOptionalString
+  object PomProjectURL extends IsOptionalString
+  object PomSCMURL extends IsOptionalString
+  object PomProjectLicense extends IsOptionalString
 
 
   def ++(moreOverrides : String*) = {
