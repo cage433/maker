@@ -4,7 +4,7 @@ import maker.project.BaseProject
 import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils.{Stopwatch, EitherUtils, FileUtils}
 import scala.util.{Either, Left, Right}
-import java.io.File
+import java.io.{File, IOException}
 import maker.utils.os.{Command, CommandOutputHandler}
 import maker.utils.FileUtils._
 import spray.json._
@@ -13,9 +13,22 @@ import com.sun.xml.internal.txw2.Content
 import xsbti.Exit
 import scala.collection.immutable.Nil
 import scala.xml.XML
-
+import org.scalatest.Failed
+import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
+import org.apache.http.impl.client.{DefaultHttpClient, BasicCredentialsProvider}
+import org.apache.http.client.config.RequestConfig
+import org.apache.http.client.methods.{HttpPost, HttpGet}
+import org.apache.http.client.HttpClient
+import org.apache.http.{HttpStatus, HttpResponse, HttpHost}
+import org.apache.http.entity.StringEntity
+import org.apache.http.conn.params.ConnRoutePNames
 
 case class PublishToSonatype(baseProject : BaseProject, version : String) extends Task with EitherUtils{
+  import baseProject.props
+  val Array(sonatypeUsername, sonatypePassword) = props.SonatypeCredentials().split(":")
+  val sonatypeRepository = "https://oss.sonatype.org/service/local"
+  val credentialHost = "oss.sonatype.org"
+           
   type ErrorMessage = String
   type JsonResponse = String
   type StagingRepo = String
@@ -43,6 +56,36 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
     }
   }
 
+  val proxy = new HttpHost("127.0.0.1", 4128, "http")
+  private def withHttpClient[U](body: HttpClient => U) : U = {
+
+    val client = new DefaultHttpClient()
+    client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
+    try {
+      client.getCredentialsProvider.setCredentials(
+        new AuthScope(credentialHost, AuthScope.ANY_PORT),
+        new UsernamePasswordCredentials(sonatypeUsername, sonatypePassword)
+      )
+      body(client)
+    }
+    finally
+      client.getConnectionManager.shutdown()
+  }
+
+  def Get[U](path:String)(body: HttpResponse => U) : U = {
+    val config = RequestConfig.custom().setProxy(proxy).build()
+    val req = new HttpGet(s"${sonatypeRepository}$path")
+//    req.setConfig(config)
+    req.addHeader("Content-Type", "application/xml")
+    withHttpClient{ client =>
+      val response = client.execute(req)
+      if(response.getStatusLine.getStatusCode != HttpStatus.SC_OK) {
+        throw new IOException(s"Failed to retrieve data from $path: ${response.getStatusLine}")
+      }
+      body(response)
+    }
+  }
+
   case class RepoUris(repositoryUris : Seq[String]){
     require(repositoryUris.size == 1, s"expected a single uri, got $repositoryUris")
     def repoIdentifier = repositoryUris(0).split('/').last
@@ -54,6 +97,16 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   implicit val payloadDataFormatter = jsonFormat2(PayloadData)
   implicit val releasePayloadFormatter = jsonFormat1(ReleasePayload)
 
+  case class StagingRepositoryProfile(profileId:String, profileName:String, stagingType:String, repositoryId:String) {
+    override def toString = s"[$repositoryId] status:$stagingType, profile:$profileName($profileId)"
+    def isOpen = stagingType == "open"
+    def isClosed = stagingType == "closed"
+    def isReleased = stagingType == "released"
+
+    def toClosed = StagingRepositoryProfile(profileId, profileName, "closed", repositoryId)
+    def toReleased = StagingRepositoryProfile(profileId, profileName, "released", repositoryId)
+  }
+ 
   private def releaseStagingRepo(tmpDir : File, stagingRepo : StagingRepo) : Either[ErrorMessage, Unit] = {
     val payload = ReleasePayload(PayloadData(List(stagingRepo), ""))
     val payloadJson = payload.toJson.compactPrint
@@ -70,11 +123,9 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
       "-d", payloadJson,
       "https://oss.sonatype.org/service/local/staging/bulk/promote"
     ).withSavedOutput
-    println(cmd)
     if (cmd.exec != 0)
       Left("Exit code was " + cmd.savedOutput)
     else{
-      println(s"Saved output ${cmd.savedOutput}")
       Right(cmd.savedOutput)
     }
   }
@@ -83,25 +134,20 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
     var isClosed = false
     var numTriesLeft = 10
     while(!isClosed && numTriesLeft > 0){
-      println("Trying to see if repo closed")
-      val cmd = Command(
-        CommandOutputHandler.NULL,
-        None,
-        false,
-        "curl",
-        "-u", "cage433:zoltan",
-        s"https://oss.sonatype.org/service/local/staging/repository/$stagingRepo"
-      ).withSavedOutput
-      cmd.exec
-      println(s"***${cmd.savedOutput}****")
-      val xml = XML.loadString(cmd.savedOutput)
-      val status = (xml \ "type").text
-      println(s"status = $status")
-      if (status == "closed")
-        isClosed = true
-      numTriesLeft -= 1
-      Thread.sleep(5000)
+      Get(s"/staging/repository/$stagingRepo"){
+        response => 
+          val xml = XML.load(response.getEntity.getContent)
+          val status = (xml \ "type").text
+          if (status == "closed")
+            isClosed = true
+          else
+            Thread.sleep(5000)
+          println(s"status = $status")
+          numTriesLeft -= 1
+
+      }
     }
+ 
     if (isClosed)
       Right(())
     else 
@@ -148,7 +194,6 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
 
     val error = addDirectoryToBundle(publishLocalPomDir(version)) orElse
       addDirectoryToBundle(publishLocalJarDir(version))
-    println(s"Error was $error")
     error.toLeft(bundleJar)
   }
 }
