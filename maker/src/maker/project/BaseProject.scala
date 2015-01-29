@@ -11,8 +11,9 @@ import maker.utils.RichString._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
 import maker.ivy.IvyUtils
-import scala.xml.Elem
+import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
+import scala.collection.immutable.Nil
 
 trait BaseProject {
   protected def root : File
@@ -59,6 +60,7 @@ trait BaseProject {
   }
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
+  def publishToSonatype(version : String) = execute(Build(props.NumberOfTaskThreads(), PublishToSonatype(this, version)))
   def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
     val tasks = if (includeUpstreamModules)
         PublishLocalTask(this, allUpstreamModules, version, signArtifacts) :: Nil
@@ -327,6 +329,8 @@ trait BaseProject {
   }
 
   def delete = recursiveDelete(rootAbsoluteFile)
+
+  def extraProjectPomInfo : List[NodeSeq] = Nil
 }
 
 object BaseProject{

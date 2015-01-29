@@ -11,10 +11,10 @@ import maker.utils.os.CommandOutputHandler
 
 trait TmuxIntegration extends BaseProject{
 
-    private lazy val hasTmux = Command(CommandOutputHandler.NULL, None, "which", "tmux").withNoOutput.exec == 0
+    private lazy val hasTmux = Command(CommandOutputHandler.NULL, None, true, "which", "tmux").withNoOutput.exec == 0
     def tmux(args : String*){
       if (props.TmuxMessaging() && hasTmux)
-        new Command(CommandOutputHandler.NULL, None, ("tmux"::args.toList) : _*).withNoOutput.execAsync
+        new Command(CommandOutputHandler.NULL, None, true, ("tmux"::args.toList) : _*).withNoOutput.execAsync
     }
 
     private def tmuxReportTaskFailed(msg : String){

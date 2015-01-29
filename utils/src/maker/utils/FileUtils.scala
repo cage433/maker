@@ -176,7 +176,7 @@ object FileUtils extends Asserting{
   def findInArchive(props : MakerProps, file : File, predicate : String => Boolean) : Boolean = {
     import maker.utils.os._
     val coh = new CommandOutputHandler(None, Some(new StringBuffer()), false)
-    val cmd = new Command(coh, None, props.Jar().getAbsolutePath, "-tf", file.getAbsolutePath)
+    val cmd = new Command(coh, None, true, props.Jar().getAbsolutePath, "-tf", file.getAbsolutePath)
     cmd.exec() match {
       case 0 => cmd.savedOutput.split('\r').exists(predicate)
       case _ => false

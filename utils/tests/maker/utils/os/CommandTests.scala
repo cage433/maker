@@ -14,7 +14,7 @@ class CommandTests extends FunSuite{
       dir =>
         val f = file(dir, "foo")
         assert(! f.exists)
-        val cmd = Command(CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
+        val cmd = Command(CommandOutputHandler.NULL, None, true, "touch", f.getAbsolutePath)
         cmd.exec
         assert(f.exists)
     }
@@ -25,7 +25,7 @@ class CommandTests extends FunSuite{
       dir =>
         val f = file(dir, "foo")
         assert(! f.exists)
-        val cmd = Command(CommandOutputHandler.NULL, None, "touch", f.getAbsolutePath)
+        val cmd = Command(CommandOutputHandler.NULL, None, true, "touch", f.getAbsolutePath)
         val (_, future) = cmd.execAsync
         val result = Await.result(future, 1 second)
         assert(f.exists)
@@ -38,7 +38,7 @@ class CommandTests extends FunSuite{
       dir =>
         val outputFile = file(dir, "output")
         assert(! outputFile.exists)
-        val cmd = Command(CommandOutputHandler(outputFile), None, "echo", "HELLO")
+        val cmd = Command(CommandOutputHandler(outputFile), None, true, "echo", "HELLO")
         cmd.exec
         assert(outputFile.exists)
         val lines = outputFile.readLines.toList
@@ -93,7 +93,7 @@ class CommandTests extends FunSuite{
           done
           """
         )
-        val cmd = new Command(CommandOutputHandler.NO_CONSUME_PROCESS_OUTPUT, Some(dir), "bash", "main.sh")
+        val cmd = new Command(CommandOutputHandler.NO_CONSUME_PROCESS_OUTPUT, Some(dir), true, "bash", "main.sh")
         val (proc, future) = cmd.execAsync
         val procID = ProcessID(proc)
         assert(procID.isRunning)

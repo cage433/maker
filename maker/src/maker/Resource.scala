@@ -51,13 +51,13 @@ case class Resource(
   def basename : String = "%s-%s-%s%s.%s" %
     (groupId, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
 
-  def pomDependencyXML : String = {
-    """|<dependency>
-       |  <groupId>%s</groupId>
-       |  <artifactId>%s</artifactId>
-       |  <version>%s</version>
-       |  <scope>compile</scope>
-       |</dependency>""".stripMargin % (groupId, artifactId, version)
+  def pomDependencyXML = {
+    <dependency>
+      <groupId>{groupId}</groupId>
+      <artifactId>{artifactId}</artifactId>
+      <version>{version}</version>
+      <scope>compile</scope>
+    </dependency>
   }
 
   def toIvyInclude : Elem =

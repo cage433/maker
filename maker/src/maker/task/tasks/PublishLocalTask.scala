@@ -50,7 +50,7 @@ case class PublishLocalTask(
      val basename :: extension :: Nil = file.basename.split('.').toList
      s"$basename-$version.$extension"
     }
-    FileUtils.writeToFile(baseProject.publishLocalPomFile(version), PomUtils.pomXml(baseProject, version))
+    FileUtils.writeToFile(baseProject.publishLocalPomFile(version), PomUtils.pomXmlText(baseProject, version))
     var result = true
     if (signArtifacts)
       result = signFile(baseProject.publishLocalPomFile(version))

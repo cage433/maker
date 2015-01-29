@@ -66,12 +66,13 @@ object CommandOutputHandler{
   }
 }
 
-case class Command(outputHandler : CommandOutputHandler, workingDirectory : Option[File], args : String*) {
+case class Command(outputHandler : CommandOutputHandler, workingDirectory : Option[File], mergeErrorWithOut : Boolean, args : String*) {
 
   def savedOutput = outputHandler.savedOutput
   def withOutput(handler : CommandOutputHandler) = new Command(
     outputHandler = handler,
     workingDirectory,
+    mergeErrorWithOut,
     args : _*
   )
 
@@ -80,7 +81,7 @@ case class Command(outputHandler : CommandOutputHandler, workingDirectory : Opti
 
   private def startProc() : Process = {
     val procBuilder = new ProcessBuilder(args : _*)
-    procBuilder.redirectErrorStream(true)
+    procBuilder.redirectErrorStream(mergeErrorWithOut)
     workingDirectory.foreach(procBuilder.directory(_))
     procBuilder.start
   }
@@ -109,8 +110,8 @@ case class Command(outputHandler : CommandOutputHandler, workingDirectory : Opti
 }
 
 object Command{
-  def apply(args : String*) : Command = new Command(CommandOutputHandler(), None, args : _*)
-  def apply(workingDirectory : Option[File], args : String*) : Command = new Command(CommandOutputHandler(), workingDirectory, args : _*)
+  def apply(args : String*) : Command = new Command(CommandOutputHandler(), None, true, args : _*)
+  def apply(workingDirectory : Option[File], args : String*) : Command = new Command(CommandOutputHandler(), workingDirectory, true, args : _*)
 }
 
 object ScalaCommand {
@@ -122,7 +123,7 @@ object ScalaCommand {
       classpath) ::: 
       List("scala.tools.nsc.MainGenericRunner",
       klass) ::: args.toList
-    Command(outputHandler, None, allArgs :_*)
+    Command(outputHandler, None, true, allArgs :_*)
   }
 }
 
@@ -134,7 +135,7 @@ object ScalaDocCmd {
       "-classpath",
       classpath) ::: opts :::
       "scala.tools.nsc.ScalaDoc" :: files.map(_.getAbsolutePath).toList
-    Command(outputHandler, Some(outputDir), allArgs :_*)
+    Command(outputHandler, Some(outputDir), true, allArgs :_*)
   }
   def apply(outputHandler : CommandOutputHandler, outputDir : File, java : String, classpath : String, opts : List[String], optsFile : File) : Command = {
     val allArgs : List[String] = List(
@@ -143,6 +144,6 @@ object ScalaDocCmd {
       "-classpath",
       classpath) ::: opts :::
       "scala.tools.nsc.ScalaDoc" :: "@" + optsFile.getAbsolutePath :: Nil
-    Command(outputHandler, Some(outputDir), allArgs :_*)
+    Command(outputHandler, Some(outputDir), true, allArgs :_*)
   }
 }

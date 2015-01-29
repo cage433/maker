@@ -19,6 +19,7 @@ class ExampleProjectTests extends FunSpec {
       val cmd = Command(
         CommandOutputHandler.NULL,
         Some(moduleRootFile),
+        true,
         makerScript, "-e", "project.test"
       )
       val result = cmd.exec
@@ -34,6 +35,7 @@ class ExampleProjectTests extends FunSpec {
       val cmd = Command(
         CommandOutputHandler.NULL,
         Some(moduleRootFile),
+        true, 
         script
       )
       val result = cmd.exec
