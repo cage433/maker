@@ -31,3 +31,4 @@ maker-commands.log
 *-classpath.sh
 maker.log
 scala-libs
+**/.maker-libs
