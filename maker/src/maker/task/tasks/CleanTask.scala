@@ -27,9 +27,8 @@ case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) exten
     }
 
     // remove all output as we don't want lingering files or even empty dirs messing up a subsequent builds
-    module.packageJar(SourceCompilePhase).delete
-    module.packageJar(TestCompilePhase).delete
 
+    cleanRegularFilesLeavingDirectories(module.packageDir)
     cleanRegularFilesLeavingDirectories(module.compilePhase.outputDir)
     cleanRegularFilesLeavingDirectories(module.testCompilePhase.outputDir)
     cleanRegularFilesLeavingDirectories(module.packageDir)

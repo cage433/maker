@@ -62,7 +62,7 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     )
   }
 
-  "Simple module should publish as expected" ignore {
+  "Simple module should publish as expected" in {
     withTempDir{
       dir =>  
 
@@ -129,7 +129,7 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
         }
     }
   }
-  "Top level project should publish each sub module" ignore {
+  "Top level project should publish each sub module" in {
     withTempDir {
       dir => 
         val props = TestModule.makeTestProps(dir)

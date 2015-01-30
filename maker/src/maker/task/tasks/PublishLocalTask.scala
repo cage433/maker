@@ -24,7 +24,7 @@ case class PublishLocalTask(
   def baseProjects = Vector(baseProject)
   val logger = LoggerFactory.getLogger(this.getClass)
   def module = baseProject
-  def upstreamTasks : List[Task] = List(PackageJarTask(baseProject, modules, SourceCompilePhase))
+  def upstreamTasks : List[Task] = List(PackageJarTask(baseProject, modules, SourceCompilePhase, Some(version)))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
@@ -56,8 +56,8 @@ case class PublishLocalTask(
       result = signFile(baseProject.publishLocalPomFile(version))
 
     result &&= Vector(
-      (baseProject.packageJar(SourceCompilePhase), s"${baseProject.name}-$version.jar"),
-      (baseProject.sourcePackageJar(SourceCompilePhase), s"${baseProject.name}-$version-sources.jar"),
+      (baseProject.packageJar(SourceCompilePhase, Some(version)), s"${baseProject.name}-$version.jar"),
+      (baseProject.sourcePackageJar(SourceCompilePhase, Some(version)), s"${baseProject.name}-$version-sources.jar"),
       (baseProject.docPackageJar, s"${baseProject.name}-$version-javadoc.jar")
     ).filter(_._1.exists).forall{
       case (jar, versionedBasename) => 

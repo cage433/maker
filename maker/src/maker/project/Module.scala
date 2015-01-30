@@ -144,8 +144,8 @@ class Module(
   def managedJars = findJars(managedLibDir)
   def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + props.ProjectScalaLibraryJar() + props.ProjectScalaCompilerJar() + props.ProjectScalaReflectJar()
 
-  def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(SourceCompilePhase).getName)
-  def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(SourceCompilePhase).getName)
+  def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(SourceCompilePhase, Some(version)).getName)
+  def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(SourceCompilePhase, Some(version)).getName)
 
   def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {
     case SourceCompilePhase => 

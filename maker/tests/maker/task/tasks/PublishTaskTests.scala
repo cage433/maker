@@ -11,7 +11,7 @@ import maker.MakerProps
 import maker.utils.RichString._
 
 class PublishTaskTests extends FreeSpec {
-  "test wether dynamic ivy is really needed" in {
+  "test wether dynamic ivy is really needed" ignore {
     withTempDir{
       dir =>  
 
@@ -64,6 +64,7 @@ class PublishTaskTests extends FreeSpec {
               |</project>""".stripMargin
         val publishedPomFile = file(dir, "publish-local/testPublish/1.0-SNAPSHOT/testPublish-1.0-SNAPSHOT.pom")
         val actualPomText = proj.publishLocalPomFile(version).readLines.mkString("\n")
+        // TODO - proper XML test
         assert(expectedPomText === actualPomText)
 
 

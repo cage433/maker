@@ -69,12 +69,12 @@ class CompileTaskTests extends FunSuite with TestUtils {
         assert(proj.compilePhase.classFiles.size === 0)
         assert(proj.compile.succeeded, "Compile should succeed")
         assert(proj.compilePhase.classFiles.size > 0)
-        assert(!proj.packageJar(SourceCompilePhase).exists)
+        assert(!proj.packageJar(SourceCompilePhase, version = None).exists)
         proj.pack()
-        assert(proj.packageJar(SourceCompilePhase).exists)
+        assert(proj.packageJar(SourceCompilePhase, version = None).exists)
         proj.clean
         assert(proj.compilePhase.classFiles.size === 0)
-        assert(!proj.packageJar(SourceCompilePhase).exists)
+        assert(!proj.packageJar(SourceCompilePhase, version = None).exists)
     }
   }
 

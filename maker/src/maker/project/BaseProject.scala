@@ -51,10 +51,11 @@ trait BaseProject {
   def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
   def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
   def packageDir : File
-  def packageJar(compilePhase : CompilePhase) = {
+  def packageJar(compilePhase : CompilePhase, version : Option[String]) = {
+    val versionAsString = version.map("-" + _).getOrElse("")
     val jarBasename = compilePhase match {
-      case SourceCompilePhase => name + ".jar"
-      case TestCompilePhase => name + "-test.jar"
+      case SourceCompilePhase => name + versionAsString + ".jar"
+      case TestCompilePhase => name + versionAsString + "-test.jar"
     }
     file(packageDir.getAbsolutePath, jarBasename)
   }
@@ -77,10 +78,11 @@ trait BaseProject {
 
     execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
   }
-  def sourcePackageJar(compilePhase : CompilePhase) = {
+  def sourcePackageJar(compilePhase : CompilePhase, version : Option[String]) = {
+    val versionAsString = version.map("-" + _).getOrElse("")
     val jarBasename = compilePhase match {
-      case SourceCompilePhase => name + "-sources.jar"
-      case TestCompilePhase => name + "-test-sources.jar"
+      case SourceCompilePhase => name + versionAsString + "-sources.jar"
+      case TestCompilePhase => name + versionAsString + "-test-sources.jar"
     }
     file(packageDir.getAbsolutePath, jarBasename)
   }
@@ -179,14 +181,13 @@ trait BaseProject {
 
   def pack(includeUpstreamModules : Boolean = false) : BuildResult = {
     val tasks = if (includeUpstreamModules)
-        PackageJarTask(this, allUpstreamModules, SourceCompilePhase) :: Nil
+        PackageJarTask(this, allUpstreamModules, SourceCompilePhase, version = None) :: Nil
       else
-        allUpstreamModules.map{m => PackageJarTask(m, Vector(m), SourceCompilePhase)}
+        allUpstreamModules.map{m => PackageJarTask(m, Vector(m), SourceCompilePhase, version = None)}
 
     execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
   }
 
-  def bundle(version : String, signArtifacts : Boolean = true) = executeWithDependencies(BundleTask(this, version, signArtifacts))
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
   def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))
 

@@ -26,7 +26,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
   }
 
   "Simple module should package classes and resources" in {
-    withTestDir{
+    withTempDir{
       dir =>  
 
         val proj = createTestModule(dir, "single-module-package-jar-test")
@@ -40,10 +40,10 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.outputDir(SourceCompilePhase), 
-          proj.packageJar(SourceCompilePhase))
+          proj.packageJar(SourceCompilePhase, version = None))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.resourceDir(SourceCompilePhase), 
-          proj.packageJar(SourceCompilePhase))
+          proj.packageJar(SourceCompilePhase, version = None))
     }
   }
 
@@ -62,7 +62,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           proj.sourceDirs(SourceCompilePhase).head,
-          proj.sourcePackageJar(SourceCompilePhase))
+          proj.sourcePackageJar(SourceCompilePhase, version = None))
     }
   }
   "Can package upstream modules into one big jar" in {
@@ -84,7 +84,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
 
         c.pack(includeUpstreamModules = true)
 
-        val oneBigJar = c.packageJar(SourceCompilePhase)
+        val oneBigJar = c.packageJar(SourceCompilePhase, version = None)
 
         Vector(a, b, c).foreach{
           m => 

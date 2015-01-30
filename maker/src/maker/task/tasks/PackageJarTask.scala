@@ -16,7 +16,8 @@ import scala.collection.immutable.VectorBuilder
 case class PackageJarTask(
   baseProject: BaseProject, 
   modules : Seq[Module],
-  compilePhase : CompilePhase
+  compilePhase : CompilePhase,
+  version : Option[String]
 ) 
   extends Task with ToBooleanOps 
 {
@@ -74,11 +75,11 @@ case class PackageJarTask(
 
     val maybeError = 
       jarDirectories(
-        baseProject.packageJar(compilePhase),
+        baseProject.packageJar(compilePhase, version),
         modules.map(_.outputDir(compilePhase)) ++ modules.map(_.resourceDir(compilePhase))
       ) orElse 
       jarDirectories(
-        baseProject.sourcePackageJar(compilePhase),
+        baseProject.sourcePackageJar(compilePhase, version),
         modules.flatMap(_.sourceDirs(compilePhase))
       ) orElse 
       jarDirectories(
