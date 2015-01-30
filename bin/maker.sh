@@ -93,6 +93,12 @@ HERE
 
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   rm dynamic-scala-resource-list
+
+  cat > maker-resource-list <<HERE
+com.github.cage433 maker-test-reporter 0.01 path:maker-test-reporter-0.01.jar
+HERE
+  update_resources $PROJECT_ROOT_DIR/.maker-libs maker-resource-list
+  rm maker-resource-list
 }
 
 build_jar(){
