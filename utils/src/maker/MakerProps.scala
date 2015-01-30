@@ -109,6 +109,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   object GPG_PassPhrase extends EnvProperty("MAKER_GPG_PASS_PHRASE") with IsString
   object SonatypeCredentials extends EnvProperty("MAKER_SONATYPE_CREDENTIALS") with IsString
+  object HttpProxy extends EnvProperty("MAKER_HTTP_PROXY") with IsOptionalString
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{

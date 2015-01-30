@@ -56,99 +56,6 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
     }
   }
 
-  val proxy = new HttpHost("127.0.0.1", 4128, "http")
-  private def withHttpClient[U](body: HttpClient => U) : U = {
-
-    val client = new DefaultHttpClient()
-    client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
-    try {
-      client.getCredentialsProvider.setCredentials(
-        new AuthScope(credentialHost, AuthScope.ANY_PORT),
-        new UsernamePasswordCredentials(sonatypeUsername, sonatypePassword)
-      )
-      body(client)
-    }
-    finally
-      client.getConnectionManager.shutdown()
-  }
-
-  def Get[U](path:String)(body: HttpResponse => U) : U = {
-    val req = new HttpGet(s"${sonatypeRepository}$path")
-    req.addHeader("Content-Type", "application/xml")
-    withHttpClient{ client =>
-      val response = client.execute(req)
-      if(response.getStatusLine.getStatusCode != HttpStatus.SC_OK) {
-        throw new IOException(s"Failed to retrieve data from $path: ${response.getStatusLine}")
-      }
-      body(response)
-    }
-  }
-
-  private def uploadToSonatype(bundle : File) : Either[ErrorMessage, JsonResponse] = {
-    Post(
-      "/staging/bundle_upload", 
-      new FileEntity(bundle, ContentType.create("application/java-archive"))
-    ).map{
-      responseString => 
-      JsonParser(responseString).convertTo[RepoUris].repoIdentifier
-    }
-  }
-
-  def Post(path:String, entity : AbstractHttpEntity) : Either[ErrorMessage, String] = {
-    val req = new HttpPost(s"${sonatypeRepository}$path")
-    req.setEntity(entity)
-    withHttpClient{ client =>
-      val response = client.execute(req)
-      if (response.getStatusLine.getStatusCode == 201 /* created */){
-        Right(EntityUtils.toString(response.getEntity))
-      } else
-        Left(s"${response}")
-    }
-  }
-
-  case class RepoUris(repositoryUris : Seq[String]){
-    require(repositoryUris.size == 1, s"expected a single uri, got $repositoryUris")
-    def repoIdentifier = repositoryUris(0).split('/').last
-  }
-
-  implicit val jsonReposFormatter = jsonFormat1(RepoUris)
- 
-  private def releaseStagingRepo(tmpDir : File, stagingRepo : StagingRepo) : Either[ErrorMessage, Unit] = {
-    Post(
-      "/staging/bulk/promote",
-      new StringEntity(
-        s"""{"data":{"stagedRepositoryIds":["$stagingRepo"],"description":""}}""",
-        ContentType.APPLICATION_JSON
-      )
-    ).map {
-      _ => ()
-    }
-  }
-
-  private def waitTillRepoIsClosed(stagingRepo : String) : Either[ErrorMessage, Unit] = {
-    var isClosed = false
-    var numTriesLeft = 10
-    while(!isClosed && numTriesLeft > 0){
-      Get(s"/staging/repository/$stagingRepo"){
-        response => 
-          val xml = XML.load(response.getEntity.getContent)
-          val status = (xml \ "type").text
-          if (status == "closed")
-            isClosed = true
-          else
-            Thread.sleep(5000)
-          numTriesLeft -= 1
-
-      }
-    }
- 
-    if (isClosed)
-      Right(())
-    else 
-      Left("Couldn't close")
-  }
-
-
   private def makeBundle(tmpDir : File) : Either[ErrorMessage, File] = {
     import baseProject.{publishLocalPomDir, publishLocalJarDir}
 
@@ -186,4 +93,97 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
       jarOutputStream.close
     }
   }
+
+  private def uploadToSonatype(bundle : File) : Either[ErrorMessage, JsonResponse] = {
+    Post(
+      "/staging/bundle_upload", 
+      new FileEntity(bundle, ContentType.create("application/java-archive"))
+    ).map{
+      responseString => 
+      JsonParser(responseString).convertTo[RepoUris].repoIdentifier
+    }
+  }
+
+  private def waitTillRepoIsClosed(stagingRepo : String) : Either[ErrorMessage, Unit] = {
+    var isClosed = false
+    var numTriesLeft = 10
+    while(!isClosed && numTriesLeft > 0){
+      Get(s"/staging/repository/$stagingRepo"){
+        response => 
+          val xml = XML.load(response.getEntity.getContent)
+          val status = (xml \ "type").text
+          if (status == "closed")
+            isClosed = true
+          else
+            Thread.sleep(5000)
+          numTriesLeft -= 1
+      }
+    }
+ 
+    if (isClosed)
+      Right(())
+    else 
+      Left("Couldn't close")
+  }
+
+
+  val proxy = new HttpHost("127.0.0.1", 4128, "http")
+  private def withHttpClient[U](body: HttpClient => U) : U = {
+
+    val client = new DefaultHttpClient()
+    client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
+    try {
+      client.getCredentialsProvider.setCredentials(
+        new AuthScope(credentialHost, AuthScope.ANY_PORT),
+        new UsernamePasswordCredentials(sonatypeUsername, sonatypePassword)
+      )
+      body(client)
+    }
+    finally
+      client.getConnectionManager.shutdown()
+  }
+
+  def Get[U](path:String)(body: HttpResponse => U) : U = {
+    val req = new HttpGet(s"${sonatypeRepository}$path")
+    req.addHeader("Content-Type", "application/xml")
+    withHttpClient{ client =>
+      val response = client.execute(req)
+      if(response.getStatusLine.getStatusCode != HttpStatus.SC_OK) {
+        throw new IOException(s"Failed to retrieve data from $path: ${response.getStatusLine}")
+      }
+      body(response)
+    }
+  }
+
+  def Post(path:String, entity : AbstractHttpEntity) : Either[ErrorMessage, String] = {
+    val req = new HttpPost(s"${sonatypeRepository}$path")
+    req.setEntity(entity)
+    withHttpClient{ client =>
+      val response = client.execute(req)
+      if (response.getStatusLine.getStatusCode == 201 /* created */){
+        Right(EntityUtils.toString(response.getEntity))
+      } else
+        Left(s"${response}")
+    }
+  }
+
+  case class RepoUris(repositoryUris : Seq[String]){
+    require(repositoryUris.size == 1, s"expected a single uri, got $repositoryUris")
+    def repoIdentifier = repositoryUris(0).split('/').last
+  }
+
+  implicit val jsonReposFormatter = jsonFormat1(RepoUris)
+ 
+  private def releaseStagingRepo(tmpDir : File, stagingRepo : StagingRepo) : Either[ErrorMessage, Unit] = {
+    Post(
+      "/staging/bulk/promote",
+      new StringEntity(
+        s"""{"data":{"stagedRepositoryIds":["$stagingRepo"],"description":""}}""",
+        ContentType.APPLICATION_JSON
+      )
+    ).map {
+      _ => ()
+    }
+  }
+
 }
