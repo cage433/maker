@@ -94,8 +94,9 @@ HERE
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   rm dynamic-scala-resource-list
 
+  # TODO - add version to test reporter jar
   cat > maker-resource-list <<HERE
-com.github.cage433 maker-test-reporter 0.01 path:maker-test-reporter-0.01.jar
+com.github.cage433 maker-test-reporter 0.01 path:maker-test-reporter.jar
 HERE
   update_resources $PROJECT_ROOT_DIR/.maker-libs maker-resource-list
   rm maker-resource-list
