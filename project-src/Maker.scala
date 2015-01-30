@@ -59,7 +59,7 @@ object Maker {
   }
 
   lazy val testReporter = module("test-reporter", name = Some("maker-test-reporter"))
-  lazy val utils = module("utils", upstreamProjects = List(testReporter))
+  lazy val utils = module("utils")
   lazy val mkr = module("maker", upstreamProjects = List(utils), upstreamTestProjects = List(utils))
 
   lazy val topLevel = new Project("top-level", file("."), List(mkr), props) {
