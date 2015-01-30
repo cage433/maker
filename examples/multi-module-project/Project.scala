@@ -3,12 +3,12 @@ import java.io.File
 
 val a = new Module(
   root = new File("a"), 
-  projectRoot = new File("."),
+  projectRoot_ = new File("."),
   name = "a") 
 
 val b = new Module(
   root = new File("b"), 
-  projectRoot = new File("."),
+  projectRoot_ = new File("."),
   name = "b",
   immediateUpstreamModules = List(a)) 
 

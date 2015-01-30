@@ -18,7 +18,7 @@ import maker.utils.FileUtils._
 
 class Module(
     val root : File,
-    val projectRoot : File,
+    val projectRoot_ : File,
     val name : String,
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
@@ -29,6 +29,7 @@ class Module(
   with TmuxIntegration
 {
 
+  def projectRoot = projectRoot_.asAbsoluteFile
   import Module.logger
   protected val upstreamModulesForBuild = List(this)
 

@@ -50,7 +50,6 @@ case class RunUnitTestsTask(
       s += "logback.configurationFile" -> props.LogbackTestConfigFile().getAbsolutePath
       s += "maker.test.output" -> baseProject.testOutputFile.toString
       s += "sbt.log.format" -> "=false"
-      s += "maker.home" -> props.MakerHome()
       s += "maker.running.within.test" -> props.RunningInMakerTest().toString
       s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
@@ -74,12 +73,13 @@ case class RunUnitTestsTask(
     }
 
     val args = testParameters ++ suiteParameters 
+
     val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 
       props.Java().getAbsolutePath, 
       opts,
-      baseProject.testClasspath + java.io.File.pathSeparator + props.MakerTestReporterJar(),
+      baseProject.testClasspath + java.io.File.pathSeparator + baseProject.testReporterJar,
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 

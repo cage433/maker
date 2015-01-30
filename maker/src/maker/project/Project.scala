@@ -20,6 +20,7 @@ case class Project(
   topLevelExcludedFolders:List[String] = Nil
 ) extends TmuxIntegration{
 
+  def projectRoot = root.asAbsoluteFile
   override def createDeploy(buildTests: Boolean = true, version: Option[String] = None): BuildResult =
     executeWithDependencies(CreateDeployTask(this, buildTests))
 

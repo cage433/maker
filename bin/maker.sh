@@ -32,7 +32,6 @@ MAKER_ROOT_DIR="$( cd "$(dirname $( dirname "${BASH_SOURCE[0]}" ))" && pwd )"
 PROJECT_ROOT_DIR=`pwd`
 
 MAKER_JAR=$MAKER_ROOT_DIR/maker.jar
-MAKER_SCALATEST_REPORTER_JAR=$MAKER_ROOT_DIR/maker-scalatest-reporter.jar
 
 MAKER_HEAP_SPACE=4000m
 MAKER_PERM_GEN_SPACE=1000m
@@ -135,13 +134,10 @@ build_jar(){
 
 bootstrap_maker_if_required() {
   if [ ! -e $MAKER_JAR ]  || \
-     [ ! -e $MAKER_SCALATEST_REPORTER_JAR ] || \
      has_newer_src_files $MAKER_ROOT_DIR/maker/src $MAKER_JAR || \
-     has_newer_src_files $MAKER_ROOT_DIR/utils/src $MAKER_JAR || \
-     has_newer_src_files $MAKER_ROOT_DIR/test-reporter/src $MAKER_SCALATEST_REPORTER_JAR;
+     has_newer_src_files $MAKER_ROOT_DIR/utils/src $MAKER_JAR;
   then
     echo "Building maker"
-    build_jar $MAKER_SCALATEST_REPORTER_JAR "$MAKER_ROOT_DIR/test-reporter/src/maker/scalatest/MakerTestReporter.scala"
 
     for module in utils maker; do
       SRC_FILES="$SRC_FILES $(find $MAKER_ROOT_DIR/$module/src -name '*.scala' | xargs)"
@@ -185,7 +181,6 @@ launch_maker_repl(){
   "$JAVA_HOME/bin/java" $JAVA_OPTS \
     -classpath $(scala_jars) \
     -Dsbt.log.format="false" \
-    -Dmaker.home="$MAKER_ROOT_DIR" \
     $RUNNING_EXEC_MODE \
     -Dlogback.configurationFile=$MAKER_ROOT_DIR/logback-config/logback.xml \
     -Dscala.usejavacp=true \
@@ -219,11 +214,11 @@ maker_classpath(){
   cp=$(external_jars)
   if [ $MAKER_DEVELOPER_MODE ];
   then
-    for module in utils maker test-reporter; do
+    for module in utils maker; do
       cp="$cp${PSEP}$MAKER_ROOT_DIR/$module/target-maker/classes${PSEP}$MAKER_ROOT_DIR/$module/target-maker/test-classes/"
     done
   else
-    cp="$cp${PSEP}$MAKER_JAR${PSEP}$MAKER_SCALATEST_REPORTER_JAR"
+    cp="$cp${PSEP}$MAKER_JAR"
   fi
   echo $cp | $FIXCP
 }

@@ -25,6 +25,7 @@ class TestModule(
   analyses
 ) with ClassicLayout {
   root.mkdirs
+  override def testReporterJar = file(".maker-libs", "maker-test-reporter.jar").asAbsoluteFile
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
     """val %s = new TestModule(file("%s"), "%s", %s, %s)""" % (name, root.getAbsolutePath, name, 
@@ -92,13 +93,11 @@ object TestModule{
     var props_ : MakerProps = MakerProps(
       "ShowCompilerOutput", "false", 
       "GroupId", "MakerTestGroupID",
-      "MakerHome", props.MakerHome(),
       "ProjectScalaCompilerJar", props.ProjectScalaCompilerJar().getPath,
       "ProjectScalaLibraryJar", props.ProjectScalaLibraryJar().getPath,
       "TmuxMessaging", "false",
       "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
       "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath,
-      "MakerTestReporterJar", props.MakerTestReporterJar().getPath,
       "RunningInMakerTest", "true"
     )
     Option(System.getenv("MAKER_PGP_PASS_PHRASE")).foreach{
