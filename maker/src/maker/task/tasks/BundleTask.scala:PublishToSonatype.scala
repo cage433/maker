@@ -4,14 +4,11 @@ import maker.project.BaseProject
 import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils.{Stopwatch, EitherUtils, FileUtils}
 import scala.util.{Either, Left, Right}
-import java.io.{File, IOException}
-import maker.utils.os.{Command, CommandOutputHandler}
+import java.io._
 import maker.utils.FileUtils._
 import spray.json._
 import DefaultJsonProtocol._
 import com.sun.xml.internal.txw2.Content
-import xsbti.Exit
-import scala.collection.immutable.Nil
 import scala.xml.XML
 import org.scalatest.Failed
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
@@ -20,8 +17,11 @@ import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.{HttpPost, HttpGet}
 import org.apache.http.client.HttpClient
 import org.apache.http.{HttpStatus, HttpResponse, HttpHost}
-import org.apache.http.entity.StringEntity
+import org.apache.http.entity._
 import org.apache.http.conn.params.ConnRoutePNames
+import org.apache.http.util.EntityUtils
+import java.util.jar.{JarOutputStream, JarEntry}
+import scala.collection.immutable.Nil
 
 case class PublishToSonatype(baseProject : BaseProject, version : String) extends Task with EitherUtils{
   import baseProject.props
@@ -32,6 +32,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   type ErrorMessage = String
   type JsonResponse = String
   type StagingRepo = String
+  type ResponseEntityString = String
   def name = s"Publish $baseProject to Sonatype"
 
   def upstreamTasks = 
@@ -51,7 +52,6 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
       case Left(error) => 
         DefaultTaskResult(this, false, sw, message = Some(error))
       case Right(output) => 
-        println(output)
         DefaultTaskResult(this, true, sw)
     }
   }
@@ -73,9 +73,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   }
 
   def Get[U](path:String)(body: HttpResponse => U) : U = {
-    val config = RequestConfig.custom().setProxy(proxy).build()
     val req = new HttpGet(s"${sonatypeRepository}$path")
-//    req.setConfig(config)
     req.addHeader("Content-Type", "application/xml")
     withHttpClient{ client =>
       val response = client.execute(req)
@@ -86,47 +84,44 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
     }
   }
 
+  private def uploadToSonatype(bundle : File) : Either[ErrorMessage, JsonResponse] = {
+    Post(
+      "/staging/bundle_upload", 
+      new FileEntity(bundle, ContentType.create("application/java-archive"))
+    ).map{
+      responseString => 
+      JsonParser(responseString).convertTo[RepoUris].repoIdentifier
+    }
+  }
+
+  def Post(path:String, entity : AbstractHttpEntity) : Either[ErrorMessage, String] = {
+    val req = new HttpPost(s"${sonatypeRepository}$path")
+    req.setEntity(entity)
+    withHttpClient{ client =>
+      val response = client.execute(req)
+      if (response.getStatusLine.getStatusCode == 201 /* created */){
+        Right(EntityUtils.toString(response.getEntity))
+      } else
+        Left(s"${response}")
+    }
+  }
+
   case class RepoUris(repositoryUris : Seq[String]){
     require(repositoryUris.size == 1, s"expected a single uri, got $repositoryUris")
     def repoIdentifier = repositoryUris(0).split('/').last
   }
 
-  case class PayloadData(stagedRepositoryIds : Seq[String], description : String)
-  case class ReleasePayload(data : PayloadData)
   implicit val jsonReposFormatter = jsonFormat1(RepoUris)
-  implicit val payloadDataFormatter = jsonFormat2(PayloadData)
-  implicit val releasePayloadFormatter = jsonFormat1(ReleasePayload)
-
-  case class StagingRepositoryProfile(profileId:String, profileName:String, stagingType:String, repositoryId:String) {
-    override def toString = s"[$repositoryId] status:$stagingType, profile:$profileName($profileId)"
-    def isOpen = stagingType == "open"
-    def isClosed = stagingType == "closed"
-    def isReleased = stagingType == "released"
-
-    def toClosed = StagingRepositoryProfile(profileId, profileName, "closed", repositoryId)
-    def toReleased = StagingRepositoryProfile(profileId, profileName, "released", repositoryId)
-  }
  
   private def releaseStagingRepo(tmpDir : File, stagingRepo : StagingRepo) : Either[ErrorMessage, Unit] = {
-    val payload = ReleasePayload(PayloadData(List(stagingRepo), ""))
-    val payloadJson = payload.toJson.compactPrint
-    val cmd = Command(
-      CommandOutputHandler(),
-      None,
-      true,
-      "curl", 
-      "-u", "cage433:zoltan",
-      "-o", "out.txt",
-      "-w", "%{http_code}",
-      "-H", "Accept: application/json", 
-      "-H", "Content-Type: application/json",
-      "-d", payloadJson,
-      "https://oss.sonatype.org/service/local/staging/bulk/promote"
-    ).withSavedOutput
-    if (cmd.exec != 0)
-      Left("Exit code was " + cmd.savedOutput)
-    else{
-      Right(cmd.savedOutput)
+    Post(
+      "/staging/bulk/promote",
+      new StringEntity(
+        s"""{"data":{"stagedRepositoryIds":["$stagingRepo"],"description":""}}""",
+        ContentType.APPLICATION_JSON
+      )
+    ).map {
+      _ => ()
     }
   }
 
@@ -142,7 +137,6 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
             isClosed = true
           else
             Thread.sleep(5000)
-          println(s"status = $status")
           numTriesLeft -= 1
 
       }
@@ -154,46 +148,42 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
       Left("Couldn't close")
   }
 
-  private def uploadToSonatype(bundle : File) : Either[ErrorMessage, JsonResponse] = {
-    val cmd = Command(
-      CommandOutputHandler.NULL,
-      None,
-      false,
-      "curl", 
-      "-u", "cage433:zoltan",
-      "-F", s"filename=@${bundle.getAbsolutePath}",
-      "https://oss.sonatype.org/service/local/staging/bundle_upload"
-    ).withSavedOutput
-
-    if (cmd.exec == 0){
-      Right(JsonParser(cmd.savedOutput).convertTo[RepoUris].repoIdentifier)
-    } else{
-      Left(cmd.savedOutput)
-    }
-  }
 
   private def makeBundle(tmpDir : File) : Either[ErrorMessage, File] = {
     import baseProject.{publishLocalPomDir, publishLocalJarDir}
 
     val bundleJar = file("/home/alex/tmp/", "bundle.jar")
 
-    def addDirectoryToBundle(directory : File) : Option[ErrorMessage] =  {
-      val cmd = Command(
-        baseProject.props.Jar().getAbsolutePath,
-        if (bundleJar.exists) "uf" else "cf",
-        bundleJar.getAbsolutePath,
-        "-C",
-        directory.getAbsolutePath,
-        "."
-      ).withNoOutput
-      if (cmd.exec == 0)
-        None
-      else
-        Some(cmd.savedOutput)
-    }
+    val BUFFER_SIZE=1000 * 10
+    val jarOutputStream = new JarOutputStream(new FileOutputStream(bundleJar))
+    try {
+      (allFiles(publishLocalPomDir(version)) ++ allFiles(publishLocalJarDir(version))).filterNot(_.isDirectory).foreach{
+        file => 
+          val fis = new FileInputStream(file)
+          try {
+            val buffer = Array.fill[Byte](BUFFER_SIZE)(0)
+            val entry = new JarEntry(file.getName())
+            jarOutputStream.putNextEntry(entry)
 
-    val error = addDirectoryToBundle(publishLocalPomDir(version)) orElse
-      addDirectoryToBundle(publishLocalJarDir(version))
-    error.toLeft(bundleJar)
+            var endOfFile = false
+            while (!endOfFile){
+              val bytesRead = fis.read(buffer, 0, BUFFER_SIZE)
+              if (bytesRead == -1)
+                endOfFile = true
+              else
+                jarOutputStream.write(buffer, 0, bytesRead)
+            }
+  
+          } finally {
+            fis.close
+          }
+      }
+      Right(bundleJar)
+    } catch {
+      case e : Exception => 
+        Left(e.getMessage)
+    } finally {
+      jarOutputStream.close
+    }
   }
 }
