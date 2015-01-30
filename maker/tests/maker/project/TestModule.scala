@@ -17,6 +17,7 @@ class TestModule(
   analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis]()
 ) extends Module(
   root, 
+  root,
   name,
   upstreamProjects, 
   upstreamTestProjects, 

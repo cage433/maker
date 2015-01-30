@@ -48,6 +48,7 @@ object Maker {
     val root = file(rootBasename).asAbsoluteFile
     new Module(
       root,
+      file(".").asAbsoluteFile,
       name.getOrElse(rootBasename),
       immediateUpstreamModules = upstreamProjects,
       immediateUpstreamTestModules = upstreamTestProjects,

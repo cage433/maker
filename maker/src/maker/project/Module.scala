@@ -18,6 +18,7 @@ import maker.utils.FileUtils._
 
 class Module(
     val root : File,
+    val projectRoot : File,
     val name : String,
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
