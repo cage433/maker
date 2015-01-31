@@ -46,10 +46,10 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
    */
   object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
 
-  object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
-  object ProjectScalaReflectJar extends Default(file("scala-libs/scala-reflect-" + ProjectScalaVersion() + ".jar")) with IsFile
-  object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
-  object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + ProjectScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaLibraryJar extends Default(file(".maker/scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaReflectJar extends Default(file(".maker/scala-libs/scala-reflect-" + ProjectScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaLibrarySourceJar extends Default(file(".maker/scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
+  object ProjectScalaCompilerJar extends Default(file(".maker/scala-libs/scala-compiler-" + ProjectScalaVersion() + ".jar")) with IsFile
 
   /**
    * The debug files should contain a single number, indicating the port to use for remote debugging.
