@@ -15,41 +15,20 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   lazy val logger = LoggerFactory.getLogger(this.getClass)
 
 
-  case class ExternalResourceConfig(configFile : File){
-    private def extractMap(prefix : String) : Map[String, String] = {
-      configFile.readLines.filter(_.startsWith(prefix)).map{
-        line => 
-          val List(key, value) = line.split(' ').filterNot(_.isEmpty).drop(1).toList
-          key -> value
-      }.toMap
-    }
-    def resourceVersions() = extractMap("version:")
-    def resourceResolvers() = extractMap("resolver:")
-  }
 
   import MakerProps._
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
-  object ProjectScalaVersion extends Default(MakerProps.hackyReadVersion("scala_version")) with IsString
   object HomeDir extends SystemProperty("user.home") with IsFile
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
   object Compiler extends Default("zinc") with IsString
-  object ExternalResourceConfigFile extends Default(file("external-resource-config")) with IsFile
-  def resourceVersions() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceVersions()
-  def resourceResolvers() : Map[String, String] = ExternalResourceConfig(ExternalResourceConfigFile()).resourceResolvers()
-  def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
-
   /**
    * Maker has its own logback file which applies during compilation, 
    * this is the one that is used when running tests and main methods
    */
   object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
 
-  object ProjectScalaLibraryJar extends Default(file(".maker/scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
-  object ProjectScalaReflectJar extends Default(file(".maker/scala-libs/scala-reflect-" + ProjectScalaVersion() + ".jar")) with IsFile
-  object ProjectScalaLibrarySourceJar extends Default(file(".maker/scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
-  object ProjectScalaCompilerJar extends Default(file(".maker/scala-libs/scala-compiler-" + ProjectScalaVersion() + ".jar")) with IsFile
 
   /**
    * The debug files should contain a single number, indicating the port to use for remote debugging.
@@ -148,4 +127,16 @@ object MakerProps {
     Map() ++ JavaConversions.mapAsScalaMap(p.asInstanceOf[java.util.Map[String,String]])
   }
 
+}
+
+case class ExternalResourceConfig(configFile : File){
+  private def extractMap(prefix : String) : Map[String, String] = {
+    configFile.readLines.filter(_.startsWith(prefix)).map{
+      line => 
+        val List(key, value) = line.split(' ').filterNot(_.isEmpty).drop(1).toList
+        key -> value
+    }.toMap
+  }
+  def resourceVersions() = extractMap("version:")
+  def resourceResolvers() = extractMap("resolver:")
 }

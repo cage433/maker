@@ -29,15 +29,6 @@ class PropsTests extends FunSuite{
     }
   }
 
-  test("Properties are overriden"){
-    withTempFile{
-      file => 
-        writeToFile(file, "ProjectScalaVersion=Fred")
-        assert(MakerProps(file).ProjectScalaVersion() === "Fred")
-        assert(MakerProps().ProjectScalaVersion() === MakerProps.ProjectScalaVersion)
-    }
-  }
-
   test("Can override a maker property"){
     val props = MakerProps()
     assert(props.VimErrorFile() != file("fred"))

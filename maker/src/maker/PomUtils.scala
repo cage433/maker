@@ -35,7 +35,7 @@ object PomUtils{
           case m : Module => m.resources
         }
       }
-      (Resource("org.scala-lang", "scala-library", props.ProjectScalaVersion()) :: resources).distinct.map(
+      (Resource("org.scala-lang", "scala-library", baseProject.scalaVersion) :: resources).distinct.map(
         _.pomDependencyXML
       )
     }

@@ -39,7 +39,7 @@ case class DocTask(module : Module) extends Task{
       val optsFile = file(docDir, "docopts")
       writeToFile(optsFile, "-classpath " + module.compilePhase.compilationClasspath + " " + inputFiles.mkString(" "))
 
-      val scalaToolsClasspath = module.props.ProjectScalaCompilerJar().getAbsolutePath + ":" + module.props.ProjectScalaLibraryJar().getAbsolutePath + ":" + module.props.ProjectScalaReflectJar().getAbsolutePath
+      val scalaToolsClasspath = module.scalaCompilerJar.getAbsolutePath + ":" + module.scalaLibraryJar.getAbsolutePath + ":" + module.scalaReflectJar.getAbsolutePath
 
       val cmd = ScalaDocCmd(
         CommandOutputHandler.NULL.withSavedOutput,

@@ -6,8 +6,8 @@ import maker.task.compile._
 import maker.utils.RichString._
 import maker.MakerProps
 
-case class IDEAProjectGenerator(props : MakerProps) {
-  val scalaVersion = props.ProjectScalaVersion()
+case class IDEAProjectGenerator(project : Project) {
+  import project.{props, scalaVersion, scalaLibraryJar, scalaCompilerJar, scalaLibrarySourceJar}
 
   def generateTopLevelModule(rootDir:File, name:String, excludedFolders:List[String]) {
 
@@ -44,7 +44,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
 
     // For now we are insisting that there is a "scala directory" at this location: $PROJECT_DIR$/lib/scala/lib_managed/
     // Obviously, this isn't very good and we should allow it to be specified.
-    List(props.ProjectScalaLibraryJar(), props.ProjectScalaCompilerJar()).foreach{
+    List(scalaLibraryJar, scalaCompilerJar).foreach{
       jar => 
       if (!jar.exists) {
         throw new Exception("Maker requires that file " + jar + " + be present. Launch maker with the '-y' flag to download it")
@@ -63,7 +63,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
     </SOURCES>
   </library>
 </component>
-""" % (scalaVersion, props.ProjectScalaLibraryJar().getPath, props.ProjectScalaLibrarySourceJar())
+""" % (scalaVersion, scalaLibraryJar.getPath, scalaLibrarySourceJar.getPath)
     writeToFileIfDifferent(file(librariesDir, "scala_library_%s.xml" % scalaVersion.replace('.', '_')), scalaLibraryContent)
 
     val scalaCompilerLibraryContent = """<component name="libraryTable">
@@ -76,7 +76,7 @@ case class IDEAProjectGenerator(props : MakerProps) {
     <SOURCES />
   </library>
 </component>
-""" % (scalaVersion, props.ProjectScalaCompilerJar(), props.ProjectScalaLibraryJar())
+""" % (scalaVersion, scalaCompilerJar, scalaLibraryJar)
     writeToFileIfDifferent(file(librariesDir, "scala_compiler_%s.xml" % scalaVersion.replace('.', '_')), scalaCompilerLibraryContent)
 
     val scalaCompilerContent = """<?xml version="1.0" encoding="UTF-8"?>

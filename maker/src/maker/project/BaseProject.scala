@@ -1,7 +1,7 @@
 package maker.project
 
 import maker.task._
-import maker.{MakerProps, Resource}
+import maker.{MakerProps, Resource, ExternalResourceConfig}
 import maker.task.compile._
 import java.io.File
 import maker.utils.{FileUtils, MakerTestResults, ScreenUtils}
@@ -305,8 +305,8 @@ trait BaseProject {
     */
   def writeVimClasspath {
     var dirsAndJars = allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars).toList.distinct
-    dirsAndJars ::= props.ProjectScalaCompilerJar()
-    dirsAndJars ::= props.ProjectScalaLibraryJar()
+    dirsAndJars ::= scalaCompilerJar
+    dirsAndJars ::= scalaLibraryJar
     val cp = Module.asClasspathStr(dirsAndJars)
     val cpFile : File = file(name + "-classpath.sh")
     writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
@@ -333,8 +333,26 @@ trait BaseProject {
   def delete = recursiveDelete(rootAbsoluteFile)
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
+  def scalaVersion = BaseProject.hackyReadScalaVersion(projectRoot)
+  def projectScalaLibsDir = file(projectRoot, ".maker", "scala-libs").makeDirs
+  val scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
+  val scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
+  val scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")
+  val scalaLibrarySourceJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}-sources.jar")
+  val externalResourceConfigFile = file(projectRoot, "external-resource-config")
+  def resourceVersions() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceVersions()
+  def resourceResolvers() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceResolvers()
+  def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
 }
 
 object BaseProject{
+  private def hackyReadScalaVersion(projectRoot : File): String = {
+    val source = io.Source.fromFile(file(projectRoot, "external-resource-config"))
+    try {
+      source.getLines().find(_.contains("scala_version")).map{line => line.split("\\s+")(2)}.getOrElse{
+        throw new RuntimeException("Unable to read scala_version ")
+      }
+    } finally source.close()
+  }
   val logger = LoggerFactory.getLogger(this.getClass)
 }

@@ -9,7 +9,8 @@ object ZincCompile{
 
   lazy val zinc = new ZincClient()
   def apply(projectPhase : ModuleCompilePhase) : Int = {
-    val props = projectPhase.module.props
+    val module = projectPhase.module
+    val props = module.props
     val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
     var upstreamCaches = Map[File, File]()
     upstreamProjectPhases.foreach{
@@ -27,10 +28,10 @@ object ZincCompile{
     }
 
     // TODO - fix this hack
-    val extraJarArgs = if (props.ProjectScalaVersion().split('.')(1).toInt == 9)
+    val extraJarArgs = if (module.scalaVersion.split('.')(1).toInt == 9)
       Nil
     else 
-      List("-scala-extra", props.ProjectScalaReflectJar().getAbsolutePath)
+      List("-scala-extra", module.scalaReflectJar.getAbsolutePath)
     val arguments = List[String](
       "-log-level",
       "warn",
@@ -38,9 +39,9 @@ object ZincCompile{
       "-java-home",
       props.JavaHome().getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
-      props.ProjectScalaCompilerJar().getAbsolutePath,
+      module.scalaCompilerJar.getAbsolutePath,
       "-scala-library",
-      props.ProjectScalaLibraryJar().getAbsolutePath,
+      module.scalaLibraryJar.getAbsolutePath,
       "-classpath",
       projectPhase.classpathDirectoriesAndJars.filterNot(_ == projectPhase.outputDir).toList.map(_.getCanonicalFile.getAbsolutePath).mkString(File.pathSeparator),
       "-d",

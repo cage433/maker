@@ -63,7 +63,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 """
 
   private def build(p: BaseProject): String = {
-    implicit val props = p.props
+    import p.{props, scalaVersion}
     """
 import sbt._
 import Keys._
@@ -77,12 +77,12 @@ object MakerBuild extends Build {
   override val settings = super.settings ++ Seq(
     organization := """" + props.GroupId() + """",
     version := "1.0-SNAPSHOT", // no version in maker
-    scalaVersion := """" + props.ProjectScalaVersion() + """"
+    scalaVersion := """" + scalaVersion + """"
   )
 
   lazy val defaultSettings = customiseSettings(Seq(
     resolvers ++= Seq(
-      """ + props.resourceResolvers().map {
+      """ + p.resourceResolvers().map {
       case (k, v) => "\"" + k + "\" at \"" + v + "\""
     }.mkString("", ",\n" + " " * 6, "") + """),
     sourcesInBase := false,
@@ -118,7 +118,8 @@ object MakerBuild extends Build {
 """
   }
 
-  private def generateModule(m: Module)(implicit p: MakerProps): String = {
+  private def generateModule(m: Module): String = {
+    import m.props
     "lazy val " + refName(m) + " = customiseProject(module(\"" + m.name + """") dependsOn (
     """ + (m.immediateUpstreamModules.map(refName) ++
       // maker and sbt mean different things by a test dependency
@@ -126,13 +127,13 @@ object MakerBuild extends Build {
   ) settings (
     libraryDependencies ++= List(
       """ +
-    m.resources.filterNot(_.extension == "sources").map(formatResource).distinct.mkString(",\n" + " " * 6) + """
+    m.resources.filterNot(_.extension == "sources").map(formatResource(m, _)).distinct.mkString(",\n" + " " * 6) + """
     )
   ))"""
   }
 
-  private def formatResource(r: Resource)(implicit p: MakerProps): String = {
-    val scalaV = "_" + p.ProjectScalaVersion()
+  private def formatResource(m : Module, r: Resource): String = {
+    val scalaV = "_" + m.scalaVersion
     val artifact =
       if (r.artifactId.endsWith(scalaV))
         "\" %% \"" + r.artifactId.replace(scalaV, "")

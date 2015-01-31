@@ -33,6 +33,7 @@ import org.slf4j.{LoggerFactory, Logger}
       ~/.maker-resource-cache/org.scalacheck-scalacheck_2.9.2-1.9.jar
 */
 
+// TODO - refactor all of this
 case class Resource(
   groupId : String, 
   artifactId : String, 
@@ -98,7 +99,8 @@ case class Resource(
    * simply don't exist, and trying to download them every time we get an update can become
    * expensive if there are Nexus problems
    */
-  def update(props : MakerProps) : Resource.UpdateResult = {
+  def update(module : Module) : Resource.UpdateResult = {
+    import module.props
 
     resourceFile.dirname.makeDirs
 
@@ -111,7 +113,7 @@ case class Resource(
     if (resourceFile.exists){
       ResourceAlreadyExists
     } else {
-      val errors = download(props)
+      val errors = download(module)
       if (resourceFile.exists){
         log.info("Downloaded " + basename)
         if (cachedFile.doesNotExist)
@@ -131,21 +133,22 @@ case class Resource(
         ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
     }
   }
-  private def urls(props : MakerProps) : List[String] = {
-    val withExplicitVersion = resolveVersions(props.resourceVersions())
-    (preferredRepository.map(props.resourceResolvers()(_)).toList ::: props.resourceResolvers().values.toList).map{
+  private def urls(module : Module) : List[String] = {
+    val withExplicitVersion = resolveVersions(module.resourceVersions())
+    (preferredRepository.map(module.resourceResolvers()(_)).toList ::: module.resourceResolvers().values.toList).map{
       repository => 
         repository + "/" + withExplicitVersion.relativeURL
     }
   }
 
-  private def download(props : MakerProps) = {
+  private def download(module : Module) = {
     var errors = List[(Int, String)]()  // (curl return code, cmd)
-    urls(props).find{
+    urls(module).find{
       url =>
         val cmd = Command(
           "curl",
           "-s",
+          "-L",
           "-H", "Pragma: no-cache",
           url,
           "-f",

@@ -45,7 +45,7 @@ case class Project(
     allUpstreamModules.flatMap(_.testClassNames())
   }
   def immediateUpstreamTestModules : List[Module] = Nil
-  private val generator = IDEAProjectGenerator(props)
+  private val generator = IDEAProjectGenerator(this)
   def allModules = allUpstreamModules.flatMap(_.allUpstreamModules).distinct
   def generateIDEAProject() {
 
