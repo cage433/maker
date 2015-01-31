@@ -2,7 +2,7 @@ package maker.task.tasks
 
 import maker.project.BaseProject
 import maker.task.{Task, TaskResult, DefaultTaskResult}
-import maker.utils.{Stopwatch, EitherUtils, FileUtils}
+import maker.utils._
 import scala.util.{Either, Left, Right}
 import java.io._
 import maker.utils.FileUtils._
@@ -32,7 +32,6 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   type ErrorMessage = String
   type JsonResponse = String
   type StagingRepo = String
-  type ResponseEntityString = String
   def name = s"Publish $baseProject to Sonatype"
 
   def upstreamTasks = 
@@ -51,7 +50,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
     } match {
       case Left(error) => 
         DefaultTaskResult(this, false, sw, message = Some(error))
-      case Right(output) => 
+      case Right(_) => 
         DefaultTaskResult(this, true, sw)
     }
   }
@@ -59,38 +58,10 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   private def makeBundle(tmpDir : File) : Either[ErrorMessage, File] = {
     import baseProject.{publishLocalPomDir, publishLocalJarDir}
 
-    val bundleJar = file("/home/alex/tmp/", "bundle.jar")
+    val bundleJar = file(tmpDir, "bundle.jar")
 
-    val BUFFER_SIZE=1000 * 10
-    val jarOutputStream = new JarOutputStream(new FileOutputStream(bundleJar))
-    try {
-      (allFiles(publishLocalPomDir(version)) ++ allFiles(publishLocalJarDir(version))).filterNot(_.isDirectory).foreach{
-        file => 
-          val fis = new FileInputStream(file)
-          try {
-            val buffer = Array.fill[Byte](BUFFER_SIZE)(0)
-            val entry = new JarEntry(file.getName())
-            jarOutputStream.putNextEntry(entry)
-
-            var endOfFile = false
-            while (!endOfFile){
-              val bytesRead = fis.read(buffer, 0, BUFFER_SIZE)
-              if (bytesRead == -1)
-                endOfFile = true
-              else
-                jarOutputStream.write(buffer, 0, bytesRead)
-            }
-  
-          } finally {
-            fis.close
-          }
-      }
-      Right(bundleJar)
-    } catch {
-      case e : Exception => 
-        Left(e.getMessage)
-    } finally {
-      jarOutputStream.close
+    BuildJar.build(bundleJar, publishLocalPomDir(version) :: publishLocalJarDir(version) :: Nil).map{
+      _ => bundleJar
     }
   }
 
@@ -160,7 +131,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
     req.setEntity(entity)
     withHttpClient{ client =>
       val response = client.execute(req)
-      if (response.getStatusLine.getStatusCode == 201 /* created */){
+      if (response.getStatusLine.getStatusCode == HttpStatus.SC_CREATED){
         Right(EntityUtils.toString(response.getEntity))
       } else
         Left(s"${response}")

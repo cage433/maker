@@ -189,6 +189,8 @@ object FileUtils extends Asserting{
       f :: Option(f.listFiles).map(_.toList.flatMap(allFiles)).getOrElse(Nil)
     else f :: Nil
 
+  def allProperFiles(directory : File) : Seq[File] = allFiles(directory).filterNot(_.isDirectory)
+
   def lastModifiedFileTime(files : Iterable[File]) =
     files.toList.flatMap(allFiles).map(_.lastModified).sortWith(_ > _).headOption
 
