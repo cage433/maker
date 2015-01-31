@@ -171,7 +171,7 @@ recompile_project_if_required(){
 }
 
 maker_classpath(){
-  cp=$(external_jars)
+  cp=$(ls "$MAKER_ROOT_DIR"/utils/lib_managed/*.jar | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP)
   if [ $MAKER_DEVELOPER_MODE ];
   then
     for module in utils maker; do
@@ -189,11 +189,6 @@ run_command(){
 }
 scala_jars() {
   ls "$MAKER_ROOT_DIR"/.maker/repl-libs/*.jar \
-    | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
-}
-external_jars() {
-  ls "$MAKER_ROOT_DIR"/utils/lib_managed/*.jar \
-     "$MAKER_ROOT_DIR"/test-reporter/lib_managed/*.jar \
     | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
 }
 
