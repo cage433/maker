@@ -5,7 +5,7 @@ import maker.project.{Module, BaseProject, Project}
 import maker.task._
 import maker.task.compile._
 import maker.utils.FileUtils._
-import maker.utils.{Stopwatch, Int}
+import maker.utils._
 import maker.utils.os.Command
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
@@ -19,7 +19,7 @@ case class PackageJarTask(
   compilePhase : CompilePhase,
   version : Option[String]
 ) 
-  extends Task with ToBooleanOps 
+  extends Task with ToBooleanOps with EitherUtils
 {
 
   def name = compilePhase match {
@@ -39,60 +39,31 @@ case class PackageJarTask(
   // TODO - find out why this is synchronized
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
 
-    if (!baseProject.packageDir.exists)
-      baseProject.packageDir.mkdirs
+    import baseProject.{packageDir, packageJar, sourcePackageJar, docPackageJar, docOutputDir}
+    import BuildJar.{build => buildJar}
 
-    def jarDirectories(jarFile : File, directories : Seq[File]) = {
-      jarFile.delete
+    if (!packageDir.exists)
+      packageDir.mkdirs
 
-      def jarCommand(directory : File) = {
-        Command(
-          baseProject.props.Jar().getAbsolutePath, 
-          if (jarFile.exists) "uf" else "cf",
-          jarFile.getAbsolutePath,
-          "-C", directory.getAbsolutePath, "."
-        ).withSavedOutput
-      }
-
-      // Add contents of each directory to the jar. Stopping
-      // at the first failure
-      directories.filter(_.exists).foldLeft(None : Option[String]){
-        case (maybeFailure, directory) => 
-
-          maybeFailure match {
-            case e : Some[_] => e
-            case None => {
-              val cmd = jarCommand(directory)
-              if (cmd.exec == 0)
-                None
-              else
-                Some(cmd.savedOutput)
-            }
-          }
-
-      }
-    }
-
-    val maybeError = 
-      jarDirectories(
-        baseProject.packageJar(compilePhase, version),
-        modules.map(_.outputDir(compilePhase)) ++ modules.map(_.resourceDir(compilePhase))
-      ) orElse 
-      jarDirectories(
-        baseProject.sourcePackageJar(compilePhase, version),
-        modules.flatMap(_.sourceDirs(compilePhase))
-      ) orElse 
-      jarDirectories(
-        baseProject.docPackageJar,
-        List(baseProject.docOutputDir)
-      )
-
-    maybeError match {
-      case Some(error) =>
-        DefaultTaskResult(this, false, sw, message = Some(error))
-      case None =>
+    val result = buildJar(
+                    packageJar(compilePhase, version),
+                    modules.map(_.outputDir(compilePhase)) ++ modules.map(_.resourceDir(compilePhase))
+                  ) andThen
+                  buildJar(
+                    sourcePackageJar(compilePhase, version),
+                    modules.flatMap(_.sourceDirs(compilePhase))
+                  ) andThen
+                  buildJar(
+                    docPackageJar,
+                    docOutputDir :: Nil
+                  )
+    result match {
+      case Right(_) => 
         DefaultTaskResult(this, true, sw)
+      case Left(error) => 
+        DefaultTaskResult(this, false, sw, message = Some(error))
     }
+
   }
 }
 

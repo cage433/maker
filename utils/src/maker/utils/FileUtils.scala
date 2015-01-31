@@ -156,33 +156,6 @@ object FileUtils extends Asserting{
     root.subDirs.foreach(traverseDirectories(_, fn))
   }
 
-  def findInPaths(props : MakerProps, paths : List[File], predicate : String => Boolean) : List[File] = {
-    def find(p : List[File]) : List[File] = {
-      p match {
-        case Nil | null => Nil
-        case x :: xs => x match {
-          case z if z.isFile => z match {
-            case f if (f.getName.endsWith(".jar")) => if (findInArchive(props, f, predicate)) f :: find(xs) else find(xs)
-            case f => if (predicate(f.getName)) f :: find(xs) else find(xs)
-          }
-          case d if (d.isDirectory) => find(d.safeListFiles) ::: find(xs)
-          case _ => find(xs)
-        }
-      }
-    }
-    find(paths)
-  }
-  /// extracts the table of contents for the archive and looks for a matching line
-  def findInArchive(props : MakerProps, file : File, predicate : String => Boolean) : Boolean = {
-    import maker.utils.os._
-    val coh = new CommandOutputHandler(None, Some(new StringBuffer()), false)
-    val cmd = new Command(coh, None, true, props.Jar().getAbsolutePath, "-tf", file.getAbsolutePath)
-    cmd.exec() match {
-      case 0 => cmd.savedOutput.split('\r').exists(predicate)
-      case _ => false
-    }
-  }
-
   /// recursively enumerate all files within a given dir (returns the supplied file if it's not a directory)
   def allFiles(f : File) : List[File] =
     if (f.isDirectory)

@@ -7,8 +7,9 @@ import maker.project.{Module, TestModule}
 import maker.utils.FileUtils._
 import maker.utils.{CustomMatchers, Stopwatch}
 import maker.MakerProps
-import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
+import java.util.jar.JarFile
+import scala.collection.JavaConversions._
 
 class PackageJarTaskTests extends FreeSpec with Matchers{
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
@@ -104,11 +105,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
 
 object PackageJarTaskTests extends Matchers with CustomMatchers{
   def checkJarContainsDirectoryContents(dir : File, jarFile : File){
-    val jarContents = {
-      val cmd = Command(MakerProps().Jar().getAbsolutePath, "tvf", jarFile.getPath).withSavedOutput
-      cmd.exec
-      cmd.savedOutput.split("\n")
-    }
+    val jarContents = new JarFile(jarFile).entries.toList.map(_.getName)
     val relativePaths = allFiles(dir).filter(_.isFile).map(_.relativeTo(dir).getPath)
 
     relativePaths should not be empty // Otherwise why are we testing this

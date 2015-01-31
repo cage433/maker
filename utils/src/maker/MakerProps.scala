@@ -30,7 +30,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   import MakerProps._
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
-  object Jar extends Default(JavaHome() + "/bin/jar") with IsFile
   object MakerScalaVersion extends Default(DefaultScalaVersion) with IsString
   object ProjectScalaVersion extends Default(DefaultScalaVersion) with IsString
   object HomeDir extends SystemProperty("user.home") with IsFile

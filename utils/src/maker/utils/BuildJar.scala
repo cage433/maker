@@ -14,7 +14,7 @@ object BuildJar{
     jarFile.delete
     val jarOutputStream = new JarOutputStream(new FileOutputStream(jarFile))
     try {
-      directories.foreach{
+      directories.filter(_.exists).foreach{
         dir => 
           FileUtils.allProperFiles(dir).foreach{
             file => 

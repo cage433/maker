@@ -5,5 +5,8 @@ import scala.util.Either.RightProjection
 
 trait EitherUtils {
   implicit def rightBias[L, R](either: Either[L, R]): RightProjection[L, R] = either.right
+  implicit class RichEither[L, R](either : Either[L, R]){
+    def andThen(nextEither : => Either[L, R]) = if (either.isLeft) either else nextEither
+  }
 }
 
