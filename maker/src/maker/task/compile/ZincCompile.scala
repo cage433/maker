@@ -26,6 +26,11 @@ object ZincCompile{
       case list => List("-analysis-map", list.mkString(","))
     }
 
+    // TODO - fix this hack
+    val extraJarArgs = if (props.ProjectScalaVersion().split('.')(1).toInt == 9)
+      Nil
+    else 
+      List("-scala-extra", props.ProjectScalaReflectJar().getAbsolutePath)
     val arguments = List[String](
       "-log-level",
       "warn",
@@ -36,8 +41,6 @@ object ZincCompile{
       props.ProjectScalaCompilerJar().getAbsolutePath,
       "-scala-library",
       props.ProjectScalaLibraryJar().getAbsolutePath,
-      "-scala-extra",
-      props.ProjectScalaReflectJar().getAbsolutePath,
       "-classpath",
       projectPhase.classpathDirectoriesAndJars.filterNot(_ == projectPhase.outputDir).toList.map(_.getCanonicalFile.getAbsolutePath).mkString(File.pathSeparator),
       "-d",
@@ -46,7 +49,7 @@ object ZincCompile{
       CompileOrder.Mixed.toString,
       "-analysis-cache",
       projectPhase.compilationCacheFile.getAbsolutePath
-    ) :::
+    ) ::: extraJarArgs :::
     projectPhase.module.scalacOptions.map("-S" +_) :::
     projectPhase.module.javacOptions.map("-C" +_) :::
     analysisMapArguments ::: 

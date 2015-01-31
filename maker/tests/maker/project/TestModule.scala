@@ -91,10 +91,8 @@ object TestModule{
   def makeTestProps(root : File) : MakerProps = {
     val props = MakerProps()
     var props_ : MakerProps = MakerProps(
-      "ShowCompilerOutput", "false", 
+      "ShowCompilerOutput", "true", 
       "GroupId", "MakerTestGroupID",
-      "ProjectScalaCompilerJar", props.ProjectScalaCompilerJar().getPath,
-      "ProjectScalaLibraryJar", props.ProjectScalaLibraryJar().getPath,
       "TmuxMessaging", "false",
       "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
       "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath,
