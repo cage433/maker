@@ -30,7 +30,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   import MakerProps._
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
-  object MakerScalaVersion extends Default(DefaultScalaVersion) with IsString
   object ProjectScalaVersion extends Default(DefaultScalaVersion) with IsString
   object HomeDir extends SystemProperty("user.home") with IsFile
   object VimErrorFile extends Default("vim-compile-output") with IsFile
@@ -50,7 +49,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   object ProjectScalaLibraryJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaReflectJar extends Default(file("scala-libs/scala-reflect-" + ProjectScalaVersion() + ".jar")) with IsFile
   object ProjectScalaLibrarySourceJar extends Default(file("scala-libs/scala-library-" + ProjectScalaVersion() + "-sources.jar")) with IsFile
-  object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + MakerScalaVersion() + ".jar")) with IsFile
+  object ProjectScalaCompilerJar extends Default(file("scala-libs/scala-compiler-" + ProjectScalaVersion() + ".jar")) with IsFile
 
   /**
    * The debug files should contain a single number, indicating the port to use for remote debugging.

@@ -16,6 +16,10 @@ class Props2(overrides : Map[String, String]){
     def variableNames = "JAVA_HOME" :: "JDK_HOME" :: Nil
   }
 
+  object Java extends RegularProperty with IsFile with HasDefaultValue{
+    def default = file(JavaHome(), "bin", "java")
+  }
+
   object ExecMode extends SystemProperty with IsBoolean with HasDefaultValue{
     def propertyKey = "maker.execmode"
     def default = false

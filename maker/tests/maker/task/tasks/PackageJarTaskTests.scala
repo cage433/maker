@@ -100,7 +100,6 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
         }
     }
   }
-
 }
 
 object PackageJarTaskTests extends Matchers with CustomMatchers{

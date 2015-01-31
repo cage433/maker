@@ -50,7 +50,8 @@ case class PublishLocalTask(
      val basename :: extension :: Nil = file.basename.split('.').toList
      s"$basename-$version.$extension"
     }
-    FileUtils.writeToFile(baseProject.publishLocalPomFile(version), PomUtils.pomXmlText(baseProject, version))
+    // TODO - fix the includeUpstreamModules hack
+    FileUtils.writeToFile(baseProject.publishLocalPomFile(version), PomUtils.pomXmlText(baseProject, version, includeUpstreamModules = modules.size > 1))
     var result = true
     if (signArtifacts)
       result = signFile(baseProject.publishLocalPomFile(version))

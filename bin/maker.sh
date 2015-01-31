@@ -31,7 +31,7 @@ fi
 MAKER_ROOT_DIR="$( cd "$(dirname $( dirname "${BASH_SOURCE[0]}" ))" && pwd )"
 PROJECT_ROOT_DIR=`pwd`
 
-MAKER_JAR=$MAKER_ROOT_DIR/maker.jar
+MAKER_JAR=$MAKER_ROOT_DIR/.maker/maker-libs/maker.jar
 
 MAKER_HEAP_SPACE=4000m
 MAKER_PERM_GEN_SPACE=1000m
@@ -59,9 +59,6 @@ main() {
   saveStty
 
   update_external_jars && check_for_errors
-  if [ -z $MAKER_DEVELOPER_MODE ]; then
-    bootstrap_maker_if_required && check_for_errors
-  fi
   recompile_project_if_required && check_for_errors
 
   launch_maker_repl
@@ -78,6 +75,24 @@ update_external_jars(){
   done
   
 
+  MAKER_SCALA_VERSION="2.10.4"
+  cat > maker-scala-resource-list <<HERE
+org.scala-lang scala-library $MAKER_SCALA_VERSION path:scala-library-$MAKER_SCALA_VERSION.jar
+org.scala-lang jline $MAKER_SCALA_VERSION path:jline-$MAKER_SCALA_VERSION.jar
+org.scala-lang scala-compiler $MAKER_SCALA_VERSION path:scala-compiler-$MAKER_SCALA_VERSION.jar
+org.scala-lang scala-reflect $MAKER_SCALA_VERSION path:scala-reflect-$MAKER_SCALA_VERSION.jar
+HERE
+  update_resources $MAKER_ROOT_DIR/.maker/repl-libs maker-scala-resource-list 
+  rm maker-scala-resource-list
+
+  # TODO - add version to maker jars
+  cat > maker-jar-list << HERE
+com.github.cage433 maker-test-reporter 0.01 path:maker-test-reporter.jar
+com.github.cage433 maker 0.01 path:maker.jar
+HERE
+  update_resources $MAKER_ROOT_DIR/.maker/maker-libs maker-jar-list 
+  rm maker-jar-list
+
   cat > dynamic-scala-resource-list <<HERE
 org.scala-lang scala-library {scala_version} classifier:sources path:scala-library-{scala_version}-sources.jar 
 org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.jar
@@ -85,7 +100,7 @@ org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version
 org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
 org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
 org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
-org.scala-lang jline {scala_version} path:jline-{scala_version}.jar
+org.scala-lang jline {scala_version} path:jline-{scala_version}-sources.jar
 org.scala-lang jline {scala_version} classifier:sources path:jline-{scala_version}.jar
 HERE
   update_resources $MAKER_ROOT_DIR/scala-libs dynamic-scala-resource-list 
@@ -93,60 +108,8 @@ HERE
   update_resources $PROJECT_ROOT_DIR/scala-libs dynamic-scala-resource-list  
   rm dynamic-scala-resource-list
 
-  # TODO - add version to test reporter jar
-  cat > maker-resource-list <<HERE
-com.github.cage433 maker-test-reporter 0.01 path:maker-test-reporter.jar
-HERE
-  update_resources $PROJECT_ROOT_DIR/.maker-libs maker-resource-list
-  rm maker-resource-list
 }
 
-build_jar(){
-  read jar_name src_files <<<$(echo $*)
-  src_files=$( echo "$src_files" | $FIXCP )
-
-  # Not sure why it's necessary to go to the maker root directory. Get 
-  # strange compilation errors otherwise
-  local saved_dir=$(pwd)
-  cd $MAKER_ROOT_DIR
-
-  echo "Building $jar_name"
-  rm -f $jar_name
-
-  if test -x /bin/mktemp; then
-    TEMP_OUTPUT_DIR=`mktemp -d maker-tmp-XXXXXXXXXX`
-  else
-    TEMP_OUTPUT_DIR=maker-tmp-$$-$USER-$RANDOM
-    mkdir -p $TEMP_OUTPUT_DIR
-  fi
-
-  java -classpath $(scala_jars)${PSEP}$(external_jars) \
-    -Dscala.usejavacp=true \
-    scala.tools.nsc.Main \
-    -d $TEMP_OUTPUT_DIR \
-    $src_files 2>&1 \
-    | tee $MAKER_ROOT_DIR/vim-compile-output ; test ${PIPESTATUS[0]} -eq 0 || exit -1
-
-  run_command "\"$JAVA_HOME/bin/jar\" cf $jar_name -C $TEMP_OUTPUT_DIR . " || exit -1
-  rm -rf $TEMP_OUTPUT_DIR
-  cd "$saved_dir"
-}
-
-bootstrap_maker_if_required() {
-  if [ ! -e $MAKER_JAR ]  || \
-     has_newer_src_files $MAKER_ROOT_DIR/maker/src $MAKER_JAR || \
-     has_newer_src_files $MAKER_ROOT_DIR/utils/src $MAKER_JAR;
-  then
-    echo "Building maker"
-
-    for module in utils maker; do
-      SRC_FILES="$SRC_FILES $(find $MAKER_ROOT_DIR/$module/src -name '*.scala' | xargs)"
-    done
-    build_jar $MAKER_JAR $SRC_FILES
-
-    MAKER_RECOMPILE_PROJECT=true
-  fi
-}
 
 launch_maker_repl(){
   if [ ! -z $MAKER_CMD ];
@@ -228,7 +191,7 @@ run_command(){
   eval "$1" || (echo "failed to run $1 " && exit -1)
 }
 scala_jars() {
-  ls "$MAKER_ROOT_DIR"/scala-libs/*.jar \
+  ls "$MAKER_ROOT_DIR"/.maker/repl-libs/*.jar \
     | xargs | sed 's/ /'${PSEP}'/g' | $FIXCP
 }
 external_jars() {
@@ -249,7 +212,6 @@ process_options() {
       -d | --clean-project-class-files) MAKER_RECOMPILE_PROJECT=true; shift 1;;
       -m | --mem-heap-space ) MAKER_HEAP_SPACE=$2; shift 2;;
       -y | --do-ivy-update ) MAKER_IVY_UPDATE=true; shift;;
-      -b | --boostrap ) MAKER_BOOTSTRAP=true; shift;;
       -x | --allow-remote-debugging ) MAKER_JAVA_OPTS="$MAKER_JAVA_OPTS -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"; shift;;
       -z | --developer-mode ) MAKER_DEVELOPER_MODE=true; shift;;
       -j | --use-jrebel ) MAKER_JAVA_OPTS="$MAKER_JAVA_OPTS -javaagent:/usr/local/jrebel/jrebel.jar "; shift 1;;
@@ -292,11 +254,6 @@ cat << EOF
     -y, --update-external-jars
       DEPRECATED
       Download external jars and any other resources. Should happen automaticaly
-
-    -b, --boostrap 
-      DEPRECATED
-      Builds maker.jar from scratch. This should happen automatically if the
-      jar is older than any maker source file.
 
     -x, --allow-remote-debugging
       runs a remote JVM

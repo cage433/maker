@@ -15,20 +15,29 @@ object PomUtils{
     </dependency>
   }
 
-
       //<?xml version="1.0" encoding="UTF-8"?>
-  def pomXml(baseProject : BaseProject, version : String) = {
+  def pomXml(baseProject : BaseProject, version : String, includeUpstreamModules : Boolean) = {
     import baseProject.{props, name, allStrictlyUpstreamModules}
     val groupId = props.GroupId()
-    val moduleDependencies = allStrictlyUpstreamModules.sortWith(_.name < _.name).map(
-      _.pomDependencyXML(version)
-    )
-    val externalDependencies = baseProject match {
-      case _ : Project => Nil
-      case m : Module => {
-        Resource("org.scala-lang", "scala-library", props.ProjectScalaVersion()).pomDependencyXML ::
-          m.resources.map(_.pomDependencyXML)
+    val moduleDependencies = if (includeUpstreamModules) 
+      Nil
+    else 
+      allStrictlyUpstreamModules.sortWith(_.name < _.name).map(
+        _.pomDependencyXML(version)
+      )
+
+    val externalDependencies = {
+      val resources = if (includeUpstreamModules)
+        baseProject.allUpstreamModules.flatMap(_.resources)
+      else {
+        baseProject match {
+          case _ : Project => Nil
+          case m : Module => m.resources
+        }
       }
+      (Resource("org.scala-lang", "scala-library", props.ProjectScalaVersion()) :: resources).distinct.map(
+        _.pomDependencyXML
+      )
     }
 
     <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -46,9 +55,9 @@ object PomUtils{
     </project>
   }
 
-  def pomXmlText(baseProject : BaseProject, version : String) = {
+  def pomXmlText(baseProject : BaseProject, version : String, includeUpstreamModules : Boolean) = {
     val xmlPrinter = new PrettyPrinter(160, 2)
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
-      xmlPrinter.format(pomXml(baseProject, version)) 
+      xmlPrinter.format(pomXml(baseProject, version, includeUpstreamModules)) 
   }
 }

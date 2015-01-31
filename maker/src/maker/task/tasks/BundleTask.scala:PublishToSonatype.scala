@@ -58,7 +58,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   private def makeBundle(tmpDir : File) : Either[ErrorMessage, File] = {
     import baseProject.{publishLocalPomDir, publishLocalJarDir}
 
-    val bundleJar = file(tmpDir, "bundle.jar")
+    val bundleJar = file("/home/alex/tmp", "bundle.jar")
 
     BuildJar.build(bundleJar, publishLocalPomDir(version) :: publishLocalJarDir(version) :: Nil).map{
       _ => bundleJar
@@ -98,11 +98,11 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   }
 
 
-  val proxy = new HttpHost("127.0.0.1", 4128, "http")
+//  val proxy = new HttpHost("127.0.0.1", 4128, "http")
   private def withHttpClient[U](body: HttpClient => U) : U = {
 
     val client = new DefaultHttpClient()
-    client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
+//    client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
     try {
       client.getCredentialsProvider.setCredentials(
         new AuthScope(credentialHost, AuthScope.ANY_PORT),
@@ -128,12 +128,13 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
 
   def Post(path:String, entity : AbstractHttpEntity) : Either[ErrorMessage, String] = {
     val req = new HttpPost(s"${sonatypeRepository}$path")
+    println(s"Request = $req")
     req.setEntity(entity)
     withHttpClient{ client =>
       val response = client.execute(req)
-      if (response.getStatusLine.getStatusCode == HttpStatus.SC_CREATED){
+      if (response.getStatusLine.getStatusCode == HttpStatus.SC_CREATED)
         Right(EntityUtils.toString(response.getEntity))
-      } else
+      else 
         Left(s"${response}")
     }
   }

@@ -50,7 +50,7 @@ object ZincCompile{
     projectPhase.module.scalacOptions.map("-S" +_) :::
     projectPhase.module.javacOptions.map("-C" +_) :::
     analysisMapArguments ::: 
-    projectPhase.sourceFiles.toList.map(_.getAbsolutePath)
+      projectPhase.sourceFiles.toList.map(_.getAbsolutePath)
 
     val Parsed(rawSettings, residual, errors) = Settings.parse(
       arguments
