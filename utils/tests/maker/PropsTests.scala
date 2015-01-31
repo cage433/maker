@@ -34,7 +34,7 @@ class PropsTests extends FunSuite{
       file => 
         writeToFile(file, "ProjectScalaVersion=Fred")
         assert(MakerProps(file).ProjectScalaVersion() === "Fred")
-        assert(MakerProps().ProjectScalaVersion() === MakerProps.DefaultScalaVersion)
+        assert(MakerProps().ProjectScalaVersion() === MakerProps.ProjectScalaVersion)
     }
   }
 

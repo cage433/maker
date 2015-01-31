@@ -57,7 +57,7 @@ class PublishTaskTests extends FreeSpec {
               |    <dependency>
               |      <groupId>org.scala-lang</groupId>
               |      <artifactId>scala-library</artifactId>
-              |      <version>""".stripMargin + MakerProps.DefaultScalaVersion + """</version>
+              |      <version>""".stripMargin + MakerProps.ProjectScalaVersion + """</version>
               |      <scope>compile</scope>
               |    </dependency>
               |  </dependencies>

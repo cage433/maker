@@ -30,7 +30,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   import MakerProps._
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
-  object ProjectScalaVersion extends Default(DefaultScalaVersion) with IsString
+  object ProjectScalaVersion extends Default(MakerProps.hackyReadVersion("scala_version")) with IsString
   object HomeDir extends SystemProperty("user.home") with IsFile
   object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
@@ -119,8 +119,7 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
 object MakerProps {
 
-  val DefaultScalaVersion = hackyReadVersion("scala_version")
-  val DefaultSbtVersion = hackyReadVersion("sbt_version")
+  val ProjectScalaVersion = hackyReadVersion("scala_version")
 
   private def hackyReadVersion(libname: String): String = {
     val source = io.Source.fromFile("external-resource-config")

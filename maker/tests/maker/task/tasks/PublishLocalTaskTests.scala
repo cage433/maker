@@ -33,7 +33,7 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
   private def checkPublishedPomIncludesAllDependencies(module : Module, version : String){
     val pom = XML.loadFile(module.publishLocalPomFile(version))
     val dependencies = pom \\ "dependency"
-    val resources = Resource("org.scala-lang", "scala-library", MakerProps.DefaultScalaVersion) :: module.resources
+    val resources = Resource("org.scala-lang", "scala-library", MakerProps.ProjectScalaVersion) :: module.resources
 
     resources should allSatisfy {
       resource : Resource => 
