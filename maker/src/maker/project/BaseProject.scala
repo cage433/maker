@@ -19,7 +19,7 @@ trait BaseProject {
   protected def root : File
   def projectRoot : File
   val rootAbsoluteFile = root.asAbsoluteFile
-  def testReporterJar = file(projectRoot, ".maker-libs", "maker-test-reporter.jar")
+  def testReporterJar = file(projectRoot, ".maker", "maker-libs", "maker-test-reporter.jar")
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
   def setUp(graph : Dependency.Graph) : Boolean = {
