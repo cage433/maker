@@ -13,7 +13,7 @@ class ExampleProjectTests extends FunSpec {
   val makerScript = file("bin/maker.sh").getAbsolutePath
 
   describe("Single module project"){
-    it("Should run its tests"){
+    ignore("Should run its tests"){
       val moduleRootFile = file("examples/single-module-project")
       assert(moduleRootFile.exists, "Module doesn't exist")
       val cmd = Command(
@@ -28,7 +28,7 @@ class ExampleProjectTests extends FunSpec {
   }
   
   describe("Multi module project"){
-    it("Should run its tests"){
+    ignore("Should run its tests"){
       val moduleRootFile = file("examples/multi-module-project")
       assert(moduleRootFile.exists, "Module doesn't exist")
       val script = file(moduleRootFile, "run-tests.sh").getAbsolutePath

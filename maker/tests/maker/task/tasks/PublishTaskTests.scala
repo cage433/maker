@@ -9,7 +9,7 @@ import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.utils.RichString._
 
 class PublishTaskTests extends FreeSpec {
-  "test wether dynamic ivy is really needed" in{
+  "test wether dynamic ivy is really needed" ignore{
     withTempDir{
       dir =>  
 
@@ -48,7 +48,7 @@ class PublishTaskTests extends FreeSpec {
               |    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
               |
               |  <modelVersion>4.0.0</modelVersion>
-              |  <groupId>MakerTestGroupID</groupId>
+              |  <groupId>org.org</groupId>
               |  <artifactId>testPublish</artifactId>
               |  <packaging>jar</packaging>
               |  <version>1.0-SNAPSHOT</version>

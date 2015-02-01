@@ -63,6 +63,8 @@ trait BaseProject {
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
   def publishToSonatype(version : String) = execute(Build(props.NumberOfTaskThreads(), PublishToSonatype(this, version)))
+  def publishSonatypeSnapshot(version : String) = publish(version, "https://oss.sonatype.org/content/repositories/snapshots/")
+
   def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
     val tasks = if (includeUpstreamModules)
         PublishLocalTask(this, allUpstreamModules, version, signArtifacts) :: Nil

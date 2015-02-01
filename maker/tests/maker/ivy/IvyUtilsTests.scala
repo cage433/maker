@@ -11,12 +11,15 @@ class IvyUtilsTests extends FreeSpec {
       dir => 
         val a = new TestModule(file(dir, "a").makeDir, "a"){
           override def ivySettingsFile = file(dir, "ivysettings.xml")
+          override def organization = Some("MakerTestGroupID")
         }
         val b = new TestModule(file(dir, "b").makeDir, "b", List(a)){
           override def ivySettingsFile = file(dir, "ivysettings.xml")
+          override def organization = Some("MakerTestGroupID")
         }
         val c = new Project("c", dir, List(a, b)){
           override def ivySettingsFile = file(dir, "ivysettings.xml")
+          override def organization = Some("MakerTestGroupID")
         }
  
         

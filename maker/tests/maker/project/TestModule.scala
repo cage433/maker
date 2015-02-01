@@ -35,7 +35,7 @@ class TestModule(
     name => 
       Resource("org.scala-lang",name, "2.10.4", Some(projectScalaLibsDir)).update(this)
   }
-  override def testReporterJar = file(".maker-libs", "maker-test-reporter.jar").asAbsoluteFile
+  override def testReporterJar = file(".maker/", "maker-libs", "maker-test-reporter.jar").asAbsoluteFile
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
     """val %s = new TestModule(file("%s"), "%s", %s, %s)""" % (name, root.getAbsolutePath, name, 
