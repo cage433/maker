@@ -9,7 +9,7 @@ import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.utils.RichString._
 
 class PublishTaskTests extends FreeSpec {
-  "test wether dynamic ivy is really needed" ignore {
+  "test wether dynamic ivy is really needed" in{
     withTempDir{
       dir =>  
 
@@ -28,6 +28,7 @@ class PublishTaskTests extends FreeSpec {
 
         val proj = new TestModule(dir, "testPublish") with HasDummyCompiler{
           override def ivySettingsFile = ivySettingsFile_
+          override def organization = Some("org.org")
         }
 
         proj.writeSrc(

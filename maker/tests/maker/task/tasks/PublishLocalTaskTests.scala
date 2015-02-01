@@ -48,14 +48,13 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
     val moduleRoot = file(dir, name)
-    val props = MakerProps("GroupId",  "maker-test-group")
     new TestModule(
       moduleRoot,
       name,
-      overrideProps = Some(props),
       upstreamProjects = upstreamModules
     ) with HasDummyCompiler{
       override def projectRoot = dir
+      override def organization = Some("org.org")
     }
   }
 
@@ -132,7 +131,9 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
         val version = "1.0-SNAPSHOT"
         val a = createTestModule(dir, "multi-module-publish-local-test-a")
         val b = createTestModule(dir, "multi-module-publish-local-test-b", upstreamModules = List(a))
-        val topLevel = Project("TopLevelProject", dir, List(b))
+        val topLevel =new  Project("TopLevelProject", dir, List(b)){
+          override def organization = Some("org.org")
+        }
 
         topLevel.publishLocal(version)
 
