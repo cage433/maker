@@ -12,7 +12,7 @@ class PomUtilsTests extends FreeSpec {
       dir => 
         val a = new TestModule(file(dir, "a"), "a")
         val b = new TestModule(file(dir, "b"), "b", List(a))
-        val c = new Project("c", dir, List(b), props = TestModule.makeTestProps(dir) ++ ("GroupId", "PomUtilsTests"))
+        val c = new Project("c", dir, List(b))
 
         assert(
           PomUtils.pomXml(c, "42", false) ===

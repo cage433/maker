@@ -125,21 +125,21 @@ HERE
   update_resources $MAKER_ROOT_DIR/.maker/repl-libs maker-scala-resource-list 
   rm maker-scala-resource-list
 
-  # TODO - add version to maker jars
-  cat > maker-jar-list << HERE
-com.github.cage433 maker-test-reporter 0.01 path:maker-test-reporter.jar
-com.github.cage433 maker 0.01 path:maker.jar
-HERE
-  update_resources $MAKER_ROOT_DIR/.maker/maker-libs maker-jar-list 
-  rm maker-jar-list
+#  # TODO - add version to maker jars
+#  cat > maker-jar-list << HERE
+#com.github.cage433 maker-test-reporter 0.01 path:maker-test-reporter.jar
+#com.github.cage433 maker 0.01 path:maker.jar
+#HERE
+#  update_resources $MAKER_ROOT_DIR/.maker/maker-libs maker-jar-list 
+#  rm maker-jar-list
 
   cat > dynamic-scala-resource-list <<HERE
-org.scala-lang scala-library {scala_version} classifier:sources path:scala-library-{scala_version}-sources.jar 
-org.scala-lang scala-library {scala_version} path:scala-library-{scala_version}.jar
-org.scala-lang scala-compiler {scala_version} path:scala-compiler-{scala_version}.jar
-org.scala-lang scala-compiler {scala_version} classifier:sources path:scala-compiler-sources-{scala_version}.jar
-org.scala-lang scala-reflect {scala_version} path:scala-reflect-{scala_version}.jar
-org.scala-lang scala-reflect {scala_version} classifier:sources path:scala-reflect-sources-{scala_version}.jar
+org.scala-lang scala-library {scala_version} classifier:sources 
+org.scala-lang scala-library {scala_version} 
+org.scala-lang scala-compiler {scala_version} 
+org.scala-lang scala-compiler {scala_version} classifier:sources 
+org.scala-lang scala-reflect {scala_version} 
+org.scala-lang scala-reflect {scala_version} classifier:sources 
 HERE
 
   update_resources $PROJECT_ROOT_DIR/.maker/scala-libs dynamic-scala-resource-list  
@@ -206,6 +206,7 @@ recompile_project_if_required(){
     rm -rf $PROJECT_DEFINITION_CLASS_DIR
     mkdir -p $PROJECT_DEFINITION_CLASS_DIR
 
+    echo "java -classpath $(scala_jars)${PSEP}$(maker_classpath) -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES"
     java -classpath "$(scala_jars)${PSEP}$(maker_classpath)" -Dscala.usejavacp=true  scala.tools.nsc.Main -d $PROJECT_DEFINITION_CLASS_DIR $PROJECT_DEFINITION_SRC_FILES || exit -1
   fi
 }

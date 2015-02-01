@@ -129,11 +129,10 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
   "Top level project should publish each sub module" in {
     withTempDir {
       dir => 
-        val props = TestModule.makeTestProps(dir)
         val version = "1.0-SNAPSHOT"
         val a = createTestModule(dir, "multi-module-publish-local-test-a")
         val b = createTestModule(dir, "multi-module-publish-local-test-b", upstreamModules = List(a))
-        val topLevel = Project("TopLevelProject", dir, List(b), props)
+        val topLevel = Project("TopLevelProject", dir, List(b))
 
         topLevel.publishLocal(version)
 

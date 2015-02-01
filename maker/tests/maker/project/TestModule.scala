@@ -20,8 +20,8 @@ class TestModule(
   root,
   name,
   upstreamProjects, 
-  upstreamTestProjects, 
-  props = overrideProps.getOrElse(TestModule.makeTestProps(root)),
+  upstreamTestProjects,
+  props = overrideProps.getOrElse(MakerProps()),
   analyses
 ) with ClassicLayout {
   root.mkdirs
@@ -79,21 +79,6 @@ class TestModule(
   override def isTestProject = true
 }
 
-object TestModule{
-  def makeTestProps(root : File) : MakerProps = {
-    val props = MakerProps()
-    var props_ : MakerProps = MakerProps(
-      "GroupId", "MakerTestGroupID"
-    )
-    Option(System.getenv("MAKER_PGP_PASS_PHRASE")).foreach{
-      passPhrase => 
-        props_ ++= ("GPG_PassPhrase", passPhrase)
-    }
-    props_
-
-  }
-
-}
 
 trait HasDummyCompiler{
   self : TestModule => 
