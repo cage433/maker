@@ -58,12 +58,52 @@ main() {
   process_options $MAKER_OPTIONS
   saveStty
 
+  update_logback_test_config
   update_external_jars && check_for_errors
   recompile_project_if_required && check_for_errors
 
   launch_maker_repl
 }
 
+update_logback_test_config(){
+  if [ ! -e $PROJECT_ROOT_DIR/.maker/logback-unit-tests.xml ]; then
+    cat > $PROJECT_ROOT_DIR/.maker/logback-unit-tests.xml <<HERE
+<!-- The logback file used during the running of maker's own unit tests
+     Quietens the logging somewhat-->
+
+<configuration scan="true" scanPeriod="3 seconds">
+
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>maker.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+      <immediateFlush>true</immediateFlush>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+  </appender>
+        
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+      <immediateFlush>true</immediateFlush>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>ERROR</level>
+    </filter>
+  </appender>
+
+  <root level="info">
+    <appender-ref ref="CONSOLE" />
+    <appender-ref ref="FILE" />
+  </root>
+</configuration>
+HERE
+  fi
+  
+}
 update_external_jars(){
   echo "Updating external jars"
 

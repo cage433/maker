@@ -33,7 +33,7 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
   private def checkPublishedPomIncludesAllDependencies(module : Module, version : String){
     val pom = XML.loadFile(module.publishLocalPomFile(version))
     val dependencies = pom \\ "dependency"
-    val resources = Resource("org.scala-lang", "scala-library", MakerProps.ProjectScalaVersion) :: module.resources
+    val resources = Resource("org.scala-lang", "scala-library", module.scalaVersion) :: module.resources
 
     resources should allSatisfy {
       resource : Resource => 
@@ -50,16 +50,14 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     val moduleRoot = file(dir, name)
     val props = MakerProps(
       "PublishLocalRootDir", file(moduleRoot, ".publish-local").getAbsolutePath,
-      "GroupId",  "maker-test-group",
-      "Compiler", "dummy-test-compiler",
-      "RunningInMakerTest", "true"
+      "GroupId",  "maker-test-group"
     )
     new TestModule(
       moduleRoot,
       name,
       overrideProps = Some(props),
       upstreamProjects = upstreamModules
-    )
+    ) with HasDummyCompiler
   }
 
   "Simple module should publish as expected" in {

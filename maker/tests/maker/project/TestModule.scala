@@ -85,18 +85,17 @@ class TestModule(
     """ % (logFile.getAbsolutePath, patternLine)).stripMargin
   )
   writeMakerProjectDefinitionFile
+
+  override def isTestProject = true
 }
 
 object TestModule{
   def makeTestProps(root : File) : MakerProps = {
     val props = MakerProps()
     var props_ : MakerProps = MakerProps(
-      "ShowCompilerOutput", "true", 
       "GroupId", "MakerTestGroupID",
-      "TmuxMessaging", "false",
       "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
-      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath,
-      "RunningInMakerTest", "true"
+      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath
     )
     Option(System.getenv("MAKER_PGP_PASS_PHRASE")).foreach{
       passPhrase => 
@@ -106,4 +105,9 @@ object TestModule{
 
   }
 
+}
+
+trait HasDummyCompiler{
+  self : TestModule => 
+    override def compilerName = "dummy-test-compiler"
 }

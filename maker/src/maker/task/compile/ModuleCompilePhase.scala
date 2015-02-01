@@ -106,20 +106,20 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     lgr
   }
 
-  def vimCompileOutputFile = {
+  def moduleCompilationErrorsFile = {
     phase match {
-      case TestCompilePhase =>  file(module.rootAbsoluteFile, "module-vim-compile-output")
-      case SourceCompilePhase => file(module.rootAbsoluteFile, "module-vim-test-compile-output")
+      case TestCompilePhase =>  file(module.rootAbsoluteFile, "module-vim-test-compile-errors")
+      case SourceCompilePhase => file(module.rootAbsoluteFile, "module-vim-compile-errors")
     }
   }
   def compilationOutputStream : PrintStream = {
-    val outputStream = if (module.props.ShowCompilerOutput()){
+    val outputStream = if (module.isTestProject){
+      new NullOutputStream
+    } else {
       new TeeOutputStream(
         Console.err,
-        new FileOutputStream(vimCompileOutputFile)
+        new FileOutputStream(moduleCompilationErrorsFile)
       )
-    } else {
-      new NullOutputStream
     }
     new PrintStream(outputStream)
   }

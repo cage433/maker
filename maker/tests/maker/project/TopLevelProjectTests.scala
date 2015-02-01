@@ -9,9 +9,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
   test("Empty top level module"){
     withTempDir{
       dir => 
-        val props = TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
-        val top = Project("You're the top", dir, Nil, props = props)
-
+        val top = Project("You're the top", dir, Nil)
         assert(top.compile.succeeded, "Compilation should succeed")
     }
   }
@@ -19,15 +17,14 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
   test("Single module top level module"){
     withTempDir{
       dir => 
-        val props = TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
-        val a = new TestModule(file(dir, "a"), "a", overrideProps = Some(props))
+        val a = new TestModule(file(dir, "a"), "a") with HasDummyCompiler
         a.writeSrc(
           "foo/Foo.scala", 
           """|package foo
             |
             |case class Foo(a : Int)""".stripMargin
         )
-        val top = new Project("Still tops", dir, List(a), props = props)
+        val top = new Project("Still tops", dir, List(a))
 
         assert(a.compilePhase.classFiles.size == 0, "No class files before compilation")
 
@@ -40,9 +37,8 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
   test("Multi module top level module"){
     withTempDir{
       dir => 
-        val props = TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler")
-        val a = new TestModule(file(dir, "a"), "a", overrideProps = Some(props))
-        val b = new TestModule(file(dir, "b"), "b", List(a), overrideProps = Some(props))
+        val a = new TestModule(file(dir, "a"), "a") with HasDummyCompiler
+        val b = new TestModule(file(dir, "b"), "b", List(a)) with HasDummyCompiler
         a.writeSrc(
           "foo/Foo.scala", 
           """|package foo
@@ -57,7 +53,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
              |
              |case class Bar(foo : Foo)""".stripMargin
         )
-        val top = new Project("Still tops", dir, List(b), props = props)
+        val top = new Project("Still tops", dir, List(b))
 
         assert(a.compilePhase.classFiles.size == 0, "No class files before compilation")
 

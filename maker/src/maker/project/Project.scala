@@ -14,9 +14,7 @@ case class Project(
   name : String,
   root : File,
   immediateUpstreamModules:List[Module],
-  props : MakerProps = MakerProps(
-    "ShowCompilerOutput", "false"
-  ),
+  props : MakerProps = MakerProps(),
   topLevelExcludedFolders:List[String] = Nil
 ) extends TmuxIntegration{
 

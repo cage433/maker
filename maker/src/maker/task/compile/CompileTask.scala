@@ -53,7 +53,7 @@ abstract class CompileTask(val module : Module) extends Task{
       return successfulResult(sw, CompilationNotRequired)
     }
     if (compilationRequired(upstreamTaskResults)){
-      props.Compiler() match {
+      module.compilerName match {
         case "zinc" => 
           val exitCode = ZincCompile(modulePhase)
           if (exitCode == 0)
@@ -161,9 +161,9 @@ object CompileTask{
   }
 
   def appendCompileOutputToTopLevel(modulePhase : ModuleCompilePhase) = synchronized {
-    withFileAppender(modulePhase.module.props.VimErrorFile()){
+    withFileAppender(modulePhase.module.topLevelCompilationErrorsFile){
       writer : BufferedWriter =>
-        modulePhase.vimCompileOutputFile.readLines.foreach(writer.println)
+        modulePhase.moduleCompilationErrorsFile.readLines.foreach(writer.println)
     }
   }
 }

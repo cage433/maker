@@ -22,10 +22,6 @@ import scala.util.Properties
 
 object FileUtils extends Asserting{
 
-  def file(f : String) : File = {
-    assert(f != null)
-    new File(f)
-  }
   def file(f : File, d : String*) : File = {
     assert(f != null)  // Because Java will happily ignore a null f
     d.toList match {
@@ -33,9 +29,9 @@ object FileUtils extends Asserting{
       case x::rest => file(new File(f, x), rest : _*)
     }
   }
-  def file(base : String, file : String) : File = {
-    assert(base != null && file != null)
-    new File(base, file)
+  def file(f : String, d : String*) : File = {
+    assert(f != null && d.forall(_ != null))
+    file(new File(f), d : _*)
   }
 
   def cwd = file(Properties.userDir)

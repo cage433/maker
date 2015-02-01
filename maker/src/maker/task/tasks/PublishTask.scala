@@ -45,7 +45,7 @@ case class PublishTask(
 
       val ivy = {
         val ivy = Ivy.newInstance
-        if (props.RunningInMakerTest())
+        if (baseProject.isTestProject)
           ivy.getLoggerEngine.setDefaultLogger(new DefaultMessageLogger(Message.MSG_ERR))
         ivy.getSettings.addAllVariables(System.getProperties)
         ivy.configure(baseProject.ivySettingsFile)

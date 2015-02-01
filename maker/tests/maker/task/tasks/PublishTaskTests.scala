@@ -2,12 +2,10 @@ package maker.task.tasks
 
 import org.scalatest.FreeSpec
 import maker.utils.FileUtils._
-import maker.project.TestModule
+import maker.project.{TestModule, Project, HasDummyCompiler}
 import maker.Resource._
-import maker.Resource
+import maker.{Resource, MakerProps}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
-import maker.project.Project
-import maker.MakerProps
 import maker.utils.RichString._
 
 class PublishTaskTests extends FreeSpec {
@@ -28,7 +26,7 @@ class PublishTaskTests extends FreeSpec {
               |  </resolvers>
               |</ivysettings>""".stripMargin % publishDir)
 
-        val proj = new TestModule(dir, "testPublish", overrideProps = Some(TestModule.makeTestProps(dir) ++ ("Compiler", "dummy-test-compiler", "RunningInMakerTest", "true"))){
+        val proj = new TestModule(dir, "testPublish", overrideProps = Some(TestModule.makeTestProps(dir))) with HasDummyCompiler{
           override def ivySettingsFile = ivySettingsFile_
         }
 
@@ -57,7 +55,7 @@ class PublishTaskTests extends FreeSpec {
               |    <dependency>
               |      <groupId>org.scala-lang</groupId>
               |      <artifactId>scala-library</artifactId>
-              |      <version>""".stripMargin + MakerProps.ProjectScalaVersion + """</version>
+              |      <version>""".stripMargin + proj.scalaVersion + """</version>
               |      <scope>compile</scope>
               |    </dependency>
               |  </dependencies>

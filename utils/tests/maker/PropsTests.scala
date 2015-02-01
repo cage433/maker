@@ -29,13 +29,6 @@ class PropsTests extends FunSuite{
     }
   }
 
-  test("Can override a maker property"){
-    val props = MakerProps()
-    assert(props.VimErrorFile() != file("fred"))
-    props.VimErrorFile := "fred"
-    assert(props.VimErrorFile() === file("fred"))
-  }
-
   test("Optional property"){
     class Foo(val overrides : MMap[String, String] = MMap()) extends PropsTrait{
       object Bar extends IsOptionalString

@@ -175,6 +175,9 @@ class Module(
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Iterable[File] = List(file(rootAbsoluteFile, "lib"))
   def warnUnnecessaryResources = true
+  def vimModuleCompileOutputFile = file(root, "vim-compile-output")
+
+  def compilerName = "zinc"
 }
 
 trait ClassicLayout {

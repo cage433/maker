@@ -104,7 +104,7 @@ case class Resource(
 
     resourceFile.dirname.makeDirs
 
-    val cachedFile = file(props.ResourceCacheDirectory(), resourceFile.basename)
+    val cachedFile = file(module.resourceCacheDirectory, resourceFile.basename)
     
     if (resourceFile.doesNotExist && cachedFile.exists){
       ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile.dirname)
@@ -117,7 +117,7 @@ case class Resource(
       if (resourceFile.exists){
         log.info("Downloaded " + basename)
         if (cachedFile.doesNotExist)
-          cacheDownloadedResource(props)
+          cacheDownloadedResource(module)
         ResourceDownloaded
       } else {
         ResourceFailedToDownload(errors)
@@ -125,12 +125,12 @@ case class Resource(
     }
   }
 
-  private def cacheDownloadedResource(props : MakerProps){
+  private def cacheDownloadedResource(module : Module){
     withTempDir{
       dir => 
         ApacheFileUtils.copyFileToDirectory(resourceFile, dir)
         // Hoping move is atomic
-        ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), props.ResourceCacheDirectory(), false)
+        ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), module.resourceCacheDirectory, false)
     }
   }
   private def urls(module : Module) : List[String] = {

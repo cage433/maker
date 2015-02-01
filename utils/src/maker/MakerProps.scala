@@ -12,44 +12,16 @@ import org.slf4j.LoggerFactory
 
 case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   
-  lazy val logger = LoggerFactory.getLogger(this.getClass)
-
-
-
   import MakerProps._
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
-  object HomeDir extends SystemProperty("user.home") with IsFile
-  object VimErrorFile extends Default("vim-compile-output") with IsFile
   object GroupId extends Property with IsString
-  object Compiler extends Default("zinc") with IsString
-  /**
-   * Maker has its own logback file which applies during compilation, 
-   * this is the one that is used when running tests and main methods
-   */
-  object LogbackTestConfigFile extends SystemPropertyWithDefault("maker.test.logback.config", file("logback-unit-tests.xml")) with IsFile
-
 
   /**
    * The debug files should contain a single number, indicating the port to use for remote debugging.
    */
   object DebugPortMain extends Default(file("DEBUG-PORT-MAIN")) with IsFile
   object DebugPortTest extends Default(file("DEBUG-PORT-TEST")) with IsFile
-
-  object JavaSystemProperties extends IsOptionalFile {
-    def properties = {
-      val properties = new java.util.Properties()
-        apply().foreach{file => properties.load(new FileInputStream(file))}
-      properties
-    }
-    def asMap = {
-      val ps = properties
-      JavaConversions.asScalaSet(ps.stringPropertyNames).map{
-        p => p -> ps.getProperty(p)
-      }.toMap
-    }
-  }
-  object ShowFailingTestException extends Default(false) with IsBoolean
 
   /** 
    * Set to true in maker.sh if we are executing a maker command,
@@ -64,20 +36,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   }
   object TestProcessMemoryInMB extends Default(defaultTestProcessMemory) with IsInt
   object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
-
-  /*
-   * Switches off sundry output with testing maker
-   */
-  object RunningInMakerTest extends SystemPropertyWithDefault("maker.running.within.test", false) with IsBoolean
-
-  // Show compiler output - normally switched off for tests
-  object ShowCompilerOutput extends SystemPropertyWithDefault("show.compiler.output", true) with IsBoolean
-
-  object TmuxMessaging extends Default(true) with IsBoolean
-
-  object ResourceCacheDirectory extends Default(file(System.getenv("HOME"), ".maker-resource-cache").makeDirs()) with IsFile
-
-  object PublishLocalRootDir extends Default(file(System.getenv("HOME"), ".maker-publish-local")) with IsFile
 
   object GPG_PassPhrase extends EnvProperty("MAKER_GPG_PASS_PHRASE") with IsString
   object SonatypeCredentials extends EnvProperty("MAKER_SONATYPE_CREDENTIALS") with IsString
@@ -97,17 +55,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 }
 
 object MakerProps {
-
-  val ProjectScalaVersion = hackyReadVersion("scala_version")
-
-  private def hackyReadVersion(libname: String): String = {
-    val source = io.Source.fromFile("external-resource-config")
-    try {
-      source.getLines().find(_.contains(libname)).map(_.split(" ")(2)).getOrElse{
-        throw new RuntimeException("Unable to read version of " + libname)
-      }
-    } finally source.close()
-  }
 
   def apply(file : File) : MakerProps = {
     new MakerProps(MMap() ++ propsFileToMap(file))

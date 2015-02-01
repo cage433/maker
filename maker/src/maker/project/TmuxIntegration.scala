@@ -13,7 +13,7 @@ trait TmuxIntegration extends BaseProject{
 
     private lazy val hasTmux = Command(CommandOutputHandler.NULL, None, true, "which", "tmux").withNoOutput.exec == 0
     def tmux(args : String*){
-      if (props.TmuxMessaging() && hasTmux)
+      if (!isTestProject && hasTmux)
         new Command(CommandOutputHandler.NULL, None, true, ("tmux"::args.toList) : _*).withNoOutput.execAsync
     }
 

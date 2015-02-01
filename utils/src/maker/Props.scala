@@ -121,7 +121,7 @@ trait PropsTrait extends DelayedInit{
   trait IsOptionalFile extends Property{
     type T = Option[File]
     override def stringValue = throw new UnsupportedOperationException()
-    def apply() = overrides.get(name).map(file)
+    def apply() = overrides.get(name).map(file(_))
   }
   trait IsInt{
     self: Property => 

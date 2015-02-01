@@ -45,12 +45,11 @@ case class RunUnitTestsTask(
 
     val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
     val systemPropertiesArguments = {
-      var s = props.JavaSystemProperties.asMap
+      var s = Map[String, String]()
       s += "scala.usejavacp" -> "true"
-      s += "logback.configurationFile" -> props.LogbackTestConfigFile().getAbsolutePath
+      s += "logback.configurationFile" -> baseProject.testLogbackConfigFile.getAbsolutePath
       s += "maker.test.output" -> baseProject.testOutputFile.toString
       s += "sbt.log.format" -> "=false"
-      s += "maker.running.within.test" -> props.RunningInMakerTest().toString
       s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
       }.toList

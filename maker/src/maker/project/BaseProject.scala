@@ -24,9 +24,9 @@ trait BaseProject {
   def name : String
   def setUp(graph : Dependency.Graph) : Boolean = {
     if (graph.includesCompileTask){
-      props.VimErrorFile().delete
+      topLevelCompilationErrorsFile.delete
     }
-    ! props.VimErrorFile().exists()
+    ! topLevelCompilationErrorsFile.exists()
   }
   def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean
   def extraUpstreamTasks(task : Task) : Set[Task] =
@@ -48,7 +48,7 @@ trait BaseProject {
   lazy val groupId = props.GroupId()
   val artifactId = name
   def toIvyExclude : Elem = <exclude org={groupId} module={artifactId} />
-  def publishLocalDir(version : String) = file(props.PublishLocalRootDir(), groupId, artifactId, version).makeDirs
+  def publishLocalDir(version : String) = file(publishLocalRootDir, groupId, artifactId, version).makeDirs
   def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
   def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
   def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
@@ -211,9 +211,6 @@ trait BaseProject {
 
   // Some sugar
   def tcc = testCompileContinuously
-  def stfe {
-    props.ShowFailingTestException := ! props.ShowFailingTestException()
-  }
 
   protected def execute(bld : Build) = {
     setUp(bld.graph)
@@ -224,7 +221,7 @@ trait BaseProject {
       System.exit(-1)
     }
     BuildResult.lastResult.set(Some(result))
-    if (! props.RunningInMakerTest()){
+    if (! isTestProject){
       ScreenUtils.clear
       result.reportResult
     }
@@ -343,6 +340,15 @@ trait BaseProject {
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceVersions()
   def resourceResolvers() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceResolvers()
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
+
+  // Overriden by maker unit tests to quieten output
+  def isTestProject : Boolean = false
+
+  def topLevelCompilationErrorsFile = file(projectRoot, "vim-compilation-errors")
+
+  def testLogbackConfigFile = file(projectRoot, ".maker", "logback-unit-tests.xml")
+  def resourceCacheDirectory = file(System.getenv("HOME"), ".maker", "resource-cache").makeDirs()
+  def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
 }
 
 object BaseProject{

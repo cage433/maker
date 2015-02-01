@@ -3,7 +3,7 @@ package maker.task.tasks
 import org.scalatest.{FreeSpec, Matchers}
 import maker.utils.os.Command
 import java.io.File
-import maker.project.{Module, TestModule}
+import maker.project.{Module, TestModule, HasDummyCompiler}
 import maker.utils.FileUtils._
 import maker.utils.{CustomMatchers, Stopwatch}
 import maker.MakerProps
@@ -14,16 +14,11 @@ import scala.collection.JavaConversions._
 class PackageJarTaskTests extends FreeSpec with Matchers{
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
     val moduleRoot = file(dir, name)
-    val props = MakerProps(
-      "Compiler", "dummy-test-compiler",
-      "RunningInMakerTest", "true"
-    )
     new TestModule(
       moduleRoot,
       name,
-      overrideProps = Some(props),
       upstreamProjects = upstreamModules
-    )
+    ) with HasDummyCompiler
   }
 
   "Simple module should package classes and resources" in {
