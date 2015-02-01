@@ -21,11 +21,6 @@ import scala.xml.NodeSeq
  */
 object Maker {
 
-  private val props = MakerProps() ++ (
-    "GroupId", "com.github.cage433",
-    "LogbackTestConfigFile", "logback-config/logback-unit-tests.xml"
-  )
-
   val extraPomInfo : List[NodeSeq] = {
     val devNodes = List("Alex McGuire", "Louis Botterill", "Sam Halliday").map{name => <developer><name>{name}</name></developer>}
     List(
@@ -51,10 +46,10 @@ object Maker {
       file(".").asAbsoluteFile,
       name.getOrElse(rootBasename),
       immediateUpstreamModules = upstreamProjects,
-      immediateUpstreamTestModules = upstreamTestProjects,
-      props = props
+      immediateUpstreamTestModules = upstreamTestProjects
     ) with ClassicLayout {
       override def extraProjectPomInfo = extraPomInfo
+      override def organization = Some("com.github.cage433")
     }
   }
 
@@ -62,7 +57,7 @@ object Maker {
   lazy val utils = module("utils")
   lazy val mkr = module("maker", upstreamProjects = List(utils), upstreamTestProjects = List(utils))
 
-  lazy val topLevel = new Project("top-level", file("."), List(mkr), props) {
+  lazy val topLevel = new Project("top-level", file("."), List(mkr)) {
     override def extraProjectPomInfo = extraPomInfo
   }
 

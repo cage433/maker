@@ -15,7 +15,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   import MakerProps._
   object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
   object Java extends Default(JavaHome() + "/bin/java") with IsFile
-  object GroupId extends Property with IsString
 
   /**
    * The debug files should contain a single number, indicating the port to use for remote debugging.

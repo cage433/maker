@@ -18,7 +18,7 @@ object PomUtils{
       //<?xml version="1.0" encoding="UTF-8"?>
   def pomXml(baseProject : BaseProject, version : String, includeUpstreamModules : Boolean) = {
     import baseProject.{props, name, allStrictlyUpstreamModules}
-    val groupId = props.GroupId()
+    val groupId = baseProject.organization.getOrElse(throw new IllegalStateException("Organization not defined"))
     val moduleDependencies = if (includeUpstreamModules) 
       Nil
     else 

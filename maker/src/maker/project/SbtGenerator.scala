@@ -75,7 +75,7 @@ import MakerCustom._
 object MakerBuild extends Build {
 
   override val settings = super.settings ++ Seq(
-    organization := """" + props.GroupId() + """",
+    organization := """" + p.organization.getOrElse(???) + """",
     version := "1.0-SNAPSHOT", // no version in maker
     scalaVersion := """" + scalaVersion + """"
   )

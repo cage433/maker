@@ -85,7 +85,7 @@ class Module(
 
   warnOfRedundantDependencies()
 
-  def pomDependencyXML(version : String) = PomUtils.dependencyXml(groupId, artifactId, version)
+  def pomDependencyXML(version : String) = PomUtils.dependencyXml(organization.getOrElse(???), artifactId, version)
   def testCompilePhase = ModuleCompilePhase(this, TestCompilePhase)
   def compilePhase = ModuleCompilePhase(this, SourceCompilePhase)
 

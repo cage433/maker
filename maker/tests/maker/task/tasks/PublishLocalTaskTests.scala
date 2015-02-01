@@ -20,7 +20,7 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
     val pom = XML.loadFile(project.publishLocalPomFile(version))
 
     List(
-      (project.props.GroupId(), "groupId"), 
+      (project.organization.getOrElse(???), "groupId"), 
       (project.name, "artifactId"),
       (version, "version")
     ).foreach{

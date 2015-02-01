@@ -45,10 +45,9 @@ trait BaseProject {
   def allUpstreamTestModules : List[Module]
   def allUpstreamBaseProjects : List[BaseProject] = (this :: allStrictlyUpstreamModules).sortWith(_.name < _.name)
 
-  lazy val groupId = props.GroupId()
   val artifactId = name
-  def toIvyExclude : Elem = <exclude org={groupId} module={artifactId} />
-  def publishLocalDir(version : String) = file(publishLocalRootDir, groupId, artifactId, version).makeDirs
+  def toIvyExclude : Elem = <exclude org={organization.getOrElse(???)} module={artifactId} />
+  def publishLocalDir(version : String) = file(publishLocalRootDir, organization.getOrElse(???), artifactId, version).makeDirs
   def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
   def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
   def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
@@ -349,6 +348,9 @@ trait BaseProject {
   def testLogbackConfigFile = file(projectRoot, ".maker", "logback-unit-tests.xml")
   def resourceCacheDirectory = file(System.getenv("HOME"), ".maker", "resource-cache").makeDirs()
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
+
+  // This needs to be overriden if this module is to be published to maven/nexus
+  def organization : Option[String] = None
 }
 
 object BaseProject{
