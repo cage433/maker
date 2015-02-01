@@ -2,7 +2,7 @@ package maker.project
 
 import java.io.File
 import maker.utils.FileUtils._
-import maker.MakerProps
+import maker._
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
@@ -25,6 +25,16 @@ class TestModule(
   analyses
 ) with ClassicLayout {
   root.mkdirs
+  writeToFile(
+    file(projectRoot, "external-resource-config"),
+    """|resolver: default http://repo1.maven.org/maven2/
+       |version: scala_version 2.10.4
+       |version: sbt_version 0.13.5
+       |version: scalatest_version 2.2.0""".stripMargin)
+  List("scala-library", "scala-compiler", "scala-reflect").foreach{
+    name => 
+      Resource("org.scala-lang",name, "2.10.4", Some(projectScalaLibsDir)).update(this)
+  }
   override def testReporterJar = file(".maker-libs", "maker-test-reporter.jar").asAbsoluteFile
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
@@ -64,26 +74,6 @@ class TestModule(
 
   val logFile = file(root, "maker.log")
   val patternLine = "<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>"
-  writeToFile(
-    file(root, "logback.xml"),
-    ("""
-      |<configuration>
-      |  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-      |    <file>%s</file>
-      |    <append>true</append>
-      |    <encoder>
-      |      %s
-      |      <immediateFlush>true</immediateFlush>
-      |    </encoder>
-      |  </appender>
-      |        
-      |
-      |  <root level="info">
-      |    <appender-ref ref="FILE" />
-      |  </root>
-      |</configuration>
-    """ % (logFile.getAbsolutePath, patternLine)).stripMargin
-  )
   writeMakerProjectDefinitionFile
 
   override def isTestProject = true
@@ -93,9 +83,7 @@ object TestModule{
   def makeTestProps(root : File) : MakerProps = {
     val props = MakerProps()
     var props_ : MakerProps = MakerProps(
-      "GroupId", "MakerTestGroupID",
-      "ResourceCacheDirectory", file(root, ".maker-resource-cache").makeDirs().getPath,
-      "PublishLocalRootDir", file(root, ".maker-publish-local").makeDirs().getPath
+      "GroupId", "MakerTestGroupID"
     )
     Option(System.getenv("MAKER_PGP_PASS_PHRASE")).foreach{
       passPhrase => 

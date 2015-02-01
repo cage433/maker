@@ -8,7 +8,7 @@ import maker.Resource
 class CrossCompilationTests extends FreeSpec with Matchers{
   import FileUtils.{withTempDir, writeToFile, file, withTestDir}
   "Can compile a scala 2.9 project" in {
-    withTestDir{
+    withTempDir{
       dir => 
         writeToFile(
           file(dir, "external-resource-config"),

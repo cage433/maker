@@ -332,11 +332,11 @@ trait BaseProject {
   def extraProjectPomInfo : List[NodeSeq] = Nil
   def scalaVersion = BaseProject.hackyReadScalaVersion(projectRoot)
   def projectScalaLibsDir = file(projectRoot, ".maker", "scala-libs").makeDirs
-  val scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
-  val scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
-  val scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")
-  val scalaLibrarySourceJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}-sources.jar")
-  val externalResourceConfigFile = file(projectRoot, "external-resource-config")
+  lazy val scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
+  lazy val scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
+  lazy val scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")
+  lazy val scalaLibrarySourceJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}-sources.jar")
+  lazy val externalResourceConfigFile = file(projectRoot, "external-resource-config")
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceVersions()
   def resourceResolvers() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceResolvers()
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
@@ -353,7 +353,11 @@ trait BaseProject {
 
 object BaseProject{
   private def hackyReadScalaVersion(projectRoot : File): String = {
-    val source = io.Source.fromFile(file(projectRoot, "external-resource-config"))
+    val configFile = file(projectRoot, "external-resource-config")
+    if (! configFile.exists)
+      throw new IllegalStateException("No config file found")
+
+    val source = io.Source.fromFile(configFile)
     try {
       source.getLines().find(_.contains("scala_version")).map{line => line.split("\\s+")(2)}.getOrElse{
         throw new RuntimeException("Unable to read scala_version ")

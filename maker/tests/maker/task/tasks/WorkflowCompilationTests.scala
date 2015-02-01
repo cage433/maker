@@ -65,12 +65,14 @@ class WorkflowCompilationTests extends FunSuite{
   }
 
   test("A developer's workflow"){
-    withTempDir{
+    withTestDir{
       dir => 
 
       info("given a module with two source dirs")
 
-      a = new TestModule(file(dir, "a").makeDir(), "WorkflowCompilationTests")
+      a = new TestModule(file(dir, "a").makeDir(), "WorkflowCompilationTests"){
+        override def projectRoot = dir
+      }
       info("Compilation should succeed") 
       src1 = writeSrcWithDependencies(a, 1)
       src2 = writeSrcWithDependencies(a, 2, List(1))
@@ -95,7 +97,9 @@ class WorkflowCompilationTests extends FunSuite{
       assert(result.succeeded)
 
       info("With a new module that has an upstream dependency on the first")
-      b = new TestModule(file(dir, "b").makeDir(), "WorkflowCompilationTests-b", List(a))
+      b = new TestModule(file(dir, "b").makeDir(), "WorkflowCompilationTests-b", List(a)){
+        override def projectRoot = dir
+      }
       src3 = writeSrcWithDependencies(b, 3, List(1))
       topLevelProject = new Project("top", dir, List(b))
     //topLevelProject.writeMakerFile

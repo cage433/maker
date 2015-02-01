@@ -48,16 +48,15 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
 
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
     val moduleRoot = file(dir, name)
-    val props = MakerProps(
-      "PublishLocalRootDir", file(moduleRoot, ".publish-local").getAbsolutePath,
-      "GroupId",  "maker-test-group"
-    )
+    val props = MakerProps("GroupId",  "maker-test-group")
     new TestModule(
       moduleRoot,
       name,
       overrideProps = Some(props),
       upstreamProjects = upstreamModules
-    ) with HasDummyCompiler
+    ) with HasDummyCompiler{
+      override def projectRoot = dir
+    }
   }
 
   "Simple module should publish as expected" in {

@@ -117,10 +117,10 @@ update_external_jars(){
 
   MAKER_SCALA_VERSION="2.10.4"
   cat > maker-scala-resource-list <<HERE
-org.scala-lang scala-library $MAKER_SCALA_VERSION path:scala-library-$MAKER_SCALA_VERSION.jar
-org.scala-lang jline $MAKER_SCALA_VERSION path:jline-$MAKER_SCALA_VERSION.jar
-org.scala-lang scala-compiler $MAKER_SCALA_VERSION path:scala-compiler-$MAKER_SCALA_VERSION.jar
-org.scala-lang scala-reflect $MAKER_SCALA_VERSION path:scala-reflect-$MAKER_SCALA_VERSION.jar
+org.scala-lang scala-library $MAKER_SCALA_VERSION 
+org.scala-lang jline $MAKER_SCALA_VERSION 
+org.scala-lang scala-compiler $MAKER_SCALA_VERSION 
+org.scala-lang scala-reflect $MAKER_SCALA_VERSION 
 HERE
   update_resources $MAKER_ROOT_DIR/.maker/repl-libs maker-scala-resource-list 
   rm maker-scala-resource-list
