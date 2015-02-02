@@ -333,11 +333,11 @@ trait BaseProject {
   def extraProjectPomInfo : List[NodeSeq] = Nil
   def scalaVersion = BaseProject.hackyReadScalaVersion(projectRoot)
   def projectScalaLibsDir = file(projectRoot, ".maker", "scala-libs").makeDirs
-  lazy val scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
-  lazy val scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
-  lazy val scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")
-  lazy val scalaLibrarySourceJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}-sources.jar")
-  lazy val externalResourceConfigFile = file(projectRoot, "external-resource-config")
+  def scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
+  def scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
+  def scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")
+  def scalaLibrarySourceJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}-sources.jar")
+  def externalResourceConfigFile = file(projectRoot, "external-resource-config")
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceVersions()
   def resourceResolvers() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceResolvers()
   def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))

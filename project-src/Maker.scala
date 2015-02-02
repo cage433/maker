@@ -49,7 +49,7 @@ object Maker {
       immediateUpstreamTestModules = upstreamTestProjects
     ) with ClassicLayout {
       override def extraProjectPomInfo = extraPomInfo
-      def organization = Some("com.github.cage433")
+      override def organization = Some("com.github.cage433")
     }
   }
 
