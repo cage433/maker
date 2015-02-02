@@ -125,13 +125,13 @@ HERE
   update_resources $MAKER_ROOT_DIR/.maker/repl-libs maker-scala-resource-list 
   rm maker-scala-resource-list
 
-#  # TODO - add version to maker jars
-#  cat > maker-jar-list << HERE
-#com.github.cage433 maker-test-reporter 0.03 path:maker-test-reporter.jar
-#com.github.cage433 maker 0.03 path:maker.jar
-#HERE
-#  update_resources $MAKER_ROOT_DIR/.maker/maker-libs maker-jar-list 
-#  rm maker-jar-list
+  # TODO - add version to maker jars
+  cat > maker-jar-list << HERE
+com.github.cage444 maker-test-reporter 0.04 path:maker-test-reporter.jar
+com.github.cage444 maker 0.04 path:maker.jar
+HERE
+  update_resources $MAKER_ROOT_DIR/.maker/maker-libs maker-jar-list 
+  rm maker-jar-list
 
   cat > dynamic-scala-resource-list <<HERE
 org.scala-lang scala-library {scala_version} classifier:sources 
