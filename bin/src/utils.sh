@@ -93,7 +93,7 @@ update_resource(){
       resolver=$(find_resolver $resourceId)
       relativeURL=$(relative_url "$resourceId")
       url="$resolver"/"$relativeURL"
-      curl $url -s -H "Pragma: no-cache" -f -o $resource
+      curl $url -s -k -L -H "Pragma: no-cache" -f -o $resource
       if [ -e $resource ]; then
         cp $resource $cached_resource
       fi

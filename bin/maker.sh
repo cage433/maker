@@ -31,7 +31,7 @@ fi
 MAKER_ROOT_DIR="$( cd "$(dirname $( dirname "${BASH_SOURCE[0]}" ))" && pwd )"
 PROJECT_ROOT_DIR=`pwd`
 
-MAKER_JAR=$MAKER_ROOT_DIR/.maker/maker-libs/maker.jar
+MAKER_JAR=$MAKER_ROOT_DIR/.maker/maker-libs/com.github.cage433-maker-0.03.jar
 
 MAKER_HEAP_SPACE=4000m
 MAKER_PERM_GEN_SPACE=1000m
@@ -127,8 +127,8 @@ HERE
 
   # TODO - add version to maker jars
   cat > maker-jar-list << HERE
-com.github.cage444 maker-test-reporter 0.04 path:maker-test-reporter.jar
-com.github.cage444 maker 0.04 path:maker.jar
+com.github.cage433 maker-test-reporter 0.03 
+com.github.cage433 maker 0.03 
 HERE
   update_resources $MAKER_ROOT_DIR/.maker/maker-libs maker-jar-list 
   rm maker-jar-list
