@@ -98,11 +98,11 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
   }
 
 
-//  val proxy = new HttpHost("127.0.0.1", 4128, "http")
+  val proxy = new HttpHost("127.0.0.1", 4128, "http")
   private def withHttpClient[U](body: HttpClient => U) : U = {
 
     val client = new DefaultHttpClient()
-//    client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
+    client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
     try {
       client.getCredentialsProvider.setCredentials(
         new AuthScope(credentialHost, AuthScope.ANY_PORT),

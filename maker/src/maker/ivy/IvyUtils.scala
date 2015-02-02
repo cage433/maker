@@ -25,12 +25,16 @@ object IvyUtils {
       case m : Module => m.resources.map(_.toIvyInclude).toList ::: excludeDeps
     }
 
-
+    // TODO - not this
+    val extraPomInfo = if (version.endsWith("SNAPSHOT"))
+      Nil
+    else
+      baseProject.extraProjectPomInfo
     // Todo: some of this is currently 'hard-coded' to our build...
     val ivyFileXML =
       <ivy-module version="1.0" xmlns:e="http://ant.apache.org/ivy/extra">
         <info organisation={organization.getOrElse(???)} module={artifactId} revision={version}/>
-        {baseProject.extraProjectPomInfo}
+        {extraPomInfo}
 
         <configurations>
           <conf name="default" transitive="false"/>

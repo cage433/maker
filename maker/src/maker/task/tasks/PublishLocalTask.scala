@@ -63,7 +63,13 @@ case class PublishLocalTask(
     ).filter(_._1.exists).forall{
       case (jar, versionedBasename) => 
         val fileWithVersion = file(baseProject.publishLocalJarDir(version), versionedBasename)
-        copyFile(jar, fileWithVersion)
+        try {
+          copyFile(jar, fileWithVersion)
+        } catch {
+          case e : Exception => 
+            println(e)
+            throw e
+        }
         if (signArtifacts)
           signFile(fileWithVersion)
         else
