@@ -25,10 +25,10 @@ maker-test-output
 maker-classpath.sh
 props.conf
 Maker.conf
-*vim*compile-output
-proj-compile-output
+*vim*compile-errors
 maker-commands.log
 *-classpath.sh
 maker.log
 scala-libs
 **/.maker-libs
+*/target-maker
