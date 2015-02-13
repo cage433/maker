@@ -1,0 +1,21 @@
+1. wget maker.py to <MAKER_DIR>/maker.py
+2. ./<MAKER_DIR>/maker.py
+  1) boostraps if ~/.maker doesn't exist or if --update-maker parameter is passed in
+    gets a list of jars to ~/.maker/maker-version/maker-libs/
+    maker-version is contained in maker.py
+    These include the maker binary itself
+    This is outside the maker classpath, so will simply use a python http lib
+    Jars should be cached in ~/.maker/resource-cache
+
+  2) Launch zinc on a unique port - guess cache size from number of src/tests directories
+     or optional parameter in Maker.conf
+
+  3) Launches a maker repl, loading the project definition (optional -p parameter)
+     and compiling any project source files (optional -c parameter)
+
+  4) Task 0 - download project scala-libs to <PROJECT_DIR>/.maker/project-scala-libs
+     As we are running in the maker classpath we have aether available at this point
+
+  5) Create a maker task to modify maker.py - updating its list of jars and its version
+
+  6) profit
