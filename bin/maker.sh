@@ -131,6 +131,7 @@ com.github.cage433 maker-test-reporter 0.03
 com.github.cage433 maker 0.03 
 HERE
   update_resources $MAKER_ROOT_DIR/.maker/maker-libs maker-jar-list 
+  update_resources $PROJECT_ROOT_DIR/.maker/maker-libs maker-jar-list 
   rm maker-jar-list
 
   cat > dynamic-scala-resource-list <<HERE

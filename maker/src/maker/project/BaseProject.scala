@@ -19,7 +19,13 @@ trait BaseProject {
   protected def root : File
   def projectRoot : File
   val rootAbsoluteFile = root.asAbsoluteFile
-  def testReporterJar = file(projectRoot, ".maker", "maker-libs", "maker-test-reporter.jar")
+  def testReporterJar = {
+    val regex = """com\.github\.cage433-maker-test-reporter-[0-9.]+\.jar""".r
+    file(projectRoot, ".maker", "maker-libs").listAllFiles.find{
+      f => 
+        regex.findFirstMatchIn(f.basename).isDefined
+    }.getOrElse{throw new IllegalStateException("Test reporter jar not found")}
+  }
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
   def setUp(graph : Dependency.Graph) : Boolean = {
