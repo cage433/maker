@@ -7,6 +7,10 @@ Purpose
 
 Maker is a scala build tool, written out of frustration with the complexity of SBT. It performs similar tasks, namely compile, test, publish etc - its main aim is to speed up the code/compile/test cycle.
 
+Installation
+------------
+Maker bootstraps itself from a single script (link here). For a more detailed description see [Installation](markdown/Installation.md)
+
 
 Creating a project
 ------------------
