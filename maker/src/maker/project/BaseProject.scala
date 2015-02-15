@@ -338,7 +338,7 @@ trait BaseProject {
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
   def scalaVersion = BaseProject.hackyReadScalaVersion(projectRoot)
-  def projectScalaLibsDir = file(projectRoot, ".maker", "scala-libs").makeDirs
+  def projectScalaLibsDir = file(projectRoot, ".maker", "scala-libs", scalaVersion).makeDirs
   def scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
   def scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
   def scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")
