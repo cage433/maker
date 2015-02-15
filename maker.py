@@ -55,14 +55,15 @@ def read_args():
     global args
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-r', '--refresh-maker-dependencies', action='store_true', dest='refresh', default=False)
-    parser.add_argument('-p', '--project-definition-source-dir', dest='project_src_dir')
+    parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
+    parser.add_argument('-c', '--project-source-dir', dest='project_src_dir')
+    parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     args = parser.parse_args()
 
 def create_logger():
     global log
     logging.basicConfig( \
-            format= "%(asctime)-15s %(levelname)-10s Maker: %(message)s", \
+            format= "%(asctime)-15s %(levelname)-10s %(message)s", \
             datefmt="%Y-%m-%d %H:%M:%S")
     log = logging.getLogger('maker')
     log.setLevel(logging.INFO)
@@ -76,17 +77,29 @@ def maker_scala_directory():
 def maker_resource_cache():
     return os.path.join(os.environ['HOME'], ".maker", "resource-cache")
 
+def project_class_directory():
+    return mkdir_p(os.path.join(".maker", "project-classes"))
+
+def project_definition_file():
+    if args.project_definition_file:
+        return args.project_definition_file
+
+    scala_files_in_pwd = glob('*.scala')
+    if len(scala_files_in_pwd) == 1:
+        log.info("Using %s as project file", scala_files_in_pwd[0])
+        return scala_files_in_pwd[0]
+    else:
+        log.critical("Maker requires a project file - exiting")
+        exit(1)
 
 
 def mkdir_p(directory):
     if not os.path.isdir(directory):
         os.makedirs(directory)
-        log.info("Created " + directory)
+    return directory
 
 def rm_rf(directory):
     shutil.rmtree(directory, ignore_errors=True)
-    log.info("Deleted " + directory)
-
 
 def create_maker_lib_directories():
     if args.refresh:
@@ -131,7 +144,6 @@ class Resource(object):
 
 def download_required_dependencies(resources, lib_dir):
 
-    log.info("Downloading maker dependencies")
     temp_dir= tempfile.mkdtemp()
 
     for (resolver, org, artifact, version) in resources:
@@ -145,47 +157,79 @@ def download_required_dependencies(resources, lib_dir):
 
     rm_rf(temp_dir)
 
-def recompile_project_source():
+def project_src_needs_recompiling():
+    if args.refresh:
+        return True
+
     if not args.project_src_dir:
+        return False
+
+    src_files = glob(args.project_src_dir + "/*.scala")
+    if len(src_files) == 0:
+        return False
+
+    class_files = os.listdir(project_class_directory())
+    if len(class_files) == 0:
+        return True
+
+    return max(src_files, key=os.path.getctime) > min(class_files, key=os.path.getctime)
+
+
+def java():
+    return os.path.join(os.environ['JAVA_HOME'], "bin", "java")
+
+def scala_jars():
+    return glob(maker_scala_directory() + "/*.jar")
+
+def maker_jars():
+    return glob(maker_libs_directory() + "/*.jar")
+
+def classpath(jars_and_directories):
+    return ':'.join(jars_and_directories)
+
+def recompile_project_source():
+    if not project_src_needs_recompiling():
         return
+    log.info("Recompiling project source files")
+
+    result = call([ java(),
+                    "-classpath", classpath(scala_jars() + maker_jars()),
+                    "-Dscala.usejavacp=true",
+                    "scala.tools.nsc.Main",
+                    "-d", project_class_directory()] + 
+                    glob(args.project_src_dir + "/*.scala"))
+    if result != 0:
+        log.critical("Failed to compile project source - exiting")
+        exit(1)
 
 
 def launch_repl():
     mkdir_p(".maker")
-    output_file = open(os.path.join(".maker", "repl_output"), "a")
     
-    repl_classpath = ':'.join(glob(maker_scala_directory() + "/*.jar"))
-    maker_classpath = ':'.join(glob(maker_libs_directory() + "/*.jar"))
-    print(maker_classpath)
-
-    call([  os.path.join(os.environ['JAVA_HOME'], "bin", "java"),
-            "-classpath", repl_classpath,
+    call([  java(),
+            "-classpath", classpath(scala_jars()),
             "-Dsbt.log.format=false",
             "-Dscala.usejavacp=true",
             "scala.tools.nsc.MainGenericRunner",
-            "-cp", maker_classpath,
+            "-cp", classpath(maker_jars() + [project_class_directory()]),
             "-Yrepl-sync", 
-            "-nc"])
-#    ,
-#            "-i",
-#            "Maker.scala"])
-
-
+            "-nc", 
+            "-i", project_definition_file()])
 
 
 
 read_args()
-print(args)
-if args.project_src_dir:
-    print(args.project_src_dir)
-else:
-    print("No project source")
-import sys
-exit(0)
 create_logger()
 create_maker_lib_directories()
+
+log.info("Checking for missing resources")
 download_required_dependencies(SCALA_RESOURCES, maker_scala_directory())
 download_required_dependencies(MAKER_RESOURCES, maker_libs_directory())
+
+log.info("Checking for stale project class files")
+recompile_project_source()
+
+log.info("Launching repl")
 launch_repl()
 
 
