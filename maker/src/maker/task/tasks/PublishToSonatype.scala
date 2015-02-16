@@ -23,7 +23,7 @@ import org.apache.http.util.EntityUtils
 import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
 
-case class PublishToSonatype(baseProject : BaseProject, version : String) extends Task with EitherUtils{
+case class PublishToSonatype(baseProject : BaseProject, version : String) extends Task with EitherPimps{
   import baseProject.props
   val Array(sonatypeUsername, sonatypePassword) = props.SonatypeCredentials().split(":")
   val sonatypeRepository = "https://oss.sonatype.org/service/local"

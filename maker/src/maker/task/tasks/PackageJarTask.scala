@@ -19,7 +19,7 @@ case class PackageJarTask(
   compilePhase : CompilePhase,
   version : Option[String]
 ) 
-  extends Task with ToBooleanOps with EitherUtils
+  extends Task with ToBooleanOps with EitherPimps
 {
 
   def name = compilePhase match {
