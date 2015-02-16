@@ -10,7 +10,6 @@ import maker.utils.os.Command
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
 import scala.collection.JavaConverters._
-import scalaz.syntax.std.ToBooleanOps
 import scala.collection.immutable.VectorBuilder
 
 case class PackageJarTask(
@@ -19,7 +18,7 @@ case class PackageJarTask(
   compilePhase : CompilePhase,
   version : Option[String]
 ) 
-  extends Task with ToBooleanOps with EitherPimps
+  extends Task with EitherPimps
 {
 
   def name = compilePhase match {

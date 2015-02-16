@@ -4,6 +4,8 @@ import maker.project.BaseProject
 import maker.utils.{Stopwatch, EitherPimps}
 import maker.task.{Task, TaskResult}
 import maker.Resource
+import maker.utils.http.HttpUtils
+import java.io.{InputStream, FileOutputStream}
 
 case class DownloadScalaLibs(baseProject : BaseProject) extends Task with EitherPimps{
   def name = "Download scala libs"
@@ -33,8 +35,20 @@ case class DownloadScalaLibs(baseProject : BaseProject) extends Task with Either
       }
     }
     def download(library : String) : Either[String, Unit] = {
-      null
+      val url = s"http://repo.typesafe.com/typesafe/releases/org.scala-lang/$library/${scalaVersion}/$library-${scalaVersion}.jar"
+      new HttpUtils().Get(url){
+        response => 
+          val entity = response.getEntity()
+          Option(entity).map{
+            _ => 
+              val fos = new FileOutputStream(baseProject.scalaLibraryJar)
+              entity.writeTo(fos)
+              fos.close
+              Unit
+          }.toRight("http get of $url returned null")
+      }
     }
+
     val success : Either[String, Unit] = for {
       _ <- download("scala-library")
       _ <- download("scala-compiler")

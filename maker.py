@@ -45,6 +45,7 @@ MAKER_RESOURCES     = [ (MAVEN, "org.scalatest", "scalatest_2.10", "2.2.0"),
                         (MAVEN, "org.eclipse.aether", "aether-transport-file", "1.0.1.v20141111"),
                         (MAVEN, "org.eclipse.aether", "aether-transport-http", "1.0.1.v20141111"),
                         (MAVEN, "io.spray", "spray-json_2.10", "1.3.1"),
+                        (MAVEN, "com/typesafe", "config", "1.2.1"),
                         (SONATYPE, "com.github.cage433", "maker", MAKER_VERSION),
                         (SONATYPE, "com.github.cage433", "maker-test-reporter", MAKER_VERSION)
                         ]
@@ -80,6 +81,9 @@ def maker_resource_cache():
 
 def project_class_directory():
     return mkdir_p(os.path.join(".maker", "project-classes"))
+
+def config_directory():
+    return "config/"
 
 def project_definition_file():
     if args.project_definition_file:
@@ -213,7 +217,7 @@ def launch_repl():
             "-Dscala.usejavacp=true",
             "-Dlogback.configurationFile=" + args.logback_config,
             "scala.tools.nsc.MainGenericRunner",
-            "-cp", classpath(maker_jars() + [project_class_directory()]),
+            "-cp", classpath(maker_jars() + [project_class_directory(), config_directory()]),
             "-Yrepl-sync", 
             "-nc", 
             "-i", project_definition_file()])

@@ -8,7 +8,6 @@ import maker.utils.os.Command
 import scala.xml.{Elem, NodeSeq}
 import maker.project.Module
 import maker.utils.{FileUtils, Int}
-import scalaz.syntax.std.boolean._
 import org.slf4j.{LoggerFactory, Logger}
 
 /*  
