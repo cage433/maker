@@ -58,6 +58,7 @@ def read_args():
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
     parser.add_argument('-c', '--project-source-dir', dest='project_src_dir')
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
+    parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
     args = parser.parse_args()
 
 def create_logger():
@@ -210,6 +211,7 @@ def launch_repl():
             "-classpath", classpath(scala_jars()),
             "-Dsbt.log.format=false",
             "-Dscala.usejavacp=true",
+            "-Dlogback.configurationFile=" + args.logback_config,
             "scala.tools.nsc.MainGenericRunner",
             "-cp", classpath(maker_jars() + [project_class_directory()]),
             "-Yrepl-sync", 
