@@ -35,7 +35,7 @@ MAKER_JAR=$MAKER_ROOT_DIR/.maker/maker-libs/com.github.cage433-maker-0.03.jar
 
 MAKER_HEAP_SPACE=4000m
 MAKER_PERM_GEN_SPACE=1000m
-GLOBAL_RESOURCE_CACHE=$HOME/.maker-resource-cache
+GLOBAL_RESOURCE_CACHE=$HOME/.maker/resource-cache
 
 mkdir -p .maker
 rm -f .maker/maker-shell-errors
