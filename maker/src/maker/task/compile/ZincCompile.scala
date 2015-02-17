@@ -11,13 +11,17 @@ object ZincCompile{
   def apply(projectPhase : ModuleCompilePhase) : Int = {
     val module = projectPhase.module
     val props = module.props
-    val upstreamProjectPhases = projectPhase.strictlyUpstreamProjectPhases
-    var upstreamCaches = Map[File, File]()
-    upstreamProjectPhases.foreach{
-      case pp : ModuleCompilePhase =>
-        upstreamCaches += (pp.outputDir -> pp.compilationCacheFile)
-    }
+    val upstreamCaches = {
+      var map = Map[File, File]()
 
+      projectPhase.strictlyUpstreamProjectPhases.foreach{
+        case ModuleCompilePhase(module, phase) => 
+          map += 
+            (module.outputDir(phase) -> module.compilationCacheFile(phase))
+      }
+      map
+    }
+      
     val analysisMapArguments = upstreamCaches.filter{
       case (_, f) => f.exists
     }.map{

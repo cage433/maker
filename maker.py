@@ -19,11 +19,14 @@ MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE            = "http://oss.sonatype.org/content/repositories/releases/"
 MAVEN               = "http://repo1.maven.org/maven2/"
 TYPESAFE            = "http://repo.typesafe.com/typesafe/releases/"
-SCALA_RESOURCES     = [ (TYPESAFE, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
+MAKER_BINARIES      = [ (SONATYPE, "com.github.cage433", "maker", MAKER_VERSION),
+                        (SONATYPE, "com.github.cage433", "maker-test-reporter", MAKER_VERSION)
+                        ]
+SCALA_LIBRARIES     = [ (TYPESAFE, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
                         (TYPESAFE, "org.scala-lang", "jline", MAKER_SCALA_VERSION),
                         (TYPESAFE, "org.scala-lang", "scala-compiler", MAKER_SCALA_VERSION),
                         (TYPESAFE, "org.scala-lang", "scala-reflect", MAKER_SCALA_VERSION)]
-MAKER_RESOURCES     = [ (MAVEN, "org.scalatest", "scalatest_2.10", "2.2.0"),
+MAKER_DEPENDENCIES  = [ (MAVEN, "org.scalatest", "scalatest_2.10", "2.2.0"),
                         (MAVEN, "ch.qos.logback", "logback-classic", "1.0.6"),
                         (MAVEN, "ch.qos.logback", "logback-core", "1.0.6"),
                         (MAVEN, "org.slf4j", "slf4j-api", "1.6.1"),
@@ -46,8 +49,6 @@ MAKER_RESOURCES     = [ (MAVEN, "org.scalatest", "scalatest_2.10", "2.2.0"),
                         (MAVEN, "org.eclipse.aether", "aether-transport-http", "1.0.1.v20141111"),
                         (MAVEN, "io.spray", "spray-json_2.10", "1.3.1"),
                         (MAVEN, "com/typesafe", "config", "1.2.1"),
-                        (SONATYPE, "com.github.cage433", "maker", MAKER_VERSION),
-                        (SONATYPE, "com.github.cage433", "maker-test-reporter", MAKER_VERSION)
                         ]
 # End computer generated section
 
@@ -60,6 +61,8 @@ def read_args():
     parser.add_argument('-c', '--project-source-dir', dest='project_src_dir')
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
+    parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
+    parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
     args = parser.parse_args()
 
 def create_logger():
@@ -70,11 +73,14 @@ def create_logger():
     log = logging.getLogger('maker')
     log.setLevel(logging.INFO)
 
-def maker_libs_directory(): 
-    return os.path.join(os.environ['HOME'], ".maker", "maker-libs", MAKER_VERSION)
+def maker_dependencies_directory(): 
+    return os.path.join(os.environ['HOME'], ".maker", "maker-dependencies", MAKER_VERSION)
+
+def maker_binaries_directory(): 
+    return os.path.join(os.environ['HOME'], ".maker", "maker-binaries", MAKER_VERSION)
 
 def maker_scala_directory():  
-    return os.path.join(os.environ['HOME'], ".maker", "scala-libs", MAKER_SCALA_VERSION)
+    return os.path.join(os.environ['HOME'], ".maker", "scala-libraries", MAKER_SCALA_VERSION)
 
 def maker_resource_cache():
     return os.path.join(os.environ['HOME'], ".maker", "resource-cache")
@@ -108,9 +114,11 @@ def rm_rf(directory):
 
 def create_maker_lib_directories():
     if args.refresh:
-        rm_rf(maker_libs_directory())
+        rm_rf(maker_dependencies_directory())
+        rm_rf(maker_binaries_directory())
         rm_rf(maker_scala_directory())
-    mkdir_p(maker_libs_directory())
+    mkdir_p(maker_dependencies_directory())
+    mkdir_p(maker_binaries_directory())
     mkdir_p(maker_scala_directory())
 
 
@@ -183,22 +191,37 @@ def project_src_needs_recompiling():
 def java():
     return os.path.join(os.environ['JAVA_HOME'], "bin", "java")
 
-def scala_jars():
+def scala_libraries():
     return glob(maker_scala_directory() + "/*.jar")
 
-def maker_jars():
-    return glob(maker_libs_directory() + "/*.jar")
+def maker_dependencies():
+    # TODO - drop test reporter from this
+    return glob(maker_dependencies_directory() + "/*.jar")
+
+def maker_binaries():
+    return glob(maker_binaries_directory() + "/*.jar")
 
 def classpath(jars_and_directories):
     return ':'.join(jars_and_directories)
 
+def maker_class_directories():
+    maker_root = os.path.dirname(os.path.realpath(__file__))
+    return [os.path.join(maker_root, module, "target-maker", "classes") for module in ["utils", "maker"]]
+
 def recompile_project_source():
     if not project_src_needs_recompiling():
         return
+
     log.info("Recompiling project source files")
 
+    classpath_components = scala_libraries() + maker_dependencies()
+    if args.maker_developer_mode:
+        classpath_components.extend(maker_class_directories())
+    else:
+        classpath_components.extend(maker_binaries())
+
     result = call([ java(),
-                    "-classpath", classpath(scala_jars() + maker_jars()),
+                    "-classpath", classpath(classpath_components),
                     "-Dscala.usejavacp=true",
                     "scala.tools.nsc.Main",
                     "-d", project_class_directory()] + 
@@ -211,13 +234,25 @@ def recompile_project_source():
 def launch_repl():
     mkdir_p(".maker")
     
+    classpath_components = scala_libraries() + maker_dependencies() + [project_class_directory(), config_directory()]
+    if args.maker_developer_mode:
+        classpath_components.extend(maker_class_directories())
+    else:
+        classpath_components.extend(maker_binaries())
+
+    if args.use_jrebel:
+        extra_opts = ["-javaagent:/usr/local/jrebel/jrebel.jar"]
+    else:
+        extra_opts = []
+
     call([  java(),
-            "-classpath", classpath(scala_jars()),
+            "-classpath", classpath(scala_libraries()),
             "-Dsbt.log.format=false",
-            "-Dscala.usejavacp=true",
-            "-Dlogback.configurationFile=" + args.logback_config,
+            "-Dscala.usejavacp=true"] + 
+            extra_opts +
+            ["-Dlogback.configurationFile=" + args.logback_config,
             "scala.tools.nsc.MainGenericRunner",
-            "-cp", classpath(maker_jars() + [project_class_directory(), config_directory()]),
+            "-cp", classpath(classpath_components),
             "-Yrepl-sync", 
             "-nc", 
             "-i", project_definition_file()])
@@ -229,8 +264,9 @@ create_logger()
 create_maker_lib_directories()
 
 log.info("Checking for missing resources")
-download_required_dependencies(SCALA_RESOURCES, maker_scala_directory())
-download_required_dependencies(MAKER_RESOURCES, maker_libs_directory())
+download_required_dependencies(SCALA_LIBRARIES, maker_scala_directory())
+download_required_dependencies(MAKER_DEPENDENCIES, maker_dependencies_directory())
+download_required_dependencies(MAKER_BINARIES, maker_binaries_directory())
 
 log.info("Checking for stale project class files")
 recompile_project_source()

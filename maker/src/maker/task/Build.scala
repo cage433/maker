@@ -130,14 +130,6 @@ object Build{
   val logger = LoggerFactory.getLogger(this.getClass)
   val taskCount = new AtomicInteger(0)
 
-  def apply(numberOfWorkers : Int, tasks : Task*) : Build = {
-    Build(
-      tasks.toList.headOption.map(_.name).getOrElse("No Tasks"),
-      Dependency.Graph.transitiveClosure(tasks.toList),
-      numberOfWorkers
-    )
-  }
-
   private class PrioritisedFutureTask(r: Runnable, val priority: Int)
       extends FutureTask[Unit](r, {}) with Comparable[PrioritisedFutureTask] {
     override def compareTo(o: PrioritisedFutureTask) = priority - o.priority

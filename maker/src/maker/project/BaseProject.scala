@@ -68,7 +68,7 @@ trait BaseProject {
   }
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
-  def publishToSonatype(version : String) = execute(Build(props.NumberOfTaskThreads(), PublishToSonatype(this, version)))
+  def publishToSonatype(version : String) = executeWithDependencies(PublishToSonatype(this, version))
   def publishSonatypeSnapshot(version : String) = publish(version, "https://oss.sonatype.org/content/repositories/snapshots/")
 
   def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
@@ -77,7 +77,7 @@ trait BaseProject {
       else
         PublishLocalTask(this, Nil, version, signArtifacts) :: allUpstreamModules.map{m => PublishLocalTask(m, Vector(m), version, signArtifacts)}
 
-    execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
+    executeWithDependencies(tasks: _*)
   }
   def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
     val tasks = if (includeUpstreamModules)
@@ -85,7 +85,7 @@ trait BaseProject {
       else
         PublishTask(this, Nil, resolver, version, signArtifacts) :: allUpstreamModules.map{m => PublishTask(m, Vector(m), resolver, version, signArtifacts)}
 
-    execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
+    executeWithDependencies(tasks : _*)
   }
   def sourcePackageJar(compilePhase : CompilePhase, version : Option[String]) = {
     val versionAsString = version.map("-" + _).getOrElse("")
@@ -119,35 +119,33 @@ trait BaseProject {
     * Makes a Build that is the closure of the task applied to 
     * upstream modules
     */
-  def moduleBuild(task : Module => Task, upstreamModules : List[Module] = upstreamModulesForBuild) = 
-    Build.apply(props.NumberOfTaskThreads(), upstreamModules.map(task) : _*)
+  def moduleBuild(task : Module => Task) = 
+    taskBuild(upstreamModulesForBuild.map(task) : _*)
 
   /** modules that need to be taken into consideration
     * when doing a transitive build */
   protected def upstreamModulesForBuild : List[Module]
 
   protected def executeWithDependencies(
-    task : Module => Task, 
-    upstreamModules : List[Module] = upstreamModulesForBuild
+    task : Module => Task
   ) : BuildResult = 
   {
-    execute(moduleBuild(task, upstreamModules))
+    execute(moduleBuild(task))
   }
 
   /**
-    * Makes a Build that is the closure of some task. This project is
-    * passed in in case it has any extra tasks
+    * Makes a Build that is the closure of some task. 
     */
-  protected def taskBuild(task : Task) = {
+  private def taskBuild(tasks : Task*) = {
     Build(
-      task.name,
-      Dependency.Graph.transitiveClosure(task),
+      tasks.head.name,
+      Dependency.Graph.transitiveClosure(tasks.toList, extraUpstreamTasksMatcher, extraDownstreamTasksMatcher),
       props.NumberOfTaskThreads()
     )
   }
 
-  protected def executeWithDependencies(task : Task) = { 
-    execute(taskBuild(task))
+  protected def executeWithDependencies(tasks : Task*) = { 
+    execute(taskBuild(tasks : _*))
   }
 
   def clean = executeWithDependencies(CleanTask(_))
@@ -165,7 +163,7 @@ trait BaseProject {
     // however - when we run tests on B, in general we also want to run A's tests too. 
     //
     // Use 'testOnly' to just run a single module's tests.
-    moduleBuild(RunUnitTestsTask(_, verbose), allUpstreamModules)
+    moduleBuild(RunUnitTestsTask(_, verbose))
   }
   def test(verbose : Boolean) : BuildResult = {
     execute(testBuild(verbose))
@@ -181,9 +179,7 @@ trait BaseProject {
 
   def testFailedSuites(verbose : Boolean) : BuildResult = {
     // To be consistent with 'test' - build must be against all upstream modules
-    val build = moduleBuild(
-      RunUnitTestsTask.failingTests(_, verbose), allUpstreamModules
-    )
+    val build = moduleBuild(RunUnitTestsTask.failingTests(_, verbose))
     execute(build)
   }
   def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
@@ -194,11 +190,11 @@ trait BaseProject {
       else
         allUpstreamModules.map{m => PackageJarTask(m, Vector(m), SourceCompilePhase, version = None)}
 
-    execute(Build.apply(props.NumberOfTaskThreads(), tasks : _*))
+    execute(taskBuild(tasks : _*))
   }
 
-  def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false), allUpstreamModules))
-  def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true), allUpstreamModules))
+  def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false)))
+  def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true)))
 
   def missingSourceJars() : List[Resource] = {
     for {

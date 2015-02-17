@@ -1,18 +1,19 @@
 package maker.task.compile
 
 import maker.project._
-import maker.task.Task
-import maker.task.TaskResult
+import maker.task.{Task, TaskResult}
 import maker.utils.FileUtils._
 import maker.utils.RichString._
 import maker.utils._
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
 import sbt.compiler.CompileFailed
-import maker.task.tasks.UpdateTask
-import xsbti.Problem
-import xsbti.Severity
-import java.io.BufferedWriter
+import maker.task.tasks.{UpdateTask, DownloadScalaLibs}
+import xsbti.{Problem, Severity}
+import java.io.{BufferedWriter, File}
+import xsbti.api.Compilation
+import javax.sound.sampled.Line
+import com.sun.org.apache.bcel.internal.classfile.Unknown
 
 abstract class CompileTask(val module : Module) extends Task{
   
@@ -94,7 +95,7 @@ case class CompilationFailedInfo(e : CompileFailed) {
 
 case class SourceCompileTask(override val module :Module) extends CompileTask(module){
   def upstreamTasks = {
-    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false))
+    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false), new DownloadScalaLibs())
   }
   def phase = SourceCompilePhase
 } 

@@ -11,15 +11,10 @@ trait Task {
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult
   def failureHaltsTaskManager : Boolean = true
 
-  def baseProject : BaseProject 
-
-  override def toString = baseProject + " - " + name
   /**
    * Tasks that normally need to run BEFORE this one does 
    */
   def upstreamTasks : Iterable[Task] 
-  def extraUpstreamTasks = baseProject.extraUpstreamTasks(this)
-  def extraDownstreamTasks = baseProject.extraDownstreamTasks(this)
 }
 
 object Task {

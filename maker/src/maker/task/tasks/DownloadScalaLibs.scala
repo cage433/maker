@@ -2,15 +2,21 @@ package maker.task.tasks
 
 import maker.project.BaseProject
 import maker.utils.{Stopwatch, EitherPimps}
-import maker.task.{Task, TaskResult}
-import maker.Resource
+import maker.utils.FileUtils._
+import maker.task.{Task, TaskResult, DefaultTaskResult}
+import maker.{Resource, MakerConfig}
 import maker.utils.http.HttpUtils
 import java.io.{InputStream, FileOutputStream}
 
-case class DownloadScalaLibs(baseProject : BaseProject) extends Task with EitherPimps{
+class DownloadScalaLibs extends Task 
+  with EitherPimps 
+  with MakerConfig
+{
   def name = "Download scala libs"
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
-    import baseProject.scalaVersion
+    val scalaVersion = config.getString("maker.project.scala.version")
+    val resolver = config.getString("maker.project.scala.resolver")
+
     var scalaResources = List(
       Resource("org.scala-lang", "scala-library", scalaVersion),
       Resource("org.scala-lang", "scala-compiler", scalaVersion),
@@ -35,13 +41,17 @@ case class DownloadScalaLibs(baseProject : BaseProject) extends Task with Either
       }
     }
     def download(library : String) : Either[String, Unit] = {
-      val url = s"http://repo.typesafe.com/typesafe/releases/org.scala-lang/$library/${scalaVersion}/$library-${scalaVersion}.jar"
+      val url = s"$resolver/org.scala-lang/$library/$scalaVersion/$library-$scalaVersion.jar"
+      val jarFile = file(
+        config.getString("maker.project.scala.library-directory"), 
+        s"org.scala-lang-$library-$scalaVersion.jar"
+      )
       new HttpUtils().Get(url){
         response => 
           val entity = response.getEntity()
           Option(entity).map{
             _ => 
-              val fos = new FileOutputStream(baseProject.scalaLibraryJar)
+              val fos = new FileOutputStream(jarFile)
               entity.writeTo(fos)
               fos.close
               Unit
@@ -59,15 +69,14 @@ case class DownloadScalaLibs(baseProject : BaseProject) extends Task with Either
           download("scala-reflect")
         else
           Right(Unit)
+    } 
+
+    success match {
+      case Left(errorMessage) =>
+        DefaultTaskResult(this, succeeded = false, stopwatch = sw)
+      case Right(_) => 
+        DefaultTaskResult(this, succeeded = true, stopwatch = sw)
     }
-//    scalaResources.foldLeft(Right(Unit)){
-//      case (previousResult, nextResource) => 
-//        previousResult.flatMap{
-//          _ => 
-//            nextResource.downloadDirectory
-//        }
-//    }
-    null
   }
 
   def upstreamTasks : Iterable[Task] = Nil

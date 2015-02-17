@@ -48,6 +48,10 @@ class Module(
     case r if r.isBinaryJarResource => r.copy(classifier = Some("sources"), downloadDirectory = Some(managedLibSourceDir))
   }
 
+  def phaseDirectory(phase : CompilePhase) = mkdir(file(makerDirectory, phase.name))
+  def compilationCacheFile(phase : CompilePhase) = {
+    file(phaseDirectory(phase), "compilation-analysis-cache")
+  }
 
 
   Module.warnOfUnnecessaryDependencies(this)

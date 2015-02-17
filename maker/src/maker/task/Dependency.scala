@@ -13,9 +13,13 @@ object Dependency{
     def contains(node : Task) = nodes.contains(node)
   }
   object Edge{
-    def edges(task : Task) = {
-      val upstreams = (task.upstreamTasks ++ task.extraUpstreamTasks).map(Edge(_, task))
-      val downstreams = task.extraDownstreamTasks.map(Edge(task, _))
+    def edges(
+      task : Task, 
+      extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]],
+      extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]]
+    ) = {
+      val upstreams = (task.upstreamTasks ++ extraUpstreamTasksMatcher.lift(task).getOrElse(Set.empty)).map(Edge(_, task))
+      val downstreams = extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty).map(Edge(task, _))
       upstreams ++ downstreams
     }
   }
@@ -66,11 +70,14 @@ object Dependency{
 
   object Graph{
     def empty = Graph(Set.empty, Set.empty)
-    def transitiveClosure(task : Task) : Graph = transitiveClosure(Set(task))
 
-    def transitiveClosure(tasks : Iterable[Task]) : Graph = {
+    def transitiveClosure(
+      tasks : Iterable[Task],
+      extraUpstreamTasks : PartialFunction[Task, Set[Task]],
+      extraDownstreamTasks : PartialFunction[Task, Set[Task]]
+    ) : Graph = {
       def recurse(acc : Graph) : Graph = {
-        val newEdges = acc.leaves.flatMap(Edge.edges(_)) -- acc.edges
+        val newEdges = acc.leaves.flatMap(Edge.edges(_, extraUpstreamTasks, extraDownstreamTasks)) -- acc.edges
         val newNodes = newEdges.flatMap(_.nodes)
         if (newEdges.isEmpty)
           acc
@@ -81,7 +88,5 @@ object Dependency{
     }
 
     def apply(task : Task) : Graph = Graph(Set(task), Set.empty)
-    def apply(tasks : Iterable[Task]) : Graph = Graph(tasks.toSet, Set.empty)
-    def combine(graphs : Iterable[Graph]) : Graph = graphs.fold(empty)(_++_)
   }
 }

@@ -45,16 +45,20 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   }
 
   def strictlyUpstreamProjectPhases = {
-    val task = CompileTask(module, phase)
-    Dependency.Graph.transitiveClosure(task).nodes.filterNot(_== task).collect{
-      case ct : CompileTask => ct.modulePhase
+    var projectPhases = scala.collection.mutable.Set[ModuleCompilePhase]()
+    for {
+      m <- module.allStrictlyUpstreamModules
+      phase <- SourceCompilePhase :: TestCompilePhase :: Nil
     }
+      projectPhases += ModuleCompilePhase(m, phase)
+
+    if (phase == TestCompilePhase)
+      projectPhases += ModuleCompilePhase(module, SourceCompilePhase)
+    projectPhases.toSet
   }
+   
+    
   def upstreamProjectPhases = strictlyUpstreamProjectPhases + this
-  def fullyQualifiedClassesOnly : Iterable[String] = {
-    classFiles.map(_.className(outputDir))
-  }
-  def fullyQualifiedClasses : Iterable[String] = upstreamProjectPhases.toSet.flatMap{pp : ModuleCompilePhase => pp.classFiles.map(_.className(pp.outputDir))}
 
   def lastCompilationTime : Option[Long] = {
     if (compilationCacheFile.exists)
@@ -123,26 +127,5 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     }
     new PrintStream(outputStream)
   }
-
-  def compilationDependencies() = {
-    val src = sourceFiles.toList
-    val jars = module.allUpstreamModules.flatMap(_.classpathJars).toSet.toList
-    val metadataFiles : List[File] = {
-      val compileTask = phase match {
-        case SourceCompilePhase => SourceCompileTask(module)
-        case TestCompilePhase => TestCompileTask(module)
-      }
-      Dependency.Graph.transitiveClosure(compileTask).nodes.filterNot(_ == compileTask).flatMap{
-        case ct : CompileTask =>  Some(ct.modulePhase.compilationCacheFile)
-        case _ =>  None
-      }.toList
-    }
-    (src ::: jars ::: metadataFiles.toList).filter(_.exists)
-   }
-
-   def upstreamCacheMaps = strictlyUpstreamProjectPhases.map{
-     pp => 
-      pp.outputDir -> pp.compilationCacheFile
-    }.toMap
 
 }
