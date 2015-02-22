@@ -36,6 +36,7 @@ object ZincCompile{
       Nil
     else 
       List("-scala-extra", module.scalaReflectJar.getAbsolutePath)
+    print(module.scalaReflectJar.getAbsolutePath)
     val arguments = List[String](
       "-log-level",
       "warn",

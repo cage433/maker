@@ -164,6 +164,9 @@ object CompileTask{
   def appendCompileOutputToTopLevel(modulePhase : ModuleCompilePhase) = synchronized {
     withFileAppender(modulePhase.module.topLevelCompilationErrorsFile){
       writer : BufferedWriter =>
+        // Vim bug prevents all error being shown unless 
+        // there is a blank line initially
+        writer.println("")
         modulePhase.moduleCompilationErrorsFile.readLines.foreach(writer.println)
     }
   }

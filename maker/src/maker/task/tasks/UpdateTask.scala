@@ -33,7 +33,7 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean) extends Task
   }
 
   private def updateResources(resources : List[Resource]) = {
-    resources.flatMap(_.update(module).errors)
+    resources.flatMap(_.update().errors)
   }
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {

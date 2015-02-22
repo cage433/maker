@@ -19,7 +19,7 @@ class CrossCompilationTests extends FreeSpec with Matchers{
         module.writeCaseObject("Foo", "foo")
         List("scala-library", "scala-compiler").foreach{
           name => 
-            Resource("org.scala-lang",name, "2.9.3", Some(module.projectScalaLibsDir)).update(module)
+            Resource("org.scala-lang",name, "2.9.3", Some(module.projectScalaLibsDir)).update()
         }
         val res = module.compile
         res.succeeded should be (true)

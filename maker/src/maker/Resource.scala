@@ -3,12 +3,14 @@ package maker
 import maker.utils.FileUtils._
 import maker.utils.RichString._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
-import java.io.File
+import java.io.{File, FileOutputStream, IOException}
 import maker.utils.os.Command
 import scala.xml.{Elem, NodeSeq}
 import maker.project.Module
 import maker.utils.{FileUtils, Int}
 import org.slf4j.{LoggerFactory, Logger}
+import maker.utils.http.HttpUtils
+import scala.collection.JavaConversions._
 
 /*  
     Defines a resource held at some maven/nexus repository
@@ -41,8 +43,9 @@ case class Resource(
   extension : String = "jar",
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
-) {
+) extends MakerConfig {
   import Resource._
+  import HttpUtils.{StatusCode, ErrorMessage}
   override def toString = s"Resource: $groupId $artifactId $version $extension $classifier $downloadDirectory $preferredRepository"
   lazy val log = LoggerFactory.getLogger(this.getClass)
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
@@ -90,6 +93,29 @@ case class Resource(
 
   lazy val resourceFile = downloadDirectory.map(FileUtils.file(_, basename)).getOrElse(???)
 
+  private def download() : Either[List[(StatusCode, ErrorMessage)], Unit] = {
+    
+    resourceFile.dirname.makeDirs
+
+    val resolvers = (preferredRepository.toList ::: config.resolvers.toList).distinct
+    var errors : List[(StatusCode, ErrorMessage)] = Nil
+    val downloaded = resolvers.foldLeft(false){
+      case (hasDownloaded, nextResolver)  => 
+        val url = nextResolver + "/" + relativeURL
+        new HttpUtils().downloadFile(url, resourceFile) match {
+          case Left((statusCode, errorMessage)) => 
+            errors ::= (statusCode, errorMessage)
+            false
+          case Right(_) => 
+            true
+        }
+    } 
+    if (downloaded)
+      Right(Unit)
+    else
+      Left(errors)
+  }
+
   /**
    * If the resource is not already in lib_managed (or equivalent) then try to copy from cache,
    * else download from external repository and put into cache.
@@ -98,12 +124,11 @@ case class Resource(
    * simply don't exist, and trying to download them every time we get an update can become
    * expensive if there are Nexus problems
    */
-  def update(module : Module) : Resource.UpdateResult = {
-    import module.props
+  def update() : Resource.UpdateResult = {
 
     resourceFile.dirname.makeDirs
 
-    val cachedFile = file(module.resourceCacheDirectory, resourceFile.basename)
+    val cachedFile = file(config.resourceCache, resourceFile.basename)
     
     if (resourceFile.doesNotExist && cachedFile.exists){
       ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile.dirname)
@@ -112,55 +137,33 @@ case class Resource(
     if (resourceFile.exists){
       ResourceAlreadyExists
     } else {
-      val errors = download(module)
-      if (resourceFile.exists){
-        log.info("Downloaded " + basename)
-        if (cachedFile.doesNotExist)
-          cacheDownloadedResource(module)
-        ResourceDownloaded
-      } else {
-        ResourceFailedToDownload(errors)
+      download() match {
+        case Right(_) => 
+          cacheResourceFile()
+          ResourceDownloaded
+        case Left(errors) => 
+          ResourceFailedToDownload(errors)
       }
     }
   }
 
-  private def cacheDownloadedResource(module : Module){
+  private def cacheResourceFile(){
+    try {
+      ApacheFileUtils.copyFileToDirectory(resourceFile, config.resourceCache)
+    } catch {
+      case _ : IOException => 
+    }
+  }
+
+  private def cacheDownloadedResource(){
     withTempDir{
       dir => 
         ApacheFileUtils.copyFileToDirectory(resourceFile, dir)
         // Hoping move is atomic
-        ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), module.resourceCacheDirectory, false)
-    }
-  }
-  private def urls(module : Module) : List[String] = {
-    val withExplicitVersion = resolveVersions(module.resourceVersions())
-    (preferredRepository.map(module.resourceResolvers()(_)).toList ::: module.resourceResolvers().values.toList).map{
-      repository => 
-        repository + "/" + withExplicitVersion.relativeURL
+        ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), config.resourceCache, false)
     }
   }
 
-  private def download(module : Module) = {
-    var errors = List[(Int, String)]()  // (curl return code, cmd)
-    urls(module).find{
-      url =>
-        val cmd = Command(
-          "curl",
-          "-s",
-          "-L",
-          "-H", "Pragma: no-cache",
-          url,
-          "-f",
-          "-o",
-          resourceFile.getAbsolutePath
-        )
-        val returnCode = cmd.exec 
-        if (!resourceFile.exists)
-          errors ::= (returnCode, url)
-        resourceFile.exists
-    }
-    errors.reverse
-  }
 }
 
 object Resource{

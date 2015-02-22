@@ -1,16 +1,16 @@
 package maker.project
 
-import sbt.inc.Analysis
-import maker.task._
-import maker.task.tasks._
-import java.util.concurrent.ConcurrentHashMap
 import java.io.File
-import org.slf4j.LoggerFactory
-import maker.{MakerProps, PomUtils, Resource}
+import java.util.concurrent.ConcurrentHashMap
+import maker.task._
 import maker.task.compile._
-import scala.collection.immutable.Nil
-import sbt.ConsoleLogger
+import maker.task.tasks._
 import maker.utils.FileUtils._
+import maker.{MakerProps, PomUtils, Resource}
+import org.slf4j.LoggerFactory
+import sbt.ConsoleLogger
+import sbt.inc.Analysis
+import scala.collection.immutable.Nil
 
 /**
   * Corresponds to a module in IntelliJ

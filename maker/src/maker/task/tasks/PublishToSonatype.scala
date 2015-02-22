@@ -128,7 +128,6 @@ case class PublishToSonatype(baseProject : BaseProject, version : String) extend
 
   def Post(path:String, entity : AbstractHttpEntity) : Either[ErrorMessage, String] = {
     val req = new HttpPost(s"${sonatypeRepository}$path")
-    println(s"Request = $req")
     req.setEntity(entity)
     withHttpClient{ client =>
       val response = client.execute(req)

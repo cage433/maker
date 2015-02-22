@@ -21,3 +21,4 @@ org.eclipse.aether aether-transport-file {aether_version}
 org.eclipse.aether aether-transport-http {aether_version}
 io.spray spray-json_{scala_version_base} 1.3.1
 com.typesafe config 1.2.1
+

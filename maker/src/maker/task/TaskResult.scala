@@ -145,7 +145,7 @@ object TaskResult{
 
   def reportOnFirstFailingTask(taskResults : List[TaskResult]){
     val failing = taskResults.find(_.failed).get
-    println(("First failure was " + failing.task + "\n").inRed)
+    println(("First failure was " + failing.task + "\n" + failing.message).inRed)
   }
 
 } 

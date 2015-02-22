@@ -1,10 +1,10 @@
 package maker.project
 
 import maker.task._
-import maker.{MakerProps, Resource, ExternalResourceConfig}
+import maker._
 import maker.task.compile._
 import java.io.File
-import maker.utils.{FileUtils, MakerTestResults, ScreenUtils}
+import maker.utils._
 import maker.utils.FileUtils._
 import maker.task.tasks._
 import maker.utils.RichString._
@@ -15,7 +15,7 @@ import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
 import scala.collection.immutable.Nil
 
-trait BaseProject {
+trait BaseProject extends MakerConfig {
   protected def root : File
   def projectRoot : File
   val rootAbsoluteFile = root.asAbsoluteFile
@@ -333,8 +333,8 @@ trait BaseProject {
   def delete = recursiveDelete(rootAbsoluteFile)
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
-  def scalaVersion = BaseProject.hackyReadScalaVersion(projectRoot)
-  def projectScalaLibsDir = file(projectRoot, ".maker", "scala-libs", scalaVersion).makeDirs
+  def scalaVersion = config.scalaVersion
+  def projectScalaLibsDir = file(System.getProperty("user.home"), ".maker", "scala-libs", scalaVersion).makeDirs
   def scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
   def scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
   def scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")

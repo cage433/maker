@@ -6,24 +6,46 @@ import org.apache.http.{HttpHost, HttpResponse, HttpStatus}
 import org.apache.http.client.HttpClient
 import org.scalatest.Failed
 import org.apache.http.client.methods.HttpGet
+import java.io.{File, FileOutputStream}
+import maker.utils.{Int, FileUtils}
+import maker.utils.FileUtils._
 
 class HttpUtils extends MakerConfig{
 
-  type ErrorMessage = String
+  import HttpUtils.{StatusCode, ErrorMessage}
 
-  def Get[U](path: String, headers : (String, String)*)(body: HttpResponse => U) : Either[ErrorMessage, U] = {
-    val req = new HttpGet(s"path")
-    headers.foreach{
-      case (key, value) => 
-        req.addHeader(key,value)
+  def downloadFile(url : String, file : File) : Either[(StatusCode, ErrorMessage), Unit] = {
+    Get(url){
+      response => 
+        Option(response.getEntity()) match {
+          case None => 
+            // Don't know the circumstances that could cause a null response,
+            // I couldn't reproduce it
+            Left((-1, s"$url returned null entity"))
+          case Some(entity) => 
+            FileUtils.mkdirs(file.dirname)
+            val fos = new FileOutputStream(file)
+            entity.writeTo(fos)
+            fos.close
+            Right(Unit)
+        }
+    } 
+  }
+
+  def Get[U](path: String)(body: HttpResponse => U) : Either[(StatusCode, ErrorMessage), U] = {
+    val req = new HttpGet(path)
+    config.httpHeaders.foreach{
+      case (field, value) => 
+        req.addHeader(field, value)
     }
 
     withHttpClient{ client =>
       val response = client.execute(req)
-      if(response.getStatusLine.getStatusCode == HttpStatus.SC_OK) 
+      val statusCode = response.getStatusLine.getStatusCode
+      if(statusCode == HttpStatus.SC_OK) 
         Right(body(response))
       else
-        Left(s"Failed to retrieve data from $path: ${response.getStatusLine}")
+        Left((statusCode, s"Failed to retrieve data from $path: ${response.getStatusLine}"))
     }
   }
 
@@ -40,4 +62,9 @@ class HttpUtils extends MakerConfig{
     finally
       client.getConnectionManager.shutdown()
   }
+}
+
+object HttpUtils{
+  type StatusCode =Int
+  type ErrorMessage = String
 }

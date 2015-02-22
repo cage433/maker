@@ -53,6 +53,9 @@ MAKER_DEPENDENCIES  = [ (MAVEN, "org.scalatest", "scalatest_2.10", "2.2.0"),
 # End computer generated section
 
 
+def maker_directory():
+    return os.path.dirname(os.path.abspath(__file__))
+
 def read_args():
     global args
     parser = argparse.ArgumentParser()
@@ -63,6 +66,7 @@ def read_args():
     parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
     parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
+    parser.add_argument('-J', '--JVM-ARGS', dest='jvm_args', nargs=argparse.REMAINDER, default = [])
     args = parser.parse_args()
 
 def create_logger():
@@ -89,7 +93,7 @@ def project_class_directory():
     return mkdir_p(os.path.join(".maker", "project-classes"))
 
 def config_directory():
-    return "config/"
+    return os.path.join(maker_directory(), "config")
 
 def project_definition_file():
     if args.project_definition_file:
@@ -245,17 +249,18 @@ def launch_repl():
     else:
         extra_opts = []
 
-    call([  java(),
+    cmd_args=[  java(),
             "-classpath", classpath(scala_libraries()),
             "-Dsbt.log.format=false",
-            "-Dscala.usejavacp=true"] + 
-            extra_opts +
-            ["-Dlogback.configurationFile=" + args.logback_config,
+            "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + ["-Dlogback.configurationFile=" + args.logback_config,
             "scala.tools.nsc.MainGenericRunner",
             "-cp", classpath(classpath_components),
             "-Yrepl-sync", 
             "-nc", 
-            "-i", project_definition_file()])
+            "-i", project_definition_file()]
+
+    print(" ".join(cmd_args))
+    call(cmd_args)
 
 
 
