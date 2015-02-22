@@ -100,7 +100,7 @@ case class Resource(
     val resolvers = (preferredRepository.toList ::: config.resolvers.toList).distinct
     var errors : List[(StatusCode, ErrorMessage)] = Nil
     val downloaded = resolvers.foldLeft(false){
-      case (hasDownloaded, nextResolver)  => 
+      case (false, nextResolver)  => 
         val url = nextResolver + "/" + relativeURL
         new HttpUtils().downloadFile(url, resourceFile) match {
           case Left((statusCode, errorMessage)) => 
@@ -109,6 +109,7 @@ case class Resource(
           case Right(_) => 
             true
         }
+      case (true, _) => true
     } 
     if (downloaded)
       Right(Unit)

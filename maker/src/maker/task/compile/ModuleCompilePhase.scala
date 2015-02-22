@@ -97,7 +97,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   def classpathJars = classpathDirectoriesAndJars.filter(_.isJar)
   def compilationClasspath = Module.asClasspathStr(classpathDirectoriesAndJars)
 
-  val phaseDirectory = mkdir(file(module.makerDirectory, phase.name))
+  val phaseDirectory = file(module.makerDirectory, phase.name).makeDirs()
   val compilationCacheFile = {
     file(phaseDirectory, "compilation-analysis-cache")
   }
