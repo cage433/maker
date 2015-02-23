@@ -54,12 +54,7 @@ object Maker {
   }
 
   lazy val testReporter = module("test-reporter", name = Some("maker-test-reporter"))
-  lazy val utils = module("utils")
-  lazy val mkr = module("maker", upstreamProjects = List(utils), upstreamTestProjects = List(utils))
-
-  lazy val topLevel = new Project("top-level", file("."), List(mkr)) {
-    override def extraProjectPomInfo = extraPomInfo
-  }
+  lazy val maker_ = module("maker")
 
   // Used to disambiguate which maker is running in the repl.
   def pwd = println(Properties.userDir)
