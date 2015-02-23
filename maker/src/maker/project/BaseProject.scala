@@ -333,7 +333,7 @@ trait BaseProject extends MakerConfig {
   def delete = recursiveDelete(rootAbsoluteFile)
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
-  def scalaVersion = config.scalaVersion
+  def scalaVersion = config.scalaVersion.toString
   def projectScalaLibsDir = file(System.getProperty("user.home"), ".maker", "scala-libs", scalaVersion).makeDirs
   def scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
   def scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")

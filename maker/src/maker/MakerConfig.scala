@@ -20,7 +20,7 @@ trait MakerConfig {
       )
     }
 
-    def scalaVersion : String = config.getString("maker.project.scala.version")
+    def scalaVersion : ScalaVersion = ScalaVersion(config.getString("maker.project.scala.version"))
 
     def scalaLibraryResolver = config.getString("maker.project.scala.resolver")
 

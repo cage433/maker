@@ -208,3 +208,12 @@ object Resource{
     ).resolveVersions(resourceVersions)
   }
 }
+
+trait ResourcePimps{
+  class OrgAndArtifact(org : String, artifact : String){
+    def %(version : String) = Resource(org, artifact, version)
+  }
+  implicit class Organization(name : String){
+    def %(artifact : String) = new OrgAndArtifact(name, artifact)
+  }
+}
