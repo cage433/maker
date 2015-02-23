@@ -62,6 +62,7 @@ def read_args():
 
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
     parser.add_argument('-c', '--project-source-dir', dest='project_src_dir')
+    parser.add_argument('-C', '--project-config-dir', dest='project_config_dir')
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
@@ -92,7 +93,7 @@ def maker_resource_cache():
 def project_class_directory():
     return mkdir_p(os.path.join(".maker", "project-classes"))
 
-def config_directory():
+def reference_config_directory():
     return os.path.join(maker_directory(), "config")
 
 def project_definition_file():
@@ -212,6 +213,7 @@ def maker_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
     return [os.path.join(maker_root, module, "target-maker", "classes") for module in ["utils", "maker"]]
 
+
 def recompile_project_source():
     if not project_src_needs_recompiling():
         return
@@ -238,11 +240,14 @@ def recompile_project_source():
 def launch_repl():
     mkdir_p(".maker")
     
-    classpath_components = scala_libraries() + maker_dependencies() + [project_class_directory(), config_directory()]
+    classpath_components = scala_libraries() + maker_dependencies() + [project_class_directory(), reference_config_directory()]
     if args.maker_developer_mode:
         classpath_components.extend(maker_class_directories())
     else:
         classpath_components.extend(maker_binaries())
+
+    if args.project_config_dir:
+        classpath_components.extend(args.project_config_dir)
 
     if args.use_jrebel:
         extra_opts = ["-javaagent:/usr/local/jrebel/jrebel.jar"]
@@ -259,7 +264,6 @@ def launch_repl():
             "-nc", 
             "-i", project_definition_file()]
 
-    print(" ".join(cmd_args))
     call(cmd_args)
 
 

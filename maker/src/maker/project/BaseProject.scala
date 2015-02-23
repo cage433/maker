@@ -69,7 +69,7 @@ trait BaseProject extends MakerConfig {
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
   def publishToSonatype(version : String) = executeWithDependencies(PublishToSonatype(this, version))
-  def publishSonatypeSnapshot(version : String) = publish(version, "https://oss.sonatype.org/content/repositories/snapshots/")
+  def publishSonatypeSnapshot(version : String) = publish(version, "sonatype-snapshot")
 
   def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
     val tasks = if (includeUpstreamModules)

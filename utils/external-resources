@@ -21,4 +21,6 @@ org.eclipse.aether aether-transport-file {aether_version}
 org.eclipse.aether aether-transport-http {aether_version}
 io.spray spray-json_{scala_version_base} 1.3.1
 com.typesafe config 1.2.1
-
+org.mortbay.jetty jetty 6.1.26
+org.mortbay.jetty jetty-util 6.1.26
+javax.servlet servlet-api 2.5

@@ -16,7 +16,6 @@ class DownloadScalaLibs extends Task
   def name = "Download scala libs"
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
     val scalaVersion = config.getString("maker.project.scala.version")
-    val resolver = config.getString("maker.project.scala.resolver")
 
     def requiresScalaReflect = {
       scalaVersion.split('.').toList match {
@@ -31,8 +30,6 @@ class DownloadScalaLibs extends Task
       }
     }
     def download(library : String, version : String) : Either[List[(Int, String)], Unit] = {
-      println(s"Downloading $library")
-      val url = s"$resolver/org/scala-lang/$library/$version/$library-$version.jar"
       val resource = Resource(
         "org.scala-lang", library, version, 
         downloadDirectory = Some(
