@@ -103,5 +103,29 @@ trait MakerConfig {
       else
         List(s"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$port")
     }
+
+    def gpgPassPhrase = config.getString("maker.gpg-pass-phrase")
+    def sonatypeCredentials = config.getString("maker.sonatype-credentials").split(":")
+
+    def execMode = config.getBoolean("maker.exec-mode")
+
+    def unitTestHeapSize : Int = {
+      val size = config.getInt("maker.unit-test-heap-size")
+      if (size == 0){
+        val runtimeMemory = (Runtime.getRuntime.maxMemory / 1024 / 1024).toInt
+        (runtimeMemory / 2) min 1024
+      } else {
+        size
+      }
+    }
+
+    def taskThreadPoolSize = {
+      val size = config.getInt("maker.task-thread-pool-size")
+      if (size == 0)
+        (Runtime.getRuntime.availableProcessors / 2 max 1) min 4
+      else
+        size
+    }
+
   }
 }

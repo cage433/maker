@@ -5,7 +5,7 @@ import maker.project._
 import maker.task._
 import maker.utils.{Stopwatch, FileUtils}
 import maker.utils.maven.IvyLock
-import maker.PomUtils
+import maker.{PomUtils, MakerConfig}
 import maker.task.compile.SourceCompilePhase
 import java.io.File
 import maker.utils.os.Command
@@ -18,11 +18,13 @@ case class PublishLocalTask(
   modules : Seq[Module],
   version : String,
   signArtifacts : Boolean
-) extends Task {
+) 
+  extends Task 
+  with MakerConfig
+{
   def name = "Publish Local"
 
   def baseProjects = Vector(baseProject)
-  val logger = LoggerFactory.getLogger(this.getClass)
   def module = baseProject
   def upstreamTasks : List[Task] = List(PackageJarTask(baseProject, modules, SourceCompilePhase, Some(version)))
 
@@ -39,7 +41,7 @@ case class PublishLocalTask(
     val signatureFile = new File(file.getAbsolutePath + ".asc")
     if (signatureFile.exists)
       signatureFile.delete
-    val cmd = Command("gpg", "-ab", "--passphrase", module.props.GPG_PassPhrase(), file.getAbsolutePath)
+    val cmd = Command("gpg", "-ab", "--passphrase", config.gpgPassPhrase, file.getAbsolutePath)
     val result = cmd.exec 
     if (result != 0)
       logger.error("Failed to sign " + file)

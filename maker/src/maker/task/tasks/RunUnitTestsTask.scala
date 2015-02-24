@@ -60,7 +60,7 @@ case class RunUnitTestsTask(
     }
 
     val memoryArguments = List(
-      "-Xmx" + props.TestProcessMemoryInMB() + "m",
+      s"-Xmx${config.unitTestHeapSize}m",
       "-XX:MaxPermSize=200m"
     )
 

@@ -37,7 +37,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
 
     val optsToUse = config.debugFlags ::: List(
-      "-Xmx" + props.TestProcessMemoryInMB() + "m", 
+      s"-Xmx${config.unitTestHeapSize}m", 
       "-XX:MaxPermSize=200m",
       "-Dlogback.configurationFile=" + "logback.xml"
     ) ::: opts

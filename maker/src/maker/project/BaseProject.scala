@@ -128,7 +128,7 @@ trait BaseProject extends MakerConfig {
     Build(
       tasks.head.name,
       Dependency.Graph.transitiveClosure(tasks.toList, extraUpstreamTasksMatcher, extraDownstreamTasksMatcher),
-      props.NumberOfTaskThreads()
+      config.taskThreadPoolSize
     )
   }
 
@@ -207,7 +207,7 @@ trait BaseProject extends MakerConfig {
     setUp(bld.graph)
     val result = bld.execute
     tearDown(bld.graph, result)
-    if (result.failed && props.ExecMode()){
+    if (result.failed && config.execMode){
       BaseProject.logger.error(bld + " failed ")
       System.exit(-1)
     }

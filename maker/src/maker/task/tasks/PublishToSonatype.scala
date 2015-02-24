@@ -22,10 +22,15 @@ import org.apache.http.conn.params.ConnRoutePNames
 import org.apache.http.util.EntityUtils
 import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
+import maker.MakerConfig
 
-case class PublishToSonatype(baseProject : BaseProject, version : String) extends Task with EitherPimps{
+case class PublishToSonatype(baseProject : BaseProject, version : String) 
+  extends Task 
+  with MakerConfig
+  with EitherPimps
+{
   import baseProject.props
-  val Array(sonatypeUsername, sonatypePassword) = props.SonatypeCredentials().split(":")
+  val Array(sonatypeUsername, sonatypePassword) = config.sonatypeCredentials
   val sonatypeRepository = "https://oss.sonatype.org/service/local"
   val credentialHost = "oss.sonatype.org"
            

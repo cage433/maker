@@ -114,7 +114,7 @@ class Module(
     val build = Build(
       task.name + " for " + name + " only",
       Dependency.Graph(task),
-      props.NumberOfTaskThreads()
+      config.taskThreadPoolSize
     )
     execute(build)
   }

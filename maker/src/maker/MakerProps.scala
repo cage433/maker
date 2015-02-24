@@ -14,23 +14,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   
   import MakerProps._
 
-  /** 
-   * Set to true in maker.sh if we are executing a maker command,
-   * rather than interacting with maker in the repl. 
-   */
-  object ExecMode extends SystemPropertyWithDefault("maker.execmode", false) with IsBoolean
-
-  // Compilation will require large amounts of memory - tests hopefully less so
-  private def defaultTestProcessMemory : Int = {
-    val runtimeMemory = (Runtime.getRuntime.maxMemory / 1024 / 1024).toInt
-    (runtimeMemory / 2) min 1024
-  }
-  object TestProcessMemoryInMB extends Default(defaultTestProcessMemory) with IsInt
-  object NumberOfTaskThreads extends Default((Runtime.getRuntime.availableProcessors / 2 max 1) min 4) with IsInt
-
-  object GPG_PassPhrase extends EnvProperty("MAKER_GPG_PASS_PHRASE") with IsString
-  object SonatypeCredentials extends EnvProperty("MAKER_SONATYPE_CREDENTIALS") with IsString
-
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{
       case List(k, v) => k -> v
