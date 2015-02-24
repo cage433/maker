@@ -61,13 +61,4 @@ object Utils {
     else value
   }
 
-  def debuggerFlagsFromPortFile(f: File): List[String] =
-    if (!f.exists())
-      Nil
-    else {
-      val port = ApacheFileUtils.readFileToString(f).trim.toInt
-      println("Starting in debug mode, will block until the debugger connects.")
-      println("DEBUG PORT = " + port + " (to disable, delete " + f + ")")
-      List("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=" + port)
-    }
 }

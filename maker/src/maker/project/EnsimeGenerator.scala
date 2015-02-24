@@ -19,7 +19,7 @@ class EnsimeGenerator(props: MakerProps)
       // TODO - fix this
       writer.append("  :scala-version \"" + config.scalaVersion + "\"\n")
       writer.append("  :java-flags (\"-Xmx8g\" \"-XX:+UseConcMarkSweepGC\" \"-Xss2m\")\n") // hack
-      writer.append("  :java-home \"" + props.JavaHome().getAbsolutePath + "\"\n")
+      writer.append("  :java-home \"" + config.javaHome.getAbsolutePath + "\"\n")
 
       writer.append("  :root-dir \"" + root.getAbsolutePath + "\"\n")
       writer.append("  :cache-dir \"" + new File(root.getAbsolutePath, ".ensime_cache") + "\"\n")
@@ -27,7 +27,7 @@ class EnsimeGenerator(props: MakerProps)
 
       // Java and Scala sources are shared between all modules
       writer.append("  :reference-source-roots (\n")
-      writer.append("    \"" + new File(props.JavaHome(), "src.zip").getAbsolutePath + "\"\n")
+      writer.append("    \"" + new File(config.javaHome, "src.zip").getAbsolutePath + "\"\n")
       writer.append("  )\n")
 
       writer.append("  :subprojects (\n")

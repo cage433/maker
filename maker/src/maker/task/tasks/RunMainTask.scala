@@ -6,19 +6,22 @@ import java.io.PrintWriter
 import maker.utils.{TeeToFileOutputStream, Stopwatch}
 import maker.utils.os.{CommandOutputHandler, ScalaCommand}
 import maker.task._
-import maker.task.compile.TestCompileTask
+import maker.task.compile.{TestCompileTask, Run}
 import maker.project.BaseProject
-import maker.utils.Utils.debuggerFlagsFromPortFile
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import maker.MakerConfig
 
 
 /**
  * run a class main in a separate JVM instance (but currently synchronously to maker repl)
  */
-case class RunMainTask(baseProject : BaseProject, className : String, opts : List[String], mainArgs : List[String]) extends Task {
+case class RunMainTask(baseProject : BaseProject, className : String, opts : List[String], mainArgs : List[String]) 
+  extends Task 
+  with MakerConfig
+{
   def name = "Run Main"
 
   def module = baseProject
@@ -27,16 +30,13 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
 
 
   val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
-  val logger = LoggerFactory.getLogger(this.getClass)
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = baseProject.props
     logger.info("running main in class " + className)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
 
-    val debugArguments = debuggerFlagsFromPortFile(props.DebugPortMain())
-
-    val optsToUse = debugArguments ::: List(
+    val optsToUse = config.debugFlags ::: List(
       "-Xmx" + props.TestProcessMemoryInMB() + "m", 
       "-XX:MaxPermSize=200m",
       "-Dlogback.configurationFile=" + "logback.xml"
@@ -44,7 +44,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
     val cmd = ScalaCommand(
       props,
       new CommandOutputHandler(Some(writer)),
-      props.Java().getAbsolutePath,
+      config.javaExecutable.getAbsolutePath,
       optsToUse,
       baseProject.testClasspath,
       className,

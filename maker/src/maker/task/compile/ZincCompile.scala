@@ -44,7 +44,7 @@ object ZincCompile extends MakerConfig{
       "warn",
       "-no-color",
       "-java-home",
-      props.JavaHome().getCanonicalFile.getAbsolutePath,
+      config.javaHome.getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
       config.scalaVersion.scalaCompilerJar.getAbsolutePath,
       "-scala-library",

@@ -47,7 +47,7 @@ case class DocTask(module : Module)
       val cmd = ScalaDocCmd(
         CommandOutputHandler.NULL.withSavedOutput,
         docDir,
-        props.Java().getAbsolutePath,
+        config.javaExecutable.getAbsolutePath,
         scalaToolsClasspath,
         Nil,
         optsFile)

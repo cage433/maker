@@ -83,5 +83,25 @@ trait MakerConfig {
       }
       configFile
     }
+
+    def javaHome = {
+      Option(System.getenv("JAVA_HOME")) orElse Option(System.getenv("JDK_HOME")) match {
+          case Some(dir) => file(dir)
+          case None => 
+            throw new IllegalStateException("JAVA_HOME or JDK_HOME must be specified")
+      }
+    }
+    
+    def javaExecutable = {
+      file(javaHome, "bin", "java")
+    }
+
+    def debugFlags = {
+      val port = config.getInt("make.debug.port")
+      if (port == 0)
+        Nil
+      else
+        List(s"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$port")
+    }
   }
 }

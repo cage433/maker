@@ -13,14 +13,6 @@ import org.slf4j.LoggerFactory
 case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
   
   import MakerProps._
-  object JavaHome extends EnvProperty("JAVA_HOME", "JDK_HOME") with IsFile
-  object Java extends Default(JavaHome() + "/bin/java") with IsFile
-
-  /**
-   * The debug files should contain a single number, indicating the port to use for remote debugging.
-   */
-  object DebugPortMain extends Default(file("DEBUG-PORT-MAIN")) with IsFile
-  object DebugPortTest extends Default(file("DEBUG-PORT-TEST")) with IsFile
 
   /** 
    * Set to true in maker.sh if we are executing a maker command,
@@ -38,7 +30,6 @@ case class MakerProps (overrides : MMap[String, String]) extends PropsTrait{
 
   object GPG_PassPhrase extends EnvProperty("MAKER_GPG_PASS_PHRASE") with IsString
   object SonatypeCredentials extends EnvProperty("MAKER_SONATYPE_CREDENTIALS") with IsString
-  object HttpProxy extends EnvProperty("MAKER_HTTP_PROXY") with IsOptionalString
 
   def ++(moreOverrides : String*) = {
     val moreOverridesAsMap : Map[String, String] = moreOverrides.toList.grouped(2).map{

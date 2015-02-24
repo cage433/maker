@@ -8,7 +8,6 @@ import maker.utils.RichIterable._
 import maker.task.compile.TestCompileTask
 import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
-import maker.utils.Utils.debuggerFlagsFromPortFile
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import maker.MakerConfig
@@ -67,9 +66,7 @@ case class RunUnitTestsTask(
 
     baseProject.testOutputFile.delete
 
-    val debugArguments = debuggerFlagsFromPortFile(props.DebugPortTest())
-
-    val opts = debugArguments ::: memoryArguments ::: systemPropertiesArguments
+    val opts = config.debugFlags ::: memoryArguments ::: systemPropertiesArguments
  
     val testParameters = {
       val consoleReporterArgs = if (verbose) List("-oF") else Nil
@@ -81,7 +78,7 @@ case class RunUnitTestsTask(
     val cmd = ScalaCommand(
       props,
       CommandOutputHandler(), 
-      props.Java().getAbsolutePath, 
+      config.javaExecutable.getAbsolutePath, 
       opts,
       baseProject.testClasspath + java.io.File.pathSeparator + config.testReporterJar,
       "org.scalatest.tools.Runner", 
