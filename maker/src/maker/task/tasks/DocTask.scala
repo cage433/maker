@@ -24,7 +24,6 @@ case class DocTask(module : Module)
   def baseProject = module
   def name = "Doc " + module.name
   def upstreamTasks = List(SourceCompileTask(module))
-  val logger = LoggerFactory.getLogger(this.getClass)
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val props = module.props
 

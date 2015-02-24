@@ -11,13 +11,18 @@ import maker.utils.RichString._
 import maker.utils.Utils.debuggerFlagsFromPortFile
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
-
+import maker.MakerConfig
+import java.sql.Time
 
 case class RunUnitTestsTask(
   name : String, 
   baseProject : BaseProject, 
   classOrSuiteNames_ : Option[Iterable[String]],
-  verbose: Boolean)  extends Task {
+  verbose: Boolean
+)  
+  extends Task 
+  with MakerConfig
+{
 
   def baseProjects = Vector(baseProject)
   override def failureHaltsTaskManager = false
@@ -47,7 +52,7 @@ case class RunUnitTestsTask(
     val systemPropertiesArguments = {
       var s = Map[String, String]()
       s += "scala.usejavacp" -> "true"
-      s += "logback.configurationFile" -> baseProject.testLogbackConfigFile.getAbsolutePath
+      s += "logback.configurationFile" -> config.unitTestLogbackConfigFile.getAbsolutePath
       s += "maker.test.output" -> baseProject.testOutputFile.toString
       s += "sbt.log.format" -> "=false"
       s.map{
@@ -78,7 +83,7 @@ case class RunUnitTestsTask(
       CommandOutputHandler(), 
       props.Java().getAbsolutePath, 
       opts,
-      baseProject.testClasspath + java.io.File.pathSeparator + baseProject.testReporterJar,
+      baseProject.testClasspath + java.io.File.pathSeparator + config.testReporterJar,
       "org.scalatest.tools.Runner", 
       "Running tests in " + name,
       args 

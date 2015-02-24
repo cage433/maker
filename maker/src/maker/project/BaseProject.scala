@@ -19,13 +19,6 @@ trait BaseProject extends MakerConfig {
   protected def root : File
   def projectRoot : File
   val rootAbsoluteFile = root.asAbsoluteFile
-  def testReporterJar = {
-    val regex = """com\.github\.cage433-maker-test-reporter-[0-9.]+\.jar""".r
-    file(projectRoot, ".maker", "maker-libs").listAllFiles.find{
-      f => 
-        regex.findFirstMatchIn(f.basename).isDefined
-    }.getOrElse{throw new IllegalStateException("Test reporter jar not found")}
-  }
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
   def setUp(graph : Dependency.Graph) : Boolean = {
@@ -328,7 +321,6 @@ trait BaseProject extends MakerConfig {
   def delete = recursiveDelete(rootAbsoluteFile)
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
-  //def scalaVersion = config.scalaVersion.toString
   def projectScalaLibsDir = file(System.getProperty("user.home"), ".maker", "scala-libs", config.scalaVersion.toString).makeDirs
   def externalResourceConfigFile = file(projectRoot, "external-resource-config")
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceVersions()
@@ -340,7 +332,6 @@ trait BaseProject extends MakerConfig {
 
   def topLevelCompilationErrorsFile = file(projectRoot, "vim-compilation-errors")
 
-  def testLogbackConfigFile = file(projectRoot, ".maker", "logback-unit-tests.xml")
   def resourceCacheDirectory = file(System.getenv("HOME"), ".maker", "resource-cache").makeDirs()
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
 
@@ -349,17 +340,5 @@ trait BaseProject extends MakerConfig {
 }
 
 object BaseProject{
-  private def hackyReadScalaVersion(projectRoot : File): String = {
-    val configFile = file(projectRoot, "external-resource-config")
-    if (! configFile.exists)
-      throw new IllegalStateException("No config file found")
-
-    val source = io.Source.fromFile(configFile)
-    try {
-      source.getLines().find(_.contains("scala_version")).map{line => line.split("\\s+")(2)}.getOrElse{
-        throw new RuntimeException("Unable to read scala_version ")
-      }
-    } finally source.close()
-  }
   val logger = LoggerFactory.getLogger(this.getClass)
 }
