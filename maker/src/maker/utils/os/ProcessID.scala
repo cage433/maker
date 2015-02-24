@@ -1,7 +1,6 @@
 package maker.utils.os
 
 import java.lang.management.ManagementFactory
-import maker.MakerProps
 
 case class ProcessID(id : Int){
   def isRunning() = {

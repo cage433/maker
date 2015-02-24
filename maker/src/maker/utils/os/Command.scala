@@ -6,7 +6,6 @@ import concurrent.Future
 import java.io.FileWriter
 import scalaz.syntax.std.option._
 import java.io.IOException
-import maker.MakerProps
 import maker.utils.FileUtils._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -115,7 +114,7 @@ object Command{
 }
 
 object ScalaCommand {
-  def apply(props : MakerProps, outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
+  def apply(outputHandler : CommandOutputHandler, java : String, opts : List[String], classpath : String, klass : String, name : String, args : List[String] = Nil) : Command = {
     val allArgs : List[String] = java :: opts ::: List[String](
       "-Dscala.usejavacp=true", 
       "-classpath",

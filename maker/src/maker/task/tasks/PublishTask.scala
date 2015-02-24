@@ -8,7 +8,6 @@ import org.apache.ivy.core.resolve.ResolveOptions
 import org.apache.ivy.Ivy
 import maker.task._
 import maker.utils.Stopwatch
-import maker.MakerProps
 import maker.utils.maven.IvyLock
 import scala.collection.JavaConversions._
 import org.apache.ivy.util.{DefaultMessageLogger, Message}
@@ -35,9 +34,6 @@ case class PublishTask(
   }
 
   private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
-
-    println("Debug: " + (new java.util.Date()) + "doPublish start")
-    val props : MakerProps = baseProject.props
 
     val ivyFile = baseProject.ivyFile(version)
     try {

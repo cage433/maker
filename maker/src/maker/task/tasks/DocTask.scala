@@ -25,7 +25,6 @@ case class DocTask(module : Module)
   def name = "Doc " + module.name
   def upstreamTasks = List(SourceCompileTask(module))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val props = module.props
 
     logger.info("running scala-doc gen for module " + module)
 

@@ -9,7 +9,6 @@ import maker.project.Module
 import maker.task.TaskResult
 import java.io.File
 import org.scalatest.FreeSpec
-import maker.MakerProps
 import maker.utils.RichString._
 import maker.task.compile._
 import org.scalatest.GivenWhenThen

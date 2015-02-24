@@ -31,7 +31,6 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
 
   val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val props = baseProject.props
     logger.info("running main in class " + className)
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
@@ -42,7 +41,6 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
       "-Dlogback.configurationFile=" + "logback.xml"
     ) ::: opts
     val cmd = ScalaCommand(
-      props,
       new CommandOutputHandler(Some(writer)),
       config.javaExecutable.getAbsolutePath,
       optsToUse,

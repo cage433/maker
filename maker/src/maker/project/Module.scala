@@ -6,7 +6,7 @@ import maker.task._
 import maker.task.compile._
 import maker.task.tasks._
 import maker.utils.FileUtils._
-import maker.{MakerProps, PomUtils, Resource}
+import maker.{PomUtils, Resource}
 import org.slf4j.LoggerFactory
 import sbt.ConsoleLogger
 import sbt.inc.Analysis
@@ -22,7 +22,6 @@ class Module(
     val name : String,
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
-    val props : MakerProps = MakerProps(),
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
   extends BaseProject
@@ -210,7 +209,6 @@ trait ClassicLayout {
 object Module{
  
   val logger = LoggerFactory.getLogger(this.getClass)
-  val props = MakerProps()
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
 

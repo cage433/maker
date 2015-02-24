@@ -20,7 +20,6 @@ case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) exten
   def upstreamTasks = (module.immediateUpstreamModules ::: module.immediateUpstreamTestModules).distinct.map(CleanTask(_, deleteManagedLibs))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val props = module.props
     logger.debug("cleaning " + module)
     if (deleteManagedLibs){
       Option(module.managedLibDir.listFiles).foreach(_.foreach(_.delete))

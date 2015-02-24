@@ -4,7 +4,6 @@ import maker.task.BuildResult
 import maker.task.tasks._
 import maker.utils.FileUtils._
 import java.io.File
-import maker.MakerProps
 import maker.utils.RichString._
 import maker.utils.os.Command
 import scala.collection.immutable.Nil
@@ -14,7 +13,6 @@ case class Project(
   name : String,
   root : File,
   immediateUpstreamModules:List[Module],
-  props : MakerProps = MakerProps(),
   topLevelExcludedFolders:List[String] = Nil
 ) extends TmuxIntegration{
 
@@ -54,7 +52,7 @@ case class Project(
   }
 
   def generateEnsimeProject() {
-    val generator = new EnsimeGenerator(props)
+    val generator = new EnsimeGenerator()
     generator.generateModules(rootAbsoluteFile, name, allModules)
   }
 

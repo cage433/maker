@@ -13,7 +13,6 @@ class TestModule(
   name : String,
   upstreamProjects : List[Module] = Nil,
   upstreamTestProjects : List[Module] = Nil,
-  overrideProps : Option[MakerProps] = None,
   analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis]()
 ) extends Module(
   root, 
@@ -21,7 +20,6 @@ class TestModule(
   name,
   upstreamProjects, 
   upstreamTestProjects,
-  props = overrideProps.getOrElse(MakerProps()),
   analyses
 ) with ClassicLayout {
   root.mkdirs

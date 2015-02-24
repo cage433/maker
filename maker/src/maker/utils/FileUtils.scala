@@ -17,7 +17,6 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.EnumSet
 import java.util.concurrent.atomic.AtomicBoolean
-import maker.MakerProps
 import scala.util.Properties
 
 object FileUtils extends Asserting{

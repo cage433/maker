@@ -10,7 +10,6 @@ import scala.collection.mutable.ListBuffer
 import maker.utils.RichString._
 import org.scalatest.ParallelTestExecution
 import maker.project._
-import maker.MakerProps
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler

@@ -1,5 +1,4 @@
 package maker.utils.os
-import maker.MakerProps
 import scala.util.Properties
 
 object OsUtils {

@@ -19,7 +19,6 @@ abstract class CompileTask(val module : Module) extends Task{
   
   def baseProject = module
   def phase : CompilePhase
-  val props = module.props
 
   val modulePhase = ModuleCompilePhase(module, phase)
 

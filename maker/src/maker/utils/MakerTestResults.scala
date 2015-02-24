@@ -17,7 +17,6 @@ import java.io._
 import maker.utils.FileUtils._
 import maker.utils.RichString._
 import maker.utils.RichIterable._
-import maker.MakerProps
 
 case class TestIdentifier(suite : String, suiteClass : String, test : String) extends Ordered[TestIdentifier]{
   def compare(rhs : TestIdentifier) = toString.compare(rhs.toString)
@@ -52,7 +51,7 @@ object MakerTestResults{
     field.split(grpSep).toList.mkString("\n")
   }
 
-  def apply(props : MakerProps, file : File) : MakerTestResults = {
+  def apply(file : File) : MakerTestResults = {
 
     val startTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
     val endTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()

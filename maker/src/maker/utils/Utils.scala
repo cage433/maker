@@ -6,7 +6,6 @@ import os.Command
 import os.OsUtils._
 import java.io.PrintWriter
 import java.io.StringWriter
-import maker.MakerProps
 
 object Utils {
   def fix[A, B](f: (A => B) => (A => B)): A => B = f(fix(f))(_)

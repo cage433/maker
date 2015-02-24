@@ -25,8 +25,6 @@ case class RunUnitTestsTask(
 
   def baseProjects = Vector(baseProject)
   override def failureHaltsTaskManager = false
-  val props = baseProject.props
-
 
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask)
 
@@ -76,7 +74,6 @@ case class RunUnitTestsTask(
     val args = testParameters ++ suiteParameters 
 
     val cmd = ScalaCommand(
-      props,
       CommandOutputHandler(), 
       config.javaExecutable.getAbsolutePath, 
       opts,
@@ -86,7 +83,7 @@ case class RunUnitTestsTask(
       args 
     )
     val res = cmd.exec
-    val results = MakerTestResults(baseProject.props, baseProject.testOutputFile)
+    val results = MakerTestResults(baseProject.testOutputFile)
     val result = if (res == 0 && results.failures.isEmpty){
       RunUnitTestsTaskResult(this, succeeded = true, stopwatch = sw, testResults = results)
     } else if (results.failures.isEmpty){
@@ -149,7 +146,7 @@ object RunUnitTestsTask{
     RunUnitTestsTask(
       "Failing tests",
       module,
-      Some(MakerTestResults(module.props, module.testOutputFile).failingSuiteClasses),
+      Some(MakerTestResults(module.testOutputFile).failingSuiteClasses),
       verbose
     )
   }

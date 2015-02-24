@@ -2,13 +2,13 @@ package maker.project
 
 import com.typesafe.zinc.Compiler
 import java.io.{File, FileWriter, Writer}
-import maker.{MakerProps, MakerConfig}
+import maker.MakerConfig
 import org.apache.commons.io.FileUtils
 import scala.collection.immutable.Nil
 import javax.annotation.Generated
 import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
 
-class EnsimeGenerator(props: MakerProps) 
+class EnsimeGenerator() 
   extends MakerConfig
 {
   def generateModules(root: File, name: String, modules: List[Module]): Unit = {

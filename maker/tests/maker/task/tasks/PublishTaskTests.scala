@@ -4,7 +4,7 @@ import org.scalatest.FreeSpec
 import maker.utils.FileUtils._
 import maker.project.{TestModule, Project, HasDummyCompiler}
 import maker.Resource._
-import maker.{Resource, MakerProps, MakerConfig}
+import maker.{Resource, MakerConfig}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.utils.RichString._
 

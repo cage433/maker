@@ -2,7 +2,6 @@ package maker.task
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicReference
-import maker.MakerProps
 import maker.project.Module
 import maker.task.compile._
 import maker.task.TaskResult._

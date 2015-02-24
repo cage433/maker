@@ -14,7 +14,6 @@ object ZincCompile extends MakerConfig{
   lazy val zinc = new ZincClient()
   def apply(projectPhase : ModuleCompilePhase) : Int = {
     val module = projectPhase.module
-    val props = module.props
     val upstreamCaches = {
       var map = Map[File, File]()
 

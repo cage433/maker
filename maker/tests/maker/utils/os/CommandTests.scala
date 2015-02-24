@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
-import maker.MakerProps
 
 class CommandTests extends FunSuite{
 

@@ -4,12 +4,11 @@ import maker.utils.FileUtils._
 import java.io.File
 import maker.task.compile._
 import maker.utils.RichString._
-import maker.{MakerProps, MakerConfig}
+import maker.MakerConfig
 
 case class IDEAProjectGenerator(project : Project) 
   extends MakerConfig
 {
-  import project.props
 
   val scalaVersion = config.scalaVersion
 

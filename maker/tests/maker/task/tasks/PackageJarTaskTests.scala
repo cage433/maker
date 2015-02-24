@@ -6,7 +6,6 @@ import java.io.File
 import maker.project.{Module, TestModule, HasDummyCompiler}
 import maker.utils.FileUtils._
 import maker.utils.{CustomMatchers, Stopwatch}
-import maker.MakerProps
 import maker.task.compile.SourceCompilePhase
 import java.util.jar.JarFile
 import scala.collection.JavaConversions._

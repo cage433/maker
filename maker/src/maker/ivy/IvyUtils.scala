@@ -15,7 +15,7 @@ object IvyUtils {
     * Create the ivy file which describes an artifact, used by Ivy.publish
     */
   def generateIvyFile(baseProject : BaseProject, version : String) : File = {
-    import baseProject.{props, rootAbsoluteFile, allUpstreamBaseProjects, organization, artifactId}
+    import baseProject.{rootAbsoluteFile, allUpstreamBaseProjects, organization, artifactId}
 
     val genFile = file(rootAbsoluteFile, "ivy-dynamic.xml")
 

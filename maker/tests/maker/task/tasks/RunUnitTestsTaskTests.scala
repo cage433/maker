@@ -5,7 +5,6 @@ import maker.utils.FileUtils._
 import maker.project.TestModule
 import org.scalatest.ParallelTestExecution
 import maker.project.Module
-import maker.MakerProps
 
 class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
   test("Test reports picks up failure"){
