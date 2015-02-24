@@ -1,7 +1,7 @@
 package maker.project
 
 import maker.task.BuildResult
-import maker.task.tasks.{CreateDeployTask, PackageJarTask, PublishLocalTask}
+import maker.task.tasks._
 import maker.utils.FileUtils._
 import java.io.File
 import maker.MakerProps
@@ -91,5 +91,11 @@ case class Project(
       import maker.utils.os.Command
       Command("dot", "-Tpdf", "-o" + name + ".pdf", dotFile.getAbsolutePath).exec
     })
+  }
+
+  def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
+    require(includeUpstreamModules, "Project publication must include all upstream modules")
+    val task = PublishTask(this, allUpstreamModules, resolver, version, signArtifacts) 
+    executeWithDependencies(task)
   }
 }

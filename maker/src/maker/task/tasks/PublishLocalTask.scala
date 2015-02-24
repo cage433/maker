@@ -28,7 +28,10 @@ case class PublishLocalTask(
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
-      doPublish(baseProject, results, sw)
+      println("Debug: " + (new java.util.Date()) + "publish local ") 
+      val result = doPublish(baseProject, results, sw)
+      println("Debug: " + (new java.util.Date()) + "finish publish local ") 
+      result
     }
   }
   
@@ -63,6 +66,7 @@ case class PublishLocalTask(
     ).filter(_._1.exists).forall{
       case (jar, versionedBasename) => 
         val fileWithVersion = file(baseProject.publishLocalJarDir(version), versionedBasename)
+        fileWithVersion.delete
         try {
           copyFile(jar, fileWithVersion)
         } catch {

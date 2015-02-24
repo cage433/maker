@@ -4,8 +4,12 @@ import com.typesafe.zinc._
 import xsbti.compile.CompileOrder
 import java.io.File
 import maker.utils.FileUtils._
+import org.scalatest.Failed
+import maker.utils.Int
+import maker.MakerConfig
+import maker.project.Module
 
-object ZincCompile{
+object ZincCompile extends MakerConfig{
 
   lazy val zinc = new ZincClient()
   def apply(projectPhase : ModuleCompilePhase) : Int = {
@@ -31,12 +35,10 @@ object ZincCompile{
       case list => List("-analysis-map", list.mkString(","))
     }
 
-    // TODO - fix this hack
-    val extraJarArgs = if (module.scalaVersion.split('.')(1).toInt == 9)
-      Nil
-    else 
-      List("-scala-extra", module.scalaReflectJar.getAbsolutePath)
-    print(module.scalaReflectJar.getAbsolutePath)
+    val extraJarArgs : List[String] = config.scalaVersion.scalaReflectJar.toList.flatMap{
+      jar => 
+        List("-scala-extra", jar.getAbsolutePath)
+    }(scala.collection.breakOut)
     val arguments = List[String](
       "-log-level",
       "warn",
@@ -44,9 +46,9 @@ object ZincCompile{
       "-java-home",
       props.JavaHome().getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
-      module.scalaCompilerJar.getAbsolutePath,
+      config.scalaVersion.scalaCompilerJar.getAbsolutePath,
       "-scala-library",
-      module.scalaLibraryJar.getAbsolutePath,
+      config.scalaVersion.scalaLibraryJar.getAbsolutePath,
       "-classpath",
       projectPhase.classpathDirectoriesAndJars.filterNot(_ == projectPhase.outputDir).toList.map(_.getCanonicalFile.getAbsolutePath).mkString(File.pathSeparator),
       "-d",

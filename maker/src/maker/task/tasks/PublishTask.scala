@@ -36,6 +36,7 @@ case class PublishTask(
 
   private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
 
+    println("Debug: " + (new java.util.Date()) + "doPublish start")
     val props : MakerProps = baseProject.props
 
     val ivyFile = baseProject.ivyFile(version)
@@ -57,7 +58,9 @@ case class PublishTask(
         val resolveOptions = new ResolveOptions().setConfs(confs)
           .setValidate(true)
           .setArtifactFilter(FilterHelper.getArtifactTypeFilter(Array[String]("xml", "jar", "bundle", "source")))
+          println("Debug: " + (new java.util.Date()) + "resolving")
         val report = ivy.resolve(ivyFile.toURI().toURL(), resolveOptions)
+          println("Debug: " + (new java.util.Date()) + "finished resolving")
         val md = report.getModuleDescriptor
         md.getModuleRevisionId()
       }
@@ -73,12 +76,14 @@ case class PublishTask(
       )
 
 
+      println("PUBLISHING")
       ivy.publish(
         moduleRevisionID,
         srcArtifactPattern,
         resolverName,
         publishOptions)
 
+      println("FINISHED PUBLISHING")
       DefaultTaskResult(this, true, sw)
     }
     catch {

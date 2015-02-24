@@ -5,7 +5,7 @@ import maker.project.{BaseProject, Project, Module}
 import scala.collection.immutable.Nil
 import scala.xml.PrettyPrinter
 
-object PomUtils{
+object PomUtils extends MakerConfig{
   def dependencyXml(groupId : String, artifactId : String, version : String) = {
     <dependency>
       <groupId>{groupId}</groupId>
@@ -35,7 +35,8 @@ object PomUtils{
           case m : Module => m.resources
         }
       }
-      (Resource("org.scala-lang", "scala-library", baseProject.scalaVersion.toString) :: resources).distinct.map(
+      baseProject.config.scalaVersion.scalaLibraryResource
+      (baseProject.config.scalaVersion.scalaLibraryResource :: resources).distinct.map(
         _.pomDependencyXML
       )
     }

@@ -79,14 +79,9 @@ trait BaseProject extends MakerConfig {
 
     executeWithDependencies(tasks: _*)
   }
-  def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
-    val tasks = if (includeUpstreamModules)
-        PublishTask(this, allUpstreamModules, resolver, version, signArtifacts) :: Nil
-      else
-        PublishTask(this, Nil, resolver, version, signArtifacts) :: allUpstreamModules.map{m => PublishTask(m, Vector(m), resolver, version, signArtifacts)}
 
-    executeWithDependencies(tasks : _*)
-  }
+  def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) : BuildResult 
+
   def sourcePackageJar(compilePhase : CompilePhase, version : Option[String]) = {
     val versionAsString = version.map("-" + _).getOrElse("")
     val jarBasename = compilePhase match {
@@ -305,8 +300,8 @@ trait BaseProject extends MakerConfig {
     */
   def writeVimClasspath {
     var dirsAndJars = allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars).toList.distinct
-    dirsAndJars ::= scalaCompilerJar
-    dirsAndJars ::= scalaLibraryJar
+    dirsAndJars ::= config.scalaVersion.scalaCompilerJar
+    dirsAndJars ::= config.scalaVersion.scalaLibraryJar
     val cp = Module.asClasspathStr(dirsAndJars)
     val cpFile : File = file(name + "-classpath.sh")
     writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
@@ -333,12 +328,8 @@ trait BaseProject extends MakerConfig {
   def delete = recursiveDelete(rootAbsoluteFile)
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
-  def scalaVersion = config.scalaVersion.toString
-  def projectScalaLibsDir = file(System.getProperty("user.home"), ".maker", "scala-libs", scalaVersion).makeDirs
-  def scalaLibraryJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}.jar")
-  def scalaCompilerJar = file(projectScalaLibsDir, s"org.scala-lang-scala-compiler-${scalaVersion}.jar")
-  def scalaReflectJar = file(projectScalaLibsDir, s"org.scala-lang-scala-reflect-${scalaVersion}.jar")
-  def scalaLibrarySourceJar = file(projectScalaLibsDir, s"org.scala-lang-scala-library-${scalaVersion}-sources.jar")
+  //def scalaVersion = config.scalaVersion.toString
+  def projectScalaLibsDir = file(System.getProperty("user.home"), ".maker", "scala-libs", config.scalaVersion.toString).makeDirs
   def externalResourceConfigFile = file(projectRoot, "external-resource-config")
   def resourceVersions() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceVersions()
   def resourceResolvers() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceResolvers()

@@ -54,6 +54,7 @@ case class Resource(
   def basename : String = "%s-%s-%s%s.%s" %
     (groupId, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
 
+  def withDownloadDirectory(dir : File) = copy(downloadDirectory = Some(dir))
   def pomDependencyXML = {
     <dependency>
       <groupId>{groupId}</groupId>

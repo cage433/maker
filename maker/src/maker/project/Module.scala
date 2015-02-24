@@ -148,7 +148,8 @@ class Module(
   def cacheDirectory = mkdirs(makerDirectory, "cache")
 
   def managedJars = findJars(managedLibDir)
-  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + scalaLibraryJar + scalaCompilerJar + scalaReflectJar
+  def classpathJars : Iterable[File] = findJars(unmanagedLibDirs.toSet + managedLibDir).toSet + 
+    config.scalaVersion.scalaLibraryJar + config.scalaVersion.scalaCompilerJar ++ config.scalaVersion.scalaReflectJar.toList
 
   def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(SourceCompilePhase, Some(version)).getName)
   def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(SourceCompilePhase, Some(version)).getName)
@@ -182,6 +183,15 @@ class Module(
   def vimModuleCompileOutputFile = file(root, "vim-compile-output")
 
   def compilerName = "zinc"
+
+  def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
+    val tasks = if (includeUpstreamModules)
+        PublishTask(this, allUpstreamModules, resolver, version, signArtifacts) :: Nil
+      else
+        allUpstreamModules.map{m => PublishTask(m, Vector(m), resolver, version, signArtifacts)}
+
+    executeWithDependencies(tasks : _*)
+  }
 }
 
 trait ClassicLayout {

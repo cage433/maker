@@ -4,11 +4,14 @@ import org.scalatest.FreeSpec
 import maker.utils.FileUtils._
 import maker.project.{TestModule, Project, HasDummyCompiler}
 import maker.Resource._
-import maker.{Resource, MakerProps}
+import maker.{Resource, MakerProps, MakerConfig}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.utils.RichString._
 
-class PublishTaskTests extends FreeSpec {
+class PublishTaskTests 
+  extends FreeSpec 
+  with MakerConfig
+{
   "test wether dynamic ivy is really needed" ignore{
     withTempDir{
       dir =>  
@@ -56,7 +59,7 @@ class PublishTaskTests extends FreeSpec {
               |    <dependency>
               |      <groupId>org.scala-lang</groupId>
               |      <artifactId>scala-library</artifactId>
-              |      <version>""".stripMargin + proj.scalaVersion + """</version>
+              |      <version>""".stripMargin + config.scalaVersion + """</version>
               |      <scope>compile</scope>
               |    </dependency>
               |  </dependencies>

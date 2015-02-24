@@ -4,10 +4,14 @@ import maker.utils.FileUtils._
 import java.io.File
 import maker.task.compile._
 import maker.utils.RichString._
-import maker.MakerProps
+import maker.{MakerProps, MakerConfig}
 
-case class IDEAProjectGenerator(project : Project) {
-  import project.{props, scalaVersion, scalaLibraryJar, scalaCompilerJar, scalaLibrarySourceJar}
+case class IDEAProjectGenerator(project : Project) 
+  extends MakerConfig
+{
+  import project.props
+
+  val scalaVersion = config.scalaVersion
 
   def generateTopLevelModule(rootDir:File, name:String, excludedFolders:List[String]) {
 
@@ -44,7 +48,7 @@ case class IDEAProjectGenerator(project : Project) {
 
     // For now we are insisting that there is a "scala directory" at this location: $PROJECT_DIR$/lib/scala/lib_managed/
     // Obviously, this isn't very good and we should allow it to be specified.
-    List(scalaLibraryJar, scalaCompilerJar).foreach{
+    List(scalaVersion.scalaLibraryJar, scalaVersion.scalaCompilerJar).foreach{
       jar => 
       if (!jar.exists) {
         throw new Exception("Maker requires that file " + jar + " + be present. Launch maker with the '-y' flag to download it")
@@ -63,8 +67,8 @@ case class IDEAProjectGenerator(project : Project) {
     </SOURCES>
   </library>
 </component>
-""" % (scalaVersion, scalaLibraryJar.getPath, scalaLibrarySourceJar.getPath)
-    writeToFileIfDifferent(file(librariesDir, "scala_library_%s.xml" % scalaVersion.replace('.', '_')), scalaLibraryContent)
+""" % (scalaVersion.toString, scalaVersion.scalaLibraryJar.getPath, scalaVersion.scalaLibrarySourceJar.getPath)
+    writeToFileIfDifferent(file(librariesDir, "scala_library_%s.xml" % scalaVersion.toString.replace('.', '_')), scalaLibraryContent)
 
     val scalaCompilerLibraryContent = """<component name="libraryTable">
   <library name="scala-compiler-%s">
@@ -76,8 +80,8 @@ case class IDEAProjectGenerator(project : Project) {
     <SOURCES />
   </library>
 </component>
-""" % (scalaVersion, scalaCompilerJar, scalaLibraryJar)
-    writeToFileIfDifferent(file(librariesDir, "scala_compiler_%s.xml" % scalaVersion.replace('.', '_')), scalaCompilerLibraryContent)
+""" % (scalaVersion.toString, scalaVersion.scalaCompilerJar, scalaVersion.scalaLibraryJar)
+    writeToFileIfDifferent(file(librariesDir, "scala_compiler_%s.xml" % scalaVersion.toString.replace('.', '_')), scalaCompilerLibraryContent)
 
     val scalaCompilerContent = """<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">

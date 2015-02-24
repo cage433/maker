@@ -9,13 +9,17 @@ import maker.task.compile._
 import maker.project.{BaseProject, Module}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
+import maker.MakerConfig
 
 
 /** Doc generation task - produces scaladocs from module sources
   *
   * Outputs scala-docs per module in the "docs" sub-dir of the module target output dir
   */
-case class DocTask(module : Module) extends Task{
+case class DocTask(module : Module) 
+  extends Task
+  with MakerConfig
+{
     
   def baseProject = module
   def name = "Doc " + module.name
@@ -39,7 +43,7 @@ case class DocTask(module : Module) extends Task{
       val optsFile = file(docDir, "docopts")
       writeToFile(optsFile, "-classpath " + module.compilePhase.compilationClasspath + " " + inputFiles.mkString(" "))
 
-      val scalaToolsClasspath = module.scalaCompilerJar.getAbsolutePath + ":" + module.scalaLibraryJar.getAbsolutePath + ":" + module.scalaReflectJar.getAbsolutePath
+      val scalaToolsClasspath = config.scalaVersion.resources.map(_.resourceFile.getAbsolutePath).mkString(":")
 
       val cmd = ScalaDocCmd(
         CommandOutputHandler.NULL.withSavedOutput,

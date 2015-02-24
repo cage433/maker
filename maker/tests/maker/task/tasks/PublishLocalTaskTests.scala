@@ -12,7 +12,12 @@ import java.io.File
 import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
 
-class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
+class PublishLocalTaskTests 
+  extends FreeSpec 
+  with Matchers 
+  with CustomMatchers
+  with MakerConfig
+{
 
   private def checkPublishedPomMatchesCoordinates(project : BaseProject, version : String){
     assert(project.publishLocalPomFile(version).exists, s"${project.publishLocalPomFile(version)} doesn't exist")
@@ -33,7 +38,7 @@ class PublishLocalTaskTests extends FreeSpec with Matchers with CustomMatchers{
   private def checkPublishedPomIncludesAllDependencies(module : Module, version : String){
     val pom = XML.loadFile(module.publishLocalPomFile(version))
     val dependencies = pom \\ "dependency"
-    val resources = Resource("org.scala-lang", "scala-library", module.scalaVersion) :: module.resources
+    val resources = config.scalaVersion.scalaLibraryResource :: module.resources
 
     resources should allSatisfy {
       resource : Resource => 
