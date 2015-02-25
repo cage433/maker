@@ -14,7 +14,7 @@ from subprocess import call
 from glob import glob
 
 # Computer generated section
-MAKER_VERSION       = "1.2-SNAPSHOT"
+MAKER_VERSION       = "1.3-SNAPSHOT"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE            = "http://oss.sonatype.org/content/repositories/snapshots/"
 MAVEN               = "http://repo1.maven.org/maven2/"
@@ -70,6 +70,10 @@ def read_args():
     parser.add_argument('-J', '--JVM-ARGS', dest='jvm_args', nargs=argparse.REMAINDER, default = [])
     args = parser.parse_args()
 
+    if args.refresh and not args.project_src_dir:
+        log.fatal("'refresh' called with no project src directory")
+        exit(1)
+
 def create_logger():
     global log
     logging.basicConfig( \
@@ -85,7 +89,7 @@ def maker_binaries_directory():
     return os.path.join(os.environ['HOME'], ".maker", "maker-binaries", MAKER_VERSION)
 
 def maker_scala_directory():  
-    return os.path.join(os.environ['HOME'], ".maker", "scala-libraries", MAKER_SCALA_VERSION)
+    return os.path.join(os.environ['HOME'], ".maker", "scala-libs", MAKER_SCALA_VERSION)
 
 def maker_resource_cache():
     return os.path.join(os.environ['HOME'], ".maker", "resource-cache")
@@ -168,10 +172,13 @@ def download_required_dependencies(resources, lib_dir):
         resource = Resource(resolver, org, artifact, version)
         lib_file = os.path.join(lib_dir, resource.basename)
         if not os.path.isfile(lib_file):
-            temp_file = os.path.join(temp_dir, resource.basename)
-            resource.download_to(temp_file)
-            shutil.copy(temp_file, lib_file)
-            shutil.move(temp_file, resource.cache_file)
+            if os.path.isfile(resource.cache_file):
+                shutil.copy(resource.cache_file, lib_file)
+            else:
+                temp_file = os.path.join(temp_dir, resource.basename)
+                resource.download_to(temp_file)
+                shutil.copy(temp_file, lib_file)
+                shutil.move(temp_file, resource.cache_file)
 
     rm_rf(temp_dir)
 
@@ -268,8 +275,8 @@ def launch_repl():
 
 
 
-read_args()
 create_logger()
+read_args()
 create_maker_lib_directories()
 
 log.info("Checking for missing resources")

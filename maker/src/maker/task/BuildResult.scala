@@ -74,6 +74,10 @@ case class BuildResult(
   final def map(f: BuildResult => BuildResult): BuildResult =
     if (succeeded) f(this) else this
 
+  def andThen(next : => BuildResult) : BuildResult = {
+    if (succeeded) next else this
+  }
+ 
   def filter(f: AnyRef => Boolean): BuildResult = this
 
   class WithFilter(p: AnyRef => Boolean) {
