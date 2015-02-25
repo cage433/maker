@@ -5,7 +5,7 @@ import maker.project.{BaseProject, Project, Module}
 import scala.collection.immutable.Nil
 import scala.xml.PrettyPrinter
 
-object PomUtils extends MakerConfig{
+object PomUtils extends ConfigPimps{
   def dependencyXml(groupId : String, artifactId : String, version : String) = {
     <dependency>
       <groupId>{groupId}</groupId>

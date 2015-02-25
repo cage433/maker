@@ -4,10 +4,10 @@ import maker.utils.FileUtils._
 import java.io.File
 import maker.task.compile._
 import maker.utils.RichString._
-import maker.MakerConfig
+import maker.ConfigPimps
 
 case class IDEAProjectGenerator(project : Project) 
-  extends MakerConfig
+  extends ConfigPimps
 {
 
   val scalaVersion = config.scalaVersion

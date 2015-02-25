@@ -43,7 +43,7 @@ case class Resource(
   extension : String = "jar",
   classifier : Option[String] = None,
   preferredRepository : Option[String] = None
-) extends MakerConfig {
+) extends ConfigPimps {
   import Resource._
   import HttpUtils.{StatusCode, ErrorMessage}
   override def toString = s"Resource: $groupId $artifactId $version $extension $classifier $downloadDirectory $preferredRepository"

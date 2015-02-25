@@ -12,7 +12,7 @@ import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import maker.MakerConfig
+import maker.ConfigPimps
 
 
 /**
@@ -20,7 +20,7 @@ import maker.MakerConfig
  */
 case class RunMainTask(baseProject : BaseProject, className : String, opts : List[String], mainArgs : List[String]) 
   extends Task 
-  with MakerConfig
+  with ConfigPimps
 {
   def name = "Run Main"
 

@@ -1,14 +1,14 @@
 package maker.project
 
 import java.io.{File, FileWriter, Writer}
-import maker.{Resource, MakerConfig}
+import maker.{Resource, ConfigPimps}
 import maker.utils.FileUtils._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import sbt._
 import maker.task.Build
 
 // TODO: resources should not be copied to target stackoverflow.com/questions/25158689
-class SbtGenerator extends MakerConfig{
+class SbtGenerator extends ConfigPimps{
 
   def generate(proj: BaseProject): Unit = {
     val outputDir = file(proj.rootAbsoluteFile, "project")

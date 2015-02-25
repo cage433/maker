@@ -9,7 +9,7 @@ import scalaz.syntax.std.ToBooleanOps
  * Version is 2.<major>.<minor>
  */
 case class ScalaVersion(major : Int, minor : Int) 
-  extends MakerConfig 
+  extends ConfigPimps 
   with ResourcePimps 
   with ToBooleanOps
 {

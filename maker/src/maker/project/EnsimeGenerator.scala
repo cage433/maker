@@ -2,14 +2,14 @@ package maker.project
 
 import com.typesafe.zinc.Compiler
 import java.io.{File, FileWriter, Writer}
-import maker.MakerConfig
+import maker.ConfigPimps
 import org.apache.commons.io.FileUtils
 import scala.collection.immutable.Nil
 import javax.annotation.Generated
 import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
 
 class EnsimeGenerator() 
-  extends MakerConfig
+  extends ConfigPimps
 {
   def generateModules(root: File, name: String, modules: List[Module]): Unit = {
     val writer = new FileWriter(new File(root, ".ensime"))

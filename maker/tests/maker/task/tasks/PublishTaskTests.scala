@@ -4,13 +4,13 @@ import org.scalatest.FreeSpec
 import maker.utils.FileUtils._
 import maker.project.{TestModule, Project, HasDummyCompiler}
 import maker.Resource._
-import maker.{Resource, MakerConfig}
+import maker.{Resource, ConfigPimps}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import maker.utils.RichString._
 
 class PublishTaskTests 
   extends FreeSpec 
-  with MakerConfig
+  with ConfigPimps
 {
   "test wether dynamic ivy is really needed" ignore{
     withTempDir{

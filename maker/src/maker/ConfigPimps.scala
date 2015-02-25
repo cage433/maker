@@ -8,7 +8,7 @@ import maker.utils.FileUtils._
 import scala.collection.JavaConversions._
 import java.io.File
 
-trait MakerConfig {
+trait ConfigPimps {
   val config = ConfigFactory.load()
   val logger = LoggerFactory.getLogger(getClass)
 

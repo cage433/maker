@@ -9,7 +9,7 @@ import maker.task.compile._
 import maker.project.{BaseProject, Module}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
-import maker.MakerConfig
+import maker.ConfigPimps
 
 
 /** Doc generation task - produces scaladocs from module sources
@@ -18,7 +18,7 @@ import maker.MakerConfig
   */
 case class DocTask(module : Module) 
   extends Task
-  with MakerConfig
+  with ConfigPimps
 {
     
   def baseProject = module

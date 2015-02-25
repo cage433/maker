@@ -10,7 +10,7 @@ import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
-import maker.MakerConfig
+import maker.ConfigPimps
 import java.sql.Time
 
 case class RunUnitTestsTask(
@@ -20,7 +20,7 @@ case class RunUnitTestsTask(
   verbose: Boolean
 )  
   extends Task 
-  with MakerConfig
+  with ConfigPimps
 {
 
   def baseProjects = Vector(baseProject)

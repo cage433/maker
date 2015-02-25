@@ -16,7 +16,7 @@ class PublishLocalTaskTests
   extends FreeSpec 
   with Matchers 
   with CustomMatchers
-  with MakerConfig
+  with ConfigPimps
 {
 
   private def checkPublishedPomMatchesCoordinates(project : BaseProject, version : String){

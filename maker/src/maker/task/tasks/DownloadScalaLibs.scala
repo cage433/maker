@@ -4,14 +4,14 @@ import maker.project.BaseProject
 import maker.utils._
 import maker.utils.FileUtils._
 import maker.task.{Task, TaskResult, DefaultTaskResult}
-import maker.{Resource, MakerConfig}
+import maker.{Resource, ConfigPimps}
 import maker.utils.http.HttpUtils
 import java.io.{InputStream, FileOutputStream}
 import maker.Resource._
 
 class DownloadScalaLibs extends Task 
   with EitherPimps 
-  with MakerConfig
+  with ConfigPimps
 {
   def name = "Download scala libs"
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {

@@ -15,7 +15,7 @@ import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
 import scala.collection.immutable.Nil
 
-trait BaseProject extends MakerConfig {
+trait BaseProject extends ConfigPimps {
   protected def root : File
   def projectRoot : File
   val rootAbsoluteFile = root.asAbsoluteFile

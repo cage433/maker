@@ -1,6 +1,6 @@
 package maker.utils.http
 
-import maker.MakerConfig
+import maker.ConfigPimps
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.{HttpHost, HttpResponse, HttpStatus}
 import org.apache.http.client.HttpClient
@@ -10,7 +10,7 @@ import java.io.{File, FileOutputStream}
 import maker.utils.{Int, FileUtils}
 import maker.utils.FileUtils._
 
-class HttpUtils extends MakerConfig{
+class HttpUtils extends ConfigPimps{
 
   import HttpUtils.{StatusCode, ErrorMessage}
 

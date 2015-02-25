@@ -5,7 +5,7 @@ import maker.project._
 import maker.task._
 import maker.utils.{Stopwatch, FileUtils}
 import maker.utils.maven.IvyLock
-import maker.{PomUtils, MakerConfig}
+import maker.{PomUtils, ConfigPimps}
 import maker.task.compile.SourceCompilePhase
 import java.io.File
 import maker.utils.os.Command
@@ -20,7 +20,7 @@ case class PublishLocalTask(
   signArtifacts : Boolean
 ) 
   extends Task 
-  with MakerConfig
+  with ConfigPimps
 {
   def name = "Publish Local"
 

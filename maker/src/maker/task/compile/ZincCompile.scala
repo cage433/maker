@@ -6,10 +6,10 @@ import java.io.File
 import maker.utils.FileUtils._
 import org.scalatest.Failed
 import maker.utils.Int
-import maker.MakerConfig
+import maker.ConfigPimps
 import maker.project.Module
 
-object ZincCompile extends MakerConfig{
+object ZincCompile extends ConfigPimps{
 
   lazy val zinc = new ZincClient()
   def apply(projectPhase : ModuleCompilePhase) : Int = {

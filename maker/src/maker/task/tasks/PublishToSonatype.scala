@@ -22,11 +22,11 @@ import org.apache.http.conn.params.ConnRoutePNames
 import org.apache.http.util.EntityUtils
 import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
-import maker.MakerConfig
+import maker.ConfigPimps
 
 case class PublishToSonatype(baseProject : BaseProject, version : String) 
   extends Task 
-  with MakerConfig
+  with ConfigPimps
   with EitherPimps
 {
   val Array(sonatypeUsername, sonatypePassword) = config.sonatypeCredentials
