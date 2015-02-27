@@ -59,4 +59,7 @@ object Maker {
   // Used to disambiguate which maker is running in the repl.
   def pwd = println(Properties.userDir)
 
+  def publishSnapshots(version : String) = {
+    testReporter.publishSonatypeSnapshot(version) andThen maker_.publishSonatypeSnapshot(version)
+  }
 }
