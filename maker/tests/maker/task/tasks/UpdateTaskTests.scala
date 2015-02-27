@@ -64,8 +64,8 @@ class UpdateTaskTests extends FreeSpec {
         val bDir = FileUtils.mkdir(file(dir, "b"))
         writeToFile(
           file(aDir, "external-resources"),
-          """|org.foo bar {sbt_version}
-             |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
+          """|org.foo bar 0.12.1
+             |com.mike fred_2.10 1.8""".stripMargin
         )
         val resolverDir = file(dir, "RESOLVER").makeDir
 
@@ -85,15 +85,8 @@ class UpdateTaskTests extends FreeSpec {
         }
 
         val externalResourceConfigFile = file(dir, "external-resource-config")
-        writeToFile(
-          externalResourceConfigFile,
-          """|version: scala_version 2.9.2
-             |version: sbt_version 0.12.1
-             |version: scalatest_version 1.8
-             |""".stripMargin
-        )
 
-        appendToFile(
+        writeToFile(
           externalResourceConfigFile, 
           ("""|resolver: default file://%s/RESOLVER/
              |resolver: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
@@ -122,15 +115,8 @@ class UpdateTaskTests extends FreeSpec {
         val module = new TestModule(dir, "testSourceJars")
 
         val externalResourceConfigFile = file(dir, "external-resource-config")
-        writeToFile(
-          externalResourceConfigFile,
-          """|version: scala_version 2.9.2
-             |version: sbt_version 0.12.1
-             |version: scalatest_version 1.8
-             |""".stripMargin
-        )
 
-        appendToFile(
+        writeToFile(
           externalResourceConfigFile,
           ("""resolver: default file://%s/RESOLVER/""".stripMargin) % dir.getAbsolutePath
         )

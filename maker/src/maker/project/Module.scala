@@ -41,7 +41,7 @@ class Module(
     val resources = resourcesFile.readLines.toList.filterNot{
       line => 
         line.startsWith("#") || line.trim.size == 0
-    }.map(Resource.parse(_, resourceVersions = resourceVersions(), downloadDirectory = Some(managedLibDir)))
+    }.map(Resource.parse(_))
     resources.distinct
   }
 

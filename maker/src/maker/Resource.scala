@@ -9,30 +9,7 @@ import scala.xml.{Elem, NodeSeq}
 import maker.project.Module
 import maker.utils.{FileUtils, Int}
 import org.slf4j.{LoggerFactory, Logger}
-import maker.utils.http.HttpUtils
 import scala.collection.JavaConversions._
-
-/*  
-    Defines a resource held at some maven/nexus repository
-      Maven      / Ivy
-      groupId    / org      org.scalacheck
-      artifactId / name     scalacheck_2.9.2
-      version    / rev      1.9
-
-    might be found at the URL
-
-      http://repo1.maven.org/maven2/org/scalacheck/scalacheck_2.9.2/1.9/scalacheck_2.9.2-1.9.jar
-      http://nexus.global.trafigura.com:8081/nexus/content/groups/mirror/starling/test/resources/bookmark-test-db/1.2/bookmark-test-db-1.2.gz
-
-
-    It would be stored locally at 
-
-      ./<project-dir>/lib_managed/org.scalacheck-scalacheck_2.9.2-1.9.jar
-
-    The jar will be cached at
-
-      ~/.maker-resource-cache/org.scalacheck-scalacheck_2.9.2-1.9.jar
-*/
 
 case class Resource(
   groupId : String, 
@@ -42,7 +19,6 @@ case class Resource(
   classifier : Option[String] = None
 ) extends ConfigPimps {
   import Resource._
-  import HttpUtils.{StatusCode, ErrorMessage}
   override def toString = s"Resource: $groupId $artifactId $version $extension $classifier"
   lazy val log = LoggerFactory.getLogger(this.getClass)
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
@@ -78,7 +54,7 @@ object Resource{
   case object ResourceDownloaded extends UpdateResult
   case class ResourceFailedToDownload(override val errors : List[(Int, String)]) extends UpdateResult
 
-  def parse(s : String, resourceVersions : Map[String, String] = Map.empty, downloadDirectory : Option[File] = None) : Resource = {
+  def parse(s : String) : Resource = {
     def exitWithBadUsage{
       val errorMessage = """|Valid resource format is 
                             | <group-id> <artifact-id> <version> [resolver:<resolver-name>] [type:<type-name - e.g. jar, xml, gz>]
