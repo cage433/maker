@@ -1,6 +1,10 @@
 package maker
 
 import scalaz.syntax.std.ToBooleanOps
+import com.typesafe.config.{ConfigFactory, Config}
+import maker.utils.Int
+import maker.utils.FileUtils._
+import java.io.File
 
 /*
  * Deterimines which scala libraries are project
@@ -8,7 +12,10 @@ import scalaz.syntax.std.ToBooleanOps
  *
  * Version is 2.<major>.<minor>
  */
-case class ScalaVersion(major : Int, minor : Int) 
+case class ScalaVersion(
+  major : Int, 
+  minor : Int,
+  config : Config = ConfigFactory.load()) 
   extends ConfigPimps 
   with ResourcePimps 
   with ToBooleanOps
@@ -22,7 +29,7 @@ case class ScalaVersion(major : Int, minor : Int)
   override def toString = versionNo
 
   private def resource(org : String, artifact : String, version : String = versionNo) : Resource = {
-    org % artifact % version withDownloadDirectory (config.projectScalaLibDirectory)
+    org % artifact % version //withDownloadDirectory (config.projectScalaLibDirectory)
   }
   val scalaLibraryResource = resource("org.scala-lang", "scala-library")
   val compilerResource = resource("org.scala-lang", "scala-compiler")
@@ -34,12 +41,34 @@ case class ScalaVersion(major : Int, minor : Int)
   def resources = List(scalaLibraryResource, compilerResource) ::: reflectResource.toList ::: xmlResource.toList ::: parserCombinatorResource.toList
   def sourceResources = resources.map(_.copy(classifier = Some("sources")))
 
-  val scalaLibraryJar = scalaLibraryResource.resourceFile
-  val scalaLibrarySourceJar = scalaLibrarySourceResource.resourceFile
-  val scalaCompilerJar = compilerResource.resourceFile
-  val scalaReflectJar = reflectResource.map(_.resourceFile)
-  val scalaXmlJar = xmlResource.map(_.resourceFile)
-  val scalaParserCombinatorJar = parserCombinatorResource.map(_.resourceFile)
+  val scalaLibraryJar = file(
+    config.projectScalaLibDirectory,
+    scalaLibraryResource.basename
+  )
+  val scalaLibrarySourceJar = file(
+    config.projectScalaLibDirectory,
+    scalaLibrarySourceResource.basename
+  )
+  val scalaCompilerJar = file(
+    config.projectScalaLibDirectory,
+    compilerResource.basename
+  )
+
+  val scalaReflectJar = reflectResource.map{
+    resource => 
+      file(
+        config.projectScalaLibDirectory,
+        resource.basename
+      )
+  }
+
+  val scalaJars : List[File] = resources.map{
+      res => 
+        file(
+          config.projectScalaLibDirectory,
+          res.basename
+        )
+  }
 }
 
 object ScalaVersion{

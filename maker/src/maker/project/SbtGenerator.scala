@@ -6,9 +6,11 @@ import maker.utils.FileUtils._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import sbt._
 import maker.task.Build
+import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile
+import com.typesafe.config.{ConfigFactory, Config}
 
 // TODO: resources should not be copied to target stackoverflow.com/questions/25158689
-class SbtGenerator extends ConfigPimps{
+class SbtGenerator(config : Config = ConfigFactory.load()) extends ConfigPimps{
 
   def generate(proj: BaseProject): Unit = {
     val outputDir = file(proj.rootAbsoluteFile, "project")

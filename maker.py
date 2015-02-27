@@ -62,12 +62,12 @@ def read_args():
 
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
     parser.add_argument('-c', '--project-source-dir', dest='project_src_dir')
-    parser.add_argument('-C', '--project-config-dir', dest='project_config_dir')
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
     parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
     parser.add_argument('-J', '--JVM-ARGS', dest='jvm_args', nargs=argparse.REMAINDER, default = [])
+    parser.add_argument('-e', '--extra-classpath', dest='extra_classpath', help='Colon separated list of directories/jars')
     args = parser.parse_args()
 
     if args.refresh and not args.project_src_dir:
@@ -253,13 +253,14 @@ def launch_repl():
     else:
         classpath_components.extend(maker_binaries())
 
-    if args.project_config_dir:
-        classpath_components.extend(args.project_config_dir)
+    if args.extra_classpath:
+        classpath_components.extend(args.extra_classpath.split(":"))
 
     if args.use_jrebel:
         extra_opts = ["-javaagent:/usr/local/jrebel/jrebel.jar"]
     else:
         extra_opts = []
+
 
     cmd_args=[  java(),
             "-classpath", classpath(scala_libraries()),

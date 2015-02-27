@@ -13,8 +13,8 @@ class UpdateTaskTests extends FreeSpec {
       dir => 
         writeToFile(
           file(dir, "external-resources"),
-          """|org.foo bar {sbt_version}
-             |com.mike fred_{scala_version} {scalatest_version} resolver:second""".stripMargin
+          """|org.foo bar 0.12.1
+             |com.mike fred_2.9.2 1.8""".stripMargin
         )
 
 
@@ -25,26 +25,16 @@ class UpdateTaskTests extends FreeSpec {
         }
 
         val externalResourceConfigFile = file(dir, "external-resource-config")
-        writeToFile(
-          externalResourceConfigFile,
-          """|version: scala_version 2.9.2
-             |version: sbt_version 0.12.1
-             |version: scalatest_version 1.8
-             |""".stripMargin
-        )
 
-        appendToFile(
+        writeToFile(
           externalResourceConfigFile,
           ("""|resolver: default file://%s/RESOLVER/
               |resolver: second file://%s/RESOLVER2/""".stripMargin) % (dir.getAbsolutePath, dir.getAbsolutePath)
         )
 
         val expected = Set(
-          Resource("org.foo", "bar", "{sbt_version}", downloadDirectory = Some(module.managedLibDir)).resolveVersions(module.resourceVersions()),
-          Resource("com.mike", "fred_{scala_version}", "{scalatest_version}", 
-            preferredRepository = Some("second"),
-            downloadDirectory = Some(module.managedLibDir)
-            ).resolveVersions(module.resourceVersions())
+          Resource("org.foo", "bar", "0.12.1"),
+          Resource("com.mike", "fred_2.9.2", "1.8")
         )
         assert(module.resources().toSet === expected)
 
@@ -111,7 +101,7 @@ class UpdateTaskTests extends FreeSpec {
         b.update
         a.resources.filter(_.isBinaryJarResource).foreach{
           resource => 
-            assert(resource.resourceFile.exists, "Resource " + resource + " should exist")
+            assert(file(a.managedLibDir, resource.basename).exists, "Resource " + resource + " should exist")
         }
     }
   }

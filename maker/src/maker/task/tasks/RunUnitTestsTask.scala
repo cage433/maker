@@ -23,7 +23,7 @@ case class RunUnitTestsTask(
   with ConfigPimps
 {
 
-  def baseProjects = Vector(baseProject)
+  import baseProject.config
   override def failureHaltsTaskManager = false
 
   def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask)

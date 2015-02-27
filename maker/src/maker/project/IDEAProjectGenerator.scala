@@ -10,6 +10,7 @@ case class IDEAProjectGenerator(project : Project)
   extends ConfigPimps
 {
 
+  import project.config
   val scalaVersion = config.scalaVersion
 
   def generateTopLevelModule(rootDir:File, name:String, excludedFolders:List[String]) {

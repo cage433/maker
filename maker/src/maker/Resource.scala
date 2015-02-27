@@ -34,19 +34,16 @@ import scala.collection.JavaConversions._
       ~/.maker-resource-cache/org.scalacheck-scalacheck_2.9.2-1.9.jar
 */
 
-// TODO - refactor all of this
 case class Resource(
   groupId : String, 
   artifactId : String, 
   version : String, 
-  downloadDirectory : Option[File] = None,
   extension : String = "jar",
-  classifier : Option[String] = None,
-  preferredRepository : Option[String] = None
+  classifier : Option[String] = None
 ) extends ConfigPimps {
   import Resource._
   import HttpUtils.{StatusCode, ErrorMessage}
-  override def toString = s"Resource: $groupId $artifactId $version $extension $classifier $downloadDirectory $preferredRepository"
+  override def toString = s"Resource: $groupId $artifactId $version $extension $classifier"
   lazy val log = LoggerFactory.getLogger(this.getClass)
   def relativeURL = "%s/%s/%s/%s-%s%s.%s" %
     (groupId.replace('.', '/'), artifactId, version, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
@@ -54,7 +51,6 @@ case class Resource(
   def basename : String = "%s-%s-%s%s.%s" %
     (groupId, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
 
-  def withDownloadDirectory(dir : File) = copy(downloadDirectory = Some(dir))
   def pomDependencyXML = {
     <dependency>
       <groupId>{groupId}</groupId>
@@ -69,103 +65,9 @@ case class Resource(
       {classifier.map(c => <artifact name={artifactId} type="jar" ext="jar" e:classifier={c} />).getOrElse(NodeSeq.Empty)}
     </dependency>
 
-  def resolveVersions(versions : Map[String, String]) : Resource = {
-
-    val Regex = "([^{]*)\\{([^}]*)\\}(.*)".r
-    def resolve(s : String) : String = {
-      s match {
-        case Regex(before, versionId, after) => 
-          val resolvedVersion = versions.getOrElse(versionId, throw new RuntimeException("Missing version for " + s))
-          resolve(before + resolvedVersion + after)
-        case _ => s
-      }
-    }
-
-    copy(
-      groupId=resolve(groupId), 
-      artifactId=resolve(artifactId), 
-      version=resolve(version)
-    )
-  }
-
   def isJarResource = extension == "jar"
   def isSourceJarResource = isJarResource && classifier == Some("sources")
   def isBinaryJarResource = isJarResource && ! isSourceJarResource
-
-  lazy val resourceFile = downloadDirectory.map(FileUtils.file(_, basename)).getOrElse(???)
-
-  private def download() : Either[List[(StatusCode, ErrorMessage)], Unit] = {
-    
-    resourceFile.dirname.makeDirs
-
-    val resolvers = (preferredRepository.toList ::: config.resolvers.toList).distinct
-    var errors : List[(StatusCode, ErrorMessage)] = Nil
-    val downloaded = resolvers.foldLeft(false){
-      case (false, nextResolver)  => 
-        val url = nextResolver + "/" + relativeURL
-        new HttpUtils().downloadFile(url, resourceFile) match {
-          case Left((statusCode, errorMessage)) => 
-            errors ::= (statusCode, errorMessage)
-            false
-          case Right(_) => 
-            true
-        }
-      case (true, _) => true
-    } 
-    if (downloaded)
-      Right(Unit)
-    else
-      Left(errors)
-  }
-
-  /**
-   * If the resource is not already in lib_managed (or equivalent) then try to copy from cache,
-   * else download from external repository and put into cache.
-   *
-   * Note that source jars are only downloaded when we download a binary - this is as some
-   * simply don't exist, and trying to download them every time we get an update can become
-   * expensive if there are Nexus problems
-   */
-  def update() : Resource.UpdateResult = {
-
-    resourceFile.dirname.makeDirs
-
-    val cachedFile = file(config.resourceCache, resourceFile.basename)
-    
-    if (resourceFile.doesNotExist && cachedFile.exists){
-      ApacheFileUtils.copyFileToDirectory(cachedFile, resourceFile.dirname)
-    }
-
-    if (resourceFile.exists){
-      ResourceAlreadyExists
-    } else {
-      download() match {
-        case Right(_) => 
-          cacheResourceFile()
-          ResourceDownloaded
-        case Left(errors) => 
-          ResourceFailedToDownload(errors)
-      }
-    }
-  }
-
-  private def cacheResourceFile(){
-    try {
-      ApacheFileUtils.copyFileToDirectory(resourceFile, config.resourceCache)
-    } catch {
-      case _ : IOException => 
-    }
-  }
-
-  private def cacheDownloadedResource(){
-    withTempDir{
-      dir => 
-        ApacheFileUtils.copyFileToDirectory(resourceFile, dir)
-        // Hoping move is atomic
-        ApacheFileUtils.moveFileToDirectory(file(dir, resourceFile.basename), config.resourceCache, false)
-    }
-  }
-
 }
 
 object Resource{
@@ -203,10 +105,8 @@ object Resource{
 
     Resource(
       groupId, artifactId, version, 
-      extension = optionalArgs.getOrElse("type", "jar"), 
-      preferredRepository = optionalArgs.get("resolver"),
-      downloadDirectory = downloadDirectory
-    ).resolveVersions(resourceVersions)
+      extension = optionalArgs.getOrElse("type", "jar")
+    )
   }
 }
 

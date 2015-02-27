@@ -7,17 +7,20 @@ import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
 import maker.utils.RichString._
+import com.typesafe.config.{ConfigFactory, Config}
 
 class TestModule(
   root : File, 
   name : String,
   upstreamProjects : List[Module] = Nil,
   upstreamTestProjects : List[Module] = Nil,
-  analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis]()
+  analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis](),
+  config : Config = ConfigFactory.load()
 ) extends Module(
   root, 
   root,
   name,
+  config,
   upstreamProjects, 
   upstreamTestProjects,
   analyses
@@ -31,7 +34,8 @@ class TestModule(
        |version: scalatest_version 2.2.0""".stripMargin)
   List("scala-library", "scala-compiler", "scala-reflect").foreach{
     name => 
-      Resource("org.scala-lang",name, "2.10.4", Some(projectScalaLibsDir)).update()
+      val resource = Resource("org.scala-lang",name, "2.10.4")
+      new ResourceUpdater(resource, config, projectScalaLibsDir).update()
   }
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {

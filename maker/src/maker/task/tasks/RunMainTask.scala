@@ -23,6 +23,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
   with ConfigPimps
 {
   def name = "Run Main"
+  import baseProject.config
 
   def module = baseProject
   def upstreamTasks = baseProject.allUpstreamModules.map(TestCompileTask(_))

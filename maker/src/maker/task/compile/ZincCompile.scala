@@ -14,6 +14,7 @@ object ZincCompile extends ConfigPimps{
   lazy val zinc = new ZincClient()
   def apply(projectPhase : ModuleCompilePhase) : Int = {
     val module = projectPhase.module
+    val config = module.config
     val upstreamCaches = {
       var map = Map[File, File]()
 

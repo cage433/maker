@@ -20,7 +20,7 @@ case class DocTask(module : Module)
   extends Task
   with ConfigPimps
 {
-    
+  val config = module.config  
   def baseProject = module
   def name = "Doc " + module.name
   def upstreamTasks = List(SourceCompileTask(module))
@@ -41,7 +41,7 @@ case class DocTask(module : Module)
       val optsFile = file(docDir, "docopts")
       writeToFile(optsFile, "-classpath " + module.compilePhase.compilationClasspath + " " + inputFiles.mkString(" "))
 
-      val scalaToolsClasspath = config.scalaVersion.resources.map(_.resourceFile.getAbsolutePath).mkString(":")
+      val scalaToolsClasspath = config.scalaVersion.scalaJars.mkString(":")
 
       val cmd = ScalaDocCmd(
         CommandOutputHandler.NULL.withSavedOutput,

@@ -7,8 +7,9 @@ import org.apache.commons.io.FileUtils
 import scala.collection.immutable.Nil
 import javax.annotation.Generated
 import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
+import com.typesafe.config.{ConfigFactory, Config}
 
-class EnsimeGenerator() 
+class EnsimeGenerator(config : Config = ConfigFactory.load()) 
   extends ConfigPimps
 {
   def generateModules(root: File, name: String, modules: List[Module]): Unit = {

@@ -3,11 +3,13 @@ package maker.task.tasks
 import maker.project.Module
 import maker.utils.FileUtils._
 import maker.task._
-import maker.utils.Stopwatch
-import maker.Resource
-import maker.utils.TableBuilder
+import maker.utils.{Stopwatch, TableBuilder, Int}
+import maker.{Resource, ResourceUpdater}
 import maker.utils.RichString._
 import scala.collection.JavaConversions._
+import org.scalatest.Failed
+import java.net.URL
+import java.io.File
 
 /**
   * Updates any missing resources. If any jars are missing then will try 
@@ -25,20 +27,26 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean) extends Task
   def upstreamTasks : List[Task] = Nil
 
   private def removeRedundantResourceFiles(){
-    module.resources().map(_.resourceFile).groupBy(_.dirname).foreach{
-      case (dir, expectedResourceFiles) => 
-        val actualResourceFiles = dir.safeListFiles.map(_.asAbsoluteFile).toSet
-        (actualResourceFiles -- expectedResourceFiles.map(_.asAbsoluteFile)).foreach(_.delete)
+    def removeRedundant(resources : Seq[Resource], directory : File) {
+      val expected = resources.map{resource => file(directory, resource.basename).asAbsoluteFile}.toSet
+      val actual = directory.safeListFiles.map(_.asAbsoluteFile).toSet
+      (actual -- expected).foreach(_.delete)
     }
+    removeRedundant(module.resources(), module.managedLibDir)
+    removeRedundant(module.resources(), module.managedResourceDir)
+    removeRedundant(module.sourceJarResources(), module.managedLibSourceDir)
   }
 
   private def updateResources(resources : List[Resource]) = {
-    resources.flatMap(_.update().errors)
+    resources.flatMap{
+      resource => 
+        new ResourceUpdater(resource, module.config, module.managedLibDir).update().errors
+    }
   }
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     removeRedundantResourceFiles()
-    val missingResources = module.resources().filterNot(_.resourceFile.exists)
+    val missingResources = module.resources().filterNot{resource => file(module.managedLibDir, resource.basename).exists}
     var errors : List[(Int, String)] = updateResources(missingResources)
 
     if (forceSourceUpdate){

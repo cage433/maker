@@ -4,12 +4,13 @@ import maker.project.BaseProject
 import maker.utils._
 import maker.utils.FileUtils._
 import maker.task.{Task, TaskResult, DefaultTaskResult}
-import maker.{Resource, ConfigPimps}
+import maker._
 import maker.utils.http.HttpUtils
 import java.io.{InputStream, FileOutputStream}
 import maker.Resource._
+import com.typesafe.config.{ConfigFactory, Config}
 
-class DownloadScalaLibs extends Task 
+class DownloadScalaLibs(config : Config = ConfigFactory.load()) extends Task 
   with EitherPimps 
   with ConfigPimps
 {
@@ -30,13 +31,8 @@ class DownloadScalaLibs extends Task
       }
     }
     def download(library : String, version : String) : Either[List[(Int, String)], Unit] = {
-      val resource = Resource(
-        "org.scala-lang", library, version, 
-        downloadDirectory = Some(
-          config.projectScalaLibDirectory
-        )
-      )
-      resource.update() match {
+      val resource = Resource("org.scala-lang", library, version)
+      new ResourceUpdater(resource, config, config.projectScalaLibDirectory).update() match {
         case ResourceAlreadyExists | ResourceDownloaded => 
           Right(Unit)
         case ResourceFailedToDownload(errors) => 

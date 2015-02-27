@@ -14,9 +14,11 @@ import maker.ivy.IvyUtils
 import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
 import scala.collection.immutable.Nil
+import com.typesafe.config.Config
 
 trait BaseProject extends ConfigPimps {
   protected def root : File
+  def config : Config
   def projectRoot : File
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
@@ -182,14 +184,6 @@ trait BaseProject extends ConfigPimps {
 
   def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false)))
   def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true)))
-
-  def missingSourceJars() : List[Resource] = {
-    for {
-      module <- allUpstreamModules
-      srcJar <- module.sourceJarResources()
-      if !srcJar.resourceFile.exists
-    } yield srcJar
-  }
 
   def createDeploy(buildTests: Boolean = true, version: Option[String] = None): BuildResult =
     throw new UnsupportedOperationException

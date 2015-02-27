@@ -29,7 +29,6 @@ class ResourceTests extends FreeSpec {
   "test string parsing" in {
     assert(Resource("org", "foo", "1.0", extension = "jar") === Resource.parse("  org   foo   1.0 "))
     assert(Resource("org", "foo", "1.0", extension = "zip") === Resource.parse("  org   foo   1.0 type:zip "))
-    assert(Resource("org", "foo", "1.0", extension = "zip", preferredRepository = Some("mike")) === Resource.parse("  org   foo   1.0 type:zip resolver:mike"))
 
     List("org foo", "org", "", "org foo 2.0 extra-term", "org foo 1.0 bad-key:34").foreach{
       s => 

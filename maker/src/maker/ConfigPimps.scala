@@ -9,7 +9,7 @@ import scala.collection.JavaConversions._
 import java.io.File
 
 trait ConfigPimps {
-  val config = ConfigFactory.load()
+  //val config = ConfigFactory.load()
   val logger = LoggerFactory.getLogger(getClass)
 
   implicit class RichConfig(config : Config) extends ToBooleanOps{
@@ -97,7 +97,7 @@ trait ConfigPimps {
     }
 
     def debugFlags = {
-      val port = config.getInt("make.debug.port")
+      val port = config.getInt("maker.debug.port")
       if (port == 0)
         Nil
       else

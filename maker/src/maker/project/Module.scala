@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import sbt.ConsoleLogger
 import sbt.inc.Analysis
 import scala.collection.immutable.Nil
+import com.typesafe.config.{ConfigFactory, Config}
 
 /**
   * Corresponds to a module in IntelliJ
@@ -20,6 +21,7 @@ class Module(
     val root : File,
     val projectRoot_ : File,
     val name : String,
+    val config : Config = ConfigFactory.load(),
     val immediateUpstreamModules : List[Module] = Nil,
     val immediateUpstreamTestModules : List[Module] = Nil,
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
@@ -44,7 +46,7 @@ class Module(
   }
 
   def sourceJarResources() : List[Resource] = resources().collect{
-    case r if r.isBinaryJarResource => r.copy(classifier = Some("sources"), downloadDirectory = Some(managedLibSourceDir))
+    case r if r.isBinaryJarResource => r.copy(classifier = Some("sources"))
   }
 
   def phaseDirectory(phase : CompilePhase) = mkdir(file(makerDirectory, phase.name))

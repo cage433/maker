@@ -18,20 +18,3 @@ resolver: maven http://repo1.maven.org/maven2/
 resolver: typesafe http://repo.typesafe.com/typesafe/releases/
 
 
-#----------------------------------------------------------------------------
-# version:
-# Used in each module's external-resources file
-# versions _can_ be hard coded in external-resources if
-# there is a good reason
-#----------------------------------------------------------------------------
-
-# this should be the only place where these versions need to be specified
-version: scalatest_version 2.2.0
-version: scala_version 2.10.4
-version: scala_version_base 2.10
-version: sbt_version 0.13.5
-version: zinc_version 0.3.5
-version: aether_version 1.0.1.v20141111
-version: maven_version 3.1.0
-version: wagon_version 1.0
-

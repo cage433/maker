@@ -22,6 +22,7 @@ case class PublishLocalTask(
   extends Task 
   with ConfigPimps
 {
+  import baseProject.config
   def name = "Publish Local"
 
   def baseProjects = Vector(baseProject)

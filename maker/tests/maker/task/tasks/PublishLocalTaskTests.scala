@@ -36,6 +36,7 @@ class PublishLocalTaskTests
   }
 
   private def checkPublishedPomIncludesAllDependencies(module : Module, version : String){
+    import module.config
     val pom = XML.loadFile(module.publishLocalPomFile(version))
     val dependencies = pom \\ "dependency"
     val resources = config.scalaVersion.scalaLibraryResource :: module.resources

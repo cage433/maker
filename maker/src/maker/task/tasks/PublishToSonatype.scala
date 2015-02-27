@@ -29,6 +29,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String)
   with ConfigPimps
   with EitherPimps
 {
+  import baseProject.config
   val Array(sonatypeUsername, sonatypePassword) = config.sonatypeCredentials
   val sonatypeRepository = "https://oss.sonatype.org/service/local"
   val credentialHost = "oss.sonatype.org"

@@ -33,6 +33,7 @@ class PublishTaskTests
           override def ivySettingsFile = ivySettingsFile_
           override def organization = Some("org.org")
         }
+        val config = proj.config
 
         proj.writeSrc(
           "testPublish/Foo.scala",

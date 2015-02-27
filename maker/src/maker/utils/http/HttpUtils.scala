@@ -9,8 +9,9 @@ import org.apache.http.client.methods.HttpGet
 import java.io.{File, FileOutputStream}
 import maker.utils.{Int, FileUtils}
 import maker.utils.FileUtils._
+import com.typesafe.config.{ConfigFactory, Config}
 
-class HttpUtils extends ConfigPimps{
+class HttpUtils(config : Config = ConfigFactory.load()) extends ConfigPimps{
 
   import HttpUtils.{StatusCode, ErrorMessage}
 

@@ -8,11 +8,13 @@ import maker.utils.RichString._
 import maker.utils.os.Command
 import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
+import com.typesafe.config.{ConfigFactory, Config}
 
 case class Project(
   name : String,
   root : File,
   immediateUpstreamModules:List[Module],
+  config : Config = ConfigFactory.load(),
   topLevelExcludedFolders:List[String] = Nil
 ) extends TmuxIntegration{
 
