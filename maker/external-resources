@@ -14,6 +14,7 @@ org.apache.httpcomponents httpcore 4.3
 org.apache.ivy ivy 2.3.0-rc2
 org.scalaz scalaz-core_2.10 7.0.1
 org.eclipse.aether aether-api 1.0.1.v20141111
+org.eclipse.aether aether-spi 1.0.1.v20141111
 org.eclipse.aether aether-util 1.0.1.v20141111
 org.eclipse.aether aether-impl 1.0.1.v20141111
 org.eclipse.aether aether-connector-basic 1.0.1.v20141111
@@ -24,3 +25,8 @@ com.typesafe config 1.2.1
 org.mortbay.jetty jetty 6.1.26
 org.mortbay.jetty jetty-util 6.1.26
 javax.servlet servlet-api 2.5
+org.apache.maven maven-aether-provider 3.2.5
+org.apache.maven maven-model 3.2.5
+org.apache.maven maven-model-builder 3.2.5
+org.apache.maven maven-repository-metadata 3.2.5
+ 
