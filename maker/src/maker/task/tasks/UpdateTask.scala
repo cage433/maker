@@ -37,7 +37,7 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean) extends Task
     removeRedundant(module.sourceJarResources(), module.managedLibSourceDir)
   }
 
-  private def updateResources(resources : List[Resource]) = {
+  private def updateResources(resources : Seq[Resource]) = {
     resources.flatMap{
       resource => 
         new ResourceUpdater(resource, module.config, module.managedLibDir).update().errors
@@ -47,10 +47,10 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean) extends Task
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     removeRedundantResourceFiles()
     val missingResources = module.resources().filterNot{resource => file(module.managedLibDir, resource.basename).exists}
-    var errors : List[(Int, String)] = updateResources(missingResources)
+    var errors : Seq[(Int, String)] = updateResources(missingResources)
 
     if (forceSourceUpdate){
-      errors :::= updateResources(module.sourceJarResources())
+      errors ++:= updateResources(module.sourceJarResources())
     } else {
       val sourceJarsForMissing = module.sourceJarResources().filter{
         sourceResource => missingResources.exists{
@@ -103,7 +103,7 @@ case class UpdateTaskResult(
   task : UpdateTask, 
   succeeded : Boolean, 
   stopwatch : Stopwatch,
-  failures : List[(Int, String)],
+  failures : Seq[(Int, String)],
   override val message : Option[String] = None, 
   override val exception : Option[Throwable] = None
 ) extends TaskResult

@@ -36,7 +36,7 @@ object PomUtils extends ConfigPimps{
         }
       }
       baseProject.config.scalaVersion.scalaLibraryResource
-      (baseProject.config.scalaVersion.scalaLibraryResource :: resources).distinct.map(
+      (baseProject.config.scalaVersion.scalaLibraryResource +: resources).distinct.map(
         _.pomDependencyXML
       )
     }

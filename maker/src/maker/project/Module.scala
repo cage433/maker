@@ -6,7 +6,7 @@ import maker.task._
 import maker.task.compile._
 import maker.task.tasks._
 import maker.utils.FileUtils._
-import maker.{PomUtils, Resource}
+import maker.{PomUtils, Resource, ResourcePimps}
 import org.slf4j.LoggerFactory
 import sbt.ConsoleLogger
 import sbt.inc.Analysis
@@ -28,6 +28,7 @@ class Module(
 )
   extends BaseProject
   with TmuxIntegration
+  with ResourcePimps
 {
 
   def projectRoot = projectRoot_.asAbsoluteFile
@@ -36,7 +37,7 @@ class Module(
 
   val resourcesFile = file(root, "external-resources")
 
-  def resources() : List[Resource]  = {
+  def resources() : Seq[Resource]  = {
     
     val resources = resourcesFile.readLines.toList.filterNot{
       line => 
@@ -45,7 +46,7 @@ class Module(
     resources.distinct
   }
 
-  def sourceJarResources() : List[Resource] = resources().collect{
+  def sourceJarResources() : Seq[Resource] = resources().collect{
     case r if r.isBinaryJarResource => r.copy(classifier = Some("sources"))
   }
 

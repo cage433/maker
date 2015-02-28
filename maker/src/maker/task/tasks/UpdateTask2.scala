@@ -19,9 +19,14 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory
 import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils.Stopwatch
 import scala.collection.JavaConversions._
+import maker.ConfigPimps
 
-class UpdateTask2(module : Module) extends Task{
+class UpdateTask2(module : Module) 
+  extends Task
+  with ConfigPimps
+{
 
+  import module.config
   def name = s"Update Task 2 ${module.name}"
   def newRepositorySystem() : RepositorySystem = {
     /*
@@ -49,7 +54,7 @@ class UpdateTask2(module : Module) extends Task{
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     val system = newRepositorySystem()
     val session = MavenRepositorySystemUtils.newSession
-    val localRepo = new LocalRepository( "target/local-repo" )
+    val localRepo = new LocalRepository(config.resourceCache.getAbsolutePath)
     session.setLocalRepositoryManager( system.newLocalRepositoryManager( session, localRepo ) )
     val artifacts = new java.util.LinkedList[Dependency]()
     module.resources.foreach{

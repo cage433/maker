@@ -9,7 +9,6 @@ import scala.collection.JavaConversions._
 import java.io.File
 
 trait ConfigPimps {
-  //val config = ConfigFactory.load()
   val logger = LoggerFactory.getLogger(getClass)
 
   implicit class RichConfig(config : Config) extends ToBooleanOps{
