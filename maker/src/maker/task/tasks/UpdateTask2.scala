@@ -5,7 +5,7 @@ import org.apache.maven.repository.internal.MavenRepositorySystemUtils
 import org.eclipse.aether.graph.Dependency
 import org.eclipse.aether.util.artifact.JavaScopes
 import org.eclipse.aether.artifact.DefaultArtifact
-import org.eclipse.aether.repository.RemoteRepository
+import org.eclipse.aether.repository.{RemoteRepository, LocalRepository}
 import org.eclipse.aether.collection.CollectRequest
 import org.eclipse.aether.util.filter.DependencyFilterUtils
 import org.eclipse.aether.resolution.DependencyRequest
@@ -16,8 +16,9 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory
 import org.eclipse.aether.RepositorySystem
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory
 import org.eclipse.aether.spi.connector.transport.TransporterFactory
-import maker.task.{Task, TaskResult}
+import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils.Stopwatch
+import scala.collection.JavaConversions._
 
 class UpdateTask2(module : Module) extends Task{
 
@@ -33,6 +34,13 @@ class UpdateTask2(module : Module) extends Task{
     locator.addService( classOf[TransporterFactory], classOf[FileTransporterFactory] )
     locator.addService( classOf[TransporterFactory],  classOf[HttpTransporterFactory] )
 
+    locator.setErrorHandler( new DefaultServiceLocator.ErrorHandler()
+    {
+        override def serviceCreationFailed( type_ : Class[_] , impl : Class[_], exception : Throwable )
+        {
+            exception.printStackTrace()
+        }
+    } )
 
     locator.getService( classOf[RepositorySystem] )
   }
@@ -41,6 +49,8 @@ class UpdateTask2(module : Module) extends Task{
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     val system = newRepositorySystem()
     val session = MavenRepositorySystemUtils.newSession
+    val localRepo = new LocalRepository( "target/local-repo" )
+    session.setLocalRepositoryManager( system.newLocalRepositoryManager( session, localRepo ) )
     val artifacts = new java.util.LinkedList[Dependency]()
     module.resources.foreach{
       resource => 
@@ -56,14 +66,15 @@ class UpdateTask2(module : Module) extends Task{
     val central = new RemoteRepository.Builder( "central", "default", "http://repo1.maven.org/maven2/" ).build()
     val repositories = new java.util.LinkedList[RemoteRepository]()
     repositories.add(central)
-    val collectRequest = new CollectRequest(artifacts, null, repositories)
+    val collectRequest = new CollectRequest(artifacts, new java.util.LinkedList[Dependency](), repositories)
 
     val dependencyRequest = new DependencyRequest(
       collectRequest, 
       DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE)
     )
-   val artifactResults =
-      system.resolveDependencies( session, dependencyRequest ).getArtifactResults()
-   null
+    val deps = system.resolveDependencies(session, dependencyRequest)
+    val artifactResults = deps.getArtifactResults()
+    artifactResults.foreach(println)
+    DefaultTaskResult(this, true, sw)
   }
 }
