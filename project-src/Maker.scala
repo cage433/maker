@@ -39,22 +39,73 @@ object Maker {
     )
   }
 
-  def module(rootBasename : String, name :Option[String] = None, upstreamProjects : List[Module] = Nil, upstreamTestProjects : List[Module] = Nil) = {
-    val root = file(rootBasename).asAbsoluteFile
-    new Module(
-      root,
-      file(".").asAbsoluteFile,
-      name.getOrElse(rootBasename),
-      immediateUpstreamModules = upstreamProjects,
-      immediateUpstreamTestModules = upstreamTestProjects
-    ) with ClassicLayout {
-      override def extraProjectPomInfo = extraPomInfo
-      override def organization = Some("com.github.cage433")
+  lazy val testReporter = new Module(
+    root = file("test-reporter").asAbsoluteFile, 
+    projectRoot_ = file(".").asAbsoluteFile,
+    name = "maker-test-reporter"
+  ) with ClassicLayout {
+    override def extraProjectPomInfo = extraPomInfo
+    override def organization = Some("com.github.cage433")
+    override def resources() = {
+      Vector(
+        "org.scalatest" % "scalatest_2.10" %  "2.2.0"
+      )
     }
   }
 
-  lazy val testReporter = module("test-reporter", name = Some("maker-test-reporter"))
-  lazy val maker_ = module("maker")
+  lazy val maker_ = new Module(
+    root = file("maker").asAbsoluteFile,
+    projectRoot_ = file(".").asAbsoluteFile,
+    name = "maker"
+  ) with ClassicLayout {
+    override def extraProjectPomInfo = extraPomInfo
+    override def organization = Some("com.github.cage433")
+    override def resources() = {
+      Vector(
+        "org.scalatest" % "scalatest_2.10" % "2.2.0",
+        "ch.qos.logback" % "logback-classic" % "1.0.6",
+        "ch.qos.logback" % "logback-core" % "1.0.6",
+        "org.slf4j" % "slf4j-api" % "1.6.1",
+        "org.slf4j" % "jcl-over-slf4j" % "1.6.1",
+        "commons-codec" % "commons-codec" % "1.6",
+        "commons-io" % "commons-io" % "2.1",
+        "commons-pool" % "commons-pool" % "1.5.5",
+        "com.typesafe.sbt" % "incremental-compiler" % "0.13.5",
+        "com.typesafe.zinc" % "zinc" % "0.3.5",
+        "org.apache.commons" % "commons-lang3" % "3.1",
+        "org.apache.httpcomponents" % "httpclient" % "4.3",
+        "org.apache.httpcomponents" % "httpcore" % "4.3",
+        "org.apache.ivy" % "ivy" % "2.3.0-rc2",
+        "org.scalaz" % "scalaz-core_2.10" % "7.0.1",
+        "com.google.guava" % "guava" %  "11.0.2", 
+        "com.typesafe" % "config" % "1.2.1",
+        "io.spray" % "spray-json_2.10" % "1.3.1",
+        "javax.inject" % "javax.inject" %  "1", 
+        "javax.servlet" % "servlet-api" % "2.5",
+        "org.apache.maven" % "maven-aether-provider" % "3.2.5",
+        "org.apache.maven" % "maven-model" % "3.2.5",
+        "org.apache.maven" % "maven-model-builder" % "3.2.5",
+        "org.apache.maven" % "maven-repository-metadata" % "3.2.5",
+        "org.codehaus.plexus" % "plexus-classworlds" %  "2.4", 
+        "org.codehaus.plexus" % "plexus-component-annotations" %  "1.5.5", 
+        "org.codehaus.plexus" % "plexus-interpolation" %  "1.21", 
+        "org.codehaus.plexus" % "plexus-utils" %  "3.0.13",
+        "org.eclipse.aether" % "aether-api" % "1.0.0.v20140518",
+        "org.eclipse.aether" % "aether-connector-basic" % "1.0.0.v20140518",
+        "org.eclipse.aether" % "aether-impl" % "1.0.0.v20140518",
+        "org.eclipse.aether" % "aether-spi" % "1.0.0.v20140518",
+        "org.eclipse.aether" % "aether-transport-file" % "1.0.0.v20140518",
+        "org.eclipse.aether" % "aether-transport-http" % "1.0.0.v20140518",
+        "org.eclipse.aether" % "aether-util" % "1.0.0.v20140518",
+        "org.eclipse.sisu" % "org.eclipse.sisu.inject" %  "0.1.1", 
+        "org.eclipse.sisu" % "org.eclipse.sisu.plexus" %  "0.1.1", 
+        "org.mortbay.jetty" % "jetty" % "6.1.26",
+        "org.mortbay.jetty" % "jetty-util" % "6.1.26",
+        "org.sonatype.sisu" % "sisu-guice" %  "3.1.6"
+      )
+    }
+  }
+
 
   // Used to disambiguate which maker is running in the repl.
   def pwd = println(Properties.userDir)
