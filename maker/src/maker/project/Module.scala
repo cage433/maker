@@ -27,7 +27,6 @@ class Module(
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
   extends BaseProject
-  with ResourcePimps
   with TmuxIntegration
   with ResourcePimps
 {
