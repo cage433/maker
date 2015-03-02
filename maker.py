@@ -14,7 +14,7 @@ from subprocess import call
 from glob import glob
 
 # Computer generated section
-MAKER_VERSION       = "1.7-SNAPSHOT"
+MAKER_VERSION       = "1.8-SNAPSHOT"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE            = "http://oss.sonatype.org/content/repositories/snapshots/"
 MAVEN               = "http://repo1.maven.org/maven2/"
