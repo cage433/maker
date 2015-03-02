@@ -129,7 +129,6 @@ class Module(
   )
   def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(false)
   def updateOnly = executeSansDependencies(UpdateTask(this, forceSourceUpdate = false))
-  def update2 = executeSansDependencies(new UpdateTask2(this))
 
 
   /********************

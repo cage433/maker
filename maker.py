@@ -14,7 +14,7 @@ from subprocess import call
 from glob import glob
 
 # Computer generated section
-MAKER_VERSION       = "1.5-SNAPSHOT"
+MAKER_VERSION       = "1.7-SNAPSHOT"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE            = "http://oss.sonatype.org/content/repositories/snapshots/"
 MAVEN               = "http://repo1.maven.org/maven2/"
@@ -282,6 +282,7 @@ def launch_repl():
     cmd_args=[  java(),
             "-classpath", classpath(scala_libraries()),
             "-Dsbt.log.format=false",
+            "-Drebel.log=true",
             "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + ["-Dlogback.configurationFile=" + args.logback_config,
             "scala.tools.nsc.MainGenericRunner",
             "-cp", classpath(classpath_components),
