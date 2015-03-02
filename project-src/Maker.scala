@@ -41,7 +41,6 @@ object Maker {
 
   lazy val testReporter = new Module(
     root = file("test-reporter").asAbsoluteFile, 
-    projectRoot_ = file(".").asAbsoluteFile,
     name = "maker-test-reporter"
   ) with ClassicLayout {
     override def extraProjectPomInfo = extraPomInfo
@@ -55,7 +54,6 @@ object Maker {
 
   lazy val maker_ = new Module(
     root = file("maker").asAbsoluteFile,
-    projectRoot_ = file(".").asAbsoluteFile,
     name = "maker"
   ) with ClassicLayout {
     override def extraProjectPomInfo = extraPomInfo
