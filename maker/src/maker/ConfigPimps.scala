@@ -12,7 +12,6 @@ trait ConfigPimps {
   val logger = LoggerFactory.getLogger(getClass)
 
   implicit class RichConfig(config : Config) extends ToBooleanOps{
-    val prefix = "com.github.cage433.maker."
 
     def proxy : Option[(String, Int)] = {
       config.getBoolean("maker.http.proxy.required").option(

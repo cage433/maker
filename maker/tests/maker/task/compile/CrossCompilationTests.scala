@@ -20,7 +20,8 @@ class CrossCompilationTests extends FreeSpec with Matchers{
         List("scala-library", "scala-compiler").foreach{
           name => 
             val resource = Resource("org.scala-lang", name, "2.9.3")
-            new ResourceUpdater(resource, module.config, module.projectScalaLibsDir).update()
+            // TODO - better
+            //new ResourceUpdater(resource, module.config, module.projectScalaLibsDir).update()
         }
         val res = module.compile
         res.succeeded should be (true)

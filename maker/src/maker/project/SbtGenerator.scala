@@ -79,8 +79,8 @@ object MakerBuild extends Build {
 
   lazy val defaultSettings = customiseSettings(Seq(
     resolvers ++= Seq(
-      """ + p.resourceResolvers().map {
-      case (k, v) => "\"" + k + "\" at \"" + v + "\""
+      """ + p.config.httpResolvers.map {
+      case List(k, v) => "\"" + k + "\" at \"" + v + "\""
     }.mkString("", ",\n" + " " * 6, "") + """),
     sourcesInBase := false,
     javaSource in Compile <<= baseDirectory(_ / "src"),

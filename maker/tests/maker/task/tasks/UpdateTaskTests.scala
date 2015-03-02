@@ -20,9 +20,7 @@ class UpdateTaskTests extends FreeSpec {
 
         val resolverDir = file(dir, "RESOLVER").makeDir
 
-        val module = new TestModule(dir, "testResources"){
-          override def resourceCacheDirectory = file(dir, ".maker", ".resource-cache").makeDirs
-        }
+        val module = new TestModule(dir, "testResources")
 
         val externalResourceConfigFile = file(dir, "external-resource-config")
 
@@ -77,12 +75,8 @@ class UpdateTaskTests extends FreeSpec {
           file(dir, "/RESOLVER//org/foo/bar/0.12.1/bar-0.12.1.jar"),
           "bar"
         )
-        val a = new TestModule(aDir, "a"){
-          override def projectRoot = dir
-        }
-        val b = new TestModule(bDir, "b", upstreamProjects = List(a)){
-          override def projectRoot = dir
-        }
+        val a = new TestModule(aDir, "a")
+        val b = new TestModule(bDir, "b", upstreamProjects = List(a))
 
         val externalResourceConfigFile = file(dir, "external-resource-config")
 

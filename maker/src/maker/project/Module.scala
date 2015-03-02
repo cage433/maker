@@ -19,7 +19,6 @@ import com.typesafe.config.{ConfigFactory, Config}
 
 class Module(
     val root : File,
-    val projectRoot_ : File,
     val name : String,
     val config : Config = ConfigFactory.load(),
     val immediateUpstreamModules : List[Module] = Nil,
@@ -31,7 +30,6 @@ class Module(
   with ResourcePimps
 {
 
-  def projectRoot = projectRoot_.asAbsoluteFile
   import Module.logger
   protected val upstreamModulesForBuild = List(this)
 

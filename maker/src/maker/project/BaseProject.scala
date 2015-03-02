@@ -19,7 +19,6 @@ import com.typesafe.config.Config
 trait BaseProject extends ConfigPimps {
   protected def root : File
   def config : Config
-  def projectRoot : File
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
@@ -314,18 +313,12 @@ trait BaseProject extends ConfigPimps {
   def delete = recursiveDelete(rootAbsoluteFile)
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
-  def projectScalaLibsDir = file(System.getProperty("user.home"), ".maker", "scala-libs", config.scalaVersion.toString).makeDirs
-  def externalResourceConfigFile = file(projectRoot, "external-resource-config")
-  def resourceVersions() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceVersions()
-  def resourceResolvers() : Map[String, String] = ExternalResourceConfig(externalResourceConfigFile).resourceResolvers()
-  def defaultResolver() : String = resourceResolvers.getOrElse("default", throw new RuntimeException("No default resolver"))
 
   // Overriden by maker unit tests to quieten output
   def isTestProject : Boolean = false
 
-  def topLevelCompilationErrorsFile = file(projectRoot, "vim-compilation-errors")
+  def topLevelCompilationErrorsFile = file("vim-compilation-errors")
 
-  def resourceCacheDirectory = file(System.getenv("HOME"), ".maker", "resource-cache").makeDirs()
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
 
   // This needs to be overriden if this module is to be published to maven/nexus

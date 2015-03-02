@@ -59,7 +59,6 @@ class PublishLocalTaskTests
       name,
       upstreamProjects = upstreamModules
     ) with HasDummyCompiler{
-      override def projectRoot = dir
       override def organization = Some("org.org")
     }
   }
