@@ -27,49 +27,47 @@ SCALA_LIBRARIES     = [ (TYPESAFE, "org.scala-lang", "scala-library", MAKER_SCAL
                         (TYPESAFE, "org.scala-lang", "scala-compiler", MAKER_SCALA_VERSION),
                         (TYPESAFE, "org.scala-lang", "scala-reflect", MAKER_SCALA_VERSION)]
 # GENERATED MAKER DEPENDENCIES
-MAKER_DEPENDENCIES  = [
-	(MAVEN, org/scalatest, scalatest_2.10, 2.2.0)
-	(MAVEN, org/scala-lang, scala-library, 2.10.4)
-	(MAVEN, org/scala-lang, scala-reflect, 2.10.4)
-	(MAVEN, ch/qos/logback, logback-classic, 1.0.6)
-	(MAVEN, ch/qos/logback, logback-core, 1.0.6)
-	(MAVEN, org/slf4j, slf4j-api, 1.6.5)
-	(MAVEN, org/slf4j, jcl-over-slf4j, 1.6.1)
-	(MAVEN, commons-io, commons-io, 2.1)
-	(MAVEN, com/typesafe/zinc, zinc, 0.3.5)
-	(MAVEN, com/typesafe/sbt, incremental-compiler, 0.13.5)
-	(MAVEN, org/scala-lang, scala-compiler, 2.10.3)
-	(MAVEN, com/typesafe/sbt, sbt-interface, 0.13.5)
-	(MAVEN, com/typesafe/sbt, compiler-interface, 0.13.5)
-	(MAVEN, org/apache/httpcomponents, httpclient, 4.3)
-	(MAVEN, org/apache/httpcomponents, httpcore, 4.3)
-	(MAVEN, commons-logging, commons-logging, 1.1.3)
-	(MAVEN, commons-codec, commons-codec, 1.6)
-	(MAVEN, org/apache/ivy, ivy, 2.3.0-rc2)
-	(MAVEN, org/scalaz, scalaz-core_2.10, 7.0.1)
-	(MAVEN, com/google/guava, guava, 11.0.2)
-	(MAVEN, com/google/code/findbugs, jsr305, 1.3.9)
-	(MAVEN, com/typesafe, config, 1.2.1)
-	(MAVEN, io/spray, spray-json_2.10, 1.3.1)
-	(MAVEN, javax/inject, javax.inject, 1)
-	(MAVEN, org/apache/maven, maven-aether-provider, 3.2.5)
-	(MAVEN, org/apache/maven, maven-model, 3.2.5)
-	(MAVEN, org/apache/maven, maven-model-builder, 3.2.5)
-	(MAVEN, org/codehaus/plexus, plexus-interpolation, 1.21)
-	(MAVEN, org/apache/maven, maven-repository-metadata, 3.2.5)
-	(MAVEN, org/eclipse/aether, aether-api, 1.0.0.v20140518)
-	(MAVEN, org/eclipse/aether, aether-spi, 1.0.0.v20140518)
-	(MAVEN, org/eclipse/aether, aether-util, 1.0.0.v20140518)
-	(MAVEN, org/codehaus/plexus, plexus-component-annotations, 1.5.5)
-	(MAVEN, org/codehaus/plexus, plexus-utils, 3.0.20)
-	(MAVEN, org/eclipse/aether, aether-connector-basic, 1.0.0.v20140518)
-	(MAVEN, org/eclipse/aether, aether-impl, 1.0.0.v20140518)
-	(MAVEN, org/eclipse/aether, aether-transport-file, 1.0.0.v20140518)
-	(MAVEN, org/eclipse/aether, aether-transport-http, 1.0.0.v20140518)
-	(MAVEN, org/mortbay/jetty, jetty, 6.1.26)
-	(MAVEN, org/mortbay/jetty, jetty-util, 6.1.26)
-	(MAVEN, org/mortbay/jetty, servlet-api, 2.5-20081211)
-]
+MAKER_DEPENDENCIES  = [ (MAVEN, "org.scalatest", "scalatest_2.10", "2.2.0"),
+                        (MAVEN, "ch.qos.logback", "logback-classic", "1.0.6"),
+                        (MAVEN, "ch.qos.logback", "logback-core", "1.0.6"),
+                        (MAVEN, "org.slf4j", "slf4j-api", "1.6.1"),
+                        (MAVEN, "org.slf4j", "jcl-over-slf4j", "1.6.1"),
+                        (MAVEN, "commons-codec", "commons-codec", "1.6"),
+                        (MAVEN, "commons-io", "commons-io", "2.1"),
+                        (MAVEN, "commons-pool", "commons-pool", "1.5.5"),
+                        (MAVEN, "com.typesafe.sbt", "incremental-compiler", "0.13.5"),
+                        (MAVEN, "com.typesafe.zinc", "zinc", "0.3.5"),
+                        (MAVEN, "org.apache.commons", "commons-lang3", "3.1"),
+                        (MAVEN, "org.apache.httpcomponents", "httpclient", "4.3"),
+                        (MAVEN, "org.apache.httpcomponents", "httpcore", "4.3"),
+                        (MAVEN, "org.apache.ivy", "ivy", "2.3.0-rc2"),
+                        (MAVEN, "org.scalaz", "scalaz-core_2.10", "7.0.1"),
+                        (MAVEN, "org.eclipse.aether", "aether-api", "1.0.0.v20140518"),
+                        (MAVEN, "org.eclipse.aether", "aether-spi", "1.0.0.v20140518"),
+                        (MAVEN, "org.eclipse.aether", "aether-util", "1.0.0.v20140518"),
+                        (MAVEN, "org.eclipse.aether", "aether-impl", "1.0.0.v20140518"),
+                        (MAVEN, "org.eclipse.aether", "aether-connector-basic", "1.0.0.v20140518"),
+                        (MAVEN, "org.eclipse.aether", "aether-transport-file", "1.0.0.v20140518"),
+                        (MAVEN, "org.eclipse.aether", "aether-transport-http", "1.0.0.v20140518"),
+                        (MAVEN, "io.spray", "spray-json_2.10", "1.3.1"),
+                        (MAVEN, "com.typesafe", "config", "1.2.1"),
+                        (MAVEN, "org.mortbay.jetty", "jetty", "6.1.26"),
+                        (MAVEN, "org.mortbay.jetty", "jetty-util", "6.1.26"),
+                        (MAVEN, "javax.servlet", "servlet-api", "2.5"),
+                        (MAVEN, "org.apache.maven", "maven-aether-provider", "3.2.5"),
+                        (MAVEN, "org.apache.maven", "maven-model", "3.2.5"),
+                        (MAVEN, "org.apache.maven", "maven-model-builder", "3.2.5"),
+                        (MAVEN, "org.apache.maven", "maven-repository-metadata", "3.2.5"),
+                        (MAVEN, "org.codehaus.plexus", "plexus-component-annotations",  "1.5.5"), 
+                        (MAVEN, "org.codehaus.plexus", "plexus-interpolation",  "1.21"), 
+                        (MAVEN, "org.codehaus.plexus", "plexus-utils",  "3.0.13"), 
+                        (MAVEN, "org.eclipse.sisu", "org.eclipse.sisu.plexus",  "0.1.1"), 
+                        (MAVEN, "org.eclipse.sisu", "org.eclipse.sisu.inject",  "0.1.1"), 
+                        (MAVEN, "org.codehaus.plexus", "plexus-classworlds",  "2.4"), 
+                        (MAVEN, "org.sonatype.sisu", "sisu-guice",  "3.1.6"), 
+                        (MAVEN, "javax.inject", "javax.inject",  "1"), 
+                        (MAVEN, "com.google.guava", "guava",  "11.0.2") 
+                        ]
 # GENERATED MAKER DEPENDENCIES END
 
 
