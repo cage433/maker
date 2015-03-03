@@ -55,7 +55,10 @@ object Maker {
   lazy val maker_ = new Module(
     root = file("maker").asAbsoluteFile,
     name = "maker"
-  ) with ClassicLayout {
+  ) 
+    with ClassicLayout 
+    with Bootstrapper
+  {
     override def extraProjectPomInfo = extraPomInfo
     override def organization = Some("com.github.cage433")
     override def resources() = {
