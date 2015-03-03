@@ -3,7 +3,6 @@ package maker
 import maker.project._
 import maker.utils.FileUtils._
 import java.io.File
-import org.apache.commons.lang3.StringUtils
 import maker.task.TaskResult._
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Level._
