@@ -33,7 +33,7 @@ trait Bootstrapper{
           val group = artifact.getGroupId.replace('.', '/')
           val id = artifact.getArtifactId
           val version = artifact.getVersion
-          bldr += s"\t(MAVEN, $group, $id, $version)"
+          bldr += s"""\t(MAVEN, "$group", "$id", "$version")"""
       }
       bldr += "]"
       updateMakerScript("# GENERATED MAKER DEPENDENCIES", bldr.result)
