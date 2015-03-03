@@ -49,23 +49,11 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
   private val (system, session, repositories) = UpdateTask.aetherState(config)
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    val artifacts = module.resources.map{
-      resource => 
-        new DefaultArtifact(
-          resource.groupId, resource.artifactId, "jar", resource.version
-        )
-    }
-    val result = updateDependencies(artifacts, BinaryDownload) 
+    val result = updateDependencies(BinaryDownload) 
     result match {
       case Right(hasChanged) => 
         if (hasChanged || forceSourceUpdate){
-          val sourceArtifacts = module.resources.map{
-            resource => 
-              new DefaultArtifact(
-                resource.groupId, resource.artifactId, "sources", "jar", resource.version
-              )
-          }
-          updateDependencies(sourceArtifacts, SourceDownload)
+          updateDependencies(SourceDownload)
         }
         DefaultTaskResult(this, true, sw)
       case Left(ex) => 
@@ -80,19 +68,48 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
   }
 
   abstract class DownloadType(val directory : File){
-    def isOfCorrectType(file : File) : Boolean
+    def isOfCorrectType(artifact : Artifact) : Boolean
+    def artifacts : Seq[Artifact]
   }
 
   object BinaryDownload extends DownloadType(module.managedLibDir){
-    def isOfCorrectType(file : File) = true
+    def isOfCorrectType(artifact : Artifact) = true
+    def artifacts = module.resources.map{
+      resource => 
+        new DefaultArtifact(
+          resource.groupId, resource.artifactId, "jar", resource.version
+        )
+    }
   }
 
   object SourceDownload extends DownloadType(module.managedLibSourceDir){
     // Aether downloads the binary when sources aren't in the repository - no idea why
-    def isOfCorrectType(file : File) = file.basename.contains("sources")
+    def isOfCorrectType(artifact : Artifact) = Option(artifact.getClassifier) == Some("sources")
+    def artifacts = module.resources.map{
+      resource => 
+        new DefaultArtifact(
+          resource.groupId, resource.artifactId, "sources", "jar", resource.version
+        )
+    }
   }
 
-  private def updateDependencies(artifacts : Seq[Artifact], download : DownloadType) : Either[Exception, Boolean] = {
+  private def getArtifacts(download : DownloadType) : Seq[Artifact] = {
+    val dependencies = download.artifacts.map(new Dependency(_, JavaScopes.COMPILE))
+    val dependencyRequest = new DependencyRequest(
+      new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories),
+      DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE)
+    )
+
+    system.resolveDependencies(
+      session, 
+      dependencyRequest
+    ).getArtifactResults.map(_.getArtifact).filter(download.isOfCorrectType)
+  }
+
+  // Used for bootstrapping
+  def binaryArtifacts = getArtifacts(BinaryDownload)
+
+  private def updateDependencies(download : DownloadType) : Either[Exception, Boolean] = {
     def addMissingDependencies(dependencyFiles : Seq[File]) : Boolean = {
       val currentBasenames = download.directory.safeListFiles.map(_.basename).toSet
       var hasChanged = false
@@ -120,16 +137,7 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
       hasChanged
     }
     try {
-      val dependencies = artifacts.map(new Dependency(_, JavaScopes.COMPILE))
-      val dependencyRequest = new DependencyRequest(
-        new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories),
-        DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE)
-      )
-      val dependencyFiles = 
-        system.resolveDependencies(
-          session, 
-          dependencyRequest
-        ).getArtifactResults.map(_.getArtifact.getFile).filter(download.isOfCorrectType)
+      val dependencyFiles = getArtifacts(download).map(_.getFile)
       var hasChanged : Boolean = removeRedundantDependencies(dependencyFiles)
       hasChanged = addMissingDependencies(dependencyFiles) || hasChanged
       Right(hasChanged)

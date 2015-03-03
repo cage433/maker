@@ -40,8 +40,8 @@ trait ConfigPimps {
         (field, value)
     }
       
+    def makerVersion = config.getString("maker.version")
     def testReporterJar = {
-      val makerVersion = config.getString("maker.version")
       val jar = file(
         config.getString("maker.maker-binaries-directory"),
         makerVersion,
