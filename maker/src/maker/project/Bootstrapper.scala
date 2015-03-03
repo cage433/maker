@@ -4,6 +4,7 @@ import maker.task.tasks.UpdateTask
 import maker.utils.FileUtils._
 import java.io.BufferedWriter
 import scala.collection.immutable.VectorBuilder
+import org.eclipse.aether.artifact.Artifact
 
 trait Bootstrapper{
   self : Module => 
@@ -25,16 +26,21 @@ trait Bootstrapper{
     }
 
     def writeBoostrapFile(){
-      val artifacts = new UpdateTask(self, forceSourceUpdate = false).binaryArtifacts
+      // TODO - exclusions
+      val artifacts = new UpdateTask(self, forceSourceUpdate = false).binaryArtifacts.filterNot(_.getArtifactId == "compiler-interface")
       val bldr = new VectorBuilder[String]()
-      bldr += "MAKER_DEPENDENCIES  = ["
-      artifacts.foreach{
-        artifact => 
-          val group = artifact.getGroupId.replace('.', '/')
-          val id = artifact.getArtifactId
-          val version = artifact.getVersion
-          bldr += s"""\t(MAVEN, "$group", "$id", "$version")"""
+      def makeLine(artifact : Artifact) = {
+        val group = artifact.getGroupId.replace('.', '/')
+        val id = artifact.getArtifactId
+        val version = artifact.getVersion
+        s"""\t(MAVEN, "$group", "$id", "$version")"""
       }
+      bldr += "MAKER_DEPENDENCIES  = ["
+      artifacts.dropRight(1).foreach{
+        artifact => 
+          bldr += (makeLine(artifact) + ",")
+      }
+      bldr += makeLine(artifacts.last)
       bldr += "]"
       updateMakerScript("# GENERATED MAKER DEPENDENCIES", bldr.result)
     }
