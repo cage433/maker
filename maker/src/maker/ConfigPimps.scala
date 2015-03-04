@@ -24,7 +24,7 @@ trait ConfigPimps {
     def scalaLibraryResolver = config.getString("maker.project.scala.resolver")
 
     def projectScalaLibDirectory : File = {
-      val dir = file(config.getString("maker.project.scala.library-directory"))
+      val dir = file(config.getString("user.home"), ".maker", "scala-libs", scalaVersion.toString)
       dir.mkdirs
       dir
     }

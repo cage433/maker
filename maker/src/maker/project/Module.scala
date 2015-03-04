@@ -12,6 +12,7 @@ import sbt.ConsoleLogger
 import sbt.inc.Analysis
 import scala.collection.immutable.Nil
 import com.typesafe.config.{ConfigFactory, Config}
+import org.eclipse.aether.graph.Exclusion
 
 /**
   * Corresponds to a module in IntelliJ
@@ -43,6 +44,9 @@ class Module(
     }.map(Resource.parse(_))
     resources.distinct
   }
+
+  // Exclusions should be in the form 'group:artifact'
+  def dependencyExclusions : Seq[String] = Vector()
 
   def sourceJarResources() : Seq[Resource] = resources().collect{
     case r if r.isBinaryJarResource => r.copy(classifier = Some("sources"))

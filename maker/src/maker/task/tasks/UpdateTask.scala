@@ -13,7 +13,7 @@ import java.io.File
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory
 import org.eclipse.aether.collection.CollectRequest
 import org.eclipse.aether.impl.DefaultServiceLocator
-import org.eclipse.aether.util.filter.DependencyFilterUtils
+import org.eclipse.aether.util.filter.{DependencyFilterUtils, AndDependencyFilter, ExclusionsDependencyFilter}
 import org.eclipse.aether.resolution.DependencyRequest
 import org.eclipse.aether.transport.file.FileTransporterFactory
 import org.eclipse.aether.transport.http.HttpTransporterFactory
@@ -27,6 +27,9 @@ import org.eclipse.aether.artifact.{Artifact, DefaultArtifact}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import org.eclipse.aether.graph.Dependency
 import com.typesafe.config.Config
+import scala.util.{Either, Left, Right}
+import scala.collection.immutable.Nil
+import scala.collection.script.Update
 
 /**
   * Updates any missing resources. If any jars are missing then will try 
@@ -97,7 +100,10 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
     val dependencies = download.artifacts.map(new Dependency(_, JavaScopes.COMPILE))
     val dependencyRequest = new DependencyRequest(
       new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories),
-      DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE)
+      new AndDependencyFilter(
+        DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE),
+        new ExclusionsDependencyFilter(module.dependencyExclusions)
+      )
     )
 
     system.resolveDependencies(
