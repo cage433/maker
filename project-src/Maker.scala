@@ -66,7 +66,7 @@ object Maker {
         "ch.qos.logback" % "logback-classic" % "1.0.6",
         "org.slf4j" % "jcl-over-slf4j" % "1.6.1",
         "commons-io" % "commons-io" % "2.1",
-        "com.typesafe.zinc" % "zinc" % "0.3.5",
+        "com.typesafe.zinc" % "zinc" % "0.3.7",
         "org.apache.httpcomponents" % "httpclient" % "4.3",
         "org.apache.ivy" % "ivy" % "2.3.0-rc2",
         "org.scalaz" % "scalaz-core_2.10" % "7.0.1",
