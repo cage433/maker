@@ -145,6 +145,13 @@ trait BaseProject extends ConfigPimps {
   def testCompile = executeWithDependencies(TestCompileTask(_))
   def testCompileContinuously = continuously(moduleBuild(TestCompileTask(_)))
 
+  def runTestContinuously(className : String, verbose : Boolean = false) = {
+    val build = taskBuild(RunUnitTestsTask(this, verbose, className))
+    continuously(build)
+  }
+
+  def rtc(className : String, verbose : Boolean = false) = runTestContinuously(className, verbose)
+
   private[project] def testBuild(verbose : Boolean) = {
     // test is an unusual build, in that if project B depends on project A, then 
     // strictly speaking, to test B it is only necessary to compile A (perhaps test compile also)
@@ -214,7 +221,7 @@ trait BaseProject extends ConfigPimps {
   def continuously(bld : Build){
     var lastTaskTime :Option[Long] = None
 
-    def allSourceFiles : List[File] = allUpstreamModules.flatMap{
+    def allSourceFiles : List[File] = (allUpstreamModules ++ allUpstreamTestModules).distinct.flatMap{
       proj => 
         proj.compilePhase.sourceFiles++ proj.testCompilePhase.sourceFiles
     }
@@ -234,11 +241,13 @@ trait BaseProject extends ConfigPimps {
     }
 
 
-    def lastSrcModificationTime = {
-      allUpstreamModules.map(proj => {
-          val watchedFiles = proj.compilePhase.sourceFiles ++ proj.testCompilePhase.sourceFiles
-          FileUtils.lastModifiedFileTime(watchedFiles)
-        }).max
+    def lastSrcModificationTime : Option[Long] = {
+      FileUtils.lastModifiedFileTime(allSourceFiles)
+      //allSourceFiles.map(FileUtils.lastModifiedFileTime(watchedFiles)).max
+      //allUpstreamTestModules.map(proj => {
+          //val watchedFiles = proj.compilePhase.sourceFiles ++ proj.testCompilePhase.sourceFiles
+          //FileUtils.lastModifiedFileTime(watchedFiles)
+        //}).max
     }
     printWaitingMessage
     while (true) {
@@ -257,7 +266,7 @@ trait BaseProject extends ConfigPimps {
 
   lazy val isAccessibleScalaTestSuite : (String => Boolean) = {
     lazy val loader = new URLClassLoader(
-      allUpstreamModules.flatMap{p => p.classpathJars.toSet + p.outputDir(SourceCompilePhase) + p.outputDir(TestCompilePhase)}.map(_.toURI.toURL).toArray,
+      allUpstreamTestModules.flatMap{p => p.classpathJars.toSet + p.outputDir(SourceCompilePhase) + p.outputDir(TestCompilePhase)}.map(_.toURI.toURL).toArray,
       null
     )
     (className: String) =>  {

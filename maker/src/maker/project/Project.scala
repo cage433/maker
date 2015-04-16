@@ -38,7 +38,7 @@ case class Project(
   def packageDir = file(rootAbsoluteFile, "package")
 
   def allUpstreamModules = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct
-  def allUpstreamTestModules = allUpstreamModules
+  def allUpstreamTestModules = (immediateUpstreamModules ++ immediateUpstreamTestModules).distinct.flatMap(_.allUpstreamTestModules).distinct
   def testClassNames() = {
     allUpstreamModules.flatMap(_.testClassNames())
   }

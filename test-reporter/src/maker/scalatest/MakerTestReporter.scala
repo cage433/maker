@@ -81,7 +81,7 @@ class MakerTestReporter extends Reporter{
     val time = System.nanoTime
     event match {
       case t : SuiteStarting => 
-        Log.info("STARTING " + t.suiteClassName.getOrElse(t.suiteName))
+        //Log.info("STARTING " + t.suiteClassName.getOrElse(t.suiteName))
       case t : SuiteCompleted => 
         //Log.info("Completed  " + t.suiteClassName.getOrElse(t.suiteName))
       case t : TestStarting => {

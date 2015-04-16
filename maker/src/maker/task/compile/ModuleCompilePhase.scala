@@ -47,7 +47,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   def strictlyUpstreamProjectPhases = {
     var projectPhases = scala.collection.mutable.Set[ModuleCompilePhase]()
     for {
-      m <- module.allStrictlyUpstreamModules
+      m <- module.allStrictlyUpstreamTestModules
       phase <- SourceCompilePhase :: TestCompilePhase :: Nil
     }
       projectPhases += ModuleCompilePhase(m, phase)

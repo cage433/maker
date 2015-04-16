@@ -1,13 +1,12 @@
 package maker.project
 
-import maker.task.Dependency
-import maker.task.BuildResult
+import maker.task.{Dependency, BuildResult}
 import maker.task.compile.CompileTask
 import maker.utils.FileUtils._
 import java.io.BufferedWriter
 import maker.utils.RichString._
-import maker.utils.os.Command
-import maker.utils.os.CommandOutputHandler
+import maker.utils.os.{Command, CommandOutputHandler}
+import maker.task.tasks.RunUnitTestsTask
 
 trait TmuxIntegration extends BaseProject{
 
@@ -21,6 +20,9 @@ trait TmuxIntegration extends BaseProject{
       tmux("set-option", "-gq", "status-left", "#[bg=red,fg=black] %s" % msg)
     }
 
+    private def tmuxReportTestFailed(msg : String){
+      tmux("set-option", "-gq", "status-left", "#[bg=yellow,fg=black] %s" % msg)
+    }
     private def tmuxClearStatusLeft{
       tmux("set-option", "-gq", "status-left", "")
     }
@@ -38,8 +40,13 @@ trait TmuxIntegration extends BaseProject{
 
     private def tmuxReportResult(result : BuildResult){
       tmux("set", "-g", "status-bg", "default")
-      if (result.failed){
-        tmuxReportTaskFailed(result.name + " failed ")
+      result.maybeFirstFailure match {
+        case Some(failingTaskResult) => 
+          if (failingTaskResult.isTestResult)
+            tmuxReportTestFailed(s"$name failed")
+          else
+            tmuxReportTaskFailed(s"${result.name} failed ")
+        case None =>
       }
     }
 

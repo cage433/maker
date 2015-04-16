@@ -100,7 +100,7 @@ class Module(
 
   lazy val allUpstreamModules         : List[Module] = this :: allStrictlyUpstreamModules
   lazy val allUpstreamTestModules         : List[Module] = this :: allStrictlyUpstreamTestModules
-  private lazy val allStrictlyUpstreamTestModules : List[Module] = immediateUpstreamTestModules.flatMap(_.allUpstreamTestModules).distinct.sortWith(_.name < _.name)
+  lazy val allStrictlyUpstreamTestModules : List[Module] = (immediateUpstreamModules ++ immediateUpstreamTestModules).distinct.flatMap(_.allUpstreamTestModules).distinct.sortWith(_.name < _.name)
 
   override def toString = name
 

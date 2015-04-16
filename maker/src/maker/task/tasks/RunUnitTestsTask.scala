@@ -58,8 +58,7 @@ case class RunUnitTestsTask(
     }
 
     val memoryArguments = List(
-      s"-Xmx${config.unitTestHeapSize}m",
-      "-XX:MaxPermSize=200m"
+      s"-Xmx${config.unitTestHeapSize}m"
     )
 
     baseProject.testOutputFile.delete

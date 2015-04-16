@@ -285,7 +285,7 @@ def launch_repl():
             "-classpath", classpath(scala_libraries()),
             "-Dsbt.log.format=false",
             "-Drebel.log=true",
-            "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + ["-Dlogback.configurationFile=" + args.logback_config,
+            "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + ["-Dmaker.logback.unit-tests-config=" + args.logback_config, "-Dlogback.configurationFile=" + args.logback_config,
             "scala.tools.nsc.MainGenericRunner",
             "-cp", classpath(classpath_components),
             "-Yrepl-sync", 
