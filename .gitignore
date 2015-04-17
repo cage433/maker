@@ -32,3 +32,4 @@ maker.log
 scala-libs
 **/.maker-libs
 */target-maker
+logback-vim.xml
