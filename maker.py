@@ -87,6 +87,7 @@ def read_args():
     parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
     parser.add_argument('-J', '--JVM-ARGS', dest='jvm_args', nargs=argparse.REMAINDER, default = [])
     parser.add_argument('-e', '--extra-classpath', dest='extra_classpath', help='Colon separated list of directories/jars')
+    parser.add_argument('-E', '--execute-command', dest='execute_command', help='maker command to run (and then exit)')
     args = parser.parse_args()
 
 
@@ -243,12 +244,16 @@ def launch_repl():
             "-classpath", classpath(scala_libraries()),
             "-Dsbt.log.format=false",
             "-Drebel.log=true",
-            "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + ["-Dmaker.logback.unit-tests-config=" + args.logback_config, "-Dlogback.configurationFile=" + args.logback_config,
+            "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + \
+                ["-Dmaker.logback.unit-tests-config=" + args.logback_config, "-Dlogback.configurationFile=" + args.logback_config,
             "scala.tools.nsc.MainGenericRunner",
             "-cp", classpath(classpath_components),
             "-Yrepl-sync", 
             "-nc", 
             "-i", project_definition_file()]
+
+    if args.execute_command:
+        cmd_args = cmd_args + ["-e"] + args.execute_command.split()
 
     call(cmd_args)
 

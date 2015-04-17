@@ -1,7 +1,6 @@
 package maker.task.tasks
 
 import org.scalatest.{FreeSpec, Matchers}
-import maker.utils.os.Command
 import java.io.File
 import maker.project.{Module, TestModule, HasDummyCompiler}
 import maker.utils.FileUtils._
@@ -105,11 +104,7 @@ object PackageJarTaskTests extends Matchers with CustomMatchers{
 
     relativePaths.foreach{
       relPath => 
-        if (! jarContents.exists(_.contains(relPath))){
-          println(s"Could not find $relPath in $jarFile")
-          jarContents.foreach(println)
-          fail(s"Could not find $relPath in $jarFile")
-        }
+        assert(jarContents.exists(_.contains(relPath)))
     }
   }
 }

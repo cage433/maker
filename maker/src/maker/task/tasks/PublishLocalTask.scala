@@ -40,7 +40,7 @@ case class PublishLocalTask(
     if (signatureFile.exists)
       signatureFile.delete
     val cmd = Command("gpg", "-ab", "--passphrase", config.gpgPassPhrase, file.getAbsolutePath)
-    val result = cmd.exec 
+    val result = cmd.run
     if (result != 0)
       logger.error("Failed to sign " + file)
     result == 0

@@ -1,7 +1,7 @@
 package maker.task.tasks
 
 import maker.project.{Module, BaseProject}
-import maker.utils.os.{ScalaCommand, CommandOutputHandler}
+import maker.utils.os.Command
 import maker.task._
 import maker.utils._
 import maker.utils.RichIterable._
@@ -45,7 +45,7 @@ case class RunUnitTestsTask(
     }
 
 
-    val suiteParameters = classOrSuiteNames.map(List("-s", _)).flatten
+    val suiteParameters : Seq[String] = classOrSuiteNames.map(List("-s", _)).flatten.toVector
     val systemPropertiesArguments = {
       var s = Map[String, String]()
       s += "scala.usejavacp" -> "true"
@@ -65,24 +65,30 @@ case class RunUnitTestsTask(
 
     val opts = config.debugFlags ::: memoryArguments ::: systemPropertiesArguments
  
-    val testParameters = {
+    val testParameters : Seq[String] = {
       val consoleReporterArgs = if (verbose) List("-oF") else Nil
       consoleReporterArgs ::: List("-P", "-C", "maker.utils.MakerTestReporter") 
     }
 
-    val args = testParameters ++ suiteParameters 
 
-    val cmd = ScalaCommand(
-      CommandOutputHandler(), 
-      config.javaExecutable.getAbsolutePath, 
-      opts,
-      baseProject.testClasspath + java.io.File.pathSeparator + config.testReporterJar,
-      "org.scalatest.tools.Runner", 
-      "Running tests in " + name,
-      args 
+    var cmd = Command.scalaCommand(
+      classpath = baseProject.testClasspath + java.io.File.pathSeparator + config.testReporterJar,
+      klass = "scala.tools.nsc.MainGenericRunner",
+      opts = opts,
+      args = "org.scalatest.tools.Runner" +: testParameters ++: suiteParameters
     )
-    val res = cmd.exec
+
+    // Apache executor is noisy when exit is non-zero, so switch that off here.
+    // Actual exit value is checked below.
+    cmd = cmd.withExitValues(0, 1)
+
+    if (baseProject.isTestProject)
+      cmd = cmd.withNoOutput
+
+    val res = cmd.run
+
     val results = MakerTestResults(baseProject.testOutputFile)
+
     val result = if (res == 0 && results.failures.isEmpty){
       RunUnitTestsTaskResult(this, succeeded = true, stopwatch = sw, testResults = results)
     } else if (results.failures.isEmpty){

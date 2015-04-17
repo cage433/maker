@@ -53,6 +53,7 @@ class RunMainTaskTests extends FunSuite {
         )
 
         // this should compile proj1 before compiling and then running the main in proj2
+        proj2.compile
         proj2.runMain("foo.Main")()()
 
         assert(outputFile.exists)

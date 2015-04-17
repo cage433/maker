@@ -3,7 +3,6 @@ package maker.task.tasks
 import org.scalatest.{FreeSpec, Matchers}
 import maker.utils.FileUtils._
 import maker.project._
-import maker.utils.os.{Command, CommandOutputHandler}
 import maker._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import scala.xml.{XML, Node}

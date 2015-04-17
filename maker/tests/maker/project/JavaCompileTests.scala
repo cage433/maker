@@ -3,6 +3,8 @@ package maker.project
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.os.Command
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import xsbti.api.Compilation
 
 class JavaCompileTests extends FunSuite with TestUtils {
 
@@ -63,10 +65,11 @@ class JavaCompileTests extends FunSuite with TestUtils {
         val classfile = file(proj.compilePhase.outputDir, "foo", "Foo.class")
         assert(classfile.exists, "Foo.class should exist")
 
-        val cmd = Command("file", classfile.getAbsolutePath).withSavedOutput
-        cmd.exec
-        assert(cmd.savedOutput.contains("compiled Java class data"))
-        assert(cmd.savedOutput.contains("(Java 1.6)"))
+        val bs = new ByteArrayOutputStream()
+        val cmd = Command("file", classfile.getAbsolutePath).withOutputTo(bs)
+        cmd.run
+        assert(bs.toString.contains("compiled Java class data"))
+        assert(bs.toString.contains("(Java 1.6)"))
 
     }
  }

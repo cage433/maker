@@ -1,9 +1,9 @@
 package maker.task.tasks
 
 import maker.utils.FileUtils._
-import java.io.PrintWriter
+import java.io.ByteArrayOutputStream
 import maker.utils.{TeeToFileOutputStream, Stopwatch}
-import maker.utils.os.{ScalaDocCmd, CommandOutputHandler}
+import maker.utils.os.Command
 import maker.task._
 import maker.task.compile._
 import maker.project.{BaseProject, Module}
@@ -43,17 +43,16 @@ case class DocTask(module : Module)
 
       val scalaToolsClasspath = config.scalaVersion.scalaJars.mkString(":")
 
-      val cmd = ScalaDocCmd(
-        CommandOutputHandler.NULL.withSavedOutput,
-        docDir,
-        config.javaExecutable.getAbsolutePath,
-        scalaToolsClasspath,
-        Nil,
-        optsFile)
+      val bs = new ByteArrayOutputStream()
+      val cmd = Command.scalaCommand(
+        classpath = scalaToolsClasspath,
+        klass = "scala.tools.nsc.ScalaDoc",
+        args = Vector("@" + optsFile.getAbsolutePath)
+      ).withOutputTo(bs).withWorkingDirectory(docDir)
 
-      cmd.exec() match {
+      cmd.run() match {
         case 0 => DefaultTaskResult(this, true, sw)
-        case _ => DefaultTaskResult(this, false, sw, message = Some(cmd.savedOutput))
+        case _ => DefaultTaskResult(this, false, sw, message = Some(bs.toString))
       }
     }
     else {

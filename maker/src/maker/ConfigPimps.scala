@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import maker.utils.FileUtils._
 import scala.collection.JavaConversions._
 import java.io.File
+import maker.project.Module
 
 trait ConfigPimps {
   lazy val logger = LoggerFactory.getLogger(getClass)
@@ -29,6 +30,7 @@ trait ConfigPimps {
       dir
     }
 
+    def scalaLibClasspath = Module.asClasspathStr(findJars(projectScalaLibDirectory))
     def resourceCache = mkdirs(file(config.getString("maker.resource-cache")))
 
     def httpResolvers = config.getStringList("maker.http.resolvers").toList.grouped(2)
