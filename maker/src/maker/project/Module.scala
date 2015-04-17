@@ -213,7 +213,7 @@ trait ClassicLayout {
 
 object Module{
  
-  val logger = LoggerFactory.getLogger(this.getClass)
+  lazy val logger = LoggerFactory.getLogger(this.getClass)
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
 

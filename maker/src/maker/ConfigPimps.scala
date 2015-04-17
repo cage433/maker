@@ -9,7 +9,7 @@ import scala.collection.JavaConversions._
 import java.io.File
 
 trait ConfigPimps {
-  val logger = LoggerFactory.getLogger(getClass)
+  lazy val logger = LoggerFactory.getLogger(getClass)
 
   implicit class RichConfig(config : Config) extends ToBooleanOps{
 

@@ -94,7 +94,7 @@ case class CompilationFailedInfo(e : CompileFailed) {
 
 case class SourceCompileTask(override val module :Module) extends CompileTask(module){
   def upstreamTasks = {
-    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false), new DownloadScalaLibs())
+    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false), DownloadScalaLibs)
   }
   def phase = SourceCompilePhase
 } 

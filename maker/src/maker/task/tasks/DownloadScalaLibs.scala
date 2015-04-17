@@ -10,10 +10,11 @@ import java.io.{InputStream, FileOutputStream}
 import maker.Resource._
 import com.typesafe.config.{ConfigFactory, Config}
 
-class DownloadScalaLibs(config : Config = ConfigFactory.load()) extends Task 
+case object DownloadScalaLibs extends Task 
   with EitherPimps 
   with ConfigPimps
 {
+  val config : Config = ConfigFactory.load()
   def name = "Download scala libs"
   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
     val scalaVersion = config.getString("maker.project.scala.version")

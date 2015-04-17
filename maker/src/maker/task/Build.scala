@@ -127,7 +127,7 @@ case class Build(
 }
 
 object Build{
-  val logger = LoggerFactory.getLogger(this.getClass)
+  lazy val logger = LoggerFactory.getLogger(this.getClass)
   val taskCount = new AtomicInteger(0)
 
   private class PrioritisedFutureTask(r: Runnable, val priority: Int)

@@ -16,7 +16,7 @@ import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
  */
 case class CreateDeployTask(baseProject: Project, buildTests: Boolean, version: Option[String] = None) extends Task {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = LoggerFactory.getLogger(this.getClass)
   val baseOutputDir = file(baseProject.rootAbsoluteFile, "/target-maker/deploy/")
   val jarsDir = file(baseOutputDir, "/jars/")
   val thirdPartyJars = file(baseOutputDir, "/thirdpartyjars/")

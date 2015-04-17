@@ -16,7 +16,7 @@ case class CleanTask(module : Module, deleteManagedLibs : Boolean = false) exten
 {
   def baseProject = module
   def name = "Clean"
-  val logger = LoggerFactory.getLogger(this.getClass)
+  lazy val logger = LoggerFactory.getLogger(this.getClass)
   def upstreamTasks = (module.immediateUpstreamModules ::: module.immediateUpstreamTestModules).distinct.map(CleanTask(_, deleteManagedLibs))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {

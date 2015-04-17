@@ -126,7 +126,7 @@ trait BaseProject extends ConfigPimps {
     */
   private def taskBuild(tasks : Task*) = {
     Build(
-      tasks.head.name,
+      tasks.headOption.map(_.name).getOrElse("Empty build"),
       Dependency.Graph.transitiveClosure(tasks.toList, extraUpstreamTasksMatcher, extraDownstreamTasksMatcher),
       config.taskThreadPoolSize
     )
@@ -335,5 +335,5 @@ trait BaseProject extends ConfigPimps {
 }
 
 object BaseProject{
-  val logger = LoggerFactory.getLogger(this.getClass)
+  lazy val logger = LoggerFactory.getLogger(this.getClass)
 }
