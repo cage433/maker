@@ -80,7 +80,6 @@ def read_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
-    parser.add_argument('-c', '--project-source-dir', dest='project_src_dir')
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
@@ -89,9 +88,6 @@ def read_args():
     parser.add_argument('-e', '--extra-classpath', dest='extra_classpath', help='Colon separated list of directories/jars')
     args = parser.parse_args()
 
-    if args.refresh and not args.project_src_dir:
-        log.fatal("'refresh' called with no project src directory")
-        exit(1)
 
 def create_logger():
     global log
@@ -201,23 +197,6 @@ def download_required_dependencies(resources, lib_dir):
 
     rm_rf(temp_dir)
 
-def project_src_needs_recompiling():
-    if args.refresh:
-        return True
-
-    if not args.project_src_dir:
-        return False
-
-    src_files = glob(args.project_src_dir + "/*.scala")
-    if len(src_files) == 0:
-        return False
-
-    class_files = os.listdir(project_class_directory())
-    if len(class_files) == 0:
-        return True
-
-    return max(src_files, key=os.path.getctime) > min(class_files, key=os.path.getctime)
-
 
 def java():
     return os.path.join(os.environ['JAVA_HOME'], "bin", "java")
@@ -239,28 +218,6 @@ def maker_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
     return [os.path.join(maker_root, module, "target-maker", "classes") for module in ["utils", "maker"]]
 
-
-def recompile_project_source():
-    if not project_src_needs_recompiling():
-        return
-
-    log.info("Recompiling project source files")
-
-    classpath_components = scala_libraries() + maker_dependencies()
-    if args.maker_developer_mode:
-        classpath_components.extend(maker_class_directories())
-    else:
-        classpath_components.extend(maker_binaries())
-
-    result = call([ java(),
-                    "-classpath", classpath(classpath_components),
-                    "-Dscala.usejavacp=true",
-                    "scala.tools.nsc.Main",
-                    "-d", project_class_directory()] + 
-                    glob(args.project_src_dir + "/*.scala"))
-    if result != 0:
-        log.critical("Failed to compile project source - exiting")
-        exit(1)
 
 
 def launch_repl():
@@ -305,8 +262,6 @@ download_required_dependencies(SCALA_LIBRARIES, maker_scala_directory())
 download_required_dependencies(MAKER_DEPENDENCIES, maker_dependencies_directory())
 download_required_dependencies(MAKER_BINARIES, maker_binaries_directory())
 
-log.info("Checking for stale project class files")
-recompile_project_source()
 
 log.info("Launching repl")
 launch_repl()

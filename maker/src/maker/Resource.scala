@@ -94,3 +94,4 @@ trait ResourcePimps{
     def %(artifact : String) = new OrgAndArtifact(name, artifact)
   }
 }
+

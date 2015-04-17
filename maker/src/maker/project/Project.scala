@@ -5,7 +5,6 @@ import maker.task.tasks._
 import maker.utils.FileUtils._
 import java.io.File
 import maker.utils.RichString._
-import maker.utils.os.Command
 import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
 import com.typesafe.config.{ConfigFactory, Config}
@@ -43,55 +42,7 @@ case class Project(
     allUpstreamModules.flatMap(_.testClassNames())
   }
   def immediateUpstreamTestModules : List[Module] = Nil
-  private val generator = IDEAProjectGenerator(this)
   def allModules = allUpstreamModules.flatMap(_.allUpstreamModules).distinct
-  def generateIDEAProject() {
-
-    generator.generateTopLevelModule(rootAbsoluteFile, name, topLevelExcludedFolders)
-    generator.generateIDEAProjectDir(rootAbsoluteFile, name)
-    allModules.foreach(module => generator.generateModule(module))
-    generator.generateModulesFile(file(rootAbsoluteFile, ".idea"), this)
-  }
-
-  def generateEnsimeProject() {
-    val generator = new EnsimeGenerator()
-    generator.generateModules(rootAbsoluteFile, name, allModules)
-  }
-
-  def generateSbtProject() {
-    new SbtGenerator().generate(this)
-  }
-
-  def graphvizDiagram(): String = {
-    def deps(): List[(Module, Module)] = {
-      var seen = Set[Module]()
-      var deps = List[(Module, Module)]()
-      def collect(modules: Iterable[Module]): Unit =
-        for (module <- modules) {
-          if (!seen.contains(module)) {
-            seen += module
-            val upstream = module.immediateUpstreamModules
-            upstream.foreach { upM => deps ::= (module, upM) }
-            collect(upstream)
-          }
-        }
-      collect(immediateUpstreamModules)
-      deps
-    }
-
-    deps().map {
-      case (fromM, toM) => "\t\"" + fromM + "\" -> \"" + toM + "\"\n"
-    }.mkString("digraph \"" + name + "\" {\n", "", "}\n")
-  }
-
-  def createModulesDiagram(): Unit = {
-    withTempFile(dotFile => {
-      writeToFile(dotFile, graphvizDiagram())
-
-      import maker.utils.os.Command
-      Command("dot", "-Tpdf", "-o" + name + ".pdf", dotFile.getAbsolutePath).exec
-    })
-  }
 
   def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
     require(includeUpstreamModules, "Project publication must include all upstream modules")

@@ -3,7 +3,6 @@ package maker.task
 import java.io.File
 import maker.utils.RichString._
 import maker.utils.Stopwatch
-import maker.utils.Utils
 import maker.task.tasks.RunUnitTestsTask
 import maker.utils.RichThrowable._
 import maker.task.tasks.UpdateTask
