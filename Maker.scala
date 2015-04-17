@@ -65,6 +65,7 @@ lazy val maker_ = new Module(
       "com.typesafe" % "config" % "1.2.1",
       "io.spray" % "spray-json_2.10" % "1.3.1",
       "javax.inject" % "javax.inject" %  "1", 
+      "org.apache.commons" % "commons-exec" % "1.3",
       "org.apache.maven" % "maven-aether-provider" % "3.2.5",
       "org.eclipse.aether" % "aether-connector-basic" % "1.0.0.v20140518",
       "org.eclipse.aether" % "aether-impl" % "1.0.0.v20140518",
