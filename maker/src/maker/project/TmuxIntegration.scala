@@ -5,15 +5,15 @@ import maker.task.compile.CompileTask
 import maker.utils.FileUtils._
 import java.io.BufferedWriter
 import maker.utils.RichString._
-import maker.utils.os.{Command, CommandOutputHandler}
+import maker.utils.os.{Command, CommandOutputHandler, Command2}
 import maker.task.tasks.RunUnitTestsTask
 
 trait TmuxIntegration extends BaseProject{
 
-    private lazy val hasTmux = Command(CommandOutputHandler.NULL, None, true, "which", "tmux").withNoOutput.exec == 0
+    private lazy val hasTmux = Command2("which", "tmux").withNoOutput.run == 0
     def tmux(args : String*){
       if (!isTestProject && hasTmux)
-        new Command(CommandOutputHandler.NULL, None, true, ("tmux"::args.toList) : _*).withNoOutput.execAsync
+        Command2(("tmux"::args.toList) : _*).withNoOutput.runAsync
     }
 
     private def tmuxReportTaskFailed(msg : String){

@@ -4,7 +4,6 @@ import maker.utils.FileUtils._
 import maker.utils.RichString._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import java.io.{File, FileOutputStream, IOException}
-import maker.utils.os.Command
 import scala.xml.{Elem, NodeSeq}
 import maker.project.Module
 import maker.utils.{FileUtils, Int}

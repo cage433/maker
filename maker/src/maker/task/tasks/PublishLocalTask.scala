@@ -31,10 +31,7 @@ case class PublishLocalTask(
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
-      println("Debug: " + (new java.util.Date()) + "publish local ") 
-      val result = doPublish(baseProject, results, sw)
-      println("Debug: " + (new java.util.Date()) + "finish publish local ") 
-      result
+      doPublish(baseProject, results, sw)
     }
   }
   

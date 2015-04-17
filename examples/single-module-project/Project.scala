@@ -1,7 +1,11 @@
 import maker.project.Module
 
-val project = new Module(
+val singleModule = new Module(
   root = new java.io.File("."), 
-  projectRoot_ = new java.io.File("."), 
-  name = "fred"
-) 
+  name = "single-module"
+) {
+  override def resources = Vector(
+    "org.scalatest" % "scalatest_2.10" %  "2.2.0"
+  )
+}
+

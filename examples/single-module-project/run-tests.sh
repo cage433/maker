@@ -7,8 +7,8 @@
 # Create a dummy file
 touch marker-file
 
-# Run this example project's tests - one of them should delete the dummy file
-../../maker.py -E 'project.test' -l logback-config/logback.xml
+# Run this example module's tests - one of them should delete the dummy file
+../../maker.py -E 'singleModule.test' -l logback-config/logback.xml
 
 # Return to the maker unit test which invoked this script - ExampleProjectTests.scala
 if [ -e "marker-file" ]; then

@@ -34,16 +34,7 @@ class Module(
   import Module.logger
   protected val upstreamModulesForBuild = List(this)
 
-  val resourcesFile = file(root, "external-resources")
-
-  def resources() : Seq[Resource]  = {
-    
-    val resources = resourcesFile.readLines.toList.filterNot{
-      line => 
-        line.startsWith("#") || line.trim.size == 0
-    }.map(Resource.parse(_))
-    resources.distinct
-  }
+  def resources() : Seq[Resource]  = Nil
 
   // Exclusions should be in the form 'group:artifact'
   def dependencyExclusions : Seq[String] = Vector()

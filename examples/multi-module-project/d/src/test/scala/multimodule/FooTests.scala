@@ -17,7 +17,7 @@ class FooTests extends FunSpec {
       done anything, the tests will be called from a script like
       
       touch marker-file
-      bin/maker.sh -e 'project.test'
+      bin/maker.sh -E 'project.test'
       if [ -e marker-file ]; then
         exit -1
       else 

@@ -6,7 +6,6 @@ import maker.task._
 import maker.task.compile._
 import maker.utils.FileUtils._
 import maker.utils._
-import maker.utils.os.Command
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
 import scala.collection.JavaConverters._
