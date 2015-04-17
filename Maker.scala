@@ -84,4 +84,8 @@ def publishSnapshots(version : String) = {
   testReporter.publishSonatypeSnapshot(version) andThen maker_.publishSonatypeSnapshot(version)
 }
 
+def publishRelease(version : String) = {
+  testReporter.publishToSonatype(version) andThen maker_.publishToSonatype(version)
+}
+
 import maker_._
