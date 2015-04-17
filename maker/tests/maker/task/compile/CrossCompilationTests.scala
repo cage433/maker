@@ -6,7 +6,7 @@ import maker.project.TestModule
 import maker.{Resource, ResourceUpdater}
 
 class CrossCompilationTests extends FreeSpec with Matchers{
-  import FileUtils.{withTempDir, writeToFile, file, withTestDir}
+  import FileUtils.{withTempDir, writeToFile, file}
   "Can compile a scala 2.9 project" in {
     withTempDir{
       dir => 

@@ -19,7 +19,7 @@ import java.util.EnumSet
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.Properties
 
-object FileUtils extends Asserting{
+object FileUtils {
 
   def file(f : File, d : String*) : File = {
     assert(f != null)  // Because Java will happily ignore a null f
@@ -71,7 +71,11 @@ object FileUtils extends Asserting{
       appendToFile(plainFile, stringToWrite)
     }
 
-    def asAbsoluteFile = asserting[File](file(plainFile.getAbsolutePath), _.isAbsolute)
+    def asAbsoluteFile = {
+      val absFile = file(plainFile.getAbsolutePath)
+      assert(absFile.isAbsolute)
+      absFile
+    }
 
     def relativeTo(dir: File) : File = {
       val path = Paths.get(plainFile.getCanonicalPath)

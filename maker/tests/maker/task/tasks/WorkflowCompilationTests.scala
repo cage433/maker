@@ -64,7 +64,7 @@ class WorkflowCompilationTests extends FunSuite{
   }
 
   test("A developer's workflow"){
-    withTestDir{
+    withTempDir{
       dir => 
 
       info("given a module with two source dirs")

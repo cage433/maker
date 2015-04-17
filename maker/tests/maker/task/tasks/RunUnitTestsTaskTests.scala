@@ -8,7 +8,7 @@ import maker.project.Module
 
 class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
   test("Test reports picks up failure"){
-    withTestDir{
+    withTempDir{
       dir => 
         val proj = new TestModule(dir, "RunUnitTestsTaskTests")
         proj.writeTest(
@@ -32,7 +32,7 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
   }
 
 
-  ignore("Unit test runs"){
+  test("Unit test runs"){
     withTempDir{
       root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
@@ -65,7 +65,7 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
     }
   }
 
-  ignore("Failing test fails again"){
+  test("Failing test fails again"){
     withTempDir{
       root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
@@ -99,7 +99,7 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
     }
   }
 
-  ignore("Can re-run failing tests"){
+  test("Can re-run failing tests"){
     withTempDir{
       root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")

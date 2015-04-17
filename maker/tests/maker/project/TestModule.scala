@@ -25,18 +25,6 @@ class TestModule(
   analyses
 ) with ClassicLayout {
   root.mkdirs
-  //writeToFile(
-    //file(projectRoot, "external-resource-config"),
-    //"""|resolver: default http://repo1.maven.org/maven2/
-       //|version: scala_version 2.10.4
-       //|version: sbt_version 0.13.5
-       //|version: scalatest_version 2.2.0""".stripMargin)
-  //List("scala-library", "scala-compiler", "scala-reflect").foreach{
-    //name => 
-      //val resource = Resource("org.scala-lang",name, "2.10.4")
-      //// TODO - not this
-      ////new ResourceUpdater(resource, config, projectScalaLibsDir).update()
-  //}
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
     """val %s = new TestModule(file("%s"), "%s", %s, %s)""" % (name, root.getAbsolutePath, name, 
