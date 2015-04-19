@@ -44,9 +44,4 @@ case class Project(
   def immediateUpstreamTestModules : List[Module] = Nil
   def allModules = allUpstreamModules.flatMap(_.allUpstreamModules).distinct
 
-  def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
-    require(includeUpstreamModules, "Project publication must include all upstream modules")
-    val task = PublishTask(this, allUpstreamModules, resolver, version, signArtifacts) 
-    executeWithDependencies(task)
-  }
 }

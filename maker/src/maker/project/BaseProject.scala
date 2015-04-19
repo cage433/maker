@@ -10,7 +10,6 @@ import maker.task.tasks._
 import maker.utils.RichString._
 import java.net.URLClassLoader
 import java.lang.reflect.Modifier
-import maker.ivy.IvyUtils
 import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
 import scala.collection.immutable.Nil
@@ -62,7 +61,7 @@ trait BaseProject extends ConfigPimps {
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
   def publishToSonatype(version : String) = executeWithDependencies(PublishToSonatype(this, version))
-  def publishSonatypeSnapshot(version : String) = publish(version, "sonatype-snapshot")
+  def publishSonatypeSnapshot(version : String) = executeWithDependencies(PublishSnapshotToSonatype(this, version))
 
   def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
     val tasks = if (includeUpstreamModules)
@@ -73,7 +72,6 @@ trait BaseProject extends ConfigPimps {
     executeWithDependencies(tasks: _*)
   }
 
-  def publish(version : String, resolver : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) : BuildResult 
 
   def sourcePackageJar(compilePhase : CompilePhase, version : Option[String]) = {
     val versionAsString = version.map("-" + _).getOrElse("")
@@ -85,8 +83,6 @@ trait BaseProject extends ConfigPimps {
   }
   def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
 
-  def ivySettingsFile = file("ivysettings.xml") // Note that this is relative to CWD
-  def ivyFile(version : String) = IvyUtils.generateIvyFile(this, version)
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 
   def testResults = {

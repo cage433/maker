@@ -129,10 +129,10 @@ object FileUtils {
     def dirname = plainFile.getParentFile
   }
 
-  def findFiles(pred : File => Boolean, dirs : Iterable[File]) : Iterable[File] = {
-    def rec(file : File) : Iterable[File] = {
+  def findFiles(pred : File => Boolean, dirs : Seq[File]) : Seq[File] = {
+    def rec(file : File) : Seq[File] = {
       if (file.isDirectory)
-        file.listFiles.toSet.flatMap(rec)
+        file.listFiles.flatMap(rec)
       else if (pred(file))
         List(file)
       else
@@ -141,13 +141,11 @@ object FileUtils {
     dirs.flatMap(rec).map{f : File => f.asAbsoluteFile}
   }
 
-  def findFilesWithExtension(ext : String, dirs : Iterable[File]) : Iterable[File] =
+
+  def findFilesWithExtension(ext : String, dirs : File*) : Seq[File] =
     findFiles(_.getName.endsWith("." + ext), dirs)
 
-  def findFilesWithExtension(ext : String, dirs : File*) : Iterable[File] =
-      findFilesWithExtension(ext, dirs.toSet)
-
-  def findFilesWithExtensions(exts : List[String], dirs : Iterable[File]) =
+  def findFilesWithExtensions(exts : List[String], dirs : Seq[File]) =
     findFiles((f : File) => exts.exists(e => f.getName.endsWith("." + e)), dirs)
 
   def traverseDirectories(root : File, fn : File => Unit){
@@ -163,13 +161,13 @@ object FileUtils {
 
   def allProperFiles(directory : File) : Seq[File] = allFiles(directory).filterNot(_.isDirectory)
 
-  def lastModifiedFileTime(files : Iterable[File]) =
+  def lastModifiedFileTime(files : Seq[File]) =
     files.toList.flatMap(allFiles).map(_.lastModified).sortWith(_ > _).headOption
 
-  def lastModifiedProperFileTime(files : Iterable[File]) =
+  def lastModifiedProperFileTime(files : Seq[File]) =
     files.toList.flatMap(allFiles).filterNot(_.isDirectory).map(_.lastModified).sortWith(_ > _).headOption
 
-  def lastModifiedFile(files : Iterable[File]) =
+  def lastModifiedFile(files : Seq[File]) =
     files.toList.flatMap(allFiles).sortWith(_.lastModified > _.lastModified).headOption
 
   def fileIsLaterThan(target : File, dirs : List[File]) = {
@@ -189,9 +187,9 @@ object FileUtils {
     }
   }
 
-  def findJars(dir : File) : Iterable[File] = findJars(List(dir))
-  def findJars(dirs : Iterable[File]) = findFilesWithExtension("jar", dirs)
-  def findClasses(dir : File) = findFilesWithExtension("class", Set(dir))
+  def findJars(dirs : Seq[File]) = findFilesWithExtension("jar", dirs : _*)
+  def findJars(dir : File) : Seq[File] = findJars(List(dir))
+  def findClasses(dir : File) = findFilesWithExtension("class", dir)
 
   /**
    * Don't want to use PrintWriter as that swallows exceptions

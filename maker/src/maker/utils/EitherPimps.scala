@@ -11,3 +11,23 @@ trait EitherPimps {
   }
 }
 
+object EitherPimps{
+
+  def mapOrErrorLeft[A, L, R] (seq : Seq[A], fn : A => Either[L, R]) : Either[L, Seq[R]] = {
+    val acc = new scala.collection.immutable.VectorBuilder[R]()
+    var maybeFailure : Option[L] = None
+    seq.foreach{
+      a =>
+        if (!maybeFailure.isDefined){
+          fn(a) match {
+            case Left(l) =>
+              maybeFailure = Some(l)
+            case Right(r) =>
+              acc += r
+          }
+        }
+    }
+    maybeFailure.toLeft(acc.result)
+  }
+}
+

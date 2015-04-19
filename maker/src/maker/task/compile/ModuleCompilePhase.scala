@@ -32,19 +32,19 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     d
   }
 
-  def scalaFiles = findFilesWithExtension("scala", sourceDirs)
-  def javaFiles = findFilesWithExtension("java", sourceDirs)
+  def scalaFiles = findFilesWithExtension("scala", sourceDirs : _*)
+  def javaFiles = findFilesWithExtension("java", sourceDirs: _*)
 
   def sourceFiles = scalaFiles ++ javaFiles
-  def classFiles : Iterable[File] = {
+  def classFiles : Seq[File] = {
     findClasses(outputDir)
   }
-  def classNames : Iterable[String] = {
+  def classNames : Seq[String] = {
     // used for class dependency analysis
     classFiles.map(_.relativeTo(outputDir)).map(_.getPath).filterNot(_.contains("$$")).map(_.replace('/', '.').dropRight(6)) 
   }
 
-  def strictlyUpstreamProjectPhases = {
+  def strictlyUpstreamProjectPhases : Seq[ModuleCompilePhase] = {
     var projectPhases = scala.collection.mutable.Set[ModuleCompilePhase]()
     for {
       m <- module.allStrictlyUpstreamTestModules
@@ -54,22 +54,22 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
     if (phase == TestCompilePhase)
       projectPhases += ModuleCompilePhase(module, SourceCompilePhase)
-    projectPhases.toSet
+    projectPhases.toVector
   }
    
     
-  def upstreamProjectPhases = strictlyUpstreamProjectPhases + this
+  def upstreamProjectPhases = this +: strictlyUpstreamProjectPhases 
 
   def lastCompilationTime : Option[Long] = {
     if (compilationCacheFile.exists)
-      lastModifiedProperFileTime(Set(compilationCacheFile))
+      lastModifiedProperFileTime(Vector(compilationCacheFile))
     else
       None
   }
 
   def lastSourceModifcationTime : Option[Long] = lastModifiedProperFileTime(sourceFiles)
 
-  private def changedFiles_(files : Iterable[File]) = {
+  private def changedFiles_(files : Seq[File]) = {
     lastCompilationTime match {
       case Some(time) => files.filter(_.lastModified > time)
       case None => files
@@ -80,18 +80,18 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     changedFiles_(javaFiles).toSet
   }
 
-  def sourceFilesDeletedSinceLastCompilation : Iterable[File] = {
+  def sourceFilesDeletedSinceLastCompilation : Seq[File] = {
     Option(module.analyses.get(outputDir)) match {
-      case None => Set.empty
+      case None => Nil
       case Some(analysis) => 
-        analysis.infos.allInfos.keySet.filterNot(_.exists)
+        analysis.infos.allInfos.keySet.toVector.filterNot(_.exists)
     }
   }
 
-  def classpathDirectoriesAndJars : Iterable[File] = {
+  def classpathDirectoriesAndJars : Seq[File] = {
     upstreamProjectPhases.flatMap{
       pp => 
-        pp.module.classpathJars.toSet + pp.resourceDir + pp.outputDir + pp.managedResourceDir
+        pp.module.classpathJars.distinct ++: Vector(pp.resourceDir, pp.outputDir, pp.managedResourceDir)
     }
   }
   def classpathJars = classpathDirectoriesAndJars.filter(_.isJar)

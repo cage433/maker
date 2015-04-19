@@ -8,7 +8,6 @@ import java.io._
 import maker.utils.FileUtils._
 import spray.json._
 import DefaultJsonProtocol._
-import com.sun.xml.internal.txw2.Content
 import scala.xml.XML
 import org.scalatest.Failed
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
@@ -26,15 +25,12 @@ import maker.ConfigPimps
 
 case class PublishToSonatype(baseProject : BaseProject, version : String) 
   extends Task 
-  with ConfigPimps
+  with SonatypeTask
   with EitherPimps
 {
-  import baseProject.config
-  val Array(sonatypeUsername, sonatypePassword) = config.sonatypeCredentials
+  def config = baseProject.config
   val sonatypeRepository = "https://oss.sonatype.org/service/local"
-  val credentialHost = "oss.sonatype.org"
            
-  type ErrorMessage = String
   type JsonResponse = String
   type StagingRepo = String
   def name = s"Publish $baseProject to Sonatype"
@@ -72,7 +68,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String)
 
   private def uploadToSonatype(bundle : File) : Either[ErrorMessage, JsonResponse] = {
     Post(
-      "/staging/bundle_upload", 
+      s"${sonatypeRepository}/staging/bundle_upload",
       new FileEntity(bundle, ContentType.create("application/java-archive"))
     ).map{
       responseString => 
@@ -84,7 +80,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String)
     var isClosed = false
     var numTriesLeft = 10
     while(!isClosed && numTriesLeft > 0){
-      Get(s"/staging/repository/$stagingRepo"){
+      Get(s"${sonatypeRepository}/staging/repository/$stagingRepo"){
         response => 
           val xml = XML.load(response.getEntity.getContent)
           val status = (xml \ "type").text
@@ -103,46 +99,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String)
   }
 
 
-  // TODO - add configurable proxy
-  val proxy = new HttpHost("127.0.0.1", 4128, "http")
-  private def withHttpClient[U](body: HttpClient => U) : U = {
 
-    val client = new DefaultHttpClient()
-    //client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
-    try {
-      client.getCredentialsProvider.setCredentials(
-        new AuthScope(credentialHost, AuthScope.ANY_PORT),
-        new UsernamePasswordCredentials(sonatypeUsername, sonatypePassword)
-      )
-      body(client)
-    }
-    finally
-      client.getConnectionManager.shutdown()
-  }
-
-  def Get[U](path:String)(body: HttpResponse => U) : U = {
-    val req = new HttpGet(s"${sonatypeRepository}$path")
-    req.addHeader("Content-Type", "application/xml")
-    withHttpClient{ client =>
-      val response = client.execute(req)
-      if(response.getStatusLine.getStatusCode != HttpStatus.SC_OK) {
-        throw new IOException(s"Failed to retrieve data from $path: ${response.getStatusLine}")
-      }
-      body(response)
-    }
-  }
-
-  def Post(path:String, entity : AbstractHttpEntity) : Either[ErrorMessage, String] = {
-    val req = new HttpPost(s"${sonatypeRepository}$path")
-    req.setEntity(entity)
-    withHttpClient{ client =>
-      val response = client.execute(req)
-      if (response.getStatusLine.getStatusCode == HttpStatus.SC_CREATED)
-        Right(EntityUtils.toString(response.getEntity))
-      else 
-        Left(s"${response}")
-    }
-  }
 
   case class RepoUris(repositoryUris : Seq[String]){
     require(repositoryUris.size == 1, s"expected a single uri, got $repositoryUris")
@@ -153,7 +110,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String)
  
   private def releaseStagingRepo(tmpDir : File, stagingRepo : StagingRepo) : Either[ErrorMessage, Unit] = {
     Post(
-      "/staging/bulk/promote",
+      s"${sonatypeRepository}/staging/bulk/promote",
       new StringEntity(
         s"""{"data":{"stagedRepositoryIds":["$stagingRepo"],"description":""}}""",
         ContentType.APPLICATION_JSON
