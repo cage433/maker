@@ -2,7 +2,7 @@ package maker.task.tasks
 
 import org.scalatest.{FreeSpec, Matchers}
 import java.io.File
-import maker.project.{Module, TestModule, HasDummyCompiler}
+import maker.project._
 import maker.utils.FileUtils._
 import maker.utils.{CustomMatchers, Stopwatch}
 import maker.task.compile.SourceCompilePhase
@@ -23,21 +23,22 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
     withTempDir{
       dir =>  
 
-        val proj = createTestModule(dir, "single-module-package-jar-test")
+        val module = createTestModule(dir, "single-module-package-jar-test")
+        val proj = Project(module.name, dir, module :: Nil)
 
-        proj.addUnmanagedResource("MainResource1")
-        proj.addUnmanagedResource("subdir-b", "MainResource2")
+        module.addUnmanagedResource("MainResource1")
+        module.addUnmanagedResource("subdir-b", "MainResource2")
 
-        proj.writeCaseObject("Foo", "foo")
+        module.writeCaseObject("Foo", "foo")
 
-        proj.pack().succeeded should be (true)
+        proj.pack.succeeded should be (true)
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj.outputDir(SourceCompilePhase), 
-          proj.packageJar(SourceCompilePhase, version = None))
+          module.outputDir(SourceCompilePhase), 
+          proj.packageJar(version = None))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj.resourceDir(SourceCompilePhase), 
-          proj.packageJar(SourceCompilePhase, version = None))
+          module.resourceDir(SourceCompilePhase), 
+          proj.packageJar(version = None))
     }
   }
 
@@ -45,18 +46,19 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
     withTempDir{
       dir =>  
 
-        val proj = createTestModule(dir, "single-module-package-jar-test")
+        val module = createTestModule(dir, "single-module-package-jar-test")
+        val proj = Project(module.name, dir, module :: Nil)
 
-        proj.addUnmanagedResource("MainResource1")
-        proj.addUnmanagedResource("subdir-b", "MainResource2")
+        module.addUnmanagedResource("MainResource1")
+        module.addUnmanagedResource("subdir-b", "MainResource2")
 
-        proj.writeCaseObject("Foo", "foo")
+        module.writeCaseObject("Foo", "foo")
 
-        proj.pack()
+        proj.pack
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj.sourceDirs(SourceCompilePhase).head,
-          proj.sourcePackageJar(SourceCompilePhase, version = None))
+          module.sourceDirs(SourceCompilePhase).head,
+          proj.sourcePackageJar(version = None))
     }
   }
   "Can package upstream modules into one big jar" in {
@@ -65,6 +67,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
         val a = createTestModule(dir, "a")
         val b = createTestModule(dir, "b", upstreamModules = List(a))
         val c = createTestModule(dir, "c", upstreamModules = List(b))
+        val p = Project("p", dir, a :: b :: c :: Nil)
 
 
         a.writeCaseObject("Foo", "foo")
@@ -76,9 +79,9 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
         c.writeCaseObject("Baz", "foo")
         c.addUnmanagedResource("c-resource")
 
-        c.pack(includeUpstreamModules = true)
+        p.pack
 
-        val oneBigJar = c.packageJar(SourceCompilePhase, version = None)
+        val oneBigJar = p.packageJar(version = None)
 
         Vector(a, b, c).foreach{
           m => 

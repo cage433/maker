@@ -1,7 +1,7 @@
 package maker.task.tasks
 
 import java.io.File
-import maker.project.{Module, BaseProject, Project}
+import maker.project._
 import maker.task._
 import maker.task.compile._
 import maker.utils.FileUtils._
@@ -10,46 +10,36 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.TrueFileFilter
 import scala.collection.JavaConverters._
 import scala.collection.immutable.VectorBuilder
+import scala.tools.nsc.io.Jar
 
 case class PackageJarTask(
-  baseProject: BaseProject, 
-  modules : Seq[Module],
-  compilePhase : CompilePhase,
+  project: Project, 
   version : Option[String]
 ) 
   extends Task with EitherPimps
 {
 
-  def name = compilePhase match {
-    case SourceCompilePhase => "Package Main Jar"
-    case TestCompilePhase => "Package Test Jar"
-  }
+  def name = "Package Main Jar"
 
-  def upstreamTasks = {
-    compilePhase match {
-      case SourceCompilePhase => 
-        modules.map(DocTask(_))
-      case TestCompilePhase => 
-        modules.map(CompileTask(_, TestCompilePhase))
-    }
-  }
+  def upstreamTasks = DocTask(project) :: Nil
 
   // TODO - find out why this is synchronized
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
 
-    import baseProject.{packageDir, packageJar, sourcePackageJar, docPackageJar, docOutputDir}
+    import project.{packageDir, packageJar, sourcePackageJar, docPackageJar, docOutputDir}
     import BuildJar.{build => buildJar}
 
     if (!packageDir.exists)
       packageDir.mkdirs
 
+    val modules = project.upstreamModules
     val result = buildJar(
-                    packageJar(compilePhase, version),
-                    modules.map(_.outputDir(compilePhase)) ++ modules.map(_.resourceDir(compilePhase))
+                    packageJar(version),
+                    modules.map(_.outputDir(SourceCompilePhase)) ++ modules.map(_.resourceDir(SourceCompilePhase))
                   ) andThen
                   buildJar(
-                    sourcePackageJar(compilePhase, version),
-                    modules.flatMap(_.sourceDirs(compilePhase))
+                    sourcePackageJar(version),
+                    modules.flatMap(_.sourceDirs(SourceCompilePhase))
                   ) andThen
                   buildJar(
                     docPackageJar,

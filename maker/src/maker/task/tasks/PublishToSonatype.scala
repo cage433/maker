@@ -1,6 +1,6 @@
 package maker.task.tasks
 
-import maker.project.BaseProject
+import maker.project.{BaseProject, Project}
 import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils._
 import scala.util.{Either, Left, Right}
@@ -23,20 +23,20 @@ import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
 import maker.ConfigPimps
 
-case class PublishToSonatype(baseProject : BaseProject, version : String) 
+case class PublishToSonatype(project : Project, version : String) 
   extends Task 
   with SonatypeTask
   with EitherPimps
 {
-  def config = baseProject.config
+  def config = project.config
   val sonatypeRepository = "https://oss.sonatype.org/service/local"
            
   type JsonResponse = String
   type StagingRepo = String
-  def name = s"Publish $baseProject to Sonatype"
+  def name = s"Publish $project to Sonatype"
 
   def upstreamTasks = 
-    PublishLocalTask(baseProject, baseProject.allUpstreamModules, version, signArtifacts = true) :: Nil
+    PublishLocalTask(project, version, signArtifacts = true) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     FileUtils.withTempDir{
@@ -57,7 +57,7 @@ case class PublishToSonatype(baseProject : BaseProject, version : String)
   }
 
   private def makeBundle(tmpDir : File) : Either[ErrorMessage, File] = {
-    import baseProject.{publishLocalPomDir, publishLocalJarDir}
+    import project.{publishLocalPomDir, publishLocalJarDir}
 
     val bundleJar = file("/home/alex/tmp", "bundle.jar")
 

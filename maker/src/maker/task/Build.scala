@@ -20,6 +20,7 @@ case class Build(
   import Build.logger
   override def toString = "Build " + name
   
+  def tasks = graph.nodes
 
   def execute = new Execute().execute
   class Execute{
@@ -41,21 +42,7 @@ case class Build(
     private def passToExecutor(pt : Task, resultsSoFar : Set[TaskResult]){
       val sw = new Stopwatch
       monitor.addToQueue(pt)
-      val priority = pt match {
-        case _: UpdateTask => -1000
-        case task: TestCompileTask =>
-          -100 - task.module.allUpstreamModules.size
-        case task: CompileTask =>
-          -500 - task.module.allUpstreamModules.size
-        case tests: RunUnitTestsTask =>
-          // higher priority for top level tests
-          // (more likely to be slower, integration style, tests)
-          tests.baseProject match {
-            case m: Module => -m.allUpstreamModules.size
-            case _ => -tests.upstreamTasks.size
-          }
-        case _ => 0
-      }
+      val priority = 0
       logger.debug("SUBMITTING " + pt + " with priority " + priority)
       executor.executeWithPriority(priority){
         logger.debug("EXECUTING " + pt + " with priority " + priority)

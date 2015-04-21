@@ -14,24 +14,21 @@ import org.slf4j.LoggerFactory
 import maker.utils.FileUtils._
 
 case class PublishLocalTask(
-  baseProject : BaseProject, 
-  modules : Seq[Module],
+  project : Project, 
   version : String,
   signArtifacts : Boolean
 ) 
   extends Task 
   with ConfigPimps
 {
-  import baseProject.config
+  import project.config
   def name = "Publish Local"
 
-  def baseProjects = Vector(baseProject)
-  def module = baseProject
-  def upstreamTasks : List[Task] = List(PackageJarTask(baseProject, modules, SourceCompilePhase, Some(version)))
+  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version)))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
-      doPublish(baseProject, results, sw)
+      doPublish(project, results, sw)
     }
   }
   
@@ -46,26 +43,26 @@ case class PublishLocalTask(
     result == 0
   }
 
-  private def doPublish(baseProject: BaseProject, results : Iterable[TaskResult], sw : Stopwatch) = {
+  private def doPublish(project: Project, results : Iterable[TaskResult], sw : Stopwatch) = {
   
-    baseProject.publishLocalDir(version).deleteAll()
+    project.publishLocalDir(version).deleteAll()
     def versionedFilename(file : File) : String = {
      val basename :: extension :: Nil = file.basename.split('.').toList
      s"$basename-$version.$extension"
     }
     // TODO - fix the includeUpstreamModules hack
-    FileUtils.writeToFile(baseProject.publishLocalPomFile(version), PomUtils.pomXmlText(baseProject, version, includeUpstreamModules = modules.size > 1))
+    FileUtils.writeToFile(project.publishLocalPomFile(version), PomUtils.pomXmlText(project, version))
     var result = true
     if (signArtifacts)
-      result = signFile(baseProject.publishLocalPomFile(version))
+      result = signFile(project.publishLocalPomFile(version))
 
     result &&= Vector(
-      (baseProject.packageJar(SourceCompilePhase, Some(version)), s"${baseProject.name}-$version.jar"),
-      (baseProject.sourcePackageJar(SourceCompilePhase, Some(version)), s"${baseProject.name}-$version-sources.jar"),
-      (baseProject.docPackageJar, s"${baseProject.name}-$version-javadoc.jar")
+      (project.packageJar(Some(version)), s"${project.name}-$version.jar"),
+      (project.sourcePackageJar(Some(version)), s"${project.name}-$version-sources.jar"),
+      (project.docPackageJar, s"${project.name}-$version-javadoc.jar")
     ).filter(_._1.exists).forall{
       case (jar, versionedBasename) => 
-        val fileWithVersion = file(baseProject.publishLocalJarDir(version), versionedBasename)
+        val fileWithVersion = file(project.publishLocalJarDir(version), versionedBasename)
         fileWithVersion.delete
         try {
           copyFile(jar, fileWithVersion)

@@ -2,16 +2,17 @@ package maker.task.tasks
 
 import org.scalatest.{Matchers, FreeSpec}
 import maker.utils.FileUtils._
-import maker.project.TestModule
+import maker.project.{TestModule, Project}
 
 class DocTaskTests extends FreeSpec with Matchers{
   "Doc should be produced " in {
     withTempDir{
       dir => 
-        val proj = new TestModule(dir, "DocTaskTests")
+        val module = new TestModule(dir, "DocTaskTests")
+        val proj = Project("DocTaskTests", dir, module :: Nil)
         val indexHtmlFile = file(proj.rootAbsoluteFile, "target-maker", "docs", "index.html")
         indexHtmlFile.exists should be (false)
-        proj.writeSrc(
+        module.writeSrc(
           "foo/Foo.scala",
           """
             package foo

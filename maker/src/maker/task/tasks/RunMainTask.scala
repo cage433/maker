@@ -7,7 +7,7 @@ import maker.utils.{TeeToFileOutputStream, Stopwatch}
 import maker.utils.os.Command
 import maker.task._
 import maker.task.compile.{TestCompileTask, Run}
-import maker.project.BaseProject
+import maker.project.{BaseProject, ProjectTrait}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
@@ -18,7 +18,7 @@ import maker.ConfigPimps
 /**
  * run a class main in a separate JVM instance (but currently synchronously to maker repl)
  */
-case class RunMainTask(baseProject : BaseProject, className : String, opts : List[String], mainArgs : List[String]) 
+case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Seq[String], mainArgs : Seq[String]) 
   extends Task 
   with ConfigPimps
 {
@@ -26,7 +26,7 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
   import baseProject.config
 
   def module = baseProject
-  def upstreamTasks = baseProject.allUpstreamModules.map(TestCompileTask(_))
+  def upstreamTasks = baseProject.testCompileTaskBuild.tasks
   def baseProjects = Vector(baseProject)
 
 
@@ -36,10 +36,10 @@ case class RunMainTask(baseProject : BaseProject, className : String, opts : Lis
 
     val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
 
-    val optsToUse = config.debugFlags ::: List(
+    val optsToUse = config.debugFlags ++: List(
       s"-Xmx${config.unitTestHeapSize}m", 
       "-Dlogback.configurationFile=" + "logback.xml"
-    ) ::: opts
+    ) ++: opts
     var cmd = Command.scalaCommand(
       classpath = baseProject.testClasspath,
       klass = className,

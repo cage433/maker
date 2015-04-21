@@ -18,7 +18,7 @@ class PublishLocalTaskTests
   with ConfigPimps
 {
 
-  private def checkPublishedPomMatchesCoordinates(project : BaseProject, version : String){
+  private def checkPublishedPomMatchesCoordinates(project : Project, version : String){
     assert(project.publishLocalPomFile(version).exists, s"${project.publishLocalPomFile(version)} doesn't exist")
 
     val pom = XML.loadFile(project.publishLocalPomFile(version))
@@ -34,11 +34,11 @@ class PublishLocalTaskTests
 
   }
 
-  private def checkPublishedPomIncludesAllDependencies(module : Module, version : String){
-    import module.config
-    val pom = XML.loadFile(module.publishLocalPomFile(version))
+  private def checkPublishedPomIncludesAllDependencies(project : Project, version : String){
+    import project.config
+    val pom = XML.loadFile(project.publishLocalPomFile(version))
     val dependencies = pom \\ "dependency"
-    val resources = config.scalaVersion.scalaLibraryResource +: module.resources
+    val resources = config.scalaVersion.scalaLibraryResource +: project.resources
 
     resources should allSatisfy {
       resource : Resource => 
@@ -67,23 +67,24 @@ class PublishLocalTaskTests
       dir =>  
 
         val version = "1.0-SNAPSHOT"
-        val proj = createTestModule(dir, "single-module-publish-local-test")
+        val module = createTestModule(dir, "single-module-publish-local-test")
+        val proj = Project(module.name, dir, module :: Nil)
 
-        proj.addExternalResource("org.slf4j slf4j-api 1.6.1")
-        proj.addUnmanagedResource("MainResource1")
-        proj.addUnmanagedResource("subdir-b", "MainResource2")
+        module.addExternalResource("org.slf4j slf4j-api 1.6.1")
+        module.addUnmanagedResource("MainResource1")
+        module.addUnmanagedResource("subdir-b", "MainResource2")
 
-        proj.writeCaseObject("Foo", "testPublishLocal")
+        module.writeCaseObject("Foo", "testPublishLocal")
 
         proj.publishLocal(version)
 
         checkPublishedPomMatchesCoordinates(proj, version)
         checkPublishedPomIncludesAllDependencies(proj, version)
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj.outputDir(SourceCompilePhase), proj.publishLocalJar(version))
-        PackageJarTaskTests.checkJarContainsDirectoryContents(proj.resourceDir(SourceCompilePhase), proj.publishLocalJar(version))
+          module.outputDir(SourceCompilePhase), proj.publishLocalJar(version))
+        PackageJarTaskTests.checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), proj.publishLocalJar(version))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          proj.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version))
+          module.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version))
     }
   }
 
@@ -111,12 +112,13 @@ class PublishLocalTaskTests
           proj.writeCaseObject("Bar", "bar")
           proj
         }
-        moduleB.publishLocal(version, includeUpstreamModules = true)
+        val project = Project("publish test", dir, moduleA :: moduleB :: Nil)
+        project.publishLocal(version)
 
-        checkPublishedPomMatchesCoordinates(moduleB, version)
-        checkPublishedPomIncludesAllDependencies(moduleB, version)
+        checkPublishedPomMatchesCoordinates(project, version)
+        checkPublishedPomIncludesAllDependencies(project, version)
 
-        import moduleB.{publishLocalJar => publishJar, publishLocalSourceJar => publishSourceJar}
+        import project.{publishLocalJar => publishJar, publishLocalSourceJar => publishSourceJar}
         publishJar(version) should be ('exists)
 
         Vector(moduleA, moduleB).foreach{
@@ -142,8 +144,6 @@ class PublishLocalTaskTests
         topLevel.publishLocal(version)
 
         checkPublishedPomMatchesCoordinates(topLevel, version)
-        checkPublishedPomMatchesCoordinates(a, version)
-        checkPublishedPomMatchesCoordinates(b, version)
 
     }
   }

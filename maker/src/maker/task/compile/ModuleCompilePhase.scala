@@ -44,21 +44,21 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     classFiles.map(_.relativeTo(outputDir)).map(_.getPath).filterNot(_.contains("$$")).map(_.replace('/', '.').dropRight(6)) 
   }
 
-  def strictlyUpstreamProjectPhases : Seq[ModuleCompilePhase] = {
-    var projectPhases = scala.collection.mutable.Set[ModuleCompilePhase]()
-    for {
-      m <- module.allStrictlyUpstreamTestModules
-      phase <- SourceCompilePhase :: TestCompilePhase :: Nil
-    }
-      projectPhases += ModuleCompilePhase(m, phase)
+  //def strictlyUpstreamProjectPhases : Seq[ModuleCompilePhase] = {
+    //var projectPhases = scala.collection.mutable.Set[ModuleCompilePhase]()
+    //for {
+      //m <- module.allStrictlyUpstreamTestModules
+      //phase <- SourceCompilePhase :: TestCompilePhase :: Nil
+    //}
+      //projectPhases += ModuleCompilePhase(m, phase)
 
-    if (phase == TestCompilePhase)
-      projectPhases += ModuleCompilePhase(module, SourceCompilePhase)
-    projectPhases.toVector
-  }
+    //if (phase == TestCompilePhase)
+      //projectPhases += ModuleCompilePhase(module, SourceCompilePhase)
+    //projectPhases.toVector
+  //}
    
     
-  def upstreamProjectPhases = this +: strictlyUpstreamProjectPhases 
+  //def upstreamProjectPhases = this +: strictlyUpstreamProjectPhases 
 
   def lastCompilationTime : Option[Long] = {
     if (compilationCacheFile.exists)
@@ -89,12 +89,15 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   }
 
   def classpathDirectoriesAndJars : Seq[File] = {
-    upstreamProjectPhases.flatMap{
-      pp => 
-        pp.module.classpathJars.distinct ++: Vector(pp.resourceDir, pp.outputDir, pp.managedResourceDir)
+    var directories = module.upstreamModules.flatMap{
+      m => Vector(m.resourceDir(SourceCompilePhase), m.outputDir(SourceCompilePhase), m.managedResourceDir)
     }
+    if (phase == TestCompilePhase)
+      directories ++= module.upstreamTestModules.map(_.outputDir(TestCompilePhase))
+    module.classpathJars ++: directories
+
   }
-  def classpathJars = classpathDirectoriesAndJars.filter(_.isJar)
+  //def classpathJars = classpathDirectoriesAndJars.filter(_.isJar)
   def compilationClasspath = Module.asClasspathStr(classpathDirectoriesAndJars)
 
   val phaseDirectory = file(module.makerDirectory, phase.name).makeDirs()

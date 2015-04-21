@@ -18,11 +18,20 @@ object ZincCompile extends ConfigPimps{
     val upstreamCaches = {
       var map = Map[File, File]()
 
-      projectPhase.strictlyUpstreamProjectPhases.foreach{
-        case ModuleCompilePhase(module, phase) => 
-          map += 
-            (module.outputDir(phase) -> module.compilationCacheFile(phase))
+      val strictlyUpstreamModules = module.upstreamModules.filterNot(_ == module)
+      val phases = if (projectPhase.phase == SourceCompilePhase) 
+        Vector(SourceCompilePhase) 
+      else
+        Vector(SourceCompilePhase, TestCompilePhase) 
+
+      for {
+        m <- strictlyUpstreamModules;
+        p <- phases
+      }{
+        map += 
+          (m.outputDir(p) -> m.compilationCacheFile(p))
       }
+
       map
     }
       

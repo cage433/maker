@@ -18,11 +18,12 @@ import maker.utils.FileUtils
 class CompileTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
-    val proj : TestModule = new TestModule(root, "CompileScalaTaskTests")
-    val outputDir = proj.compilePhase.outputDir
+    val module : TestModule = new TestModule(root, "CompileScalaTaskTests")
+    val proj = Project("CompileScalaTaskTests", root, module :: Nil)
+    val outputDir = module.compilePhase.outputDir
     val files = new {
 
-      val fooSrc = proj.writeSrc(
+      val fooSrc = module.writeSrc(
         "foo/Foo.scala", 
         """
         package foo
@@ -33,7 +34,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
         """
       )
 
-      val barSrc = proj.writeSrc(
+      val barSrc = module.writeSrc(
         "foo/bar/Bar.scala", 
         """
         package foo.bar
@@ -43,7 +44,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
         """
       )
 
-      val bazSrc = proj.writeSrc(
+      val bazSrc = module.writeSrc(
         "foo/Baz.scala", 
         """
         package foo
@@ -57,23 +58,23 @@ class CompileTaskTests extends FunSuite with TestUtils {
       def barObject = new File(outputDir, "foo/bar/Bar$.class")
     }
     import files._
-    (proj, files)
+    (proj, module, files)
   }
 
   test("Compilation makes class files, writes dependencies, and package makes jar"){
     withTempDir {
       dir => 
-        val (proj, _) = simpleProject(dir)
+        val (proj, module, _) = simpleProject(dir)
         proj.clean
-        assert(proj.compilePhase.classFiles.size === 0)
+        assert(module.compilePhase.classFiles.size === 0)
         assert(proj.compile.succeeded, "Compile should succeed")
-        assert(proj.compilePhase.classFiles.size > 0)
-        assert(!proj.packageJar(SourceCompilePhase, version = None).exists)
-        proj.pack()
-        assert(proj.packageJar(SourceCompilePhase, version = None).exists)
+        assert(module.compilePhase.classFiles.size > 0)
+        assert(!proj.packageJar(version = None).exists)
+        proj.pack
+        assert(proj.packageJar(version = None).exists)
         proj.clean
-        assert(proj.compilePhase.classFiles.size === 0)
-        assert(!proj.packageJar(SourceCompilePhase, version = None).exists)
+        assert(module.compilePhase.classFiles.size === 0)
+        assert(!proj.packageJar(version = None).exists)
     }
   }
 
@@ -81,11 +82,11 @@ class CompileTaskTests extends FunSuite with TestUtils {
   test("Deletion of source file causes deletion of class files"){
     withTempDir{
       dir => 
-        val (proj, files) = simpleProject(dir)
+        val (proj, module, files) = simpleProject(dir)
         import files._
         proj.compile
         Set(barClass, barObject) |> {
-          s => assert((s & proj.compilePhase.classFiles.toSet) === s)
+          s => assert((s & module.compilePhase.classFiles.toSet) === s)
         }
         assert(barSrc.exists)
         barSrc.delete
@@ -94,7 +95,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
         proj.compile
         assert(!barClass.exists)
         Set(barClass, barObject) |> {
-          s => assert((s & proj.compilePhase.classFiles.toSet) === Set())
+          s => assert((s & module.compilePhase.classFiles.toSet) === Set())
         }
 
     }

@@ -1,6 +1,6 @@
 package maker.task.tasks
 
-import maker.project.{Module, BaseProject}
+import maker.project.{Module, BaseProject, ProjectTrait}
 import maker.utils.os.Command
 import maker.task._
 import maker.utils._
@@ -15,7 +15,7 @@ import java.sql.Time
 
 case class RunUnitTestsTask(
   name : String, 
-  baseProject : BaseProject, 
+  baseProject : ProjectTrait, 
   classOrSuiteNames_ : Option[Iterable[String]],
   verbose: Boolean
 )  
@@ -26,7 +26,7 @@ case class RunUnitTestsTask(
   import baseProject.config
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = baseProject.allUpstreamTestModules.map(TestCompileTask)
+  def upstreamTasks = baseProject.upstreamModules.map(TestCompileTask)
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
@@ -111,7 +111,7 @@ case class RunUnitTestsTask(
 object RunUnitTestsTask{
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
   lazy val logger = LoggerFactory.getLogger(this.getClass)
-  def apply(baseProject : BaseProject, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
+  def apply(baseProject : ProjectTrait, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
     def resolveClassName(cn : String) : List[String] = {
       if (cn.contains('.'))
         List(cn)

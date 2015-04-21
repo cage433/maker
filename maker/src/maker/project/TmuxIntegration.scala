@@ -8,7 +8,7 @@ import maker.utils.RichString._
 import maker.utils.os.Command
 import maker.task.tasks.RunUnitTestsTask
 
-trait TmuxIntegration extends BaseProject{
+trait TmuxIntegration extends ProjectTrait{
 
     private lazy val hasTmux = Command("which", "tmux").withNoOutput.run == 0
     def tmux(args : String*){

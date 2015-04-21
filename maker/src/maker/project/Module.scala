@@ -26,12 +26,13 @@ class Module(
     val immediateUpstreamTestModules : List[Module] = Nil,
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
-  extends BaseProject
+  extends ProjectTrait
   with TmuxIntegration
   with ResourcePimps
 {
 
   import Module.logger
+  def modules = this :: Nil
   protected val upstreamModulesForBuild = List(this)
 
   def resources() : Seq[Resource]  = Nil
@@ -74,7 +75,7 @@ class Module(
     immediateUpstreamModules.foreach{
       module =>
         val otherUpstreamModules = immediateUpstreamModules.filterNot(_ == module)
-        otherUpstreamModules.find(_.allUpstreamModules.contains(module)) match {
+        otherUpstreamModules.find(_.upstreamModules.contains(module)) match {
           case Some(otherUpstreamModule) =>
           logger.warn(name + " shouldn't depend on " + module.name + " as it is inherited via " + otherUpstreamModule.name)
           case None =>
@@ -89,9 +90,9 @@ class Module(
   def compilePhase = ModuleCompilePhase(this, SourceCompilePhase)
 
 
-  lazy val allUpstreamModules         : List[Module] = this :: allStrictlyUpstreamModules
-  lazy val allUpstreamTestModules         : List[Module] = this :: allStrictlyUpstreamTestModules
-  lazy val allStrictlyUpstreamTestModules : List[Module] = (immediateUpstreamModules ++ immediateUpstreamTestModules).distinct.flatMap(_.allUpstreamTestModules).distinct.sortWith(_.name < _.name)
+  //lazy val allUpstreamModules         : List[Module] = this :: allStrictlyUpstreamModules
+  //lazy val allUpstreamTestModules         : List[Module] = this :: allStrictlyUpstreamTestModules
+  //lazy val allStrictlyUpstreamTestModules : List[Module] = (immediateUpstreamModules ++ immediateUpstreamTestModules).distinct.flatMap(_.allUpstreamTestModules).distinct.sortWith(_.name < _.name)
 
   override def toString = name
 
@@ -115,7 +116,9 @@ class Module(
   }
 
   def cleanOnly = executeSansDependencies(CleanTask(this))
-  def testOnly(verbose : Boolean) : BuildResult = executeWithDependencies(RunUnitTestsTask(this, verbose))
+
+  def testOnlyBuild(verbose : Boolean) = transitiveBuild(RunUnitTestsTask(this, verbose) :: Nil)
+  def testOnly(verbose : Boolean) : BuildResult = execute(testOnlyBuild(verbose))
   def testOnly :BuildResult = testOnly(false)
   def testFailuredSuitesOnly(verbose : Boolean) : BuildResult = executeSansDependencies(
     RunUnitTestsTask.failingTests(this, verbose)
@@ -133,7 +136,6 @@ class Module(
     testCompilePhase.classFiles.map(_.className(outputDir(TestCompilePhase))).filterNot(_.contains("$")).filter(isAccessibleScalaTestSuite).toList
   }
 
-  def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
 
   /********************
   *     Paths and files
@@ -146,8 +148,8 @@ class Module(
   def classpathJars : Seq[File] = findJars(managedLibDir +: unmanagedLibDirs) ++:
     Vector[File](config.scalaVersion.scalaLibraryJar, config.scalaVersion.scalaCompilerJar) ++: config.scalaVersion.scalaReflectJar.toVector
 
-  def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(SourceCompilePhase, Some(version)).getName)
-  def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(SourceCompilePhase, Some(version)).getName)
+  //def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(SourceCompilePhase, Some(version)).getName)
+  //def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(SourceCompilePhase, Some(version)).getName)
 
   def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {
     case SourceCompilePhase => 
@@ -167,9 +169,6 @@ class Module(
     case TestCompilePhase => file(targetDir, "test-classes")
   }
 
-  def doc = executeWithDependencies(DocTask(this))
-  def docOutputDir = file(targetDir, "docs")
-  def packageDir = file(targetDir, "package")
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
   def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
@@ -217,7 +216,7 @@ object Module{
 
     proj.immediateUpstreamModules.foreach{
       p => 
-        proj.immediateUpstreamModules.filterNot(_ == p).find(_.allUpstreamModules.contains(p)).foreach{
+        proj.immediateUpstreamModules.filterNot(_ == p).find(_.upstreamModules.contains(p)).foreach{
           p1 => 
             logger.warn("Module " + proj.name + " doesn't need to depend on " + p.name + " as it is already inherited from " + p1.name)
         }
@@ -226,7 +225,7 @@ object Module{
 
     proj.immediateUpstreamTestModules.foreach{
       p => 
-        proj.immediateUpstreamTestModules.filterNot(_ == p).find(_.allUpstreamTestModules.contains(p)).foreach{
+        proj.immediateUpstreamTestModules.filterNot(_ == p).find(_.upstreamTestModules.contains(p)).foreach{
           p1 => 
             logger.warn("Module " + proj.name + " doesn't need a test dependency on " + p.name + " as it is already inherited from " + p1.name)
         }
@@ -235,7 +234,7 @@ object Module{
     val jarNames = proj.managedJars.map(_.getName).toSet
     proj.immediateUpstreamModules.foreach{
       upstreamModule =>
-        val upstreamJarNames = upstreamModule.allUpstreamModules.flatMap(_.managedJars).map(_.getName).toSet
+        val upstreamJarNames = upstreamModule.upstreamModules.flatMap(_.managedJars).map(_.getName).toSet
         val redundantJarNames = upstreamJarNames intersect jarNames
         if (redundantJarNames.nonEmpty && proj.warnUnnecessaryResources)
           logger.warn("Module " + proj.name + " doesn't need jars " + redundantJarNames.mkString(", ") + " as they are supplied by " + upstreamModule.name)

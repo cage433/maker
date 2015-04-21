@@ -77,7 +77,7 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
 
   object BinaryDownload extends DownloadType(module.managedLibDir){
     def isOfCorrectType(artifact : Artifact) = true
-    def artifacts = module.resources.map{
+    def artifacts = module.upstreamModules.flatMap(_.resources).map{
       resource => 
         new DefaultArtifact(
           resource.groupId, resource.artifactId, "jar", resource.version

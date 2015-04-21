@@ -21,6 +21,7 @@ trait BaseProject extends ConfigPimps {
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
+
   def setUp(graph : Dependency.Graph) : Boolean = {
     if (graph.includesCompileTask){
       topLevelCompilationErrorsFile.delete
@@ -28,22 +29,22 @@ trait BaseProject extends ConfigPimps {
     ! topLevelCompilationErrorsFile.exists()
   }
   def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean
-  def extraUpstreamTasks(task : Task) : Set[Task] =
-    extraUpstreamTasksMatcher.lift(task).getOrElse(Set.empty)
+
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
-  def extraDownstreamTasks(task : Task) : Set[Task] =
-    extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty)
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
 
-  lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)
+  //lazy val allStrictlyUpstreamModules : List[Module] = immediateUpstreamModules.flatMap(_.allUpstreamModules).distinct.sortWith(_.name < _.name)
 
   def immediateUpstreamModules : List[Module]
   def immediateUpstreamTestModules : List[Module]
-  def allUpstreamModules : List[Module]
-  def allUpstreamTestModules : List[Module]
-  def allUpstreamBaseProjects : List[BaseProject] = (this :: allStrictlyUpstreamModules).sortWith(_.name < _.name)
+  //def allUpstreamModules : List[Module]
+  //def allUpstreamTestModules : List[Module]
+  //def allUpstreamBaseProjects : List[BaseProject] = (this :: allStrictlyUpstreamModules).sortWith(_.name < _.name)
 
+  // This needs to be overriden if this module is to be published to maven/nexus
+  def organization : Option[String] = None
   val artifactId = name
+
   def toIvyExclude : Elem = <exclude org={organization.getOrElse(???)} module={artifactId} />
   def publishLocalDir(version : String) = file(publishLocalRootDir, organization.getOrElse(???), artifactId, version).makeDirs
   def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
@@ -59,18 +60,15 @@ trait BaseProject extends ConfigPimps {
     file(packageDir.getAbsolutePath, jarBasename)
   }
 
-  def bundleJar = file(rootAbsoluteFile, "bundle.jar")
-  def publishToSonatype(version : String) = executeWithDependencies(PublishToSonatype(this, version))
-  def publishSonatypeSnapshot(version : String) = executeWithDependencies(PublishSnapshotToSonatype(this, version))
 
-  def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
-    val tasks = if (includeUpstreamModules)
-        PublishLocalTask(this, allUpstreamModules, version, signArtifacts) :: Nil
-      else
-        PublishLocalTask(this, Nil, version, signArtifacts) :: allUpstreamModules.map{m => PublishLocalTask(m, Vector(m), version, signArtifacts)}
+  //def publishLocal(version : String, signArtifacts : Boolean = false, includeUpstreamModules : Boolean = false) = {
+    //val tasks = if (includeUpstreamModules)
+        //PublishLocalTask(this, allUpstreamModules, version, signArtifacts) :: Nil
+      //else
+        //PublishLocalTask(this, Nil, version, signArtifacts) :: allUpstreamModules.map{m => PublishLocalTask(m, Vector(m), version, signArtifacts)}
 
-    executeWithDependencies(tasks: _*)
-  }
+    //executeWithDependencies(tasks: _*)
+  //}
 
 
   def sourcePackageJar(compilePhase : CompilePhase, version : Option[String]) = {
@@ -85,17 +83,17 @@ trait BaseProject extends ConfigPimps {
 
   def projectTypeName = this.getClass.getSimpleName // 'Module' or 'Project# 
 
-  def testResults = {
-    // Test results may either be in a top level project's directory, or else in
-    // module directoriy(s)
-    (testOutputFile::allUpstreamModules.map(_.testOutputFile)).toList.distinct.map(MakerTestResults(_)).reduce(_++_)
-  }
+  //def testResults = {
+    //// Test results may either be in a top level project's directory, or else in
+    //// module directoriy(s)
+    //(testOutputFile::allUpstreamModules.map(_.testOutputFile)).toList.distinct.map(MakerTestResults(_)).reduce(_++_)
+  //}
 
-  def testClasspath = Module.asClasspathStr(
-    allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars)
-  )
+  //def testClasspath = Module.asClasspathStr(
+    //allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars)
+  //)
 
-  def testClassNames() : Iterable[String]
+  //def testClassNames() : Iterable[String]
 
   def docOutputDir : File
 
@@ -103,12 +101,13 @@ trait BaseProject extends ConfigPimps {
     * Makes a Build that is the closure of the task applied to 
     * upstream modules
     */
-  def moduleBuild(task : Module => Task) = 
-    taskBuild(upstreamModulesForBuild.map(task) : _*)
+  private[project] def moduleBuild(task : Module => Task) = 
+    transitiveBuild(upstreamModulesForBuild.map(task) : _*)
 
   /** modules that need to be taken into consideration
     * when doing a transitive build */
   protected def upstreamModulesForBuild : List[Module]
+  protected def defaultRootBuildModules : List[Module] = upstreamModulesForBuild
 
   protected def executeWithDependencies(
     task : Module => Task
@@ -120,7 +119,7 @@ trait BaseProject extends ConfigPimps {
   /**
     * Makes a Build that is the closure of some task. 
     */
-  private def taskBuild(tasks : Task*) = {
+  private def transitiveBuild(tasks : Task*) = {
     Build(
       tasks.headOption.map(_.name).getOrElse("Empty build"),
       Dependency.Graph.transitiveClosure(tasks.toList, extraUpstreamTasksMatcher, extraDownstreamTasksMatcher),
@@ -129,24 +128,19 @@ trait BaseProject extends ConfigPimps {
   }
 
   protected def executeWithDependencies(tasks : Task*) = { 
-    execute(taskBuild(tasks : _*))
+    execute(transitiveBuild(tasks : _*))
   }
 
   def clean = executeWithDependencies(CleanTask(_))
-  def cleanAll = executeWithDependencies(CleanTask(_, deleteManagedLibs = true))
 
-  def compile = executeWithDependencies(SourceCompileTask(_))
-  def compileContinuously = continuously(moduleBuild(SourceCompileTask(_)))
 
-  def testCompile = executeWithDependencies(TestCompileTask(_))
-  def testCompileContinuously = continuously(moduleBuild(TestCompileTask(_)))
 
-  def runTestContinuously(className : String, verbose : Boolean = false) = {
-    val build = taskBuild(RunUnitTestsTask(this, verbose, className))
-    continuously(build)
-  }
 
-  def rtc(className : String, verbose : Boolean = false) = runTestContinuously(className, verbose)
+  //def runTestContinuously(className : String, verbose : Boolean = false) = {
+    //val build = transitiveBuild(RunUnitTestsTask(this, verbose, className))
+    //continuously(build)
+  //}
+  //def rtc(className : String, verbose : Boolean = false) = runTestContinuously(className, verbose)
 
   private[project] def testBuild(verbose : Boolean) = {
     // test is an unusual build, in that if project B depends on project A, then 
@@ -161,12 +155,12 @@ trait BaseProject extends ConfigPimps {
   }
   def test : BuildResult = test(verbose = false)
 
-  def testClass(className : String, verbose : Boolean = false) = executeWithDependencies(
-    RunUnitTestsTask(this, verbose, className)
-  )
-  def testClassContinuously(className : String) = {
-    continuously(taskBuild(RunUnitTestsTask(this, false, className)))
-  }
+  //def testClass(className : String, verbose : Boolean = false) = executeWithDependencies(
+    //RunUnitTestsTask(this, verbose, className)
+  //)
+  //def testClassContinuously(className : String) = {
+    //continuously(transitiveBuild(RunUnitTestsTask(this, false, className)))
+  //}
 
   def testFailedSuites(verbose : Boolean) : BuildResult = {
     // To be consistent with 'test' - build must be against all upstream modules
@@ -175,28 +169,26 @@ trait BaseProject extends ConfigPimps {
   }
   def testFailedSuites : BuildResult = testFailedSuites(verbose = false)
 
-  def pack(includeUpstreamModules : Boolean = false) : BuildResult = {
-    val tasks = if (includeUpstreamModules)
-        PackageJarTask(this, allUpstreamModules, SourceCompilePhase, version = None) :: Nil
-      else
-        allUpstreamModules.map{m => PackageJarTask(m, Vector(m), SourceCompilePhase, version = None)}
+  //def pack(includeUpstreamModules : Boolean = false) : BuildResult = {
+    //val tasks = if (includeUpstreamModules)
+        //PackageJarTask(this, upstreamModules, SourceCompilePhase, version = None) :: Nil
+      //else
+        //allUpstreamModules.map{m => PackageJarTask(m, Vector(m), SourceCompilePhase, version = None)}
 
-    execute(taskBuild(tasks : _*))
+    //execute(transitiveBuild(tasks : _*))
+  //}
+
+  private def updateBuild(forceSourceUpdate : Boolean) = {
+    transitiveBuild(defaultRootBuildModules.map(UpdateTask(_, forceSourceUpdate = forceSourceUpdate)) : _*)
   }
-
-  def update = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = false)))
-  def updateSources = execute(moduleBuild(UpdateTask(_, forceSourceUpdate = true)))
-
-  def createDeploy(buildTests: Boolean = true, version: Option[String] = None): BuildResult =
-    throw new UnsupportedOperationException
+  def update = execute(updateBuild(forceSourceUpdate = false))
+  def updateSources = execute(updateBuild(forceSourceUpdate = true))
 
 
-  def runMain(className : String)(opts : String*)(args : String*) = 
-    executeWithDependencies(RunMainTask(this, className, opts.toList, args.toList))
+  //def runMain(className : String)(opts : String*)(args : String*) = 
+    //executeWithDependencies(RunMainTask(this, className, opts.toList, args.toList))
 
 
-  // Some sugar
-  def tcc = testCompileContinuously
 
   protected def execute(bld : Build) = {
     setUp(bld.graph)
@@ -214,106 +206,7 @@ trait BaseProject extends ConfigPimps {
     result
   }
 
-  def continuously(bld : Build){
-    var lastTaskTime :Option[Long] = None
 
-    def allSourceFiles : List[File] = (allUpstreamModules ++ allUpstreamTestModules).distinct.flatMap{
-      proj => 
-        proj.compilePhase.sourceFiles++ proj.testCompilePhase.sourceFiles
-    }
-
-    def sourceFileCount : Int = allSourceFiles.size
-    var lastFileCount : Int = sourceFileCount 
-    def sourceFileNames : String = allSourceFiles.map(_.getPath).sortWith(_<_).mkString(" ")
-    var lastSourceFileNames : String = sourceFileNames
-
-    def printWaitingMessage = println("\nWaiting for source file changes (press 'enter' to interrupt)")
-    def rerunTask{
-      println(execute(bld))
-      lastTaskTime = Some(System.currentTimeMillis)
-      lastFileCount = sourceFileCount
-      lastSourceFileNames = sourceFileNames
-      printWaitingMessage
-    }
-
-
-    def lastSrcModificationTime : Option[Long] = {
-      FileUtils.lastModifiedFileTime(allSourceFiles)
-      //allSourceFiles.map(FileUtils.lastModifiedFileTime(watchedFiles)).max
-      //allUpstreamTestModules.map(proj => {
-          //val watchedFiles = proj.compilePhase.sourceFiles ++ proj.testCompilePhase.sourceFiles
-          //FileUtils.lastModifiedFileTime(watchedFiles)
-        //}).max
-    }
-    printWaitingMessage
-    while (true) {
-      Thread.sleep(1000)
-      if (System.in.available > 0 && System.in.read == 10) return
-      (lastTaskTime,  lastSrcModificationTime, lastFileCount, sourceFileCount, lastSourceFileNames, sourceFileNames) match {
-        case (None, _, _, _, _, _) => { rerunTask }                        // Task has never been run
-        case (Some(t1), Some(t2), _, _, _, _) if t1 < t2 => { rerunTask }  // Code has changed since task last run
-        case (_, _, m, n, _, _) if m != n => { rerunTask }                  // Source file has been added or deleted
-        case (_, _, _, _, a, b) if a != b => { rerunTask }                  // Source file has been renamed
-        case _ =>                                                    // Either no code yet or code has not changed
-      }
-    }
-  }
-
-
-  lazy val isAccessibleScalaTestSuite : (String => Boolean) = {
-    lazy val loader = new URLClassLoader(
-      allUpstreamTestModules.flatMap{p => p.classpathJars.toSet + p.outputDir(SourceCompilePhase) + p.outputDir(TestCompilePhase)}.map(_.toURI.toURL).toArray,
-      null
-    )
-    (className: String) =>  {
-      val suiteClass = loader.loadClass("org.scalatest.Suite")
-      val emptyClassArray = new Array[java.lang.Class[T] forSome {type T}](0)
-      val clazz = loader.loadClass(className)
-      try {
-        suiteClass.isAssignableFrom(clazz) &&
-          Modifier.isPublic(clazz.getModifiers) &&
-          !Modifier.isAbstract(clazz.getModifiers) &&
-          Modifier.isPublic(clazz.getConstructor(emptyClassArray: _*).getModifiers)
-      }
-      catch {
-        case _: NoSuchMethodException => false
-        case _: SecurityException => false
-        case _: ClassNotFoundException => false
-        case _: NoClassDefFoundError => false
-      }
-    }
-  }
-
-  /**
-    * To run tests from Vim it is convenient to have _all_ test classes on the classpath,
-    * Not just those modules on whom we have a test dependency
-    */
-  def writeVimClasspath {
-    var dirsAndJars = allUpstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars).toList.distinct
-    dirsAndJars ::= config.scalaVersion.scalaCompilerJar
-    dirsAndJars ::= config.scalaVersion.scalaLibraryJar
-    val cp = Module.asClasspathStr(dirsAndJars)
-    val cpFile : File = file(name + "-classpath.sh")
-    writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
-  }
-
-  def constructorCodeAsString : String
-
-  def writeMakerProjectDefinitionFile{
-    val makerFile = file(rootAbsoluteFile, "Maker.scala")
-
-    val buffer = new StringBuffer
-    buffer.addLine("import maker.project.Module._")
-    buffer.addLine("import maker.task.tasks._")
-    buffer.addLine("import maker.task._")
-    buffer.addLine("import maker.task.Dependency._")
-    buffer.addLine("import maker.project._")
-    buffer.addLine("import maker.utils.FileUtils._")
-    buffer.addLine("import java.io.File")
-    buffer.addLine(constructorCodeAsString)
-    buffer.addLine("import " + name + "._")
-    writeToFile(makerFile, buffer.toString)
-  }
 
   def delete = recursiveDelete(rootAbsoluteFile)
 
@@ -326,8 +219,6 @@ trait BaseProject extends ConfigPimps {
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
 
-  // This needs to be overriden if this module is to be published to maven/nexus
-  def organization : Option[String] = None
 }
 
 object BaseProject{
