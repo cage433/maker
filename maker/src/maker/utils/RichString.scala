@@ -5,6 +5,19 @@ import scala.collection.immutable.TreeMap
 import java.io.StringWriter
 import java.io.PrintWriter
 
+trait StringBufferPimps{
+  implicit class RichStringBuffer(b : StringBuffer){
+    def addLine(text : AnyRef){
+      if (text.toString.endsWith("\n"))
+        b.append(text)
+      else
+        b.append(text + "\n")
+    }
+  }
+}
+
+trait StringColourPimps{
+}
 
 object RichString {
 	implicit def StringToRichString(s : String) = new RichString(s)

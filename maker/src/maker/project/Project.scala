@@ -20,6 +20,8 @@ case class Project(
 
   def projectRoot = root.asAbsoluteFile
 
+  def organization : Option[String] = None
+  def artifactId = name
   def modules = immediateUpstreamModules
   //val upstreamModulesForBuild = allUpstreamModules
   override def toString = name
@@ -30,7 +32,7 @@ case class Project(
       m => 
         b.addLine(m.constructorCodeAsString)
     }
-    b.addLine("""val %s = Project("%s", file("%s"), %s)""" % (name, name, root.getAbsolutePath.toString, upstreamModules.mkString("List(", ", ", ")")))
+    b.addLine(s"""val $name = Project($name, file("${root.getAbsolutePath.toString}"), ${upstreamModules.mkString("List(", ", ", ")")})""")
     b.toString
   }
   def docOutputDir = file(rootAbsoluteFile, "docs")

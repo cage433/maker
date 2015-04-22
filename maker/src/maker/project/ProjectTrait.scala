@@ -43,8 +43,6 @@ trait ProjectTrait extends ConfigPimps{
   def name : String
   def modules : Seq[Module]
   def config : Config
-  def organization : Option[String] = None
-  def artifactId = name
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
 
@@ -82,11 +80,11 @@ trait ProjectTrait extends ConfigPimps{
   }
 
 
-  def compileTaskBuild() = transitiveBuild(modules.map(SourceCompileTask(_)))
+  def compileTaskBuild() = transitiveBuild(modules.map(SourceCompileTask(this, _)))
   def compile = execute(compileTaskBuild())
 
 
-  def testCompileTaskBuild = transitiveBuild((upstreamModules ++ upstreamTestModules).distinct.map(TestCompileTask(_)))
+  def testCompileTaskBuild = transitiveBuild((upstreamModules ++ upstreamTestModules).distinct.map(TestCompileTask(this, _)))
   def testCompile = execute(testCompileTaskBuild)
   def tcc = continuously(testCompileTaskBuild)
   
@@ -140,9 +138,31 @@ trait ProjectTrait extends ConfigPimps{
     result
   }
 
-  def testClasspath = Module.asClasspathStr(
-    (upstreamModules ++: upstreamTestModules).distinct.flatMap(_.testCompilePhase.classpathDirectoriesAndJars)
-  )
+  private [project] classpathComponents(compilePhase : CompilePhase) = {
+    val classFileDirectories : Seq[File] = compilePhase match {
+      case SourceCompilePhase => 
+        upstreamModules.map{
+          module => 
+            module.outputDir(SourceCompilePhase)
+        }
+      case TestCompilePhase   => 
+        (upstreamModules ++: upstreamTestModules).distinct.flatMap{
+          module => 
+            Vector(module.outputDir(TestCompilePhase), module.outputDir(SourceCompilePhase))
+        }
+    }
+    val jars : Seq[File] = compilePhase match {
+      case SourceCompilePhase => 
+        findJars(managedLibDir)
+      case TestCompilePhase   =>
+        findJars(testManagedLibDir)
+    }
+    managedResourceDir +: jars ++: classFileDirectories
+  }
+
+  def classpath(compilePhase : CompilePhase) = {
+    Module.asClasspathStr(classpathComponents(compilePhase))
+  }
 
   def continuously(bld : Build){
     var lastTaskTime :Option[Long] = None
@@ -225,10 +245,10 @@ trait ProjectTrait extends ConfigPimps{
     * Not just those modules on whom we have a test dependency
     */
   def writeVimClasspath {
-    var dirsAndJars = upstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars).toList.distinct
-    dirsAndJars ::= config.scalaVersion.scalaCompilerJar
-    dirsAndJars ::= config.scalaVersion.scalaLibraryJar
-    val cp = Module.asClasspathStr(dirsAndJars)
+    //var dirsAndJars = upstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars).toList.distinct
+    //dirsAndJars ::= config.scalaVersion.scalaCompilerJar
+    //dirsAndJars ::= config.scalaVersion.scalaLibraryJar
+    val cp = classpath(TestCompilePhase)
     val cpFile : File = file(name + "-classpath.sh")
     writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
   }
@@ -236,4 +256,17 @@ trait ProjectTrait extends ConfigPimps{
 
   def testClassNames() : Seq[String]
   def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
+
+  def managedLibDir = file(rootAbsoluteFile, "lib_managed")
+  def testManagedLibDir = file(rootAbsoluteFile, "test_lib_managed")
+  def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
+  def testManagedLibSourceDir = file(rootAbsoluteFile, "test_lib_src_managed")
+  def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
+  def unmanagedLibDirs : Seq[File] = List(file(rootAbsoluteFile, "lib"))
+
+  def upstreamResources = upstreamModules.flatMap(_.resources)
+
+  protected def managedJars = findJars(managedLibDir)
+  def classpathJars : Seq[File] = findJars(managedLibDir +: unmanagedLibDirs) ++:
+    Vector[File](config.scalaVersion.scalaLibraryJar, config.scalaVersion.scalaCompilerJar) ++: config.scalaVersion.scalaReflectJar.toVector
 }

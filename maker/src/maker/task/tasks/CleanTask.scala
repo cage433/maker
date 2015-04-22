@@ -14,7 +14,6 @@ import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
   */
 case class CleanTask(module : Module) extends Task
 {
-  def baseProject = module
   def name = "Clean"
   lazy val logger = LoggerFactory.getLogger(this.getClass)
   def upstreamTasks = Nil

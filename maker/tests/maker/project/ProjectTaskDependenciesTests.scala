@@ -15,7 +15,6 @@ import maker.task.DefaultTaskResult
 
 class ProjectTaskDependenciesTests extends FunSuite{
   case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task {
-    def baseProject = module
     def name = "Write class count "
     def copy_(p : Module) = copy(module = p)
     def upstreamTasks = Nil
@@ -148,15 +147,15 @@ class ProjectTaskDependenciesTests extends FunSuite{
         val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
 
         assert(
-          !B.testCompileTaskBuild.graph.upstreams(TestCompileTask(B)).contains(TestCompileTask(A)),
+          !B.testCompileTaskBuild.graph.upstreams(TestCompileTask(C, B)).contains(TestCompileTask(C, A)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
-          C.testCompileTaskBuild.graph.upstreams(TestCompileTask(C)).contains(TestCompileTask(A)),
+          C.testCompileTaskBuild.graph.upstreams(TestCompileTask(C, C)).contains(TestCompileTask(C, A)),
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
-          B.compileTaskBuild.graph.upstreams(SourceCompileTask(B)).contains(SourceCompileTask(A)),
+          B.compileTaskBuild.graph.upstreams(SourceCompileTask(C, B)).contains(SourceCompileTask(C, A)),
           "Upstream source compilation is a dependency"  
         )
 
@@ -206,10 +205,10 @@ class ProjectTaskDependenciesTests extends FunSuite{
             })
         }
         import Dependency.Edge
-        assert(!D.testCompileTaskBuild.graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
+        assert(!D.testCompileTaskBuild.graph.edges.contains(Edge(TestCompileTask(D, A), TestCompileTask(D, C))))
 
-        assert(D.testTaskBuild(verbose = false).graph.edges.contains(Edge(TestCompileTask(A), TestCompileTask(C))))
-        assert(!D.testCompileTaskBuild.graph.edges.contains(Edge(TestCompileTask(B), TestCompileTask(C))))
+        assert(D.testTaskBuild(verbose = false).graph.edges.contains(Edge(TestCompileTask(D, A), TestCompileTask(D, C))))
+        assert(!D.testCompileTaskBuild.graph.edges.contains(Edge(TestCompileTask(D, B), TestCompileTask(D, C))))
 
         assert(D.testCompileTaskBuild.graph.subGraphOf(D.test.graph))
         

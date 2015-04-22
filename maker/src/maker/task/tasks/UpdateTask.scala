@@ -1,11 +1,10 @@
 package maker.task.tasks
 
-import maker.project.Module
+import maker.project.{Module, DependencyPimps, ProjectTrait}
 import maker.utils.FileUtils._
 import maker.task._
-import maker.utils.{Stopwatch, TableBuilder, Int}
-import maker.{Resource, ResourceUpdater, ConfigPimps}
-import maker.utils.RichString._
+import maker.utils._
+import maker.ConfigPimps
 import scala.collection.JavaConversions._
 import org.scalatest.Failed
 import java.net.URL
@@ -27,9 +26,8 @@ import org.eclipse.aether.artifact.{Artifact, DefaultArtifact}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import org.eclipse.aether.graph.Dependency
 import com.typesafe.config.Config
-import scala.util.{Either, Left, Right}
-import scala.collection.immutable.Nil
-import scala.collection.script.Update
+import org.eclipse.aether.util.graph.selector._
+import java.util.Arrays
 
 /**
   * Updates any missing resources. If any jars are missing then will try 
@@ -39,24 +37,28 @@ import scala.collection.script.Update
   * Missing source jars are not treated as a cause for failure unless `forceSourceUpdate`
   * is true
   */
-case class UpdateTask(module : Module, forceSourceUpdate : Boolean) 
+case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean) 
   extends Task
   with ConfigPimps
+  with EitherPimps
+  with DependencyPimps
+  with StringBufferPimps
 {
-  def baseProject = module
-  def name = "Update " + module
+  def name = "Update " + project
 
   def upstreamTasks : List[Task] = Nil
-  import module.config
+  import project.config
 
   private val (system, session, repositories) = UpdateTask.aetherState(config)
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    val result = updateDependencies(BinaryDownload) 
+    val result = updateDependencies(BinaryDownload(JavaScopes.COMPILE)) andThen 
+      updateDependencies(BinaryDownload(JavaScopes.TEST)) 
     result match {
       case Right(hasChanged) => 
         if (hasChanged || forceSourceUpdate){
-          updateDependencies(SourceDownload)
+          updateDependencies(SourceDownload(JavaScopes.COMPILE)) andThen
+          updateDependencies(SourceDownload(JavaScopes.TEST)) 
         }
         DefaultTaskResult(this, true, sw)
       case Left(ex) => 
@@ -70,40 +72,37 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
     }
   }
 
-  abstract class DownloadType(val directory : File){
+  trait DownloadType{
+    def scope : String
+    def downloadDirectory : File
     def isOfCorrectType(artifact : Artifact) : Boolean
-    def artifacts : Seq[Artifact]
+    //def artifacts : Seq[Artifact]
   }
 
-  object BinaryDownload extends DownloadType(module.managedLibDir){
+  case class BinaryDownload(scope : String) extends DownloadType{
     def isOfCorrectType(artifact : Artifact) = true
-    def artifacts = module.upstreamModules.flatMap(_.resources).map{
-      resource => 
-        new DefaultArtifact(
-          resource.groupId, resource.artifactId, "jar", resource.version
-        )
+    def downloadDirectory = scope match {
+      case JavaScopes.COMPILE => project.managedLibDir
+      case JavaScopes.TEST => project.testManagedLibDir
+      case _ => ???
     }
   }
 
-  object SourceDownload extends DownloadType(module.managedLibSourceDir){
+  case class SourceDownload(scope : String) extends DownloadType{
     // Aether downloads the binary when sources aren't in the repository - no idea why
     def isOfCorrectType(artifact : Artifact) = Option(artifact.getClassifier) == Some("sources")
-    def artifacts = module.resources.map{
-      resource => 
-        new DefaultArtifact(
-          resource.groupId, resource.artifactId, "sources", "jar", resource.version
-        )
+    def downloadDirectory = scope match {
+      case JavaScopes.COMPILE => project.managedLibSourceDir
+      case JavaScopes.TEST => project.testManagedLibSourceDir
+      case _ => ???
     }
   }
 
   private def getArtifacts(download : DownloadType) : Seq[Artifact] = {
-    val dependencies = download.artifacts.map(new Dependency(_, JavaScopes.COMPILE))
+    var dependencies = ("org.scala-lang" % "scala-library" % config.scalaVersion.toString) +: project.upstreamResources
     val dependencyRequest = new DependencyRequest(
       new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories),
-      new AndDependencyFilter(
-        DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE),
-        new ExclusionsDependencyFilter(module.dependencyExclusions)
-      )
+      DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE)
     )
 
     system.resolveDependencies(
@@ -113,17 +112,17 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
   }
 
   // Used for bootstrapping
-  def binaryArtifacts = getArtifacts(BinaryDownload)
+  def binaryArtifacts = getArtifacts(BinaryDownload(JavaScopes.COMPILE))
 
   private def updateDependencies(download : DownloadType) : Either[Exception, Boolean] = {
     def addMissingDependencies(dependencyFiles : Seq[File]) : Boolean = {
-      val currentBasenames = download.directory.safeListFiles.map(_.basename).toSet
+      val currentBasenames = download.downloadDirectory.safeListFiles.map(_.basename).toSet
       var hasChanged = false
       dependencyFiles.foreach{
         file => 
           if (! currentBasenames.contains(file.basename)){
             logger.info(s"Adding dependency ${file.basename}")
-            ApacheFileUtils.copyFileToDirectory(file, download.directory)
+            ApacheFileUtils.copyFileToDirectory(file, download.downloadDirectory)
             hasChanged = true
           }
       }
@@ -132,7 +131,7 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
     def removeRedundantDependencies(dependencyFiles : Seq[File]) : Boolean = {
       val dependencyBasenames = dependencyFiles.map(_.basename).toSet
       var hasChanged = false
-      download.directory.safeListFiles.foreach{
+      download.downloadDirectory.safeListFiles.foreach{
         file => 
           if (! dependencyBasenames.contains(file.basename)){
             logger.info("Removing redundant dependency " + file)
@@ -155,7 +154,7 @@ case class UpdateTask(module : Module, forceSourceUpdate : Boolean)
 
 }
 
-object UpdateTask extends ConfigPimps{
+object UpdateTask extends ConfigPimps {
   def aetherState(config : Config) = {
     val system = {
       val locator = MavenRepositorySystemUtils.newServiceLocator()
@@ -177,6 +176,16 @@ object UpdateTask extends ConfigPimps{
     val session = {
       val session = MavenRepositorySystemUtils.newSession
 
+      session.setDependencySelector(
+        new AndDependencySelector(
+          new OptionalDependencySelector(),
+          new ExclusionDependencySelector(),
+          new ScopeDependencySelector(
+            Arrays.asList(JavaScopes.COMPILE),
+            Arrays.asList(JavaScopes.TEST, JavaScopes.SYSTEM, JavaScopes.PROVIDED)
+          )
+        )
+      )
       session.setLocalRepositoryManager( 
         system.newLocalRepositoryManager( 
           session, 
@@ -196,6 +205,7 @@ object UpdateTask extends ConfigPimps{
     (system, session, repositories)
   }
   def reportOnUpdateFailures(taskResults : List[TaskResult]){
+    import maker.utils.RichString._
     val failures : List[(Int, String)] = taskResults.collect{
       case u : UpdateTaskResult => u.failures
     }.flatten

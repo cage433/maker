@@ -8,16 +8,15 @@ import maker.utils._
 import org.apache.commons.io.FileUtils._
 import maker.task.TaskResult._
 import sbt.compiler.CompileFailed
-import maker.task.tasks.{UpdateTask, DownloadScalaLibs}
+import maker.task.tasks.UpdateTask
 import xsbti.{Problem, Severity}
 import java.io.{BufferedWriter, File}
 import xsbti.api.Compilation
 import javax.sound.sampled.Line
 import com.sun.org.apache.bcel.internal.classfile.Unknown
 
-abstract class CompileTask(val module : Module) extends Task{
+abstract class CompileTask(rootProject : ProjectTrait, val module : Module) extends Task{
   
-  def baseProject = module
   def phase : CompilePhase
 
   val modulePhase = ModuleCompilePhase(module, phase)
@@ -55,7 +54,7 @@ abstract class CompileTask(val module : Module) extends Task{
     if (compilationRequired(upstreamTaskResults)){
       module.compilerName match {
         case "zinc" => 
-          val exitCode = ZincCompile(modulePhase)
+          val exitCode = ZincCompile(rootProject, modulePhase)
           if (exitCode == 0)
             successfulResult(sw, CompilationSucceeded)
           else {
@@ -92,28 +91,28 @@ case class CompilationFailedInfo(e : CompileFailed) {
 }
 
 
-case class SourceCompileTask(override val module :Module) extends CompileTask(module){
+case class SourceCompileTask(rootProject: ProjectTrait, override val module :Module) extends CompileTask(rootProject, module){
   def upstreamTasks = {
-    module.immediateUpstreamModules.map(SourceCompileTask) ++ List(UpdateTask(module, forceSourceUpdate = false), DownloadScalaLibs)
+    module.immediateUpstreamModules.map(SourceCompileTask(rootProject, _)) ++ List(UpdateTask(rootProject, forceSourceUpdate = false))
   }
   def phase = SourceCompilePhase
 } 
 
-case class TestCompileTask(override val module : Module) extends CompileTask(module){
+case class TestCompileTask(rootProject : ProjectTrait, override val module : Module) extends CompileTask(rootProject, module){
   def upstreamTasks: List[Task] =
-      SourceCompileTask(module) :: module.immediateUpstreamTestModules.map(TestCompileTask)
+      SourceCompileTask(rootProject, module) :: module.immediateUpstreamTestModules.map(TestCompileTask(rootProject, _))
 
   def phase = TestCompilePhase
 }
 
 object CompileTask{
   def CALL_TO_COMPILER = "CALL TO SCALA COMPILER"
-  def apply(module : Module, phase : CompilePhase) : CompileTask = {
-    phase match{
-      case SourceCompilePhase => SourceCompileTask(module)
-      case TestCompilePhase => TestCompileTask(module)
-    }
-  }
+  //def apply(module : Module, phase : CompilePhase) : CompileTask = {
+    //phase match{
+      //case SourceCompilePhase => SourceCompileTask(module)
+      //case TestCompilePhase => TestCompileTask(module)
+    //}
+  //}
 
   def reportOnCompilationErrors(taskResults : List[TaskResult]){
     def position(prob : Problem) = {

@@ -6,13 +6,13 @@ import maker.task._
 import maker.task.compile._
 import maker.task.tasks._
 import maker.utils.FileUtils._
-import maker.{PomUtils, Resource, ResourcePimps}
+import maker.PomUtils
 import org.slf4j.LoggerFactory
 import sbt.ConsoleLogger
 import sbt.inc.Analysis
 import scala.collection.immutable.Nil
 import com.typesafe.config.{ConfigFactory, Config}
-import org.eclipse.aether.graph.Exclusion
+import org.eclipse.aether.graph.{Exclusion, Dependency => AetherDependency}
 
 /**
   * Corresponds to a module in IntelliJ
@@ -28,21 +28,19 @@ class Module(
 )
   extends ProjectTrait
   with TmuxIntegration
-  with ResourcePimps
+  with DependencyPimps
 {
 
   import Module.logger
   def modules = this :: Nil
   protected val upstreamModulesForBuild = List(this)
 
-  def resources() : Seq[Resource]  = Nil
+  def resources() : Seq[AetherDependency]  = Nil
 
   // Exclusions should be in the form 'group:artifact'
   def dependencyExclusions : Seq[String] = Vector()
 
-  def sourceJarResources() : Seq[Resource] = resources().collect{
-    case r if r.isBinaryJarResource => r.copy(classifier = Some("sources"))
-  }
+  def sourceJarResources() : Seq[AetherDependency] = resources().map(_.sourceDependency)
 
   def phaseDirectory(phase : CompilePhase) = mkdir(file(makerDirectory, phase.name))
   def compilationCacheFile(phase : CompilePhase) = {
@@ -85,7 +83,7 @@ class Module(
 
   warnOfRedundantDependencies()
 
-  def pomDependencyXML(version : String) = PomUtils.dependencyXml(organization.getOrElse(???), artifactId, version)
+  //def pomDependencyXML(version : String) = PomUtils.dependencyXml(organization.getOrElse(???), artifactId, version)
   def testCompilePhase = ModuleCompilePhase(this, TestCompilePhase)
   def compilePhase = ModuleCompilePhase(this, SourceCompilePhase)
 
@@ -144,12 +142,6 @@ class Module(
   def makerDirectory = mkdirs(rootAbsoluteFile, ".maker")
   def cacheDirectory = mkdirs(makerDirectory, "cache")
 
-  def managedJars = findJars(managedLibDir)
-  def classpathJars : Seq[File] = findJars(managedLibDir +: unmanagedLibDirs) ++:
-    Vector[File](config.scalaVersion.scalaLibraryJar, config.scalaVersion.scalaCompilerJar) ++: config.scalaVersion.scalaReflectJar.toVector
-
-  //def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(SourceCompilePhase, Some(version)).getName)
-  //def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(SourceCompilePhase, Some(version)).getName)
 
   def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {
     case SourceCompilePhase => 
@@ -169,10 +161,6 @@ class Module(
     case TestCompilePhase => file(targetDir, "test-classes")
   }
 
-  def managedLibDir = file(rootAbsoluteFile, "lib_managed")
-  def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
-  def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
-  def unmanagedLibDirs : Seq[File] = List(file(rootAbsoluteFile, "lib"))
   def warnUnnecessaryResources = true
   def vimModuleCompileOutputFile = file(root, "vim-compile-output")
 

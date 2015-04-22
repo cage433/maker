@@ -3,7 +3,6 @@ package maker.task.compile
 import org.scalatest.{Matchers, FreeSpec}
 import maker.utils.FileUtils
 import maker.project.TestModule
-import maker.{Resource, ResourceUpdater}
 
 class CrossCompilationTests extends FreeSpec with Matchers{
   import FileUtils.{withTempDir, writeToFile, file}
@@ -19,8 +18,8 @@ class CrossCompilationTests extends FreeSpec with Matchers{
         module.writeCaseObject("Foo", "foo")
         List("scala-library", "scala-compiler").foreach{
           name => 
-            val resource = Resource("org.scala-lang", name, "2.9.3")
             // TODO - better
+            //val resource = Resource("org.scala-lang", name, "2.9.3")
             //new ResourceUpdater(resource, module.config, module.projectScalaLibsDir).update()
         }
         val res = module.compile

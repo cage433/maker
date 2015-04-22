@@ -170,12 +170,12 @@ case class MakerTestResults (
       buffer.append(List(
         "Number of suites", suites.size,
         "Number of tests", tests.size,
-        "Time taken (s)", "%.2f" % time
+        "Time taken (s)", s"""${String.format("%.2f", new java.lang.Double(time))}"""
       ).asTable(2) + "\n")
       buffer.append("Slowest test(s)\n")
       buffer.append(testsOrderedByTime.take(3).flatMap{
         case (TestIdentifier(_, suiteClass, test), timeInNanos) =>
-          List(suiteClass, test, "%.2f (s)" % (timeInNanos / 1.0e9))
+          List(suiteClass, test, s"""${String.format("%.2f (s)", new java.lang.Double(timeInNanos / 1.0e9))}""")
       }.asTable(3) + "\n")
     } else {
       if (unfinished.nonEmpty){

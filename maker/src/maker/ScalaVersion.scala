@@ -5,6 +5,8 @@ import com.typesafe.config.{ConfigFactory, Config}
 import maker.utils.Int
 import maker.utils.FileUtils._
 import java.io.File
+import org.eclipse.aether.graph.{Exclusion, Dependency => AetherDependency}
+import maker.project.DependencyPimps
 
 /*
  * Deterimines which scala libraries are project
@@ -17,7 +19,7 @@ case class ScalaVersion(
   minor : Int,
   config : Config = ConfigFactory.load()) 
   extends ConfigPimps 
-  with ResourcePimps 
+  with DependencyPimps 
   with ToBooleanOps
 {
   require( 
@@ -28,7 +30,7 @@ case class ScalaVersion(
   private val versionBase = s"2.$major"
   override def toString = versionNo
 
-  private def resource(org : String, artifact : String, version : String = versionNo) : Resource = {
+  private def resource(org : String, artifact : String, version : String = versionNo) : AetherDependency = {
     org % artifact % version //withDownloadDirectory (config.projectScalaLibDirectory)
   }
   def scalaLibraryResource = resource("org.scala-lang", "scala-library")
@@ -37,9 +39,9 @@ case class ScalaVersion(
   def xmlResource = (major >= 11).option(resource("org.scala-lang.modules", s"scala-xml_$versionBase", "1.0.3"))
   def parserCombinatorResource = (major >= 11).option(resource("org.scala-lang.modules", s"scala-parser-combinators_$versionBase", "1.0.3"))
 
-  def scalaLibrarySourceResource = scalaLibraryResource.copy(classifier = Some("sources"))
+  def scalaLibrarySourceResource = scalaLibraryResource.sourceDependency
   def resources = List(scalaLibraryResource, compilerResource) ::: reflectResource.toList ::: xmlResource.toList ::: parserCombinatorResource.toList
-  def sourceResources = resources.map(_.copy(classifier = Some("sources")))
+  def sourceResources = resources.map(_.sourceDependency)
 
   def scalaLibraryJar = file(
     config.projectScalaLibDirectory,

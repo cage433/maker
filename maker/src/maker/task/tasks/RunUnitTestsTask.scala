@@ -5,7 +5,7 @@ import maker.utils.os.Command
 import maker.task._
 import maker.utils._
 import maker.utils.RichIterable._
-import maker.task.compile.TestCompileTask
+import maker.task.compile.{TestCompileTask, TestCompilePhase}
 import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
 import ch.qos.logback.classic.Logger
@@ -26,7 +26,7 @@ case class RunUnitTestsTask(
   import baseProject.config
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = baseProject.upstreamModules.map(TestCompileTask)
+  def upstreamTasks = baseProject.upstreamModules.map(TestCompileTask(baseProject, _))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
@@ -72,7 +72,7 @@ case class RunUnitTestsTask(
 
 
     var cmd = Command.scalaCommand(
-      classpath = baseProject.testClasspath + java.io.File.pathSeparator + config.testReporterJar,
+      classpath = baseProject.classpath(TestCompilePhase) + java.io.File.pathSeparator + config.testReporterJar,
       klass = "scala.tools.nsc.MainGenericRunner",
       opts = opts,
       args = "org.scalatest.tools.Runner" +: testParameters ++: suiteParameters

@@ -88,7 +88,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     }
   }
 
-  def classpathDirectoriesAndJars : Seq[File] = {
+  def classpathDirectoriesAndJars2 : Seq[File] = {
     var directories = module.upstreamModules.flatMap{
       m => Vector(m.resourceDir(SourceCompilePhase), m.outputDir(SourceCompilePhase), m.managedResourceDir)
     }
@@ -98,7 +98,7 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   }
   //def classpathJars = classpathDirectoriesAndJars.filter(_.isJar)
-  def compilationClasspath = Module.asClasspathStr(classpathDirectoriesAndJars)
+  //def compilationClasspath = Module.asClasspathStr(classpathDirectoriesAndJars)
 
   val phaseDirectory = file(module.makerDirectory, phase.name).makeDirs()
   val compilationCacheFile = {

@@ -10,12 +10,14 @@ import maker.utils.CustomMatchers
 import java.io.File
 import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
+import org.eclipse.aether.graph.{Dependency => AetherDependency}
 
 class PublishLocalTaskTests 
   extends FreeSpec 
   with Matchers 
   with CustomMatchers
   with ConfigPimps
+  with DependencyPimps
 {
 
   private def checkPublishedPomMatchesCoordinates(project : Project, version : String){
@@ -41,7 +43,7 @@ class PublishLocalTaskTests
     val resources = config.scalaVersion.scalaLibraryResource +: project.resources
 
     resources should allSatisfy {
-      resource : Resource => 
+      resource : AetherDependency => 
         val resourceCoords = List(resource.groupId, resource.artifactId, resource.version)
         dependencies.exists{
           node => 
@@ -57,9 +59,7 @@ class PublishLocalTaskTests
       moduleRoot,
       name,
       upstreamProjects = upstreamModules
-    ) with HasDummyCompiler{
-      override def organization = Some("org.org")
-    }
+    ) with HasDummyCompiler
   }
 
   "Simple module should publish as expected" in {
@@ -68,7 +68,9 @@ class PublishLocalTaskTests
 
         val version = "1.0-SNAPSHOT"
         val module = createTestModule(dir, "single-module-publish-local-test")
-        val proj = Project(module.name, dir, module :: Nil)
+        val proj = new Project(module.name, dir, module :: Nil){
+          override def organization = Some("org.org")
+        }
 
         module.addExternalResource("org.slf4j slf4j-api 1.6.1")
         module.addUnmanagedResource("MainResource1")
@@ -112,7 +114,9 @@ class PublishLocalTaskTests
           proj.writeCaseObject("Bar", "bar")
           proj
         }
-        val project = Project("publish test", dir, moduleA :: moduleB :: Nil)
+        val project = new Project("publish test", dir, moduleA :: moduleB :: Nil){
+          override def organization = Some("org.org")
+        }
         project.publishLocal(version)
 
         checkPublishedPomMatchesCoordinates(project, version)

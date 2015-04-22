@@ -6,7 +6,7 @@ import java.io.PrintWriter
 import maker.utils.{TeeToFileOutputStream, Stopwatch}
 import maker.utils.os.Command
 import maker.task._
-import maker.task.compile.{TestCompileTask, Run}
+import maker.task.compile.{TestCompileTask, Run, TestCompilePhase}
 import maker.project.{BaseProject, ProjectTrait}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
@@ -27,7 +27,6 @@ case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Se
 
   def module = baseProject
   def upstreamTasks = baseProject.testCompileTaskBuild.tasks
-  def baseProjects = Vector(baseProject)
 
 
   val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
@@ -41,7 +40,7 @@ case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Se
       "-Dlogback.configurationFile=" + "logback.xml"
     ) ++: opts
     var cmd = Command.scalaCommand(
-      classpath = baseProject.testClasspath,
+      classpath = baseProject.classpath(TestCompilePhase),
       klass = className,
       opts = optsToUse,
       args = mainArgs

@@ -17,11 +17,11 @@ trait TmuxIntegration extends ProjectTrait{
     }
 
     private def tmuxReportTaskFailed(msg : String){
-      tmux("set-option", "-gq", "status-left", "#[bg=red,fg=black] %s" % msg)
+      tmux("set-option", "-gq", "status-left", s"#[bg=red,fg=black] $msg")
     }
 
     private def tmuxReportTestFailed(msg : String){
-      tmux("set-option", "-gq", "status-left", "#[bg=yellow,fg=black] %s" % msg)
+      tmux("set-option", "-gq", "status-left", s"#[bg=yellow,fg=black] $msg")
     }
     private def tmuxClearStatusLeft{
       tmux("set-option", "-gq", "status-left", "")

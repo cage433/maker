@@ -21,9 +21,8 @@ case class DocTask(project : Project)
   with ConfigPimps
 {
   val config = project.config  
-  def baseProject = project
   def name = "Doc " + project.name
-  def upstreamTasks = project.modules.map(SourceCompileTask(_))
+  def upstreamTasks = project.modules.map(SourceCompileTask(project, _))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
 
     logger.info("running scala-doc gen for project " + project)

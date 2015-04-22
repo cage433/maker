@@ -41,10 +41,10 @@ class BuildResultTests extends FunSuite {
         List(
           DefaultTaskResult(CleanTask(p1), true, sw), 
           DefaultTaskResult(CleanTask(p3), true, sw)), emptyGraph)
-      val br2 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2), true, sw)), emptyGraph)
+      val br2 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2, p2), true, sw)), emptyGraph)
 
       // and some failures
-      val fr1 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2), false, sw, message = Some("was broke"))), emptyGraph)
+      val fr1 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2, p2), false, sw, message = Some("was broke"))), emptyGraph)
 
       val r1 = for {
         w <- br1

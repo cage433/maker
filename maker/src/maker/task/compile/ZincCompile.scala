@@ -7,19 +7,20 @@ import maker.utils.FileUtils._
 import org.scalatest.Failed
 import maker.utils.Int
 import maker.ConfigPimps
-import maker.project.Module
+import maker.project.{Module, ProjectTrait}
 
 object ZincCompile extends ConfigPimps{
 
   lazy val zinc = new ZincClient()
-  def apply(projectPhase : ModuleCompilePhase) : Int = {
+  def apply(rootProject : ProjectTrait, projectPhase : ModuleCompilePhase) : Int = {
     val module = projectPhase.module
+    val phase = projectPhase.phase
     val config = module.config
     val upstreamCaches = {
       var map = Map[File, File]()
 
       val strictlyUpstreamModules = module.upstreamModules.filterNot(_ == module)
-      val phases = if (projectPhase.phase == SourceCompilePhase) 
+      val phases = if (phase == SourceCompilePhase) 
         Vector(SourceCompilePhase) 
       else
         Vector(SourceCompilePhase, TestCompilePhase) 
@@ -59,7 +60,7 @@ object ZincCompile extends ConfigPimps{
       "-scala-library",
       config.scalaVersion.scalaLibraryJar.getAbsolutePath,
       "-classpath",
-      projectPhase.classpathDirectoriesAndJars.filterNot(_ == projectPhase.outputDir).toList.map(_.getCanonicalFile.getAbsolutePath).mkString(File.pathSeparator),
+      rootProject.classpath(phase),
       "-d",
       projectPhase.outputDir.getAbsolutePath,
       "-compile-order",
