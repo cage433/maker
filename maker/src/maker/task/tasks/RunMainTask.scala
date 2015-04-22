@@ -7,7 +7,7 @@ import maker.utils.{TeeToFileOutputStream, Stopwatch}
 import maker.utils.os.Command
 import maker.task._
 import maker.task.compile.{TestCompileTask, Run, TestCompilePhase}
-import maker.project.{BaseProject, ProjectTrait}
+import maker.project.ProjectTrait
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._

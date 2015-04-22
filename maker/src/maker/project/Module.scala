@@ -31,16 +31,12 @@ class Module(
   with DependencyPimps
 {
 
+  def isTestProject = false
   import Module.logger
   def modules = this :: Nil
   protected val upstreamModulesForBuild = List(this)
 
   def resources() : Seq[AetherDependency]  = Nil
-
-  // Exclusions should be in the form 'group:artifact'
-  def dependencyExclusions : Seq[String] = Vector()
-
-  def sourceJarResources() : Seq[AetherDependency] = resources().map(_.sourceDependency)
 
   def phaseDirectory(phase : CompilePhase) = mkdir(file(makerDirectory, phase.name))
   def compilationCacheFile(phase : CompilePhase) = {

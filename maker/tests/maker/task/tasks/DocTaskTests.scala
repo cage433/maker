@@ -9,8 +9,8 @@ class DocTaskTests extends FreeSpec with Matchers{
     withTempDir{
       dir => 
         val module = new TestModule(dir, "DocTaskTests")
-        val proj = Project("DocTaskTests", dir, module :: Nil)
-        val indexHtmlFile = file(proj.rootAbsoluteFile, "target-maker", "docs", "index.html")
+        val proj = Project("DocTaskTests", dir, module :: Nil, isTestProject = true)
+        val indexHtmlFile = file(proj.docOutputDir, "index.html")
         indexHtmlFile.exists should be (false)
         module.writeSrc(
           "foo/Foo.scala",

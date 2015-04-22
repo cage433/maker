@@ -24,7 +24,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
       dir =>  
 
         val module = createTestModule(dir, "single-module-package-jar-test")
-        val proj = Project(module.name, dir, module :: Nil)
+        val proj = Project(module.name, dir, module :: Nil, isTestProject = true)
 
         module.addUnmanagedResource("MainResource1")
         module.addUnmanagedResource("subdir-b", "MainResource2")
@@ -47,7 +47,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
       dir =>  
 
         val module = createTestModule(dir, "single-module-package-jar-test")
-        val proj = Project(module.name, dir, module :: Nil)
+        val proj = Project(module.name, dir, module :: Nil, isTestProject = true)
 
         module.addUnmanagedResource("MainResource1")
         module.addUnmanagedResource("subdir-b", "MainResource2")
@@ -67,7 +67,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
         val a = createTestModule(dir, "a")
         val b = createTestModule(dir, "b", upstreamModules = List(a))
         val c = createTestModule(dir, "c", upstreamModules = List(b))
-        val p = Project("p", dir, a :: b :: c :: Nil)
+        val p = Project("p", dir, a :: b :: c :: Nil, isTestProject = true)
 
 
         a.writeCaseObject("Foo", "foo")

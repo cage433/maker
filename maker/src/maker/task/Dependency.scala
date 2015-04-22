@@ -1,6 +1,5 @@
 package maker.task
 
-import maker.project.BaseProject
 import maker.task.compile.CompileTask
 import maker.task.tasks.RunUnitTestsTask
 

@@ -6,8 +6,8 @@ import maker._
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
-import maker.utils.RichString._
 import com.typesafe.config.{ConfigFactory, Config}
+import org.eclipse.aether.util.artifact.JavaScopes
 
 class TestModule(
   root : File, 
@@ -23,15 +23,20 @@ class TestModule(
   upstreamProjects, 
   upstreamTestProjects,
   analyses
-) with ClassicLayout {
+) with ClassicLayout with DependencyPimps {
   root.mkdirs
   override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
-    """val %s = new TestModule(file("%s"), "%s", %s, %s)""" % (name, root.getAbsolutePath, name, 
-      upstreamProjects.mkString("List(", ", ", ")"),
-      upstreamTestProjects.mkString("List(", ", ", ")")
-    )
+    s"""val $name = new TestModule(new java.io.File("${root.getAbsolutePath}"), "$name",
+      upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
+      upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
+      ) with maker.project.DependencyPimps {
+        override def resources = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
+      }"""
   }
+
+  override def resources = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
+
   def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {
     val dir = sourceDirs(phase).head // we know we only have one
     writeToFile(file(dir, relativeSrcPath), code.stripMargin)
@@ -67,19 +72,23 @@ class TestModule(
 
   override def isTestProject = true
   def writeMakerProjectDefinitionFile{
+    import maker.utils.RichString._
     val makerFile = file(rootAbsoluteFile, "Maker.scala")
 
-    val buffer = new StringBuffer
-    buffer.addLine("import maker.project.Module._")
-    buffer.addLine("import maker.task.tasks._")
-    buffer.addLine("import maker.task._")
-    buffer.addLine("import maker.task.Dependency._")
-    buffer.addLine("import maker.project._")
-    buffer.addLine("import maker.utils.FileUtils._")
-    buffer.addLine("import java.io.File")
-    buffer.addLine(constructorCodeAsString)
-    buffer.addLine("import " + name + "._")
-    writeToFile(makerFile, buffer.toString)
+    if (!makerFile.exists){
+      val buffer = new StringBuffer
+      buffer.addLine("import maker.project.Module._")
+      buffer.addLine("import maker.task.tasks._")
+      buffer.addLine("import maker.task._")
+      buffer.addLine("import maker.task.Dependency._")
+      buffer.addLine("import maker.project._")
+      buffer.addLine("import maker.utils.FileUtils._")
+      buffer.addLine("import java.io.File")
+      buffer.addLine("import org.eclipse.aether.util.artifact.JavaScopes")
+      buffer.addLine(constructorCodeAsString)
+      buffer.addLine("import " + name + "._")
+      writeToFile(makerFile, buffer.toString)
+    }
   }
 }
 

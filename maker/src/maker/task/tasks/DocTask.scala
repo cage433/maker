@@ -6,7 +6,7 @@ import maker.utils.{TeeToFileOutputStream, Stopwatch}
 import maker.utils.os.Command
 import maker.task._
 import maker.task.compile._
-import maker.project.{BaseProject, Module, Project}
+import maker.project.{Module, Project}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import maker.ConfigPimps

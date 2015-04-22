@@ -46,7 +46,7 @@ trait ProjectTrait extends ConfigPimps{
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
 
-  def isTestProject : Boolean = false
+  def isTestProject : Boolean 
   def topLevelCompilationErrorsFile = file("vim-compilation-errors")
 
   protected def transitiveClosure[A](start : Seq[A], expand : A => Seq[A]) : Seq[A] = {
@@ -84,7 +84,7 @@ trait ProjectTrait extends ConfigPimps{
   def compile = execute(compileTaskBuild())
 
 
-  def testCompileTaskBuild = transitiveBuild((upstreamModules ++ upstreamTestModules).distinct.map(TestCompileTask(this, _)))
+  def testCompileTaskBuild = transitiveBuild(upstreamModules.map(SourceCompileTask(this, _)) ++ upstreamTestModules.map(TestCompileTask(this, _)))
   def testCompile = execute(testCompileTaskBuild)
   def tcc = continuously(testCompileTaskBuild)
   
@@ -100,7 +100,9 @@ trait ProjectTrait extends ConfigPimps{
   def test(verbose : Boolean) : BuildResult = {
     execute(testTaskBuild(verbose))
   }
-  def test : BuildResult = test(verbose = false)
+  def test : BuildResult = {
+    test(verbose = false)
+  }
 
 
   def testFailedSuitesBuild(verbose : Boolean) = {
@@ -121,13 +123,13 @@ trait ProjectTrait extends ConfigPimps{
   def runMain(className : String)(opts : String*)(args : String*) = 
     execute(runMainTaskBuild(className, opts, args))
 
-  def clean = execute(transitiveBuild(modules.map(CleanTask(_))))
+  def clean = execute(transitiveBuild(CleanTask(this) :: Nil))
   protected def execute(bld : Build) = {
     setUp(bld.graph)
     val result = bld.execute
     tearDown(bld.graph, result)
     if (result.failed && config.execMode){
-      BaseProject.logger.error(bld + " failed ")
+      logger.error(bld + " failed ")
       System.exit(-1)
     }
     BuildResult.lastResult.set(Some(result))
@@ -139,17 +141,15 @@ trait ProjectTrait extends ConfigPimps{
   }
 
   private [project] def classpathComponents(compilePhase : CompilePhase) = {
-    val classFileDirectories : Seq[File] = compilePhase match {
-      case SourceCompilePhase => 
-        upstreamModules.map{
-          module => 
-            module.outputDir(SourceCompilePhase)
-        }
+    val classFileDirectories : Seq[File] = upstreamModules.map{
+      module => 
+        module.outputDir(SourceCompilePhase)
+    }
+
+    val testClassFileDirectories = compilePhase match {
+      case SourceCompilePhase => Nil
       case TestCompilePhase   => 
-        (upstreamModules ++: upstreamTestModules).distinct.flatMap{
-          module => 
-            Vector(module.outputDir(TestCompilePhase), module.outputDir(SourceCompilePhase))
-        }
+        upstreamTestModules.map(_.outputDir(TestCompilePhase))
     }
     val jars : Seq[File] = compilePhase match {
       case SourceCompilePhase => 
@@ -157,7 +157,7 @@ trait ProjectTrait extends ConfigPimps{
       case TestCompilePhase   =>
         findJars(testManagedLibDir)
     }
-    managedResourceDir +: jars ++: classFileDirectories
+    managedResourceDir +: jars ++: classFileDirectories ++: testClassFileDirectories
   }
 
   def classpath(compilePhase : CompilePhase) = {
@@ -210,8 +210,9 @@ trait ProjectTrait extends ConfigPimps{
   }
 
   lazy val isAccessibleScalaTestSuite : (String => Boolean) = {
+      //(upstreamModules ++: upstreamTestModules).distinct.flatMap{p => p.classpathJars.toSet + p.outputDir(SourceCompilePhase) + p.outputDir(TestCompilePhase)}.map(_.toURI.toURL).toArray,
     lazy val loader = new URLClassLoader(
-      (upstreamModules ++: upstreamTestModules).distinct.flatMap{p => p.classpathJars.toSet + p.outputDir(SourceCompilePhase) + p.outputDir(TestCompilePhase)}.map(_.toURI.toURL).toArray,
+      classpathComponents(TestCompilePhase).map(_.toURI.toURL).toArray,
       null
     )
     (className: String) =>  {
@@ -267,6 +268,6 @@ trait ProjectTrait extends ConfigPimps{
   def upstreamResources = upstreamModules.flatMap(_.resources)
 
   protected def managedJars = findJars(managedLibDir)
-  def classpathJars : Seq[File] = findJars(managedLibDir +: unmanagedLibDirs) ++:
-    Vector[File](config.scalaVersion.scalaLibraryJar, config.scalaVersion.scalaCompilerJar) ++: config.scalaVersion.scalaReflectJar.toVector
+  //def classpathJars : Seq[File] = findJars(managedLibDir +: unmanagedLibDirs) ++:
+    //Vector[File](config.scalaVersion.scalaLibraryJar, config.scalaVersion.scalaCompilerJar) ++: config.scalaVersion.scalaReflectJar.toVector
 }

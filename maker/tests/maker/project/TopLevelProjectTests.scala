@@ -12,7 +12,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
   test("Empty top level module"){
     withTempDir{
       dir => 
-        val top = Project("You're the top", dir, Nil)
+        val top = Project("You're the top", dir, Nil, isTestProject = true)
         assert(top.compile.succeeded, "Compilation should succeed")
     }
   }
@@ -27,7 +27,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
             |
             |case class Foo(a : Int)""".stripMargin
         )
-        val top = new Project("Still tops", dir, List(a))
+        val top = new Project("Still tops", dir, List(a), isTestProject = true)
 
         assert(a.compilePhase.classFiles.size == 0, "No class files before compilation")
 
@@ -56,7 +56,7 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
              |
              |case class Bar(foo : Foo)""".stripMargin
         )
-        val top = new Project("Still tops", dir, List(b))
+        val top = new Project("Still tops", dir, List(b), isTestProject = true)
 
         assert(a.compilePhase.classFiles.size == 0, "No class files before compilation")
 

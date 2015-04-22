@@ -147,7 +147,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
         val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
 
         assert(
-          !B.testCompileTaskBuild.graph.upstreams(TestCompileTask(C, B)).contains(TestCompileTask(C, A)),
+          !B.testCompileTaskBuild.graph.upstreams(TestCompileTask(B, B)).contains(TestCompileTask(B, A)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
@@ -155,15 +155,14 @@ class ProjectTaskDependenciesTests extends FunSuite{
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
-          B.compileTaskBuild.graph.upstreams(SourceCompileTask(C, B)).contains(SourceCompileTask(C, A)),
+          B.compileTaskBuild.graph.upstreams(SourceCompileTask(B, B)).contains(SourceCompileTask(B, A)),
           "Upstream source compilation is a dependency"  
         )
 
     }
   }
 
-  //TODO - fix test dependencies finally
-  ignore("test dependencies are observed in classpaths"){
+  test("test dependencies are observed in classpaths"){
     withTempDir{
       dir => 
         val A = new TestModule(file(dir, "A"), "A")

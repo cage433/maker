@@ -15,7 +15,8 @@ case class Project(
   root : File,
   immediateUpstreamModules:List[Module],
   config : Config = ConfigFactory.load(),
-  topLevelExcludedFolders:List[String] = Nil
+  topLevelExcludedFolders:List[String] = Nil,
+  isTestProject : Boolean = false
 ) extends TmuxIntegration{
 
   def projectRoot = root.asAbsoluteFile

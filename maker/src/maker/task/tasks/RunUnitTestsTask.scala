@@ -1,6 +1,6 @@
 package maker.task.tasks
 
-import maker.project.{Module, BaseProject, ProjectTrait}
+import maker.project.{Module, ProjectTrait}
 import maker.utils.os.Command
 import maker.task._
 import maker.utils._
@@ -71,6 +71,7 @@ case class RunUnitTestsTask(
     }
 
 
+    val classpath = baseProject.classpath(TestCompilePhase) + java.io.File.pathSeparator + config.testReporterJar
     var cmd = Command.scalaCommand(
       classpath = baseProject.classpath(TestCompilePhase) + java.io.File.pathSeparator + config.testReporterJar,
       klass = "scala.tools.nsc.MainGenericRunner",

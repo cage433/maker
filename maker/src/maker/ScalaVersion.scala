@@ -31,7 +31,7 @@ case class ScalaVersion(
   override def toString = versionNo
 
   private def resource(org : String, artifact : String, version : String = versionNo) : AetherDependency = {
-    org % artifact % version //withDownloadDirectory (config.projectScalaLibDirectory)
+    org % artifact % version 
   }
   def scalaLibraryResource = resource("org.scala-lang", "scala-library")
   def compilerResource = resource("org.scala-lang", "scala-compiler")

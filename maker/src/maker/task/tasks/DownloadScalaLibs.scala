@@ -1,6 +1,5 @@
 package maker.task.tasks
 
-import maker.project.BaseProject
 import maker.utils._
 import maker.utils.FileUtils._
 import maker.task.{Task, TaskResult, DefaultTaskResult}

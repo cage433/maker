@@ -4,7 +4,7 @@ import java.lang.Runnable
 import java.util.Comparator
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
-import maker.project.{BaseProject, Module}
+import maker.project.{Module}
 import maker.task.compile.{CompileTask, TestCompileTask}
 import maker.task.tasks.{RunUnitTestsTask, UpdateTask}
 import maker.utils.{Stopwatch, Int}

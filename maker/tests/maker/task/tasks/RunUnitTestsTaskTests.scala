@@ -8,7 +8,7 @@ import maker.project.Module
 
 class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
   test("Test reports picks up failure"){
-    withTempDir{
+    withTestDir{
       dir => 
         val proj = new TestModule(dir, "RunUnitTestsTaskTests")
         proj.writeTest(

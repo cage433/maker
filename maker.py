@@ -220,6 +220,10 @@ def maker_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
     return [os.path.join(maker_root, module, "target-maker", "classes") for module in ["utils", "maker"]]
 
+def maker_test_class_directories():
+    maker_root = os.path.dirname(os.path.realpath(__file__))
+    return [os.path.join(maker_root, module, "target-maker", "test-classes") for module in ["utils", "maker"]]
+
 
 
 def launch_repl():
@@ -228,6 +232,7 @@ def launch_repl():
     classpath_components = scala_libraries() + maker_dependencies() + [project_class_directory(), reference_config_directory()]
     if args.maker_developer_mode:
         classpath_components.extend(maker_class_directories())
+        classpath_components.extend(maker_test_class_directories())
     else:
         classpath_components.extend(maker_binaries())
 

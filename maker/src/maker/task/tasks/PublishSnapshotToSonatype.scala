@@ -1,6 +1,6 @@
 package maker.task.tasks
 
-import maker.project.{BaseProject, ProjectTrait, Project}
+import maker.project.{ProjectTrait, Project}
 import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils._
 import scala.util.{Either, Left, Right}

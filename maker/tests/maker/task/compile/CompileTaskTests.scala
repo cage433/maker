@@ -19,7 +19,7 @@ class CompileTaskTests extends FunSuite with TestUtils {
 
   def simpleProject(root : File) = {
     val module : TestModule = new TestModule(root, "CompileScalaTaskTests")
-    val proj = Project("CompileScalaTaskTests", root, module :: Nil)
+    val proj = new Project("CompileScalaTaskTests", root, module :: Nil, isTestProject = true)
     val outputDir = module.compilePhase.outputDir
     val files = new {
 
@@ -444,7 +444,7 @@ class SomeClass extends SomeTrait{
         assert(proj.compile.succeeded, "compilation failed when should have succeeded")
 
         changedClassFiles = proj.compilePhase.classFiles.filter(_.lastModified >= compilationTime)
-        assert(changedClassFiles === Set(fooClass, barClass))
+        assert(Set.empty ++ changedClassFiles === Set(fooClass, barClass))
     }
   }
 
