@@ -44,22 +44,6 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     classFiles.map(_.relativeTo(outputDir)).map(_.getPath).filterNot(_.contains("$$")).map(_.replace('/', '.').dropRight(6)) 
   }
 
-  //def strictlyUpstreamProjectPhases : Seq[ModuleCompilePhase] = {
-    //var projectPhases = scala.collection.mutable.Set[ModuleCompilePhase]()
-    //for {
-      //m <- module.allStrictlyUpstreamTestModules
-      //phase <- SourceCompilePhase :: TestCompilePhase :: Nil
-    //}
-      //projectPhases += ModuleCompilePhase(m, phase)
-
-    //if (phase == TestCompilePhase)
-      //projectPhases += ModuleCompilePhase(module, SourceCompilePhase)
-    //projectPhases.toVector
-  //}
-   
-    
-  //def upstreamProjectPhases = this +: strictlyUpstreamProjectPhases 
-
   def lastCompilationTime : Option[Long] = {
     if (compilationCacheFile.exists)
       lastModifiedProperFileTime(Vector(compilationCacheFile))

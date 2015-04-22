@@ -172,15 +172,15 @@ class ProjectTaskDependenciesTests extends FunSuite{
         val D = new TestModule(file(dir, "D"), "D", List(C))
 
         assert(
-          ! B.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.outputDir(TestCompilePhase)), 
+          ! B.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
           "A's test output directory is not in B's classpath"
         )
         assert(
-          C.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.outputDir(TestCompilePhase)), 
+          C.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
           "A's test output directory is in C's classpath"
         )
         assert(
-          ! D.testCompilePhase.classpathDirectoriesAndJars.toSet.contains(A.outputDir(TestCompilePhase)), 
+          ! D.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
           "A's test output directory is not in D's classpath"
         )
     }

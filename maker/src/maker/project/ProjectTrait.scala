@@ -138,7 +138,7 @@ trait ProjectTrait extends ConfigPimps{
     result
   }
 
-  private [project] classpathComponents(compilePhase : CompilePhase) = {
+  private [project] def classpathComponents(compilePhase : CompilePhase) = {
     val classFileDirectories : Seq[File] = compilePhase match {
       case SourceCompilePhase => 
         upstreamModules.map{
