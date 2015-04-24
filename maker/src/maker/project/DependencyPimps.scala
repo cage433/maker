@@ -5,6 +5,7 @@ import org.eclipse.aether.artifact.DefaultArtifact
 import org.eclipse.aether.graph.{Exclusion, Dependency}
 import scala.collection.JavaConversions._
 
+
 trait DependencyPimps{
   class OrgAndArtifact(org : String, artifact : String){
     def %(version : String) = new Dependency(new DefaultArtifact(s"$org:$artifact:$version"), JavaScopes.COMPILE)
@@ -80,3 +81,5 @@ trait DependencyPimps{
       //(groupId, artifactId, version, classifier.map("-" + _).getOrElse(""), extension)
   }
 }
+
+object DependencyPimps extends DependencyPimps

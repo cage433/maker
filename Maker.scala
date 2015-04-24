@@ -10,9 +10,9 @@ import maker.task.FailingTests._
 import maker.task.compile._
 import maker.project._
 import maker.utils.FileUtils._
+import org.eclipse.aether.util.artifact.JavaScopes
 
-object ResourcePimps extends maker.ResourcePimps
-import ResourcePimps._
+import DependencyPimps._
 
 val extraPomInfo : List[NodeSeq] = {
   val devNodes = List("Alex McGuire", "Louis Botterill", "Sam Halliday").map{name => <developer><name>{name}</name></developer>}
@@ -53,7 +53,7 @@ lazy val maker_ = new Module(
   override def organization = Some("com.github.cage433")
   override def resources() = {
     Vector(
-      "org.scalatest" % "scalatest_2.10" % "2.2.0",
+      "org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST),
       "ch.qos.logback" % "logback-classic" % "1.0.6",
       "org.slf4j" % "jcl-over-slf4j" % "1.6.1",
       "commons-io" % "commons-io" % "2.1",
