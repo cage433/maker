@@ -32,12 +32,10 @@ val extraPomInfo : List[NodeSeq] = {
   )
 }
 
-lazy val testReporter = new Module(
+lazy val testReporterModule = new Module(
   root = file("test-reporter").asAbsoluteFile, 
   name = "maker-test-reporter"
 ) with ClassicLayout {
-  override def extraProjectPomInfo = extraPomInfo
-  override def organization = Some("com.github.cage433")
   override def resources() = {
     Vector(
       "org.scalatest" % "scalatest_2.10" %  "2.2.0"
@@ -45,15 +43,22 @@ lazy val testReporter = new Module(
   }
 }
 
-lazy val maker_ = new Module(
+lazy val testReporterProject = new Project(
+  "maker-test-reporter",
+  root = file("test-reporter").asAbsoluteFile, 
+  immediateUpstreamModules = List(testReporterModule)
+){
+  override def extraProjectPomInfo = extraPomInfo
+  override def organization = Some("com.github.cage433")
+}
+
+lazy val makerModule = new Module(
   root = file("maker").asAbsoluteFile,
   name = "maker"
 ) with ClassicLayout with Bootstrapper {
-  override def extraProjectPomInfo = extraPomInfo
-  override def organization = Some("com.github.cage433")
   override def resources() = {
     Vector(
-      "org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST),
+      "org.scalatest" % "scalatest_2.10" % "2.2.0",
       "ch.qos.logback" % "logback-classic" % "1.0.6",
       "org.slf4j" % "jcl-over-slf4j" % "1.6.1",
       "commons-io" % "commons-io" % "2.1",
@@ -76,16 +81,19 @@ lazy val maker_ = new Module(
   }
 }
 
-
+lazy val makerProject = new Project("maker", file("."), List(makerModule)){
+  override def extraProjectPomInfo = extraPomInfo
+  override def organization = Some("com.github.cage433")
+}
 // Used to disambiguate which maker is running in the repl.
 def pwd = println(Properties.userDir)
 
 def publishSnapshots(version : String) = {
-  testReporter.publishSonatypeSnapshot(version) andThen maker_.publishSonatypeSnapshot(version)
+  testReporterProject.publishSonatypeSnapshot(version) andThen makerProject.publishSonatypeSnapshot(version)
 }
 
 def publishRelease(version : String) = {
-  testReporter.publishToSonatype(version) andThen maker_.publishToSonatype(version)
+  testReporterProject.publishToSonatype(version) andThen makerProject.publishToSonatype(version)
 }
 
-import maker_._
+import makerProject._
