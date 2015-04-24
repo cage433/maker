@@ -146,6 +146,13 @@ trait ProjectTrait extends ConfigPimps{
         module.outputDir(SourceCompilePhase)
     }
 
+    val resources : Seq[File] = upstreamModules.map(_.resourceDir(SourceCompilePhase))
+    val testResources : Seq[File] = compilePhase match {
+      case SourceCompilePhase => Nil
+      case TestCompilePhase => 
+        upstreamModules.map(_.resourceDir(TestCompilePhase))
+    }
+
     val testClassFileDirectories = compilePhase match {
       case SourceCompilePhase => Nil
       case TestCompilePhase   => 
@@ -157,7 +164,7 @@ trait ProjectTrait extends ConfigPimps{
       case TestCompilePhase   =>
         findJars(testManagedLibDir)
     }
-    managedResourceDir +: jars ++: classFileDirectories ++: testClassFileDirectories
+    managedResourceDir +: jars ++: classFileDirectories ++: testClassFileDirectories ++: resources ++: testResources
   }
 
   def classpath(compilePhase : CompilePhase) = {
