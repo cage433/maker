@@ -39,8 +39,8 @@ case class Project(
   def docOutputDir = file(rootAbsoluteFile, "docs")
   def packageDir = file(rootAbsoluteFile, "package")
 
-  def testClassNames() = {
-    upstreamModules.flatMap(_.testClassNames())
+  def testClassNames(rootProject : ProjectTrait) = {
+    upstreamModules.flatMap(_.testClassNames(rootProject))
   }
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
@@ -104,4 +104,5 @@ case class Project(
   }
 
   def resources = upstreamModules.flatMap(_.resources).distinct
+
 }

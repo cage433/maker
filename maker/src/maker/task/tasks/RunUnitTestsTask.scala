@@ -15,6 +15,7 @@ import java.sql.Time
 
 case class RunUnitTestsTask(
   name : String, 
+  rootProject : ProjectTrait,
   baseProject : ProjectTrait, 
   classOrSuiteNames_ : Option[Iterable[String]],
   verbose: Boolean
@@ -26,7 +27,7 @@ case class RunUnitTestsTask(
   import baseProject.config
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = baseProject.upstreamModules.map(TestCompileTask(baseProject, _))
+  def upstreamTasks = baseProject.upstreamModules.map(TestCompileTask(rootProject, _))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
@@ -35,10 +36,9 @@ case class RunUnitTestsTask(
     // at the point the task is created
     val classOrSuiteNames = (baseProject, classOrSuiteNames_) match {
       case (_, Some(cs)) => cs
-      case (m : Module, None) => m.testClassNames()
+      case (m : Module, None) => m.testClassNames(rootProject)
       case _ => throw new RuntimeException("Can't run all tests against a top level project directly")
     }
-
 
     if (classOrSuiteNames.isEmpty) {
       return DefaultTaskResult(this, true, sw)
@@ -71,9 +71,8 @@ case class RunUnitTestsTask(
     }
 
 
-    val classpath = baseProject.classpath(TestCompilePhase) + java.io.File.pathSeparator + config.testReporterJar
     var cmd = Command.scalaCommand(
-      classpath = baseProject.classpath(TestCompilePhase) + java.io.File.pathSeparator + config.testReporterJar,
+      classpath = rootProject.runUnitTestClasspath + java.io.File.pathSeparator + config.testReporterJar,
       klass = "scala.tools.nsc.MainGenericRunner",
       opts = opts,
       args = "org.scalatest.tools.Runner" +: testParameters ++: suiteParameters
@@ -112,14 +111,14 @@ case class RunUnitTestsTask(
 object RunUnitTestsTask{
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
   lazy val logger = LoggerFactory.getLogger(this.getClass)
-  def apply(baseProject : ProjectTrait, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
+  def apply(rootProject : ProjectTrait, baseProject : ProjectTrait, verbose : Boolean, classNamesOrAbbreviations : String*) : Task  = {
     def resolveClassName(cn : String) : List[String] = {
       if (cn.contains('.'))
         List(cn)
       else {
         val matchingTestClasses = StringUtils.bestIntellijMatches(
           cn,
-          baseProject.testClassNames()
+          baseProject.testClassNames(rootProject)
         )
         if (matchingTestClasses.isEmpty){
           logger.warn("No class matching " + cn + " found")
@@ -135,6 +134,7 @@ object RunUnitTestsTask{
     if (classNames.isEmpty)
       RunUnitTestsTask(
         "run all tests",
+        rootProject,
         baseProject,
         None,
         verbose
@@ -142,15 +142,17 @@ object RunUnitTestsTask{
     else
       RunUnitTestsTask(
         "test class(es) " + classNames.mkString(", "),
+        rootProject,
         baseProject,
         Some(classNames),
         verbose
       )
   }
 
-  def failingTests(module : Module, verbose : Boolean) : RunUnitTestsTask = {
+  def failingTests(rootProject : ProjectTrait, module : Module, verbose : Boolean) : RunUnitTestsTask = {
     RunUnitTestsTask(
       "Failing tests",
+      rootProject,
       module,
       Some(MakerTestResults(module.testOutputFile).failingSuiteClasses),
       verbose

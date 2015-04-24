@@ -111,11 +111,11 @@ class Module(
 
   def cleanOnly = executeSansDependencies(CleanTask(this))
 
-  def testOnlyBuild(verbose : Boolean) = transitiveBuild(RunUnitTestsTask(this, verbose) :: Nil)
+  def testOnlyBuild(verbose : Boolean) = transitiveBuild(RunUnitTestsTask(this, this, verbose) :: Nil)
   def testOnly(verbose : Boolean) : BuildResult = execute(testOnlyBuild(verbose))
   def testOnly :BuildResult = testOnly(false)
   def testFailuredSuitesOnly(verbose : Boolean) : BuildResult = executeSansDependencies(
-    RunUnitTestsTask.failingTests(this, verbose)
+    RunUnitTestsTask.failingTests(this, this, verbose)
   )
   def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(false)
   def updateOnly = executeSansDependencies(UpdateTask(this, forceSourceUpdate = false))
@@ -126,8 +126,9 @@ class Module(
   ********************/
 
 
-  def testClassNames() = {
-    testCompilePhase.classFiles.map(_.className(outputDir(TestCompilePhase))).filterNot(_.contains("$")).filter(isAccessibleScalaTestSuite).toList
+  def testClassNames(rootProject : ProjectTrait) : Seq[String] = {
+    val isTestSuite = isAccessibleScalaTestSuite(rootProject)
+    testCompilePhase.classFiles.map(_.className(outputDir(TestCompilePhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
   }
 
 

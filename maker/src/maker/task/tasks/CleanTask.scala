@@ -23,11 +23,17 @@ case class CleanTask(project : ProjectTrait) extends Task
 
     // remove all output as we don't want lingering files or even empty dirs messing up a subsequent builds
 
+               
     project.upstreamModules.foreach{
       module => 
         cleanRegularFilesLeavingDirectories(module.compilePhase.outputDir)
         cleanRegularFilesLeavingDirectories(module.testCompilePhase.outputDir)
         cleanRegularFilesLeavingDirectories(module.targetDir)
+        cleanRegularFilesLeavingDirectories(module.managedLibDir)
+        cleanRegularFilesLeavingDirectories(module.managedResourceDir)
+        cleanRegularFilesLeavingDirectories(module.managedLibSourceDir)
+        cleanRegularFilesLeavingDirectories(module.testManagedLibDir)
+        cleanRegularFilesLeavingDirectories(module.testManagedLibSourceDir)
         recursiveDelete(module.compilePhase.phaseDirectory)
         recursiveDelete(module.testCompilePhase.phaseDirectory)
         module.compilePhase.compilationCacheFile.delete
@@ -37,6 +43,11 @@ case class CleanTask(project : ProjectTrait) extends Task
     project match {
       case p : Project => 
         recursiveDelete(p.packageDir)
+        cleanRegularFilesLeavingDirectories(p.managedLibDir)
+        cleanRegularFilesLeavingDirectories(p.managedResourceDir)
+        cleanRegularFilesLeavingDirectories(p.managedLibSourceDir)
+        cleanRegularFilesLeavingDirectories(p.testManagedLibDir)
+        cleanRegularFilesLeavingDirectories(p.testManagedLibSourceDir)
       case _ =>
     }
 

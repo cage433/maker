@@ -10,7 +10,7 @@ import org.scalatest.Failed
 import java.net.URL
 import java.io.File
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory
-import org.eclipse.aether.collection.CollectRequest
+import org.eclipse.aether.collection.{CollectRequest, CollectResult}
 import org.eclipse.aether.impl.DefaultServiceLocator
 import org.eclipse.aether.util.filter.{DependencyFilterUtils, AndDependencyFilter, ExclusionsDependencyFilter}
 import org.eclipse.aether.resolution.DependencyRequest
@@ -24,10 +24,12 @@ import org.eclipse.aether.RepositorySystem
 import org.eclipse.aether.spi.connector.transport.TransporterFactory
 import org.eclipse.aether.artifact.{Artifact, DefaultArtifact}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
-import org.eclipse.aether.graph.Dependency
+import org.eclipse.aether.graph.{Dependency, DependencyNode}
 import com.typesafe.config.Config
 import org.eclipse.aether.util.graph.selector._
 import java.util.Arrays
+import org.eclipse.aether.internal.test.util.DependencyGraphParser
+
 
 /**
   * Updates any missing resources. If any jars are missing then will try 
@@ -76,7 +78,6 @@ case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean)
     def scope : String
     def downloadDirectory : File
     def isOfCorrectType(artifact : Artifact) : Boolean
-    //def artifacts : Seq[Artifact]
   }
 
   case class BinaryDownload(scope : String) extends DownloadType{
@@ -103,15 +104,29 @@ case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean)
       "org.scala-lang" % "scala-library" % config.scalaVersion.toString,
       "org.scala-lang" % "scala-compiler" % config.scalaVersion.toString
       ) ++: project.upstreamResources
+
+    val collectRequest = new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories)
     val dependencyRequest = new DependencyRequest(
-      new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories),
+      collectRequest,
       DependencyFilterUtils.classpathFilter(download.scope)
     )
 
-    system.resolveDependencies(
+    val artifacts = system.resolveDependencies(
       session, 
       dependencyRequest
     ).getArtifactResults.map(_.getArtifact).filter(download.isOfCorrectType)
+
+    collectRequest.setRepositories(repositories)
+    val collectResult : CollectResult = system.collectDependencies(session, collectRequest)
+    val parser = new DependencyGraphParser()
+    val dependencyNode : DependencyNode = collectResult.getRoot
+
+    FileUtils.writeToFile(
+      file(download.downloadDirectory, "dependency-graph"), 
+      parser.dump(dependencyNode)
+    )
+
+    artifacts
   }
 
   // Used for bootstrapping
@@ -136,7 +151,7 @@ case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean)
       var hasChanged = false
       download.downloadDirectory.safeListFiles.foreach{
         file => 
-          if (! dependencyBasenames.contains(file.basename)){
+          if (! dependencyBasenames.contains(file.basename) && file.basename != "dependency-graph"){
             logger.info("Removing redundant dependency " + file)
             file.delete
             hasChanged = true
@@ -197,16 +212,18 @@ object UpdateTask extends ConfigPimps {
       )
       session
     }
-    val repositories = {
-      val repos = new java.util.LinkedList[RemoteRepository]()
-      config.httpResolvers.foreach{
-        case List(name, url) => 
-          repos.add(new RemoteRepository.Builder(name, "default", url).build())
-      }
-      repos
-    }
-    (system, session, repositories)
+    (system, session, repositories(config))
   }
+
+  def repositories(config : Config) = {
+    val repos = new java.util.LinkedList[RemoteRepository]()
+    config.httpResolvers.foreach{
+      case List(name, url) => 
+        repos.add(new RemoteRepository.Builder(name, "default", url).build())
+    }
+    repos
+  }
+
   def reportOnUpdateFailures(taskResults : List[TaskResult]){
     import maker.utils.RichString._
     val failures : List[(Int, String)] = taskResults.collect{

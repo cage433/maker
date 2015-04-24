@@ -179,8 +179,8 @@ class ProjectTaskDependenciesTests extends FunSuite{
           "A's test output directory is in C's classpath"
         )
         assert(
-          ! D.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
-          "A's test output directory is not in D's classpath"
+          D.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
+          "A's test output directory is in D's classpath"
         )
     }
   }
@@ -199,7 +199,7 @@ class ProjectTaskDependenciesTests extends FunSuite{
         List(A, B, C).foreach{
           proj => 
             assert(proj.testTaskBuild(verbose = false).graph.nodes.exists{
-              case RunUnitTestsTask(_, `proj`, _, false) => true
+              case RunUnitTestsTask(_, _, `proj`, _, false) => true
               case _ => false
             })
         }

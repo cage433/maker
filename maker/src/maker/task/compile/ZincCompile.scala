@@ -60,7 +60,7 @@ object ZincCompile extends ConfigPimps{
       "-scala-library",
       config.scalaVersion.scalaLibraryJar.getAbsolutePath,
       "-classpath",
-      rootProject.classpath(phase),
+      if (phase == SourceCompilePhase) rootProject.compilationClasspath else rootProject.testCompilationClasspath,
       "-d",
       projectPhase.outputDir.getAbsolutePath,
       "-compile-order",

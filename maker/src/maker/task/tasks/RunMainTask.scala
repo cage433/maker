@@ -40,7 +40,7 @@ case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Se
       "-Dlogback.configurationFile=" + "logback.xml"
     ) ++: opts
     var cmd = Command.scalaCommand(
-      classpath = baseProject.classpath(TestCompilePhase),
+      classpath = baseProject.testCompilationClasspath,
       klass = className,
       opts = optsToUse,
       args = mainArgs
