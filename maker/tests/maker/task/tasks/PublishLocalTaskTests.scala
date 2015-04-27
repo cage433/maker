@@ -39,16 +39,16 @@ class PublishLocalTaskTests
   private def checkPublishedPomIncludesAllDependencies(project : Project, version : String){
     import project.config
     val pom = XML.loadFile(project.publishLocalPomFile(version))
-    val dependencies = pom \\ "dependency"
-    val resources = config.scalaVersion.scalaLibraryResource +: project.resources
+    val pomDependencies = pom \\ "dependency"
+    val dependencies = config.scalaVersion.scalaLibraryResource +: project.dependencies
 
-    resources should allSatisfy {
-      resource : AetherDependency => 
-        val resourceCoords = List(resource.groupId, resource.artifactId, resource.version)
-        dependencies.exists{
+    dependencies should allSatisfy {
+      dependency : AetherDependency => 
+        val coords = List(dependency.groupId, dependency.artifactId, dependency.version)
+        pomDependencies.exists{
           node => 
-            val coords = List("groupId", "artifactId", "version").map{label => (node \ label).text}
-            resourceCoords == coords
+            val pomCoords = List("groupId", "artifactId", "version").map{label => (node \ label).text}
+            coords == pomCoords
         }
     }
   }

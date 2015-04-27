@@ -38,7 +38,10 @@ case class DocTask(project : Project)
 
       // make a separate opts file as the args can get too big for a single command
       val optsFile = file(docDir, "docopts")
-      writeToFile(optsFile, "-classpath " + project.classpathSansScalaLibs(SourceCompilePhase) + " " + inputFiles.mkString(" "))
+      val classpath = Module.asClasspathStr(
+        project.upstreamModules.map(_.outputDir(SourceCompilePhase))
+      )
+      writeToFile(optsFile, s"""-classpath $classpath ${inputFiles.mkString(" ")}""")
 
       val scalaToolsClasspath = config.scalaVersion.scalaJars.mkString(":")
 

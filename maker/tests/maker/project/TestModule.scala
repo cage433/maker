@@ -25,7 +25,6 @@ class TestModule(
   analyses
 ) with ClassicLayout with DependencyPimps {
   root.mkdirs
-  override def unmanagedLibDirs = List(file("utils/lib_managed"), file("test-reporter/lib_managed"))
   override def constructorCodeAsString : String = {
     s"""val $name = new TestModule(new java.io.File("${root.getAbsolutePath}"), "$name",
       upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
@@ -35,7 +34,10 @@ class TestModule(
       }"""
   }
 
-  override def resources = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
+  override def dependencies = List(
+    "org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST),
+    "com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST)
+  )
 
   def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {
     val dir = sourceDirs(phase).head // we know we only have one

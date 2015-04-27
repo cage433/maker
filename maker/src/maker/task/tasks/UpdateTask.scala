@@ -32,7 +32,7 @@ import org.eclipse.aether.internal.test.util.DependencyGraphParser
 
 
 /**
-  * Updates any missing resources. If any jars are missing then will try 
+  * Updates any missing dependencies. If any jars are missing then will try 
   * to download BOTH the binary and any associated source jar. 
   * If `forceSourceUpdate` is true then will try to download ALL missing source jars 
   *
@@ -103,7 +103,7 @@ case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean)
     var dependencies = List(
       "org.scala-lang" % "scala-library" % config.scalaVersion.toString,
       "org.scala-lang" % "scala-compiler" % config.scalaVersion.toString
-      ) ++: project.upstreamResources
+      ) ++: project.upstreamDependencies
 
     val collectRequest = new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories)
     val dependencyRequest = new DependencyRequest(
@@ -111,13 +111,18 @@ case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean)
       DependencyFilterUtils.classpathFilter(download.scope)
     )
 
+    println(this)
+    println("Resolving deps")
     val artifacts = system.resolveDependencies(
       session, 
       dependencyRequest
     ).getArtifactResults.map(_.getArtifact).filter(download.isOfCorrectType)
 
+    println("Resolved")
     collectRequest.setRepositories(repositories)
+    println("Collecting deps")
     val collectResult : CollectResult = system.collectDependencies(session, collectRequest)
+    println("Collected")
     val parser = new DependencyGraphParser()
     val dependencyNode : DependencyNode = collectResult.getRoot
 

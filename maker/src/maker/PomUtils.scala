@@ -21,9 +21,9 @@ object PomUtils extends ConfigPimps with DependencyPimps{
     val groupId = project.organization.getOrElse(throw new IllegalStateException("Organization not defined"))
 
     val externalDependencies = {
-      val resources = project.upstreamModules.flatMap(_.resources)
+      val dependencies = project.upstreamModules.flatMap(_.dependencies)
       project.config.scalaVersion.scalaLibraryResource
-      (project.config.scalaVersion.scalaLibraryResource +: resources).distinct.map(
+      (project.config.scalaVersion.scalaLibraryResource +: dependencies).distinct.map(
         _.pomDependencyXML
       )
     }

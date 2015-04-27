@@ -171,15 +171,15 @@ class ProjectTaskDependenciesTests extends FunSuite{
         val D = new TestModule(file(dir, "D"), "D", List(C))
 
         assert(
-          ! B.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
+          ! B.testCompilationClasspathComponents.contains(A.outputDir(TestCompilePhase)), 
           "A's test output directory is not in B's classpath"
         )
         assert(
-          C.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
+          C.testCompilationClasspathComponents.contains(A.outputDir(TestCompilePhase)), 
           "A's test output directory is in C's classpath"
         )
         assert(
-          D.classpathComponents(TestCompilePhase).contains(A.outputDir(TestCompilePhase)), 
+          ! D.testCompilationClasspathComponents.contains(A.outputDir(TestCompilePhase)), 
           "A's test output directory is in D's classpath"
         )
     }
@@ -206,11 +206,9 @@ class ProjectTaskDependenciesTests extends FunSuite{
         import Dependency.Edge
         assert(!D.testCompileTaskBuild.graph.edges.contains(Edge(TestCompileTask(D, A), TestCompileTask(D, C))))
 
-        assert(D.testTaskBuild(verbose = false).graph.edges.contains(Edge(TestCompileTask(D, A), TestCompileTask(D, C))))
+        assert(C.testTaskBuild(verbose = false).graph.edges.contains(Edge(TestCompileTask(C, A), TestCompileTask(C, C))))
         assert(!D.testCompileTaskBuild.graph.edges.contains(Edge(TestCompileTask(D, B), TestCompileTask(D, C))))
 
-        assert(D.testCompileTaskBuild.graph.subGraphOf(D.test.graph))
-        
     }
     
   }

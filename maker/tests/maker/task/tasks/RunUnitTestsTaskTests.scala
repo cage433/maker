@@ -10,8 +10,8 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
   test("Test reports picks up failure"){
     withTestDir{
       dir => 
-        val proj = new TestModule(dir, "RunUnitTestsTaskTests")
-        proj.writeTest(
+        val module = new TestModule(dir, "RunUnitTestsTaskTests")
+        module.writeTest(
           "foo/Test.scala",
           """
             package foo
@@ -25,14 +25,20 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
             }
           """
         )
-        proj.test
+        println(module.config.getString("maker.resource-cache"))
+        println("updating")
+        module.update
+        println("updated")
+        module.testCompilationClasspathComponents.foreach(println)
+        System.exit(0)
+        module.test
 
-        assert(proj.testOutputFile.exists, "Test output should exist")
+        assert(module.testOutputFile.exists, "Test output should exist")
     }
   }
 
 
-  test("Unit test runs"){
+  ignore("Unit test runs"){
     withTempDir{
       root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
@@ -65,7 +71,7 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
     }
   }
 
-  test("Failing test fails again"){
+  ignore("Failing test fails again"){
     withTempDir{
       root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")
@@ -99,7 +105,7 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
     }
   }
 
-  test("Can re-run failing tests"){
+  ignore("Can re-run failing tests"){
     withTempDir{
       root => 
         val proj = new TestModule(root, "RunUnitTestsTaskTests")

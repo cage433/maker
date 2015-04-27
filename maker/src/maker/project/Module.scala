@@ -22,8 +22,8 @@ class Module(
     val root : File,
     val name : String,
     val config : Config = ConfigFactory.load(),
-    val immediateUpstreamModules : List[Module] = Nil,
-    val immediateUpstreamTestModules : List[Module] = Nil,
+    val immediateUpstreamModules : Seq[Module] = Nil,
+    val testModules : Seq[Module] = Nil,
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
   extends ProjectTrait
@@ -36,7 +36,7 @@ class Module(
   def modules = this :: Nil
   protected val upstreamModulesForBuild = List(this)
 
-  def resources() : Seq[AetherDependency]  = Nil
+  def dependencies() : Seq[AetherDependency]  = Nil
 
   def phaseDirectory(phase : CompilePhase) = mkdir(file(makerDirectory, phase.name))
   def compilationCacheFile(phase : CompilePhase) = {
@@ -79,14 +79,9 @@ class Module(
 
   warnOfRedundantDependencies()
 
-  //def pomDependencyXML(version : String) = PomUtils.dependencyXml(organization.getOrElse(???), artifactId, version)
   def testCompilePhase = ModuleCompilePhase(this, TestCompilePhase)
   def compilePhase = ModuleCompilePhase(this, SourceCompilePhase)
 
-
-  //lazy val allUpstreamModules         : List[Module] = this :: allStrictlyUpstreamModules
-  //lazy val allUpstreamTestModules         : List[Module] = this :: allStrictlyUpstreamTestModules
-  //lazy val allStrictlyUpstreamTestModules : List[Module] = (immediateUpstreamModules ++ immediateUpstreamTestModules).distinct.flatMap(_.allUpstreamTestModules).distinct.sortWith(_.name < _.name)
 
   override def toString = name
 
@@ -111,9 +106,30 @@ class Module(
 
   def cleanOnly = executeSansDependencies(CleanTask(this))
 
-  def testOnlyBuild(verbose : Boolean) = transitiveBuild(RunUnitTestsTask(this, this, verbose) :: Nil)
-  def testOnly(verbose : Boolean) : BuildResult = execute(testOnlyBuild(verbose))
-  def testOnly :BuildResult = testOnly(false)
+  def testTaskBuild(verbose : Boolean) = {
+    // For a module, the `test` task runs just tha module's tests.
+    // To run all tests, use the containing project
+    transitiveBuild(
+      RunUnitTestsTask(
+        s"Unit tests for $this", 
+        modules = this :: Nil, 
+        rootProject = this, 
+        classOrSuiteNames_ = None,
+        verbose = verbose
+      ) :: Nil
+    )
+  }
+
+  def test(verbose : Boolean) : BuildResult = {
+    execute(testTaskBuild(verbose))
+  }
+
+  def test : BuildResult = test(verbose = false)
+
+  def testCompileTaskBuild = transitiveBuild(
+    (this +: testModules).map(TestCompileTask(this, _))
+  )
+
   def testFailuredSuitesOnly(verbose : Boolean) : BuildResult = executeSansDependencies(
     RunUnitTestsTask.failingTests(this, this, verbose)
   )
@@ -207,14 +223,6 @@ object Module{
         }
     }
 
-
-    proj.immediateUpstreamTestModules.foreach{
-      p => 
-        proj.immediateUpstreamTestModules.filterNot(_ == p).find(_.upstreamTestModules.contains(p)).foreach{
-          p1 => 
-            logger.warn("Module " + proj.name + " doesn't need a test dependency on " + p.name + " as it is already inherited from " + p1.name)
-        }
-    }
 
     val jarNames = proj.managedJars.map(_.getName).toSet
     proj.immediateUpstreamModules.foreach{

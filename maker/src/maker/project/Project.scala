@@ -6,7 +6,7 @@ import maker.utils.FileUtils._
 import java.io.File
 import maker.utils.RichString._
 import scala.collection.immutable.Nil
-import maker.task.compile.{SourceCompilePhase, CompilePhase, TestCompilePhase}
+import maker.task.compile._
 import com.typesafe.config.{ConfigFactory, Config}
 import scala.xml.{Elem, NodeSeq}
 
@@ -17,13 +17,14 @@ case class Project(
   config : Config = ConfigFactory.load(),
   topLevelExcludedFolders:List[String] = Nil,
   isTestProject : Boolean = false
-) extends TmuxIntegration{
+) extends TmuxIntegration {
 
   def projectRoot = root.asAbsoluteFile
 
   def organization : Option[String] = None
   def artifactId = name
   def modules = immediateUpstreamModules
+  def testModules = upstreamModules
   //val upstreamModulesForBuild = allUpstreamModules
   override def toString = name
 
@@ -90,19 +91,28 @@ case class Project(
   def publishSonatypeSnapshotBuild(version : String) = transitiveBuild(PublishSnapshotToSonatype(this, version) :: Nil)
   def publishSonatypeSnapshot(version : String) = execute(publishSonatypeSnapshotBuild(version))
 
-  def classpathSansScalaLibs(phase : CompilePhase) : String = {
-    var dirs : Seq[File] = upstreamModules.flatMap{
-      module => 
-        Vector(module.resourceDir(SourceCompilePhase), module.outputDir(SourceCompilePhase), module.managedResourceDir)
-    }
-    if (phase == TestCompilePhase)
-      dirs ++= upstreamTestModules.flatMap{
-        module => 
-          Vector(module.resourceDir(TestCompilePhase), module.outputDir(TestCompilePhase))
-      }
-    Module.asClasspathStr(dirs)
+  def dependencies = upstreamModules.flatMap(_.dependencies).distinct
+
+  def testTaskBuild(verbose : Boolean) = {
+    // For a project, `test` runs tests of all modules
+    transitiveBuild(
+      RunUnitTestsTask(
+        s"Unit tests for $this", 
+        upstreamModules,
+        rootProject = this, 
+        classOrSuiteNames_ = None,
+        verbose = verbose
+      ) :: Nil
+    )
   }
 
-  def resources = upstreamModules.flatMap(_.resources).distinct
+  def test(verbose : Boolean) : BuildResult = {
+    execute(testTaskBuild(verbose))
+  }
 
+  def test : BuildResult = test(verbose = false)
+
+  def testCompileTaskBuild = transitiveBuild(
+    upstreamModules.map(TestCompileTask(this, _))
+  )
 }
