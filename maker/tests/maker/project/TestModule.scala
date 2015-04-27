@@ -8,6 +8,7 @@ import sbt.inc.Analysis
 import maker.task.compile._
 import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.util.artifact.JavaScopes
+import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 
 class TestModule(
   root : File, 
@@ -24,16 +25,26 @@ class TestModule(
   upstreamTestProjects,
   analyses
 ) with ClassicLayout with DependencyPimps {
-  root.mkdirs
+
   override def constructorCodeAsString : String = {
-    s"""val $name = new TestModule(new java.io.File("${root.getAbsolutePath}"), "$name",
-      upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
-      upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
-      ) with maker.project.DependencyPimps {
-        override def resources = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
-      }"""
+    s"""|
+        |val $name = new TestModule(
+        | new java.io.File("${root.getAbsolutePath}"), 
+        |   "$name",
+        |   upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
+        |   upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
+        |)  with maker.project.DependencyPimps  {
+        |   override def dependencies = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
+        |}""".stripMargin
   }
 
+  def appendDefinitionToProjectFile(rootDir : File){
+    val projectFile = file(rootDir, "Maker.scala")
+    appendToFile(
+      projectFile,
+      constructorCodeAsString
+    )
+  }
   override def dependencies = List(
     "org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST),
     "com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST)
@@ -70,31 +81,50 @@ class TestModule(
 
   val logFile = file(root, "maker.log")
   val patternLine = "<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>"
-  writeMakerProjectDefinitionFile
+  //writeMakerProjectDefinitionFile
 
   override def isTestProject = true
+
   def writeMakerProjectDefinitionFile{
     import maker.utils.RichString._
     val makerFile = file(rootAbsoluteFile, "Maker.scala")
 
     if (!makerFile.exists){
-      val buffer = new StringBuffer
-      buffer.addLine("import maker.project.Module._")
-      buffer.addLine("import maker.task.tasks._")
-      buffer.addLine("import maker.task._")
-      buffer.addLine("import maker.task.Dependency._")
-      buffer.addLine("import maker.project._")
-      buffer.addLine("import maker.utils.FileUtils._")
-      buffer.addLine("import java.io.File")
-      buffer.addLine("import org.eclipse.aether.util.artifact.JavaScopes")
-      buffer.addLine(constructorCodeAsString)
-      buffer.addLine("import " + name + "._")
-      writeToFile(makerFile, buffer.toString)
+      val text = 
+        s"""|
+            | import maker.project.{TestModule, DependencyPimps}
+            | import org.eclipse.aether.util.artifact.JavaScopes
+            | import java.io.File
+            |
+            |val $name = new TestModule(
+            | new File("${root.getAbsolutePath}"), 
+            |   "$name",
+            |   upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
+            |   upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
+            |)  with DependencyPimps  {
+            |   override def dependencies = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
+            |}
+            |
+            | import ${name}._
+            |""".stripMargin
+      writeToFile(makerFile, text)
     }
   }
 }
 
-
+object TestModule{
+  def createMakerProjectFile(rootDir : File){
+    rootDir.mkdirs
+    val projectFile = file(rootDir, "Maker.scala")
+    val text = 
+        s"""|
+            |import maker.project.{TestModule, DependencyPimps}
+            |import org.eclipse.aether.util.artifact.JavaScopes
+            |import java.io.File
+            |""".stripMargin
+    writeToFile(projectFile, text)
+  }
+}
 trait HasDummyCompiler{
   self : TestModule => 
     override def compilerName = "dummy-test-compiler"

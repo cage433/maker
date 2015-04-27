@@ -12,6 +12,7 @@ import tempfile
 import signal
 from subprocess import call
 from glob import glob
+import sys
 
 # Computer generated section
 MAKER_VERSION       = "2.5-SNAPSHOT"
@@ -84,6 +85,7 @@ def read_args():
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
+    parser.add_argument('-L', '--python_log_level', dest='python_log_level', default=logging.INFO)
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
     parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
     parser.add_argument('-J', '--JVM-ARGS', dest='jvm_args', nargs=argparse.REMAINDER, default = [])
@@ -98,7 +100,7 @@ def create_logger():
             format= "%(asctime)-15s %(levelname)-10s %(message)s", \
             datefmt="%Y-%m-%d %H:%M:%S")
     log = logging.getLogger('maker')
-    log.setLevel(logging.INFO)
+    log.setLevel(int(args.python_log_level))
 
 def maker_dependencies_directory(): 
     return os.path.join(os.environ['HOME'], ".maker", "maker-dependencies", MAKER_VERSION)
@@ -245,6 +247,9 @@ def launch_repl():
     else:
         extra_opts = []
 
+    if args.execute_command:
+        extra_opts = extra_opts + ["-Dmaker.exec-mode=true"]
+
 
     cmd_args=[  java(),
             "-classpath", classpath(scala_libraries()),
@@ -261,12 +266,12 @@ def launch_repl():
     if args.execute_command:
         cmd_args = cmd_args + ["-e"] + args.execute_command.split()
 
-    call(cmd_args)
+    return call(cmd_args)
 
 
 
-create_logger()
 read_args()
+create_logger()
 create_maker_lib_directories()
 
 log.info("Checking for missing resources")
@@ -276,6 +281,7 @@ download_required_dependencies(MAKER_BINARIES, maker_binaries_directory())
 
 
 log.info("Launching repl")
-launch_repl()
+return_code = launch_repl()
+sys.exit(return_code)
 
 

@@ -1,14 +1,57 @@
 package maker.task.tasks
 
-import org.scalatest.FunSuite
 import maker.utils.FileUtils._
+import maker.utils.os.Command
+import org.scalatest.{Matchers, FunSuite}
 import maker.project.TestModule
-import org.scalatest.ParallelTestExecution
-import maker.project.Module
 
-class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
-  test("Test reports picks up failure"){
+class RunUnitTestsTaskTests extends FunSuite with Matchers {//with ParallelTestExecution{
+
+  test("Broken tests fail"){
     withTestDir{
+      dir => 
+        TestModule.createMakerProjectFile(dir)
+        val module = new TestModule(dir, "RunUnitTestsTaskTestsModule")
+        module.appendDefinitionToProjectFile(dir)
+        module.writeTest(
+          "foo/Test.scala",
+          """
+            package foo
+
+            import org.scalatest.FunSuite
+
+            class Test extends FunSuite{
+              test("This should fail"){
+                assert(1 === 2)
+              }
+            }
+          """
+        )
+        module.testOutputFile.exists should be (false)
+        val makerClasspath = s"""${file("maker", "target-maker", "classes").getAbsolutePath}:${file("maker", "target-maker", "test-classes").getAbsolutePath}"""
+        val makerScript = file("maker.py").getAbsolutePath
+        val command = Command(
+          "python",
+          makerScript,
+          "-E",
+          "RunUnitTestsTaskTestsModule.test",
+          "-z",
+          "-l",
+          file("logback-unit-tests.xml").getAbsolutePath,
+          "-L",
+          "40"
+        ).
+        withWorkingDirectory(dir).
+        withExitValues(0, 1)
+
+        val result = command.run
+        result should equal (1)
+        module.testOutputFile.exists should be (true)
+    }
+  }
+
+  ignore("Test reports picks up failure"){
+    withTempDir{
       dir => 
         val module = new TestModule(dir, "RunUnitTestsTaskTests")
         module.writeTest(
@@ -25,12 +68,6 @@ class RunUnitTestsTaskTests extends FunSuite {//with ParallelTestExecution{
             }
           """
         )
-        println(module.config.getString("maker.resource-cache"))
-        println("updating")
-        module.update
-        println("updated")
-        module.testCompilationClasspathComponents.foreach(println)
-        System.exit(0)
         module.test
 
         assert(module.testOutputFile.exists, "Test output should exist")

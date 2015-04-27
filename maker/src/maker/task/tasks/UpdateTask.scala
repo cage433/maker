@@ -111,18 +111,13 @@ case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean)
       DependencyFilterUtils.classpathFilter(download.scope)
     )
 
-    println(this)
-    println("Resolving deps")
     val artifacts = system.resolveDependencies(
       session, 
       dependencyRequest
     ).getArtifactResults.map(_.getArtifact).filter(download.isOfCorrectType)
 
-    println("Resolved")
     collectRequest.setRepositories(repositories)
-    println("Collecting deps")
     val collectResult : CollectResult = system.collectDependencies(session, collectRequest)
-    println("Collected")
     val parser = new DependencyGraphParser()
     val dependencyNode : DependencyNode = collectResult.getRoot
 

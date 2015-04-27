@@ -111,8 +111,8 @@ trait ProjectTrait extends ConfigPimps{
     val result = bld.execute
     tearDown(bld.graph, result)
     if (result.failed && config.execMode){
-      logger.error(bld + " failed ")
-      System.exit(-1)
+      logger.error(bld + " failed - exiting")
+      System.exit(1)
     }
     BuildResult.lastResult.set(Some(result))
     if (! isTestProject){
@@ -288,9 +288,6 @@ trait ProjectTrait extends ConfigPimps{
     * Not just those modules on whom we have a test dependency
     */
   def writeVimClasspath {
-    //var dirsAndJars = upstreamModules.flatMap(_.testCompilePhase.classpathDirectoriesAndJars).toList.distinct
-    //dirsAndJars ::= config.scalaVersion.scalaCompilerJar
-    //dirsAndJars ::= config.scalaVersion.scalaLibraryJar
     val cp = testCompilationClasspath
     val cpFile : File = file(name + "-classpath.sh")
     println(s"Writing classpath to file $cpFile")
@@ -311,8 +308,6 @@ trait ProjectTrait extends ConfigPimps{
   def upstreamDependencies = (upstreamModules ++ testModuleDependencies).distinct.flatMap(_.dependencies)
 
   protected def managedJars = findJars(managedLibDir)
-  //def classpathJars : Seq[File] = findJars(managedLibDir +: unmanagedLibDirs) ++:
-    //Vector[File](config.scalaVersion.scalaLibraryJar, config.scalaVersion.scalaCompilerJar) ++: config.scalaVersion.scalaReflectJar.toVector
 
   def testClasspathLoader = new URLClassLoader(
     testRuntimeClasspathComponents.map(_.toURI.toURL).toArray,

@@ -39,17 +39,12 @@ case class ScalaVersion(
   def xmlResource = (major >= 11).option(resource("org.scala-lang.modules", s"scala-xml_$versionBase", "1.0.3"))
   def parserCombinatorResource = (major >= 11).option(resource("org.scala-lang.modules", s"scala-parser-combinators_$versionBase", "1.0.3"))
 
-  def scalaLibrarySourceResource = scalaLibraryResource.sourceDependency
-  def resources = List(scalaLibraryResource, compilerResource) ::: reflectResource.toList ::: xmlResource.toList ::: parserCombinatorResource.toList
-  def sourceResources = resources.map(_.sourceDependency)
+  private def resources = List(scalaLibraryResource, compilerResource) ::: reflectResource.toList ::: xmlResource.toList ::: parserCombinatorResource.toList
+  private def sourceResources = resources.map(_.sourceDependency)
 
   def scalaLibraryJar = file(
     config.projectScalaLibDirectory,
     scalaLibraryResource.basename
-  )
-  def scalaLibrarySourceJar = file(
-    config.projectScalaLibDirectory,
-    scalaLibrarySourceResource.basename
   )
   def scalaCompilerJar = file(
     config.projectScalaLibDirectory,

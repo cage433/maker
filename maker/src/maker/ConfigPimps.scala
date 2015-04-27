@@ -30,7 +30,6 @@ trait ConfigPimps {
       dir
     }
 
-    def scalaLibClasspath = Module.asClasspathStr(findJars(projectScalaLibDirectory))
     def resourceCache = mkdirs(file(config.getString("maker.resource-cache")))
 
     def httpResolvers = config.getStringList("maker.http.resolvers").toList.grouped(2)
