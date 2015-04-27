@@ -23,7 +23,7 @@ class Module(
     val name : String,
     val config : Config = ConfigFactory.load(),
     val immediateUpstreamModules : Seq[Module] = Nil,
-    val testModules : Seq[Module] = Nil,
+    val testModuleDependencies : Seq[Module] = Nil,
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
   extends ProjectTrait
@@ -127,7 +127,7 @@ class Module(
   def test : BuildResult = test(verbose = false)
 
   def testCompileTaskBuild = transitiveBuild(
-    (this +: testModules).map(TestCompileTask(this, _))
+    (this +: testModuleDependencies).map(TestCompileTask(this, _))
   )
 
   def testFailuredSuitesOnly(verbose : Boolean) : BuildResult = executeSansDependencies(

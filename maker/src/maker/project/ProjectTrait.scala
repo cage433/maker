@@ -42,7 +42,7 @@ trait ProjectTrait extends ConfigPimps{
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
   def modules : Seq[Module]
-  def testModules : Seq[Module]
+  def testModuleDependencies : Seq[Module]
   def config : Config
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
@@ -173,7 +173,7 @@ trait ProjectTrait extends ConfigPimps{
         case _ : Project => 
           upstreamModules.map(_.outputDir(TestCompilePhase))
         case m : Module => 
-          (m +: testModules).map(_.outputDir(TestCompilePhase))
+          (m +: testModuleDependencies).map(_.outputDir(TestCompilePhase))
       })
 
   def testCompilationClasspath = Module.asClasspathStr(testCompilationClasspathComponents)
@@ -197,7 +197,7 @@ trait ProjectTrait extends ConfigPimps{
       case _ : Project => 
         upstreamModules.flatMap{m => m.outputDir(TestCompilePhase) :: m.resourceDir(TestCompilePhase) :: Nil}
       case m : Module => 
-        (m +: testModules).flatMap{m => m.outputDir(TestCompilePhase) :: m.resourceDir(TestCompilePhase) :: Nil}
+        (m +: testModuleDependencies).flatMap{m => m.outputDir(TestCompilePhase) :: m.resourceDir(TestCompilePhase) :: Nil}
     })
 
   def testRuntimeClasspath = Module.asClasspathStr(testRuntimeClasspathComponents)
@@ -205,7 +205,7 @@ trait ProjectTrait extends ConfigPimps{
   def continuously(bld : Build){
     var lastTaskTime :Option[Long] = None
 
-    def allSourceFiles : Seq[File] = upstreamModules.flatMap(_.compilePhase.sourceFiles) ++: testModules.flatMap(_.testCompilePhase.sourceFiles) 
+    def allSourceFiles : Seq[File] = upstreamModules.flatMap(_.compilePhase.sourceFiles) ++: testModuleDependencies.flatMap(_.testCompilePhase.sourceFiles) 
 
     def sourceFileCount : Int = allSourceFiles.size
     var lastFileCount : Int = sourceFileCount 
@@ -308,7 +308,7 @@ trait ProjectTrait extends ConfigPimps{
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Seq[File] = List(file(rootAbsoluteFile, "lib"))
 
-  def upstreamDependencies = (upstreamModules ++ testModules).distinct.flatMap(_.dependencies)
+  def upstreamDependencies = (upstreamModules ++ testModuleDependencies).distinct.flatMap(_.dependencies)
 
   protected def managedJars = findJars(managedLibDir)
   //def classpathJars : Seq[File] = findJars(managedLibDir +: unmanagedLibDirs) ++:

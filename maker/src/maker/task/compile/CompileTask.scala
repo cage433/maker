@@ -100,7 +100,7 @@ case class SourceCompileTask(rootProject: ProjectTrait, override val module :Mod
 
 case class TestCompileTask(rootProject : ProjectTrait, override val module : Module) extends CompileTask(rootProject, module){
   def upstreamTasks: Seq[Task] =
-      SourceCompileTask(rootProject, module) +: module.testModules.map(TestCompileTask(rootProject, _))
+      SourceCompileTask(rootProject, module) +: module.testModuleDependencies.map(TestCompileTask(rootProject, _))
 
   def phase = TestCompilePhase
 }

@@ -24,8 +24,7 @@ case class Project(
   def organization : Option[String] = None
   def artifactId = name
   def modules = immediateUpstreamModules
-  def testModules = upstreamModules
-  //val upstreamModulesForBuild = allUpstreamModules
+  def testModuleDependencies = upstreamModules
   override def toString = name
 
   override def constructorCodeAsString : String = {
