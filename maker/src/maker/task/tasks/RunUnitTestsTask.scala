@@ -17,8 +17,7 @@ case class RunUnitTestsTask(
   name : String, 
   modules : Seq[Module],
   rootProject : ProjectTrait, 
-  classOrSuiteNames_ : Option[Iterable[String]],
-  verbose: Boolean
+  classOrSuiteNames_ : Option[Iterable[String]]
 )  
   extends Task 
   with ConfigPimps
@@ -45,7 +44,7 @@ case class RunUnitTestsTask(
     val systemPropertiesArguments = {
       var s = Map[String, String]()
       s += "scala.usejavacp" -> "true"
-      s += "logback.configurationFile" -> config.unitTestLogbackConfigFile.getAbsolutePath
+      s += "logback.configurationFile" -> Option(System.getProperty("logback.configurationFile")).getOrElse(throw new Exception("No logback config defined"))
       s += "maker.test.output" -> rootProject.testOutputFile.toString
       s += "sbt.log.format" -> "=false"
       s.map{
@@ -61,10 +60,7 @@ case class RunUnitTestsTask(
 
     val opts = config.debugFlags ::: memoryArguments ::: systemPropertiesArguments
  
-    val testParameters : Seq[String] = {
-      val consoleReporterArgs = if (verbose) List("-oF") else Nil
-      consoleReporterArgs ::: List("-P", "-C", "maker.utils.MakerTestReporter") 
-    }
+    val testParameters : Seq[String] = rootProject.scalatestOutputParameters :: List("-P", "-C", "maker.utils.MakerTestReporter") 
 
     var cmd = Command.scalaCommand(
       classpath = rootProject.testRuntimeClasspath + java.io.File.pathSeparator + config.testReporterJar,
@@ -76,9 +72,6 @@ case class RunUnitTestsTask(
     // Apache executor is noisy when exit is non-zero, so switch that off here.
     // Actual exit value is checked below.
     cmd = cmd.withExitValues(0, 1)
-
-    if (rootProject.isTestProject)
-      cmd = cmd.withNoOutput
 
     val res = cmd.run
 
@@ -107,13 +100,12 @@ object RunUnitTestsTask{
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
   lazy val logger = LoggerFactory.getLogger(this.getClass)
 
-  def failingTests(rootProject : ProjectTrait, module : Module, verbose : Boolean) : RunUnitTestsTask = {
+  def failingTests(rootProject : ProjectTrait, module : Module) : RunUnitTestsTask = {
     RunUnitTestsTask(
       "Failing tests",
       module :: Nil,
       rootProject,
-      Some(MakerTestResults(module.testOutputFile).failingSuiteClasses),
-      verbose
+      Some(MakerTestResults(module.testOutputFile).failingSuiteClasses)
     )
   }
 

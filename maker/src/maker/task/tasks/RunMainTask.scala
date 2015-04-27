@@ -29,11 +29,9 @@ case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Se
   def upstreamTasks = baseProject.testCompileTaskBuild.tasks
 
 
-  val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     logger.info("running main in class " + className)
 
-    val writer = new PrintWriter(new TeeToFileOutputStream(runLogFile))
 
     val optsToUse = config.debugFlags ++: List(
       s"-Xmx${config.unitTestHeapSize}m", 
@@ -45,11 +43,7 @@ case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Se
       opts = optsToUse,
       args = mainArgs
     )
-    if (baseProject.isTestProject)
-      cmd = cmd.withNoOutput
-    else
-      cmd = cmd.withOutputTo(new TeeToFileOutputStream(runLogFile))
-    cmd = cmd.withOutputTo(new TeeToFileOutputStream(runLogFile))
+    cmd = cmd.withOutputTo(baseProject.runMainOutputStream)
     cmd.run match {
       case 0 => DefaultTaskResult(this, true, sw)
       case code => DefaultTaskResult(this, false, sw, message = Some("Run Main failed in " + baseProject))

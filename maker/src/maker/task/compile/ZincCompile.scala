@@ -94,7 +94,12 @@ object ZincCompile extends ConfigPimps{
 
 
     try {
-      val result = zinc.run(arguments, projectPhase.module.rootAbsoluteFile, projectPhase.compilationOutputStream, projectPhase.compilationOutputStream)
+      val result = zinc.run(
+        arguments, 
+        projectPhase.module.rootAbsoluteFile, 
+        rootProject.compilationOutputStream(phase),
+        rootProject.compilationOutputStream(phase)
+      )
       val analysis = Compiler.analysis(projectPhase.compilationCacheFile)
       projectPhase.module.analyses.put(projectPhase.outputDir, analysis)
       result

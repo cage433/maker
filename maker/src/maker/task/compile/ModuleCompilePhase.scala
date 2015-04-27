@@ -81,27 +81,11 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   def lastCompilationFailed() = compilationFailedMarker.exists
   def markCompilatonFailure() = compilationFailedMarker.touch
 
-  def compilerLogger = {
-    val lgr = ConsoleLogger(compilationOutputStream)
-    lgr
-  }
-
   def moduleCompilationErrorsFile = {
     phase match {
       case TestCompilePhase =>  file(module.rootAbsoluteFile, "module-vim-test-compile-errors")
       case SourceCompilePhase => file(module.rootAbsoluteFile, "module-vim-compile-errors")
     }
-  }
-  def compilationOutputStream : PrintStream = {
-    val outputStream = if (module.isTestProject){
-      new NullOutputStream
-    } else {
-      new TeeOutputStream(
-        Console.err,
-        new FileOutputStream(moduleCompilationErrorsFile)
-      )
-    }
-    new PrintStream(outputStream)
   }
 
 }

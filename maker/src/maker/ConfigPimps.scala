@@ -33,7 +33,6 @@ trait ConfigPimps {
     def resourceCache = mkdirs(file(config.getString("maker.resource-cache")))
 
     def httpResolvers = config.getStringList("maker.http.resolvers").toList.grouped(2)
-    def resolvers = config.getStringList("maker.http.resolvers").toList.grouped(2).map(_(1))
 
     def httpHeaders = config.getStringList("maker.http.headers").map{
       case header =>

@@ -3,7 +3,7 @@ package maker.project
 import maker.task._
 import maker._
 import maker.task.compile._
-import java.io.File
+import java.io.{File, FileOutputStream}
 import maker.utils._
 import maker.utils.FileUtils._
 import maker.task.tasks._
@@ -14,6 +14,8 @@ import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
 import scala.collection.immutable.Nil
 import com.typesafe.config.Config
+import org.apache.commons.io.output.TeeOutputStream
+import java.util.concurrent.atomic.AtomicReference
 
 trait ProjectTrait extends ConfigPimps{
   protected def root : File
@@ -47,8 +49,37 @@ trait ProjectTrait extends ConfigPimps{
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
 
-  def isTestProject : Boolean 
   def topLevelCompilationErrorsFile = file("vim-compilation-errors")
+
+  def runMainOutputStream = {
+    val runLogFile = file(rootAbsoluteFile, "runlog.out")
+    new TeeToFileOutputStream(runLogFile)
+  }
+
+  def compilationOutputStream(phase : CompilePhase) = {
+    val moduleCompilationErrorsFile = phase match {
+      case TestCompilePhase =>  file(rootAbsoluteFile, "module-vim-test-compile-errors")
+      case SourceCompilePhase => file(rootAbsoluteFile, "module-vim-compile-errors")
+    }
+    new TeeOutputStream(
+      Console.err,
+      new FileOutputStream(moduleCompilationErrorsFile)
+    )
+  }
+
+  private val scalatestOutputParameters_ = new AtomicReference[String]("-oHL")
+  def scalatestOutputParameters : String = scalatestOutputParameters_.get
+
+  def toggleTestExceptions {
+    if (scalatestOutputParameters == "-oHL")
+      scalatestOutputParameters_.set("-oFHL")
+    else
+      scalatestOutputParameters_.set("-oHL")
+  }
+
+  def reportBuildResult : Boolean = true
+
+  def systemExitOnExecModeFailures : Boolean = true
 
   protected def transitiveClosure[A](start : Seq[A], expand : A => Seq[A]) : Seq[A] = {
     var closure : Seq[A] = Nil
@@ -87,10 +118,10 @@ trait ProjectTrait extends ConfigPimps{
   def testCompile = execute(testCompileTaskBuild)
   def tcc = continuously(testCompileTaskBuild)
   
-  def testFailedSuitesBuild(verbose : Boolean) = {
-    transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _, verbose)))
+  def testFailedSuitesBuild = {
+    transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _)))
   }
-  def testFailedSuites : BuildResult = execute(testFailedSuitesBuild(verbose = false))
+  def testFailedSuites : BuildResult = execute(testFailedSuitesBuild)
 
   def updateTaskBuild(forceSourceUpdate : Boolean) = {
     transitiveBuild(UpdateTask(this, forceSourceUpdate = forceSourceUpdate) :: Nil)
@@ -110,46 +141,15 @@ trait ProjectTrait extends ConfigPimps{
     setUp(bld.graph)
     val result = bld.execute
     tearDown(bld.graph, result)
-    if (result.failed && config.execMode){
+    if (result.failed && config.execMode && systemExitOnExecModeFailures){
       logger.error(bld + " failed - exiting")
       System.exit(1)
     }
     BuildResult.lastResult.set(Some(result))
-    if (! isTestProject){
-      ScreenUtils.clear
+    if(reportBuildResult)
       result.reportResult
-    }
     result
   }
-
-  //private [project] def classpathComponents(compilePhase : CompilePhase) = {
-    //val classFileDirectories : Seq[File] = upstreamModules.map{
-      //module => 
-        //module.outputDir(SourceCompilePhase)
-    //}
-
-    //val resources : Seq[File] = upstreamModules.map(_.resourceDir(SourceCompilePhase))
-    //val testResources : Seq[File] = compilePhase match {
-      //case SourceCompilePhase => Nil
-      //case TestCompilePhase => 
-        //upstreamModules.map(_.resourceDir(TestCompilePhase))
-    //}
-
-    //val testClassFileDirectories = compilePhase match {
-      //case SourceCompilePhase => Nil
-      //case TestCompilePhase   => 
-        //upstreamTestModules.map(_.outputDir(TestCompilePhase))
-    //}
-    //val jars : Seq[File] = compilePhase match {
-      //case SourceCompilePhase => 
-        //findJars(managedLibDir)
-      //case TestCompilePhase   =>
-        //findJars(managedLibDir) ++: findJars(testManagedLibDir)
-    //}
-    //val unmanagedLibs = findJars(upstreamModules.flatMap(_.unmanagedLibDirs))
-    //managedResourceDir +: jars ++: classFileDirectories ++: 
-      //testClassFileDirectories ++: resources ++: testResources ++: unmanagedLibs
-  //}
 
   private [project] def compilationTargetDirectories = upstreamModules.map(_.outputDir(SourceCompilePhase))
   private [project] def resourceDirectories = upstreamModules.map(_.resourceDir(SourceCompilePhase))

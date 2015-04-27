@@ -2,16 +2,17 @@ package maker.task.tasks
 
 import maker.utils.FileUtils._
 import maker.utils.os.Command
-import org.scalatest.{Matchers, FunSuite}
-import maker.project.TestModule
+import org.scalatest.{Matchers, FunSuite, ParallelTestExecution}
+import maker.project.{TestModule, TestModuleBuilder}
 
-class RunUnitTestsTaskTests extends FunSuite with Matchers {//with ParallelTestExecution{
+class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExecution{
 
   test("Broken tests fail"){
     withTestDir{
       dir => 
-        TestModule.createMakerProjectFile(dir)
-        val module = new TestModule(dir, "RunUnitTestsTaskTestsModule")
+        TestModuleBuilder.createMakerProjectFile(dir)
+        val module = new TestModuleBuilder(dir, "RunUnitTestsTaskTestsModule")
+
         module.appendDefinitionToProjectFile(dir)
         module.writeTest(
           "foo/Test.scala",
@@ -21,14 +22,14 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers {//with ParallelTestE
             import org.scalatest.FunSuite
 
             class Test extends FunSuite{
-              test("This should fail"){
+              test("Deliberately broken test"){
                 assert(1 === 2)
               }
             }
           """
         )
-        module.testOutputFile.exists should be (false)
-        val makerClasspath = s"""${file("maker", "target-maker", "classes").getAbsolutePath}:${file("maker", "target-maker", "test-classes").getAbsolutePath}"""
+        val testOutputFile = file(dir, "maker-test-output")
+        testOutputFile.exists should be (false)
         val makerScript = file("maker.py").getAbsolutePath
         val command = Command(
           "python",
@@ -37,50 +38,30 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers {//with ParallelTestE
           "RunUnitTestsTaskTestsModule.test",
           "-z",
           "-l",
-          file("logback-unit-tests.xml").getAbsolutePath,
+          file(dir, "logback.xml").getAbsolutePath,
           "-L",
           "40"
         ).
         withWorkingDirectory(dir).
-        withExitValues(0, 1)
+        withExitValues(0, 1).
+        withNoOutput
 
         val result = command.run
         result should equal (1)
-        module.testOutputFile.exists should be (true)
-    }
-  }
-
-  ignore("Test reports picks up failure"){
-    withTempDir{
-      dir => 
-        val module = new TestModule(dir, "RunUnitTestsTaskTests")
-        module.writeTest(
-          "foo/Test.scala",
-          """
-            package foo
-
-            import org.scalatest.FunSuite
-
-            class Test extends FunSuite{
-              test("This should fail"){
-                assert(1 === 2)
-              }
-            }
-          """
-        )
-        module.test
-
-        assert(module.testOutputFile.exists, "Test output should exist")
+        testOutputFile.exists should be (true)
     }
   }
 
 
-  ignore("Unit test runs"){
+  test("Unit test runs"){
     withTempDir{
       root => 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests")
+        TestModuleBuilder.createMakerProjectFile(root)
+        val module = new TestModuleBuilder(root, "RunUnitTestsTaskTestsModule2")
 
-        proj.writeSrc(
+        module.appendDefinitionToProjectFile(root)
+
+        module.writeSrc(
           "foo/Foo.scala", 
           """
           package foo
@@ -90,7 +71,7 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers {//with ParallelTestE
           }
           """
         )
-        proj.writeTest(
+        module.writeTest(
           "foo/FooTest.scala",
           """
           package foo
@@ -104,112 +85,144 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers {//with ParallelTestE
           }
           """
         )
-        assert(proj.test.succeeded)
+        val makerScript = file("maker.py").getAbsolutePath
+        val command = Command(
+          "python",
+          makerScript,
+          "-E",
+          "RunUnitTestsTaskTestsModule2.test",
+          "-z",
+          "-l",
+          file(root, "logback.xml").getAbsolutePath,
+          "-L",
+          "40"
+        ).
+        withWorkingDirectory(root).
+        withExitValues(0, 1).
+        withNoOutput
+
+        val result = command.run
+        result should equal (0)
     }
   }
 
-  ignore("Failing test fails again"){
+
+  test("Can re-run failing tests"){
     withTempDir{
       root => 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests")
-        proj.writeSrc(
-          "foo/Foo.scala", 
-          """
-          package foo
-          case class Foo(x : Double){
-            val fred = 10
-            def double() = x + x
-          }
-          """
-        )
-        val testFile = proj.writeTest(
-          "foo/FooTest.scala",
-          """
-          package foo
-          import org.scalatest.FunSuite
-          import java.io._
-          class FooTest extends FunSuite{
-            val f = new File(".")
-            test("test foo"){
-              assert(1 === 2)
-            }
-          }
-          """
-        )
-        assert(proj.testCompile.succeeded, "Expected compilation to succeed")
+        TestModuleBuilder.createMakerProjectFile(root)
 
-        assert(proj.test.failed, "Expected test to fail")
-    }
-  }
+        // these files will be created by the module funcitons - as a sanity check that they run
+        val file1 = file(root, "file1")
+        val file2 = file(root, "file2")
+        file1.exists should be (false)
+        file2.exists should be (false)
 
-  ignore("Can re-run failing tests"){
-    withTempDir{
-      root => 
-        val proj = new TestModule(root, "RunUnitTestsTaskTests")
+        val module = new TestModuleBuilder(root, "RunUnitTestsTaskTestsModule3").
+        withExtraCode(
+          s"""|
+              | import maker.utils.FileUtils._
+              | def checkTestsWhenOneIsBroken{
+              |   test
+              |   assert(testResults.failedTests.size == 1, "Should have exactly one failure in first run")
+              |   assert(testResults.passedTests.size == 1, "Should have exactly one pass in first run")
+              |
+              |   testFailedSuites
+              |   assert(testResults.failedTests.size == 1, "Should have exactly one failure when first running failed suites")
+              |   assert(testResults.passedTests.size == 0, "Should have exactly one pass when first running failed suites")
+              |   file("${file1.absPath}").touch
+              | }
+              |
+              | def checkTestsAfterFix{
+              |   testFailedSuites
+              |   assert(testResults.failedTests.size == 0, "Should have no failures")
+              |   assert(testResults.passedTests.size == 1, "Should have exactly one pass")
+              |   test
+              |   assert(testResults.failedTests.size == 0, "Should have no failures")
+              |   assert(testResults.passedTests.size == 2, "Should have exactly two pass")
+              |   file("${file2.absPath}").touch
+              | }
+              |""".stripMargin
+        ).withNoExecModeExit
 
-        proj.writeTest(
+        module.appendDefinitionToProjectFile(root)
+
+        module.writeTest(
           "foo/GoodTest.scala",
           """
           package foo
           import org.scalatest.FunSuite
           class GoodTest extends FunSuite{
-            test("test foo"){
+            test("this is a good test"){
               assert(1 === 1)
             }
           }
           """
         )
-        proj.writeTest( 
+        module.writeTest( 
           "foo/BadTest.scala",
           """
           package foo
           import org.scalatest.FunSuite
           class BadTest extends FunSuite{
-            test("test foo"){
+            test("this test should fail"){
               assert(1 === 2)
             }
           }
           """
         )
 
-        proj.test
-        assert(proj.testResults.failedTests.size === 1, "Expecting exactly one failure")
-        assert(proj.testResults.passedTests.size === 1, "Expecting exactly one pass")
+        val makerScript = file("maker.py").getAbsolutePath
+        var command = Command(
+          "python",
+          makerScript,
+          "-E",
+          "RunUnitTestsTaskTestsModule3.checkTestsWhenOneIsBroken",
+          "-z",
+          "-l",
+          file(root, "logback.xml").getAbsolutePath,
+          "-L",
+          "40"
+        ).
+        withWorkingDirectory(root).
+        withExitValues(0, 1).
+        withNoOutput
 
-        //This time we should only run the failed test
-        //so there should be no passing tests
-        proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 1)
-        assert(proj.testResults.passedTests.size === 0)
+        var result = command.run
+        result should equal (0)
+        file1.exists should be (true)
 
         //Repair the broken test, check there is one passing test
-        proj.writeTest( 
+        module.writeTest( 
           "foo/BadTest.scala",
           """
           package foo
           import org.scalatest.FunSuite
           class BadTest extends FunSuite{
-            test("test foo"){
+            test("this test has been fixed"){
               assert(1 === 1)
             }
           }
           """
         )
-        proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 0)
-        assert(proj.testResults.passedTests.size === 1)
+        command = Command(
+          "python",
+          makerScript,
+          "-E",
+          "RunUnitTestsTaskTestsModule3.checkTestsAfterFix",
+          "-z",
+          "-l",
+          file(root, "logback.xml").getAbsolutePath,
+          "-L",
+          "40"
+        ).
+        withWorkingDirectory(root).
+        withExitValues(0, 1).
+        withNoOutput
 
-        //Re-run failed tests - should do nothing
-        proj.testFailedSuites
-        assert(proj.testResults.failedTests.size === 0)
-        assert(proj.testResults.passedTests.size === 1)
-
-
-        //Run all tests - should have two passes
-        proj.test
-        assert(proj.testResults.failedTests.size === 0)
-        assert(proj.testResults.passedTests.size === 2)
-
+        result = command.run
+        result should equal (0)
+        file2.exists should be (true)
     }
   }
 

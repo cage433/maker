@@ -92,24 +92,22 @@ case class Project(
 
   def dependencies = upstreamModules.flatMap(_.dependencies).distinct
 
-  def testTaskBuild(verbose : Boolean) = {
+  def testTaskBuild = {
     // For a project, `test` runs tests of all modules
     transitiveBuild(
       RunUnitTestsTask(
         s"Unit tests for $this", 
         upstreamModules,
         rootProject = this, 
-        classOrSuiteNames_ = None,
-        verbose = verbose
+        classOrSuiteNames_ = None
       ) :: Nil
     )
   }
 
-  def test(verbose : Boolean) : BuildResult = {
-    execute(testTaskBuild(verbose))
+  def test : BuildResult = {
+    execute(testTaskBuild)
   }
 
-  def test : BuildResult = test(verbose = false)
 
   def testCompileTaskBuild = transitiveBuild(
     upstreamModules.map(TestCompileTask(this, _))

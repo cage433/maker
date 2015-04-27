@@ -27,15 +27,14 @@ class Module(
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
   extends ProjectTrait
-  with TmuxIntegration
   with DependencyPimps
 {
 
-  def isTestProject = false
   import Module.logger
   def modules = this :: Nil
   protected val upstreamModulesForBuild = List(this)
 
+  def tearDown(graph : Dependency.Graph, result : BuildResult) = true
   def dependencies() : Seq[AetherDependency]  = Nil
 
   def phaseDirectory(phase : CompilePhase) = mkdir(file(makerDirectory, phase.name))
@@ -106,7 +105,7 @@ class Module(
 
   def cleanOnly = executeSansDependencies(CleanTask(this))
 
-  def testTaskBuild(verbose : Boolean) = {
+  def testTaskBuild = {
     // For a module, the `test` task runs just tha module's tests.
     // To run all tests, use the containing project
     transitiveBuild(
@@ -114,26 +113,21 @@ class Module(
         s"Unit tests for $this", 
         modules = this :: Nil, 
         rootProject = this, 
-        classOrSuiteNames_ = None,
-        verbose = verbose
+        classOrSuiteNames_ = None
       ) :: Nil
     )
   }
 
-  def test(verbose : Boolean) : BuildResult = {
-    execute(testTaskBuild(verbose))
-  }
 
-  def test : BuildResult = test(verbose = false)
+  def test : BuildResult = execute(testTaskBuild)
 
   def testCompileTaskBuild = transitiveBuild(
     (this +: testModuleDependencies).map(TestCompileTask(this, _))
   )
 
-  def testFailuredSuitesOnly(verbose : Boolean) : BuildResult = executeSansDependencies(
-    RunUnitTestsTask.failingTests(this, this, verbose)
+  def testFailuredSuitesOnly : BuildResult = executeSansDependencies(
+    RunUnitTestsTask.failingTests(this, this)
   )
-  def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(false)
   def updateOnly = executeSansDependencies(UpdateTask(this, forceSourceUpdate = false))
 
 

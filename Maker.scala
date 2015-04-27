@@ -35,7 +35,10 @@ val extraPomInfo : List[NodeSeq] = {
 lazy val testReporterModule = new Module(
   root = file("test-reporter").asAbsoluteFile, 
   name = "maker-test-reporter"
-) with ClassicLayout {
+) 
+  with ClassicLayout 
+  with TmuxIntegration
+{
   override def resources() = {
     Vector(
       "org.scalatest" % "scalatest_2.10" %  "2.2.0"

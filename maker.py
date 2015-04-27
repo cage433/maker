@@ -61,7 +61,7 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/eclipse/aether", "aether-api", "1.0.0.v20140518"),
 	(MAVEN, "org/eclipse/aether", "aether-spi", "1.0.0.v20140518"),
 	(MAVEN, "org/eclipse/aether", "aether-util", "1.0.0.v20140518"),
-        (MAVEN, "org.eclipse.aether", "aether-test-util", "1.0.0.v20140518"),
+  (MAVEN, "org.eclipse.aether", "aether-test-util", "1.0.0.v20140518"),
 	(MAVEN, "org/codehaus/plexus", "plexus-component-annotations", "1.5.5"),
 	(MAVEN, "org/codehaus/plexus", "plexus-utils", "3.0.20"),
 	(MAVEN, "org/eclipse/aether", "aether-connector-basic", "1.0.0.v20140518"),
@@ -84,7 +84,7 @@ def read_args():
 
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
-    parser.add_argument('-l', '--logback-config', dest='logback_config', default=os.path.join('logback-config', 'logback.xml'))
+    parser.add_argument('-l', '--logback-config', dest='logback_file')
     parser.add_argument('-L', '--python_log_level', dest='python_log_level', default=logging.INFO)
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
     parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
@@ -92,6 +92,20 @@ def read_args():
     parser.add_argument('-e', '--extra-classpath', dest='extra_classpath', help='Colon separated list of directories/jars')
     parser.add_argument('-E', '--execute-command', dest='execute_command', help='maker command to run (and then exit)')
     args = parser.parse_args()
+
+
+def logback_file():
+  if args.logback_file:
+    return os.path.abspath(args.logback_file)
+  else:
+    if os.path.isfile("logback.xml"):
+      logback_file = os.path.abspath("logback.xml")
+      log.info("No logback file provided, using " + logback_file)
+      return logback_file
+    else:
+      log.critical("No logback file provided or found - exiting")
+      sys.exit(1)
+
 
 
 def create_logger():
@@ -130,7 +144,7 @@ def project_definition_file():
         return scala_files_in_pwd[0]
     else:
         log.critical("Maker requires a project file - exiting")
-        exit(1)
+        sys.exit(1)
 
 
 def mkdir_p(directory):
@@ -176,10 +190,10 @@ class Resource(object):
 
         except HTTPError, e:
             log.critical("HTTP Error: %s %s", e.code, url)
-            exit(1)
+            sys.exit(1)
         except URLError, e:
             log.critical("URL Error: %s %s", e.reason, url)
-            exit(1)
+            sys.exit(1)
 
 
 
@@ -221,11 +235,11 @@ def classpath(jars_and_directories):
 
 def maker_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
-    return [os.path.join(maker_root, module, "target-maker", "classes") for module in ["utils", "maker"]]
+    return [os.path.join(maker_root, module, "target-maker", "classes") for module in ["maker"]]
 
 def maker_test_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
-    return [os.path.join(maker_root, module, "target-maker", "test-classes") for module in ["utils", "maker"]]
+    return [os.path.join(maker_root, module, "target-maker", "test-classes") for module in ["maker"]]
 
 
 
@@ -256,7 +270,7 @@ def launch_repl():
             "-Dsbt.log.format=false",
             "-Drebel.log=true",
             "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + \
-                ["-Dmaker.logback.unit-tests-config=" + args.logback_config, "-Dlogback.configurationFile=" + args.logback_config,
+                ["-Dlogback.configurationFile=" + logback_file(),
             "scala.tools.nsc.MainGenericRunner",
             "-cp", classpath(classpath_components),
             "-Yrepl-sync", 

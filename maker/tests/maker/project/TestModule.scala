@@ -81,9 +81,7 @@ class TestModule(
 
   val logFile = file(root, "maker.log")
   val patternLine = "<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>"
-  //writeMakerProjectDefinitionFile
 
-  override def isTestProject = true
 
   def writeMakerProjectDefinitionFile{
     import maker.utils.RichString._
@@ -123,6 +121,32 @@ object TestModule{
             |import java.io.File
             |""".stripMargin
     writeToFile(projectFile, text)
+    writeLogbackConfig(rootDir)
+  }
+
+  def writeLogbackConfig(rootDir : File, level : String = "ERROR"){
+    println(s"Writing logback to $rootDir")
+    val configFile = file(rootDir, "logback.xml")
+    writeToFile(
+      configFile,
+      s"""
+        |<configuration scan="true" scanPeriod="3 seconds">
+        |        
+        |  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        |    <encoder>
+        |      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+        |      <immediateFlush>true</immediateFlush>
+        |    </encoder>
+        |    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+        |      <level>$level</level>
+        |    </filter>
+        |  </appender>
+        |
+        |  <root level="$level">
+        |    <appender-ref ref="CONSOLE" />
+        |  </root>
+        |</configuration>""".stripMargin
+    )
   }
 }
 trait HasDummyCompiler{
