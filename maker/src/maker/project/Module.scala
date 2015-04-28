@@ -35,7 +35,7 @@ class Module(
   def modules = this :: Nil
   protected val upstreamModulesForBuild = List(this)
 
-  def tearDown(graph : Dependency.Graph, result : BuildResult) = true
+  override def tearDown(graph : Dependency.Graph, result : BuildResult) = true
   def dependencies : Seq[RichDependency]  = Nil
 
   def compilationMetadataDirectory(scalaVersion : ScalaVersion, phase : CompilePhase) = 

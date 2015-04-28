@@ -7,7 +7,7 @@ import maker.ScalaVersion
 
 class DocTaskTests extends FreeSpec with Matchers{
   "Doc should be produced " in {
-    withTestDir{
+    withTempDir{
       dir => 
         val module = new TestModule(dir, "DocTaskTests"){
           override def defaultScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT

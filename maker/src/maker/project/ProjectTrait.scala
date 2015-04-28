@@ -119,7 +119,7 @@ trait ProjectTrait extends ConfigPimps{
     }
     ! topLevelCompilationErrorsFile.exists()
   }
-  def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean
+  def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean = true
 
   protected def transitiveBuild(rootTasks : Seq[Task]) = {
     Build(

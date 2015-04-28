@@ -50,7 +50,7 @@ trait TmuxIntegration extends ProjectTrait{
       }
     }
 
-    def tearDown(graph : Dependency.Graph, result : BuildResult) = {
+    override def tearDown(graph : Dependency.Graph, result : BuildResult) = {
       tmuxReportResult(result)
       true
     }

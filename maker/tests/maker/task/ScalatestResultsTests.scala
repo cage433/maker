@@ -16,7 +16,7 @@ class ScalatestResultsTests extends FunSuite{
   }
 
   test("Errors are correctly counted"){
-    withTestDir{
+    withTempDir{
       dir =>
         val proj = new TestModule(dir, "ScalatestResultsTests")
         println(proj.defaultScalaVersion)

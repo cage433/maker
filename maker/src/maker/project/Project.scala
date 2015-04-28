@@ -18,7 +18,9 @@ case class Project(
   config : Config = ConfigFactory.load(),
   topLevelExcludedFolders:List[String] = Nil,
   isTestProject : Boolean = false
-) extends TmuxIntegration {
+) 
+  extends ProjectTrait 
+{
 
   def projectRoot = root.asAbsoluteFile
 
