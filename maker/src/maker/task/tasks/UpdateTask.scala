@@ -83,8 +83,8 @@ case class UpdateTask(project : ProjectTrait, majorScalaVersion : String, forceS
   case class BinaryDownload(scope : String) extends DownloadType{
     def isOfCorrectType(artifact : Artifact) = true
     def downloadDirectory = scope match {
-      case JavaScopes.COMPILE => project.managedLibDir
-      case JavaScopes.TEST => project.testManagedLibDir
+      case JavaScopes.COMPILE => project.managedLibDir(majorScalaVersion)
+      case JavaScopes.TEST => project.testManagedLibDir(majorScalaVersion)
       case _ => ???
     }
   }
@@ -93,8 +93,8 @@ case class UpdateTask(project : ProjectTrait, majorScalaVersion : String, forceS
     // Aether downloads the binary when sources aren't in the repository - no idea why
     def isOfCorrectType(artifact : Artifact) = Option(artifact.getClassifier) == Some("sources")
     def downloadDirectory = scope match {
-      case JavaScopes.COMPILE => project.managedLibSourceDir
-      case JavaScopes.TEST => project.testManagedLibSourceDir
+      case JavaScopes.COMPILE => project.managedLibSourceDir(majorScalaVersion)
+      case JavaScopes.TEST => project.testManagedLibSourceDir(majorScalaVersion)
       case _ => ???
     }
   }

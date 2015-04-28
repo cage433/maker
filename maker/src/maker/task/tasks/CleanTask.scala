@@ -28,11 +28,11 @@ case class CleanTask(project : ProjectTrait, majorScalaVersion : String) extends
       module => 
         cleanRegularFilesLeavingDirectories(module.classDirectory(majorScalaVersion, SourceCompilePhase))
         cleanRegularFilesLeavingDirectories(module.classDirectory(majorScalaVersion, TestCompilePhase))
-        cleanRegularFilesLeavingDirectories(module.managedLibDir)
+        cleanRegularFilesLeavingDirectories(module.managedLibDir(majorScalaVersion))
         cleanRegularFilesLeavingDirectories(module.managedResourceDir)
-        cleanRegularFilesLeavingDirectories(module.managedLibSourceDir)
-        cleanRegularFilesLeavingDirectories(module.testManagedLibDir)
-        cleanRegularFilesLeavingDirectories(module.testManagedLibSourceDir)
+        cleanRegularFilesLeavingDirectories(module.managedLibSourceDir(majorScalaVersion))
+        cleanRegularFilesLeavingDirectories(module.testManagedLibDir(majorScalaVersion))
+        cleanRegularFilesLeavingDirectories(module.testManagedLibSourceDir(majorScalaVersion))
         recursiveDelete(module.compilePhase.phaseDirectory)
         recursiveDelete(module.testCompilePhase.phaseDirectory)
         module.compilePhase.compilationCacheFile.delete
@@ -42,11 +42,11 @@ case class CleanTask(project : ProjectTrait, majorScalaVersion : String) extends
     project match {
       case p : Project => 
         recursiveDelete(p.packageDir)
-        cleanRegularFilesLeavingDirectories(p.managedLibDir)
+        cleanRegularFilesLeavingDirectories(p.managedLibDir(majorScalaVersion))
         cleanRegularFilesLeavingDirectories(p.managedResourceDir)
-        cleanRegularFilesLeavingDirectories(p.managedLibSourceDir)
-        cleanRegularFilesLeavingDirectories(p.testManagedLibDir)
-        cleanRegularFilesLeavingDirectories(p.testManagedLibSourceDir)
+        cleanRegularFilesLeavingDirectories(p.managedLibSourceDir(majorScalaVersion))
+        cleanRegularFilesLeavingDirectories(p.testManagedLibDir(majorScalaVersion))
+        cleanRegularFilesLeavingDirectories(p.testManagedLibSourceDir(majorScalaVersion))
       case _ =>
     }
 

@@ -241,14 +241,22 @@ object Module{
     }
 
 
-    val jarNames = proj.managedJars.map(_.getName).toSet
-    proj.immediateUpstreamModules.foreach{
-      upstreamModule =>
-        val upstreamJarNames = upstreamModule.upstreamModules.flatMap(_.managedJars).map(_.getName).toSet
-        val redundantJarNames = upstreamJarNames intersect jarNames
-        if (redundantJarNames.nonEmpty && proj.warnUnnecessaryResources)
-          logger.warn("Module " + proj.name + " doesn't need jars " + redundantJarNames.mkString(", ") + " as they are supplied by " + upstreamModule.name)
+    val strictlyUpstreamDependencies = (proj.immediateUpstreamModules ++ proj.testModuleDependencies).distinct.map{
+      module => 
+        module -> module.upstreamDependencies
+    }.toMap
+
+    proj.dependencies.foreach{
+      dependency => 
+        strictlyUpstreamDependencies.find{
+          case (_, upstreamDeps) => upstreamDeps.contains(dependency)
+        } match {
+          case Some((upstreamModule, _)) => 
+            logger.warn("Module " + proj.name + " doesn't need dependency " + dependency + " as it is supplied by " + upstreamModule.name)
+          case None => 
+        }
     }
+
 
   }
 

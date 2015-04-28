@@ -164,20 +164,20 @@ trait ProjectTrait extends ConfigPimps{
     upstreamModules.map(_.classDirectory(majorScalaVersion))
   private [project] def resourceDirectories = upstreamModules.map(_.resourceDir(SourceCompilePhase))
   private [project] def testResourceDirectories = upstreamModules.map(_.resourceDir(TestCompilePhase))
-  private [project] def dependencyJars = findJars(managedLibDir)
-  private [project] def testDependencyJars = findJars(testManagedLibDir)
+  private [project] def dependencyJars(majorScalaVersion : String) = findJars(managedLibDir(majorScalaVersion))
+  private [project] def testDependencyJars(majorScalaVersion : String) = findJars(testManagedLibDir(majorScalaVersion))
   private [project] def unmanagedLibs = findJars(upstreamModules.flatMap(_.unmanagedLibDirs))
 
   def compilationClasspathComponents(majorScalaVersion : String) = 
       compilationTargetDirectories(majorScalaVersion) ++:
-      dependencyJars ++:
+      dependencyJars(majorScalaVersion) ++:
       unmanagedLibs
 
   def compilationClasspath(majorScalaVersion : String) = Module.asClasspathStr(compilationClasspathComponents(majorScalaVersion))
 
   def testCompilationClasspathComponents(majorScalaVersion : String) = 
       compilationTargetDirectories(majorScalaVersion) ++:
-      testDependencyJars ++:
+      testDependencyJars(majorScalaVersion) ++:
       unmanagedLibs ++:
       (this match {
         case _ : Project => 
@@ -192,7 +192,7 @@ trait ProjectTrait extends ConfigPimps{
 
   def runtimeClasspathComponents(majorScalaVersion : String) = 
     compilationTargetDirectories(majorScalaVersion) ++:
-    dependencyJars ++:
+    dependencyJars(majorScalaVersion) ++:
     unmanagedLibs ++:
     resourceDirectories 
 
@@ -201,7 +201,7 @@ trait ProjectTrait extends ConfigPimps{
 
   def testRuntimeClasspathComponents(majorScalaVersion : String) : Seq[File] =
     compilationTargetDirectories(majorScalaVersion) ++:
-    testDependencyJars ++:
+    testDependencyJars(majorScalaVersion) ++:
     unmanagedLibs ++:
     resourceDirectories ++:
     (this match {
@@ -312,16 +312,14 @@ trait ProjectTrait extends ConfigPimps{
   def testClassNames(rootProject : ProjectTrait, majorScalaVersion : String) : Seq[String]
   def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
 
-  def managedLibDir = file(rootAbsoluteFile, "lib_managed")
-  def testManagedLibDir = file(rootAbsoluteFile, "test_lib_managed")
-  def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed")
-  def testManagedLibSourceDir = file(rootAbsoluteFile, "test_lib_src_managed")
+  def managedLibDir(majorScalaVersion : String) = file(rootAbsoluteFile, "lib_managed", majorScalaVersion)
+  def testManagedLibDir(majorScalaVersion : String) = file(rootAbsoluteFile, "test_lib_managed", majorScalaVersion)
+  def managedLibSourceDir(majorScalaVersion : String) = file(rootAbsoluteFile, "lib_src_managed", majorScalaVersion)
+  def testManagedLibSourceDir(majorScalaVersion : String) = file(rootAbsoluteFile, "test_lib_src_managed", majorScalaVersion)
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Seq[File] = List(file(rootAbsoluteFile, "lib"))
 
   def upstreamDependencies = (upstreamModules ++ testModuleDependencies).distinct.flatMap(_.dependencies)
-
-  protected def managedJars = findJars(managedLibDir)
 
   def testClasspathLoader(majorScalaVersion : String) = new URLClassLoader(
     testRuntimeClasspathComponents(majorScalaVersion).map(_.toURI.toURL).toArray,
