@@ -41,7 +41,7 @@ class PublishLocalTaskTests
     import project.config
     val pom = XML.loadFile(project.publishLocalPomFile(version))
     val pomDependencies = pom \\ "dependency"
-    val dependencies = config.scalaVersion.scalaLibraryResource +: project.dependencies
+    val dependencies = (project.defaultScalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.dependency(project.defaultScalaVersion))
 
     dependencies should allSatisfy {
       dependency : AetherDependency => 
@@ -79,7 +79,7 @@ class PublishLocalTaskTests
 
         module.writeCaseObject("Foo", "testPublishLocal")
 
-        proj.publishLocal(version, signArtifacts = false, majorScalaVersion = proj.defaultMajorScalaVersion)
+        proj.publishLocal(version, signArtifacts = false, scalaVersion = proj.defaultScalaVersion)
 
         checkPublishedPomMatchesCoordinates(proj, version)
         checkPublishedPomIncludesAllDependencies(proj, version)
@@ -118,7 +118,7 @@ class PublishLocalTaskTests
         val project = new Project("publish test", dir, moduleA :: moduleB :: Nil, isTestProject = true){
           override def organization = Some("org.org")
         }
-        project.publishLocal(version, signArtifacts = false, majorScalaVersion = project.defaultMajorScalaVersion)
+        project.publishLocal(version, signArtifacts = false, scalaVersion = project.defaultScalaVersion)
 
         checkPublishedPomMatchesCoordinates(project, version)
         checkPublishedPomIncludesAllDependencies(project, version)
@@ -146,7 +146,7 @@ class PublishLocalTaskTests
           override def organization = Some("org.org")
         }
 
-        topLevel.publishLocal(version, signArtifacts = false, majorScalaVersion = topLevel.defaultMajorScalaVersion)
+        topLevel.publishLocal(version, signArtifacts = false, scalaVersion = topLevel.defaultScalaVersion)
 
         checkPublishedPomMatchesCoordinates(topLevel, version)
 

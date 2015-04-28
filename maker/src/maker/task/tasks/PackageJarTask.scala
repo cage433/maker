@@ -11,18 +11,19 @@ import org.apache.commons.io.filefilter.TrueFileFilter
 import scala.collection.JavaConverters._
 import scala.collection.immutable.VectorBuilder
 import scala.tools.nsc.io.Jar
+import maker.ScalaVersion
 
 case class PackageJarTask(
   project: Project, 
   version : Option[String],
-  majorScalaVersion : String
+  scalaVersion : ScalaVersion
 ) 
   extends Task with EitherPimps
 {
 
   def name = "Package Main Jar"
 
-  def upstreamTasks = DocTask(project, majorScalaVersion) :: Nil
+  def upstreamTasks = DocTask(project, scalaVersion) :: Nil
 
   // TODO - find out why this is synchronized
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {
@@ -36,7 +37,7 @@ case class PackageJarTask(
     val modules = project.upstreamModules
     val result = buildJar(
                     packageJar(version),
-                    modules.map(_.classDirectory(majorScalaVersion, SourceCompilePhase)) ++ modules.map(_.resourceDir(SourceCompilePhase))
+                    modules.map(_.classDirectory(scalaVersion, SourceCompilePhase)) ++ modules.map(_.resourceDir(SourceCompilePhase))
                   ) andThen
                   buildJar(
                     sourcePackageJar(version),

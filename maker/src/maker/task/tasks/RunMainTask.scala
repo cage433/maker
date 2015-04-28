@@ -12,7 +12,7 @@ import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import maker.ConfigPimps
+import maker.{ConfigPimps, ScalaVersion}
 
 
 /**
@@ -23,7 +23,7 @@ case class RunMainTask(
   className : String, 
   opts : Seq[String], 
   mainArgs : Seq[String],
-  majorScalaVersion : String
+  scalaVersion : ScalaVersion
 ) 
   extends Task 
   with ConfigPimps
@@ -32,7 +32,7 @@ case class RunMainTask(
   import baseProject.config
 
   def module = baseProject
-  def upstreamTasks = baseProject.testCompileTaskBuild(majorScalaVersion).tasks
+  def upstreamTasks = baseProject.testCompileTaskBuild(scalaVersion).tasks
 
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
@@ -44,7 +44,7 @@ case class RunMainTask(
       "-Dlogback.configurationFile=" + "logback.xml"
     ) ++: opts
     var cmd = Command.scalaCommand(
-      classpath = baseProject.testCompilationClasspath(majorScalaVersion),
+      classpath = baseProject.testCompilationClasspath(scalaVersion),
       klass = className,
       opts = optsToUse,
       args = mainArgs

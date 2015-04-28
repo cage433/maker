@@ -4,6 +4,7 @@ import org.eclipse.aether.util.artifact.JavaScopes
 import org.eclipse.aether.artifact.DefaultArtifact
 import org.eclipse.aether.graph.{Exclusion, Dependency}
 import scala.collection.JavaConversions._
+import maker.ScalaVersion
 
 
 case class RichDependency(
@@ -17,21 +18,22 @@ case class RichDependency(
   isOptional : Boolean = false,
   exclusions : Seq[Exclusion] = Nil
 ){
-  def scalaVersionedArtifactId(majorScalaVersion : String) = 
-    if (useMajorScalaVersion) s"${artifactId}_$majorScalaVersion" else artifactId
+  def withScope(scope : String) = copy(scope = scope)
+  def scalaVersionedArtifactId(scalaVersion : ScalaVersion) = 
+    if (useMajorScalaVersion) s"${artifactId}_${scalaVersion.versionBase}" else artifactId
 
-  def pomXml(majorScalaVersion : String) = 
+  def pomXml(scalaVersion : ScalaVersion) = 
     <dependency>
       <groupId>{org}</groupId>
-      <artifactId>{scalaVersionedArtifactId(majorScalaVersion)}</artifactId>
+      <artifactId>{scalaVersionedArtifactId(scalaVersion)}</artifactId>
       <version>{version}</version>
       <scope>compile</scope>
     </dependency>
 
-  def dependency(majorScalaVersion : String) = {
+  def dependency(scalaVersion : ScalaVersion) = {
     val artifact = new DefaultArtifact(
       org,
-      scalaVersionedArtifactId(majorScalaVersion),
+      scalaVersionedArtifactId(scalaVersion),
       classifier,
       extension,
       version

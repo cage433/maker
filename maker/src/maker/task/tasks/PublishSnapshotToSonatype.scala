@@ -21,9 +21,9 @@ import org.apache.http.conn.params.ConnRoutePNames
 import org.apache.http.util.EntityUtils
 import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
-import maker.ConfigPimps
+import maker.{ConfigPimps, ScalaVersion}
 
-case class PublishSnapshotToSonatype(project : Project, version : String, majorScalaVersion : String) extends Task
+case class PublishSnapshotToSonatype(project : Project, version : String, scalaVersion : ScalaVersion) extends Task
 with SonatypeTask with EitherPimps{
   def config = project.config
   val sonatypeRepository = "https://oss.sonatype.org/service/local"
@@ -31,7 +31,7 @@ with SonatypeTask with EitherPimps{
   def name = s"Publish $project snapshot to Sonatype"
 
   def upstreamTasks = 
-    PublishLocalTask(project, version, signArtifacts = true, majorScalaVersion = majorScalaVersion) :: Nil
+    PublishLocalTask(project, version, signArtifacts = true, scalaVersion = scalaVersion) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val toUpload : Seq[(File, ContentType)] = (project.publishLocalPomFile(version), ContentType.APPLICATION_XML) +: {

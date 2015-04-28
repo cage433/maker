@@ -5,7 +5,7 @@ import maker.project._
 import maker.task._
 import maker.utils.{Stopwatch, FileUtils}
 import maker.utils.maven.IvyLock
-import maker.{PomUtils, ConfigPimps}
+import maker.{PomUtils, ConfigPimps, ScalaVersion}
 import maker.task.compile.SourceCompilePhase
 import java.io.File
 import maker.utils.os.Command
@@ -17,7 +17,7 @@ case class PublishLocalTask(
   project : Project, 
   version : String,
   signArtifacts : Boolean,
-  majorScalaVersion : String
+  scalaVersion : ScalaVersion
 ) 
   extends Task 
   with ConfigPimps
@@ -25,7 +25,7 @@ case class PublishLocalTask(
   import project.config
   def name = "Publish Local"
 
-  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version), majorScalaVersion))
+  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version), scalaVersion))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{
@@ -52,7 +52,7 @@ case class PublishLocalTask(
      s"$basename-$version.$extension"
     }
     // TODO - fix the includeUpstreamModules hack
-    FileUtils.writeToFile(project.publishLocalPomFile(version), PomUtils.pomXmlText(project, version))
+    FileUtils.writeToFile(project.publishLocalPomFile(version), PomUtils.pomXmlText(project, version, scalaVersion))
     var result = true
     if (signArtifacts)
       result = signFile(project.publishLocalPomFile(version))

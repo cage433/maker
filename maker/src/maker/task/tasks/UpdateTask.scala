@@ -4,7 +4,7 @@ import maker.project.{Module, DependencyPimps, ProjectTrait}
 import maker.utils.FileUtils._
 import maker.task._
 import maker.utils._
-import maker.ConfigPimps
+import maker.{ConfigPimps, ScalaVersion}
 import scala.collection.JavaConversions._
 import org.scalatest.Failed
 import java.net.URL
@@ -39,7 +39,7 @@ import org.eclipse.aether.internal.test.util.DependencyGraphParser
   * Missing source jars are not treated as a cause for failure unless `forceSourceUpdate`
   * is true
   */
-case class UpdateTask(project : ProjectTrait, majorScalaVersion : String, forceSourceUpdate : Boolean) 
+case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, forceSourceUpdate : Boolean) 
   extends Task
   with ConfigPimps
   with EitherPimps
@@ -83,8 +83,8 @@ case class UpdateTask(project : ProjectTrait, majorScalaVersion : String, forceS
   case class BinaryDownload(scope : String) extends DownloadType{
     def isOfCorrectType(artifact : Artifact) = true
     def downloadDirectory = scope match {
-      case JavaScopes.COMPILE => project.managedLibDir(majorScalaVersion)
-      case JavaScopes.TEST => project.testManagedLibDir(majorScalaVersion)
+      case JavaScopes.COMPILE => project.managedLibDir(scalaVersion)
+      case JavaScopes.TEST => project.testManagedLibDir(scalaVersion)
       case _ => ???
     }
   }
@@ -93,17 +93,17 @@ case class UpdateTask(project : ProjectTrait, majorScalaVersion : String, forceS
     // Aether downloads the binary when sources aren't in the repository - no idea why
     def isOfCorrectType(artifact : Artifact) = Option(artifact.getClassifier) == Some("sources")
     def downloadDirectory = scope match {
-      case JavaScopes.COMPILE => project.managedLibSourceDir(majorScalaVersion)
-      case JavaScopes.TEST => project.testManagedLibSourceDir(majorScalaVersion)
+      case JavaScopes.COMPILE => project.managedLibSourceDir(scalaVersion)
+      case JavaScopes.TEST => project.testManagedLibSourceDir(scalaVersion)
       case _ => ???
     }
   }
 
   private def getArtifacts(download : DownloadType) : Seq[Artifact] = {
     var dependencies = (List(
-      "org.scala-lang" % "scala-library" %% config.scalaVersion.toString,
-      "org.scala-lang" % "scala-compiler" %% config.scalaVersion.toString
-      ) ++: project.upstreamDependencies).map(_.dependency(majorScalaVersion))
+      "org.scala-lang" % "scala-library_${scalaVersion.versionBase}" % scalaVersion.versionNo,
+      "org.scala-lang" % "scala-compiler_${scalaVersion.versionBase}" % scalaVersion.versionNo
+      ) ++: project.upstreamDependencies).map(_.dependency(scalaVersion))
 
     val collectRequest = new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories)
     val dependencyRequest = new DependencyRequest(

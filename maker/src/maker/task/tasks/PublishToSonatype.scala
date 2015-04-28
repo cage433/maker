@@ -1,6 +1,6 @@
 package maker.task.tasks
 
-import maker.project.{Project}
+import maker.project.Project
 import maker.task.{Task, TaskResult, DefaultTaskResult}
 import maker.utils._
 import scala.util.{Either, Left, Right}
@@ -21,9 +21,9 @@ import org.apache.http.conn.params.ConnRoutePNames
 import org.apache.http.util.EntityUtils
 import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
-import maker.ConfigPimps
+import maker.{ConfigPimps, ScalaVersion}
 
-case class PublishToSonatype(project : Project, version : String, majorScalaVersion : String) 
+case class PublishToSonatype(project : Project, version : String, scalaVersion : ScalaVersion) 
   extends Task 
   with SonatypeTask
   with EitherPimps
@@ -36,7 +36,7 @@ case class PublishToSonatype(project : Project, version : String, majorScalaVers
   def name = s"Publish $project to Sonatype"
 
   def upstreamTasks = 
-    PublishLocalTask(project, version, signArtifacts = true, majorScalaVersion = majorScalaVersion) :: Nil
+    PublishLocalTask(project, version, signArtifacts = true, scalaVersion = scalaVersion) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     FileUtils.withTempDir{

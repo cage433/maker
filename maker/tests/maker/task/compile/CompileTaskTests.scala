@@ -26,11 +26,11 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
           extraTraits = "org.scalatest.Assertions" :: Nil,
           extraCode = 
              """|
-                |def checkCompilation(majorScalaVersion : String){
+                |def checkCompilation(scalaVersion : ScalaVersion){
                 |
-                |  assert(classFiles(majorScalaVersion).size === 0, s"No class files before $majorScalaVersion compilation")
-                |  compile(majorScalaVersion)
-                |  assert(classFiles(majorScalaVersion).size > 0, s"Some class files after $majorScalaVersion compilation")
+                |  assert(classFiles(scalaVersion).size === 0, s"No class files before $scalaVersion compilation")
+                |  compile(scalaVersion)
+                |  assert(classFiles(scalaVersion).size > 0, s"Some class files after $scalaVersion compilation")
                 |
                 |}
                 |

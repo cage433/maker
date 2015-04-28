@@ -9,20 +9,20 @@ import maker.task.compile._
 import maker.project.{Module, Project}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
-import maker.ConfigPimps
+import maker.{ConfigPimps, ScalaVersion}
 
 
 /** Doc generation task - produces scaladocs from project sources
   *
   * Outputs scala-docs per module in the "docs" sub-dir of the project target output dir
   */
-case class DocTask(project : Project, majorScalaVersion : String) 
+case class DocTask(project : Project, scalaVersion : ScalaVersion) 
   extends Task
   with ConfigPimps
 {
   val config = project.config  
   def name = "Doc " + project.name
-  def upstreamTasks = project.modules.map(SourceCompileTask(project, _, majorScalaVersion))
+  def upstreamTasks = project.modules.map(SourceCompileTask(project, _, scalaVersion))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
 
     logger.info("running scala-doc gen for project " + project)
@@ -39,11 +39,11 @@ case class DocTask(project : Project, majorScalaVersion : String)
       // make a separate opts file as the args can get too big for a single command
       val optsFile = file(docDir, "docopts")
       val classpath = Module.asClasspathStr(
-        project.upstreamModules.map(_.classDirectory(majorScalaVersion, SourceCompilePhase))
+        project.upstreamModules.map(_.classDirectory(scalaVersion, SourceCompilePhase))
       )
       writeToFile(optsFile, s"""-classpath $classpath ${inputFiles.mkString(" ")}""")
 
-      val scalaToolsClasspath = config.scalaVersion.scalaJars.mkString(":")
+      val scalaToolsClasspath = project.scalaJars(scalaVersion).map(_.getAbsolutePath).mkString(":")
 
       val bs = new ByteArrayOutputStream()
       val cmd = Command.scalaCommand(

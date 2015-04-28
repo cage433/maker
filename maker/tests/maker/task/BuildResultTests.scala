@@ -1,19 +1,22 @@
 package maker.task
 
 import org.scalatest.FunSuite
-
 import maker.utils.FileUtils._
-import maker.project.Module
+import maker.project.{Module, TestModule}
 import tasks.CleanTask
 import maker.utils.Stopwatch
-import maker.project.TestModule
 import maker.task.compile._
+import maker.task.tasks.CleanTask
+import maker.ScalaVersion
+
 
 
 /**
  * tests basic composition of build results through for comprehension
  */
 class BuildResultTests extends FunSuite {
+
+  private val SCALA_VERSION = ScalaVersion.TWO_ELEVEN_DEFAULT
 
   case class MyDontRunTask(baseProject : Module) extends Task {
     def name = "Don't run this task"
@@ -39,12 +42,12 @@ class BuildResultTests extends FunSuite {
       // some success build results
       val br1 = BuildResult("foo", 
         List(
-          DefaultTaskResult(CleanTask(p1, "2.10"), true, sw), 
-          DefaultTaskResult(CleanTask(p3, "2.10"), true, sw)), emptyGraph)
-      val br2 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2, p2, "2.10"), true, sw)), emptyGraph)
+          DefaultTaskResult(CleanTask(p1, SCALA_VERSION), true, sw), 
+          DefaultTaskResult(CleanTask(p3, SCALA_VERSION), true, sw)), emptyGraph)
+      val br2 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2, p2, SCALA_VERSION), true, sw)), emptyGraph)
 
       // and some failures
-      val fr1 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2, p2, "2.10"), false, sw, message = Some("was broke"))), emptyGraph)
+      val fr1 = BuildResult("foo", List(DefaultTaskResult(SourceCompileTask(p2, p2, SCALA_VERSION), false, sw, message = Some("was broke"))), emptyGraph)
 
       val r1 = for {
         w <- br1

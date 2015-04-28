@@ -15,16 +15,15 @@ object PomUtils extends ConfigPimps with DependencyPimps{
   }
 
       //<?xml version="1.0" encoding="UTF-8"?>
-  def pomXml(project : Project, version : String, scalaVersion : String) = {
+  def pomXml(project : Project, version : String, scalaVersion : ScalaVersion) = {
     import project.name
     val groupId = project.organization.getOrElse(throw new IllegalStateException("Organization not defined"))
 
-    def externalDependencies(scalaVersion : String) = {
-      val majorScalaVersion = ScalaVersion.majorVersion(scalaVersion)
-      val scalaLibraryDep = "org.scala-lang" % s"scala-library_$majorScalaVersion" % scalaVersion
+    def externalDependencies = {
+      val scalaLibraryDep = "org.scala-lang" % s"scala-library_${scalaVersion.versionBase}" % scalaVersion.versionNo
       val projectDependencies : Seq[RichDependency] = project.upstreamModules.flatMap(_.dependencies)
       (scalaLibraryDep +: projectDependencies).distinct.map(
-        _.dependency(majorScalaVersion).pomDependencyXML
+        _.dependency(scalaVersion).pomDependencyXML
       )
     }
 
@@ -37,12 +36,12 @@ object PomUtils extends ConfigPimps with DependencyPimps{
       <version>{version}</version>
       {project.extraProjectPomInfo}
       <dependencies>
-        {externalDependencies(scalaVersion)}
+        {externalDependencies}
       </dependencies>
     </project>
   }
 
-  def pomXmlText(project : Project, version : String, scalaVersion : String) = {
+  def pomXmlText(project : Project, version : String, scalaVersion : ScalaVersion) = {
     val xmlPrinter = new PrettyPrinter(160, 2)
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
       xmlPrinter.format(pomXml(project, version, scalaVersion)) 

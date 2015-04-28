@@ -6,13 +6,13 @@ import java.io.File
 import maker.utils.FileUtils._
 import org.scalatest.Failed
 import maker.utils.Int
-import maker.ConfigPimps
+import maker.{ConfigPimps, ScalaVersion}
 import maker.project.{Module, ProjectTrait}
 
 object ZincCompile extends ConfigPimps{
 
   lazy val zinc = new ZincClient()
-  def apply(rootProject : ProjectTrait, module : Module, phase : CompilePhase, majorScalaVersion : String) : Int = {
+  def apply(rootProject : ProjectTrait, module : Module, phase : CompilePhase, scalaVersion : ScalaVersion) : Int = {
     val config = module.config
     val upstreamCaches = {
       var map = Map[File, File]()
@@ -28,7 +28,7 @@ object ZincCompile extends ConfigPimps{
         p <- phases
       }{
         map += 
-          (m.classDirectory(majorScalaVersion, p) -> m.compilationCacheFile(majorScalaVersion, p))
+          (m.classDirectory(scalaVersion, p) -> m.compilationCacheFile(scalaVersion, p))
       }
 
       map
@@ -43,10 +43,6 @@ object ZincCompile extends ConfigPimps{
       case list => List("-analysis-map", list.mkString(","))
     }
 
-    val extraJarArgs : List[String] = config.scalaVersion.scalaReflectJar.toList.flatMap{
-      jar => 
-        List("-scala-extra", jar.getAbsolutePath)
-    }(scala.collection.breakOut)
     val arguments = List[String](
       "-log-level",
       "warn",
@@ -54,18 +50,20 @@ object ZincCompile extends ConfigPimps{
       "-java-home",
       config.javaHome.getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
-      config.scalaVersion.scalaCompilerJar.getAbsolutePath,
+      rootProject.scalaCompilerJar(scalaVersion).getAbsolutePath,
       "-scala-library",
-      config.scalaVersion.scalaLibraryJar.getAbsolutePath,
+      rootProject.scalaLibraryJar(scalaVersion).getAbsolutePath,
       "-classpath",
-      if (phase == SourceCompilePhase) rootProject.compilationClasspath(majorScalaVersion) else rootProject.testCompilationClasspath(majorScalaVersion),
+      if (phase == SourceCompilePhase) rootProject.compilationClasspath(scalaVersion) else rootProject.testCompilationClasspath(scalaVersion),
       "-d",
-      module.classDirectory(majorScalaVersion, phase).getAbsolutePath,
+      module.classDirectory(scalaVersion, phase).getAbsolutePath,
       "-compile-order",
       CompileOrder.Mixed.toString,
       "-analysis-cache",
-      module.compilationCacheFile(majorScalaVersion, phase).getAbsolutePath
-    ) ::: extraJarArgs :::
+      module.compilationCacheFile(scalaVersion, phase).getAbsolutePath,
+      "-scala-extra",
+      rootProject.scalaReflectJar(scalaVersion).getAbsolutePath
+    ) :::
     module.scalacOptions.map("-S" +_) :::
     module.javacOptions.map("-C" +_) :::
     analysisMapArguments ::: 
@@ -98,8 +96,8 @@ object ZincCompile extends ConfigPimps{
         rootProject.compilationOutputStream(phase),
         rootProject.compilationOutputStream(phase)
       )
-      val analysis = Compiler.analysis(module.compilationCacheFile(majorScalaVersion, phase))
-      module.analyses.put(module.classDirectory(majorScalaVersion, phase), analysis)
+      val analysis = Compiler.analysis(module.compilationCacheFile(scalaVersion, phase))
+      module.analyses.put(module.classDirectory(scalaVersion, phase), analysis)
       result
     } catch {
       case e : Throwable => 

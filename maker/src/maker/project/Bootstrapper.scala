@@ -5,6 +5,7 @@ import maker.utils.FileUtils._
 import java.io.BufferedWriter
 import scala.collection.immutable.VectorBuilder
 import org.eclipse.aether.artifact.Artifact
+import maker.ScalaVersion
 
 trait Bootstrapper{
   self : Module => 
@@ -27,7 +28,7 @@ trait Bootstrapper{
 
     def writeBoostrapFile(){
       // TODO - exclusions
-      val artifacts = new UpdateTask(self, forceSourceUpdate = false, majorScalaVersion  = "2.10").binaryArtifacts.filterNot(_.getArtifactId == "compiler-interface")
+      val artifacts = new UpdateTask(self, forceSourceUpdate = false, scalaVersion  = ScalaVersion.TWO_TEN_DEFAULT).binaryArtifacts.filterNot(_.getArtifactId == "compiler-interface")
       val bldr = new VectorBuilder[String]()
       def makeLine(artifact : Artifact) = {
         val group = artifact.getGroupId.replace('.', '/')

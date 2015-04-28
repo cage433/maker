@@ -8,8 +8,10 @@ import maker.task.tasks.{CleanTask, RunUnitTestsTask}
 import maker.utils.FileUtils._
 import maker.task.compile._
 import maker.utils.os.Command
+import maker.ScalaVersion
 
 class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTestPimps{
+  private val SCALA_VERSION = ScalaVersion.TWO_ELEVEN_DEFAULT
   case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task {
     def name = "Write class count "
     def copy_(p : Module) = copy(module = p)
@@ -231,15 +233,15 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
         val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
 
         assert(
-          !B.testCompileTaskBuild("2.10").graph.upstreams(TestCompileTask(B, B, "2.10")).contains(TestCompileTask(B, A, "2.10")),
+          !B.testCompileTaskBuild(SCALA_VERSION).graph.upstreams(TestCompileTask(B, B, SCALA_VERSION)).contains(TestCompileTask(B, A, SCALA_VERSION)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
-          C.testCompileTaskBuild("2.10").graph.upstreams(TestCompileTask(C, C, "2.10")).contains(TestCompileTask(C, A, "2.10")),
+          C.testCompileTaskBuild(SCALA_VERSION).graph.upstreams(TestCompileTask(C, C, SCALA_VERSION)).contains(TestCompileTask(C, A, SCALA_VERSION)),
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
-          B.compileTaskBuild("2.10").graph.upstreams(SourceCompileTask(B, B, "2.10")).contains(SourceCompileTask(B, A, "2.10")),
+          B.compileTaskBuild(SCALA_VERSION).graph.upstreams(SourceCompileTask(B, B, SCALA_VERSION)).contains(SourceCompileTask(B, A, SCALA_VERSION)),
           "Upstream source compilation is a dependency"  
         )
 
@@ -255,15 +257,15 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
         val D = new TestModule(file(dir, "D"), "D", List(C))
 
         assert(
-          ! B.testCompilationClasspathComponents("2.10").contains(A.classDirectory("2.10", TestCompilePhase)), 
+          ! B.testCompilationClasspathComponents(SCALA_VERSION).contains(A.classDirectory(SCALA_VERSION, TestCompilePhase)), 
           "A's test output directory is not in B's classpath"
         )
         assert(
-          C.testCompilationClasspathComponents("2.10").contains(A.classDirectory("2.10", TestCompilePhase)), 
+          C.testCompilationClasspathComponents(SCALA_VERSION).contains(A.classDirectory(SCALA_VERSION, TestCompilePhase)), 
           "A's test output directory is in C's classpath"
         )
         assert(
-          ! D.testCompilationClasspathComponents("2.10").contains(A.classDirectory("2.10", TestCompilePhase)), 
+          ! D.testCompilationClasspathComponents(SCALA_VERSION).contains(A.classDirectory(SCALA_VERSION, TestCompilePhase)), 
           "A's test output directory is in D's classpath"
         )
     }
@@ -282,16 +284,16 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
 
         List(A, B, C).foreach{
           proj => 
-            assert(proj.testTaskBuild("2.10").graph.nodes.exists{
-              case RunUnitTestsTask(_, _, `proj`, _, "2.10") => true
+            assert(proj.testTaskBuild(SCALA_VERSION).graph.nodes.exists{
+              case RunUnitTestsTask(_, _, `proj`, _, SCALA_VERSION) => true
               case _ => false
             })
         }
         import Dependency.Edge
-        assert(!D.testCompileTaskBuild("2.10").graph.edges.contains(Edge(TestCompileTask(D, A, "2.10"), TestCompileTask(D, C, "2.10"))))
+        assert(!D.testCompileTaskBuild(SCALA_VERSION).graph.edges.contains(Edge(TestCompileTask(D, A, SCALA_VERSION), TestCompileTask(D, C, SCALA_VERSION))))
 
-        assert(C.testTaskBuild("2.10").graph.edges.contains(Edge(TestCompileTask(C, A, "2.10"), TestCompileTask(C, C, "2.10"))))
-        assert(!D.testCompileTaskBuild("2.10").graph.edges.contains(Edge(TestCompileTask(D, B, "2.10"), TestCompileTask(D, C, "2.10"))))
+        assert(C.testTaskBuild(SCALA_VERSION).graph.edges.contains(Edge(TestCompileTask(C, A, SCALA_VERSION), TestCompileTask(C, C, SCALA_VERSION))))
+        assert(!D.testCompileTaskBuild(SCALA_VERSION).graph.edges.contains(Edge(TestCompileTask(D, B, SCALA_VERSION), TestCompileTask(D, C, SCALA_VERSION))))
 
     }
     

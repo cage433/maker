@@ -8,6 +8,7 @@ import org.apache.commons.io.output.{TeeOutputStream, NullOutputStream}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import java.io.{File, FileOutputStream, PrintStream}
+import maker.ScalaVersion
 
 case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
@@ -62,8 +63,8 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     changedFiles_(javaFiles).toSet
   }
 
-  def sourceFilesDeletedSinceLastCompilation(majorScalaVersion : String) : Seq[File] = {
-    Option(module.analyses.get(module.classDirectory(majorScalaVersion, phase))) match {
+  def sourceFilesDeletedSinceLastCompilation(scalaVersion : ScalaVersion) : Seq[File] = {
+    Option(module.analyses.get(module.classDirectory(scalaVersion, phase))) match {
       case None => Nil
       case Some(analysis) => 
         analysis.infos.allInfos.keySet.toVector.filterNot(_.exists)

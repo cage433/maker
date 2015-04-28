@@ -37,31 +37,6 @@ case class ScalaVersion(
 
   private def scalaRichDependencies = List(scalaLibraryRichDependency, scalaCompilerRichDependency, scalaReflectRichDependency) ::: 
     scalaXmlRichDependency.toList ::: scalaParserCombinatorRichDependency.toList
-
-  //def scalaLibraryJar = file(
-    //config.projectScalaLibDirectory,
-    //scalaLibraryResource.basename
-  //)
-  //def scalaCompilerJar = file(
-    //config.projectScalaLibDirectory,
-    //compilerResource.basename
-  //)
-
-  //def scalaReflectJar = reflectResource.map{
-    //resource => 
-      //file(
-        //config.projectScalaLibDirectory,
-        //resource.basename
-      //)
-  //}
-
-  //def scalaJars : List[File] = resources.map{
-      //res => 
-        //file(
-          //config.projectScalaLibDirectory,
-          //res.basename
-        //)
-  //}
 }
 
 object ScalaVersion{
@@ -76,4 +51,7 @@ object ScalaVersion{
   }
 
   def majorVersion(scalaVersion : String) = scalaVersion.split('.').take(2).mkString(".")
+
+  val TWO_TEN_DEFAULT = ScalaVersion("2.10.4")
+  val TWO_ELEVEN_DEFAULT = ScalaVersion("2.11.5")
 }
