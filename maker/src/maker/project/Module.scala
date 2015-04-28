@@ -40,10 +40,39 @@ class Module(
 
   def compilationMetadataDirectory(scalaVersion : ScalaVersion, phase : CompilePhase) = 
     mkdirs(file(makerDirectory, "compilation-metadata", scalaVersion.versionBase, phase.name))
+
   def compilationCacheFile(scalaVersion : ScalaVersion, phase : CompilePhase) = {
     file(compilationMetadataDirectory(scalaVersion, phase), "compilation-analysis-cache")
   }
 
+  def lastCompilationTime(scalaVersion : ScalaVersion, phase : CompilePhase) : Option[Long] = {
+    if (compilationCacheFile(scalaVersion, phase).exists)
+      lastModifiedProperFileTime(Vector(compilationCacheFile(scalaVersion, phase)))
+    else
+      None
+  }
+
+  def lastSourceModifcationTime(phase : CompilePhase) : Option[Long] = lastModifiedProperFileTime(sourceFiles(phase))
+
+  def sourceFilesDeletedSinceLastCompilation(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = {
+    Option(analyses.get(classDirectory(scalaVersion, phase))) match {
+      case None => Nil
+      case Some(analysis) => 
+        analysis.infos.allInfos.keySet.toVector.filterNot(_.exists)
+    }
+  }
+
+  def moduleCompilationErrorsFile(scalaVersion : ScalaVersion, phase : CompilePhase) = {
+    file(compilationMetadataDirectory(scalaVersion, phase), "vim-compile-errors")
+  }
+
+  def compilationFailedMarker(scalaVersion : ScalaVersion, phase : CompilePhase) = 
+    file(compilationMetadataDirectory(scalaVersion, phase), "compilation-failed-marker")
+
+  def lastCompilationFailed(scalaVersion : ScalaVersion, phase : CompilePhase) = 
+    compilationFailedMarker(scalaVersion, phase).exists
+
+  def markCompilatonFailure(scalaVersion : ScalaVersion, phase : CompilePhase) = compilationFailedMarker(scalaVersion, phase).touch
 
   Module.warnOfUnnecessaryDependencies(this)
 
@@ -79,9 +108,6 @@ class Module(
   }
 
   warnOfRedundantDependencies()
-
-  def testCompilePhase = ModuleCompilePhase(this, TestCompilePhase)
-  def compilePhase = ModuleCompilePhase(this, SourceCompilePhase)
 
 
   override def toString = name

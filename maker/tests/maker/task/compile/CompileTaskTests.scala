@@ -469,7 +469,7 @@ class SomeClass extends SomeTrait{
         assert(proj.compile.succeeded)
 
         // now update the base trait to invalidate implementations, check it fails
-        val compilationTime = proj.compilePhase.lastCompilationTime.get
+        val compilationTime = proj.lastCompilationTime(proj.defaultScalaVersion, SourceCompilePhase).get
         sleepToNextSecond
         proj.writeSrc(
           "foo/Foo.scala",

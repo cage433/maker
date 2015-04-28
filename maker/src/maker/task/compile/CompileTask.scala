@@ -26,8 +26,6 @@ abstract class CompileTask(
   
   def phase : CompilePhase
 
-  val modulePhase = ModuleCompilePhase(module, phase)
-
   private def successfulResult(sw : Stopwatch, state : CompilationState) = CompileTaskResult(
     this, succeeded = true, 
     stopwatch = sw, 
@@ -35,27 +33,27 @@ abstract class CompileTask(
   )
 
   def compilationRequired(upstreamTaskResults : Iterable[TaskResult]) = {
-    def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation(scalaVersion).nonEmpty
+    def hasDeletedSourceFiles = module.sourceFilesDeletedSinceLastCompilation(scalaVersion, phase).nonEmpty
 
     def upstreamCompilation = upstreamTaskResults.exists{
       case r : CompileTaskResult if r.state != CompilationNotRequired => true
       case _ => false
     }
 
-    def modificationSinceLastCompilation = (modulePhase.lastSourceModifcationTime, modulePhase.lastCompilationTime) match {
+    def modificationSinceLastCompilation = (module.lastSourceModifcationTime(phase), module.lastCompilationTime(scalaVersion, phase)) match {
       case (Some(t1), Some(t2)) => t1 > t2
       case _ => true
     }
-    def lastCompilationFailed = modulePhase.lastCompilationFailed()
+    def lastCompilationFailed = module.lastCompilationFailed(scalaVersion, phase)
     hasDeletedSourceFiles ||  upstreamCompilation || modificationSinceLastCompilation || lastCompilationFailed
   }
 
 
   def exec(upstreamTaskResults : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
-    if (modulePhase.sourceFiles.isEmpty){
+    if (module.sourceFiles(phase).isEmpty){
       cleanRegularFilesLeavingDirectories(module.classDirectory(scalaVersion, phase))
-      modulePhase.compilationCacheFile.delete
+      module.compilationCacheFile(scalaVersion, phase).delete
       return successfulResult(sw, CompilationNotRequired)
     }
     if (compilationRequired(upstreamTaskResults)){
@@ -65,8 +63,8 @@ abstract class CompileTask(
           if (exitCode == 0)
             successfulResult(sw, CompilationSucceeded)
           else {
-            modulePhase.markCompilatonFailure()
-            CompileTask.appendCompileOutputToTopLevel(modulePhase)
+            module.markCompilatonFailure(scalaVersion, phase)
+            CompileTask.appendCompileOutputToTopLevel(module, scalaVersion, phase)
             CompileTaskResult(
               this, succeeded = false,
               stopwatch = sw, state = CompilationFailed("compilation failure")
@@ -169,13 +167,13 @@ object CompileTask{
     }
   }
 
-  def appendCompileOutputToTopLevel(modulePhase : ModuleCompilePhase) = synchronized {
-    withFileAppender(modulePhase.module.topLevelCompilationErrorsFile){
+  def appendCompileOutputToTopLevel(module : Module, scalaVersion : ScalaVersion, phase : CompilePhase) = synchronized {
+    withFileAppender(module.topLevelCompilationErrorsFile){
       writer : BufferedWriter =>
         // Vim bug prevents all error being shown unless 
         // there is a blank line initially
         writer.println("")
-        modulePhase.moduleCompilationErrorsFile.readLines.foreach(writer.println)
+        module.moduleCompilationErrorsFile(scalaVersion, phase).readLines.foreach(writer.println)
     }
   }
 }

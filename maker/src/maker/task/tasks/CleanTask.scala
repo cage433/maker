@@ -34,10 +34,8 @@ case class CleanTask(project : ProjectTrait, scalaVersion : ScalaVersion) extend
         cleanRegularFilesLeavingDirectories(module.managedLibSourceDir(scalaVersion))
         cleanRegularFilesLeavingDirectories(module.testManagedLibDir(scalaVersion))
         cleanRegularFilesLeavingDirectories(module.testManagedLibSourceDir(scalaVersion))
-        recursiveDelete(module.compilePhase.phaseDirectory)
-        recursiveDelete(module.testCompilePhase.phaseDirectory)
-        module.compilePhase.compilationCacheFile.delete
-        module.testCompilePhase.compilationCacheFile.delete
+        recursiveDelete(module.compilationMetadataDirectory(scalaVersion, SourceCompilePhase))
+        recursiveDelete(module.compilationMetadataDirectory(scalaVersion, TestCompilePhase))
     }
 
     project match {

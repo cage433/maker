@@ -235,7 +235,8 @@ trait ProjectTrait extends ConfigPimps{
   def continuously(bld : Build){
     var lastTaskTime :Option[Long] = None
 
-    def allSourceFiles : Seq[File] = upstreamModules.flatMap(_.compilePhase.sourceFiles) ++: testModuleDependencies.flatMap(_.testCompilePhase.sourceFiles) 
+    def allSourceFiles : Seq[File] = upstreamModules.flatMap(_.sourceFiles(SourceCompilePhase)) ++: 
+      testModuleDependencies.flatMap(_.sourceFiles(TestCompilePhase)) 
 
     def sourceFileCount : Int = allSourceFiles.size
     var lastFileCount : Int = sourceFileCount 

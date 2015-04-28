@@ -27,7 +27,7 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
 
     logger.info("running scala-doc gen for project " + project)
 
-    val inputFiles = project.upstreamModules.flatMap(_.compilePhase.sourceFiles)
+    val inputFiles = project.upstreamModules.flatMap(_.sourceFiles(SourceCompilePhase))
 
     val docDir = project.docOutputDir(scalaVersion)
     if (inputFiles.nonEmpty && 
