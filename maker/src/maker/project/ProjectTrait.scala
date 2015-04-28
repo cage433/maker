@@ -46,7 +46,7 @@ trait ProjectTrait extends ConfigPimps{
 
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
-  def name : String
+  protected def name : String
   def modules : Seq[Module]
   def testModuleDependencies : Seq[Module]
   def config : Config

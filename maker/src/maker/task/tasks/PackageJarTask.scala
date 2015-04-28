@@ -36,11 +36,11 @@ case class PackageJarTask(
 
     val modules = project.upstreamModules
     val result = buildJar(
-                    packageJar(version),
+                    packageJar(version, scalaVersion),
                     modules.map(_.classDirectory(scalaVersion, SourceCompilePhase)) ++ modules.map(_.resourceDir(SourceCompilePhase))
                   ) andThen
                   buildJar(
-                    sourcePackageJar(version),
+                    sourcePackageJar(version, scalaVersion),
                     modules.flatMap(_.sourceDirs(SourceCompilePhase))
                   ) andThen
                   buildJar(

@@ -30,9 +30,7 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
                 |def checkCompilation(scalaVersion : ScalaVersion){
                 |
                 |  assert(classFiles(scalaVersion).size === 0, s"No class files before $scalaVersion compilation")
-                |  println("Compiling")
-                |  compile(scalaVersion).reportResult
-                |  println("Compile build finished")
+                |  compile(scalaVersion)
                 |  assert(classFiles(scalaVersion).size > 0, s"Some class files after $scalaVersion compilation")
                 |
                 |}
@@ -44,7 +42,7 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
                 |  checkCompilation(ScalaVersion.TWO_ELEVEN_DEFAULT)
                 |}
                 |""".stripMargin
-        ).withBuildResult.withNoExecModeExit
+        )
         module.appendDefinitionToProjectFile(moduleRoot)
         module.writeSrc(
           "foo/Foo.scala", 
@@ -77,7 +75,7 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
         val result = TestModuleBuilder.makerExecuteCommand(
           moduleRoot,
           "CrossCompiling.checkCrossCompilation"
-        ).run
+        ).withNoOutput.run
         result should equal(0)
     }
   }
@@ -134,12 +132,12 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
         assert(module.classFiles(SourceCompilePhase).size === 0)
         assert(proj.compile.succeeded, "Compile should succeed")
         assert(module.classFiles(SourceCompilePhase).size > 0)
-        assert(!proj.packageJar(version = None).exists)
+        assert(!proj.packageJar(version = None, proj.defaultScalaVersion).exists)
         proj.pack
-        assert(proj.packageJar(version = None).exists)
+        assert(proj.packageJar(version = None, proj.defaultScalaVersion).exists)
         proj.clean
         assert(module.classFiles(SourceCompilePhase).size === 0)
-        assert(!proj.packageJar(version = None).exists)
+        assert(!proj.packageJar(version = None, proj.defaultScalaVersion).exists)
     }
   }
 

@@ -49,7 +49,7 @@ case class RichDependency(
 trait DependencyPimps{
   class OrgAndArtifact(org : String, artifact : String){
     def %(version : String) = new RichDependency(org, artifact, version, useMajorScalaVersion = false)
-    //def %%(version : String) = new RichDependency(org, artifact, version, useMajorScalaVersion = true)
+    def %%(version : String) = new RichDependency(org, artifact, version, useMajorScalaVersion = true)
   }
   implicit class Organization(name : String){
     def %(artifact : String) = new OrgAndArtifact(name, artifact)

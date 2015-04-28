@@ -23,7 +23,7 @@ case class Project(
   def projectRoot = root.asAbsoluteFile
 
   def organization : Option[String] = None
-  def artifactId = name
+  def artifactId(scalaVersion : ScalaVersion) = s"${name}_${scalaVersion.versionBase}"
   def modules = immediateUpstreamModules
   def testModuleDependencies = upstreamModules
   override def toString = name
@@ -45,25 +45,32 @@ case class Project(
   }
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
-  def publishLocalDir(version : String) = file(publishLocalRootDir, organization.getOrElse(???), artifactId, version).makeDirs
-  def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
-  def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
-  def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
+  def publishLocalDir(version : String, scalaVersion : ScalaVersion) = file(publishLocalRootDir, organization.getOrElse(???), artifactId(scalaVersion), version).makeDirs
+  def publishLocalJarDir(version : String, scalaVersion : ScalaVersion) = file(publishLocalDir(version, scalaVersion), "jars").makeDir
+  def publishLocalPomDir(version : String, scalaVersion : ScalaVersion) = file(publishLocalDir(version, scalaVersion), "poms").makeDir
+  def publishLocalPomFile(version : String, scalaVersion : ScalaVersion) = file(publishLocalPomDir(version, scalaVersion), s"pom.xml")
 
-  def packageJar(version : Option[String]) = {
+  def packageJar(version : Option[String], scalaVersion : ScalaVersion) = {
     val versionAsString = version.map("-" + _).getOrElse("")
-    val jarBasename = name + versionAsString + ".jar"
+    val jarBasename = artifactId(scalaVersion) + versionAsString + ".jar"
     file(packageDir.getAbsolutePath, jarBasename)
   }
 
-  def sourcePackageJar(version : Option[String]) = {
+  def sourcePackageJar(version : Option[String], scalaVersion : ScalaVersion) = {
     val versionAsString = version.map("-" + _).getOrElse("")
-    val jarBasename = name + versionAsString + "-sources.jar"
+    val jarBasename = artifactId(scalaVersion) + versionAsString + "-sources.jar"
     file(packageDir.getAbsolutePath, jarBasename)
   }
 
-  def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(Some(version)).getName)
-  def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(Some(version)).getName)
+  def publishLocalJar(version : String, scalaVersion : ScalaVersion) = 
+    file(
+      publishLocalJarDir(version, scalaVersion), 
+      packageJar(Some(version), scalaVersion).getName)
+
+  def publishLocalSourceJar(version : String, scalaVersion : ScalaVersion) = 
+    file(
+      publishLocalJarDir(version, scalaVersion), 
+      sourcePackageJar(Some(version), scalaVersion).getName)
 
   def pack(scalaVersion : ScalaVersion) : BuildResult = {
     val tasks = PackageJarTask(this, version = None, scalaVersion = scalaVersion) :: Nil

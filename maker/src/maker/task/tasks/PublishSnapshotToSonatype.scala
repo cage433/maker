@@ -34,8 +34,8 @@ with SonatypeTask with EitherPimps{
     PublishLocalTask(project, version, signArtifacts = true, scalaVersion = scalaVersion) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val toUpload : Seq[(File, ContentType)] = (project.publishLocalPomFile(version), ContentType.APPLICATION_XML) +: {
-      findJars(project.publishLocalJarDir(version)).map((_, ContentType.DEFAULT_BINARY))
+    val toUpload : Seq[(File, ContentType)] = (project.publishLocalPomFile(version, scalaVersion), ContentType.APPLICATION_XML) +: {
+      findJars(project.publishLocalJarDir(version, scalaVersion)).map((_, ContentType.DEFAULT_BINARY))
     }
 
     EitherPimps.mapOrErrorLeft(toUpload, {
@@ -54,7 +54,7 @@ with SonatypeTask with EitherPimps{
     val url = 
       "https://oss.sonatype.org/content/repositories/snapshots/" + 
         project.organization.getOrElse(???).replace('.', '/') + "/" + 
-        project.artifactId + "/" + version + "/" + file.basename
+        project.artifactId(scalaVersion) + "/" + version + "/" + file.basename
 
     Post(url, new FileEntity(file, contentType))
   }

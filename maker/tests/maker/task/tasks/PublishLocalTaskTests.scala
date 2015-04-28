@@ -22,9 +22,10 @@ class PublishLocalTaskTests
 {
 
   private def checkPublishedPomMatchesCoordinates(project : Project, version : String){
-    assert(project.publishLocalPomFile(version).exists, s"${project.publishLocalPomFile(version)} doesn't exist")
+    assert(project.publishLocalPomFile(version, project.defaultScalaVersion).exists, 
+      s"${project.publishLocalPomFile(version, project.defaultScalaVersion)} doesn't exist")
 
-    val pom = XML.loadFile(project.publishLocalPomFile(version))
+    val pom = XML.loadFile(project.publishLocalPomFile(version, project.defaultScalaVersion))
 
     List(
       (project.organization.getOrElse(???), "groupId"), 
@@ -39,7 +40,7 @@ class PublishLocalTaskTests
 
   private def checkPublishedPomIncludesAllDependencies(project : Project, version : String){
     import project.config
-    val pom = XML.loadFile(project.publishLocalPomFile(version))
+    val pom = XML.loadFile(project.publishLocalPomFile(version, project.defaultScalaVersion))
     val pomDependencies = pom \\ "dependency"
     val dependencies = (project.defaultScalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.dependency(project.defaultScalaVersion))
 
@@ -84,10 +85,12 @@ class PublishLocalTaskTests
         checkPublishedPomMatchesCoordinates(proj, version)
         checkPublishedPomIncludesAllDependencies(proj, version)
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.classDirectory(SourceCompilePhase), proj.publishLocalJar(version))
-        PackageJarTaskTests.checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), proj.publishLocalJar(version))
+          module.classDirectory(SourceCompilePhase), proj.publishLocalJar(version, module.defaultScalaVersion))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version))
+          module.resourceDir(SourceCompilePhase), 
+          proj.publishLocalJar(version, proj.defaultScalaVersion))
+        PackageJarTaskTests.checkJarContainsDirectoryContents(
+          module.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version, proj.defaultScalaVersion))
     }
   }
 
@@ -124,15 +127,15 @@ class PublishLocalTaskTests
         checkPublishedPomIncludesAllDependencies(project, version)
 
         import project.{publishLocalJar => publishJar, publishLocalSourceJar => publishSourceJar}
-        publishJar(version) should be ('exists)
+        publishJar(version, project.defaultScalaVersion) should be ('exists)
 
         Vector(moduleA, moduleB).foreach{
           module => 
             checkJarContainsDirectoryContents(
-              module.classDirectory(SourceCompilePhase), publishJar(version))
-            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar(version))
+              module.classDirectory(SourceCompilePhase), publishJar(version, module.defaultScalaVersion))
+            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar(version, module.defaultScalaVersion))
             checkJarContainsDirectoryContents(
-              module.sourceDirs(SourceCompilePhase).head, publishSourceJar(version))
+              module.sourceDirs(SourceCompilePhase).head, publishSourceJar(version, module.defaultScalaVersion))
         }
     }
   }

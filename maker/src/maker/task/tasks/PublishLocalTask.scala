@@ -46,24 +46,24 @@ case class PublishLocalTask(
 
   private def doPublish(project: Project, results : Iterable[TaskResult], sw : Stopwatch) = {
   
-    project.publishLocalDir(version).deleteAll()
+    project.publishLocalDir(version, scalaVersion).deleteAll()
     def versionedFilename(file : File) : String = {
      val basename :: extension :: Nil = file.basename.split('.').toList
      s"$basename-$version.$extension"
     }
     // TODO - fix the includeUpstreamModules hack
-    FileUtils.writeToFile(project.publishLocalPomFile(version), PomUtils.pomXmlText(project, version, scalaVersion))
+    FileUtils.writeToFile(project.publishLocalPomFile(version, scalaVersion), PomUtils.pomXmlText(project, version, scalaVersion))
     var result = true
     if (signArtifacts)
-      result = signFile(project.publishLocalPomFile(version))
+      result = signFile(project.publishLocalPomFile(version, scalaVersion))
 
     result &&= Vector(
-      (project.packageJar(Some(version)), s"${project.name}-$version.jar"),
-      (project.sourcePackageJar(Some(version)), s"${project.name}-$version-sources.jar"),
-      (project.docPackageJar, s"${project.name}-$version-javadoc.jar")
+      (project.packageJar(Some(version), scalaVersion), s"${project.artifactId(scalaVersion)}-$version.jar"),
+      (project.sourcePackageJar(Some(version), scalaVersion), s"${project.artifactId(scalaVersion)}-$version-sources.jar"),
+      (project.docPackageJar, s"${project.artifactId(scalaVersion)}-$version-javadoc.jar")
     ).filter(_._1.exists).forall{
       case (jar, versionedBasename) => 
-        val fileWithVersion = file(project.publishLocalJarDir(version), versionedBasename)
+        val fileWithVersion = file(project.publishLocalJarDir(version, scalaVersion), versionedBasename)
         fileWithVersion.delete
         try {
           copyFile(jar, fileWithVersion)

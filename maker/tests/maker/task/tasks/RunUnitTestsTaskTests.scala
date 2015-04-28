@@ -30,21 +30,10 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
         )
         val testOutputFile = file(dir, "maker-test-output")
         testOutputFile.exists should be (false)
-        val makerScript = file("maker.py").getAbsolutePath
-        val command = Command(
-          "python",
-          makerScript,
-          "-E",
-          "RunUnitTestsTaskTestsModule.test",
-          "-z",
-          "-l",
-          file(dir, "logback.xml").getAbsolutePath,
-          "-L",
-          "40"
-        ).
-        withWorkingDirectory(dir).
-        withExitValues(0, 1).
-        withNoOutput
+        val command = TestModuleBuilder.makerExecuteCommand(
+          dir, 
+          "RunUnitTestsTaskTestsModule.test"
+        ).withNoOutput
 
         val result = command.run
         result should equal (1)
@@ -85,21 +74,10 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
           }
           """
         )
-        val makerScript = file("maker.py").getAbsolutePath
-        val command = Command(
-          "python",
-          makerScript,
-          "-E",
-          "RunUnitTestsTaskTestsModule2.test",
-          "-z",
-          "-l",
-          file(root, "logback.xml").getAbsolutePath,
-          "-L",
-          "40"
-        ).
-        withWorkingDirectory(root).
-        withExitValues(0, 1).
-        withNoOutput
+        val command = TestModuleBuilder.makerExecuteCommand(
+          root, 
+          "RunUnitTestsTaskTestsModule2.test"
+        ).withNoOutput
 
         val result = command.run
         result should equal (0)
@@ -172,21 +150,10 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
           """
         )
 
-        val makerScript = file("maker.py").getAbsolutePath
-        var command = Command(
-          "python",
-          makerScript,
-          "-E",
-          "RunUnitTestsTaskTestsModule3.checkTestsWhenOneIsBroken",
-          "-z",
-          "-l",
-          file(root, "logback.xml").getAbsolutePath,
-          "-L",
-          "40"
-        ).
-        withWorkingDirectory(root).
-        withExitValues(0, 1).
-        withNoOutput
+        var command = TestModuleBuilder.makerExecuteCommand(
+          root, 
+          "RunUnitTestsTaskTestsModule3.checkTestsWhenOneIsBroken"
+        ).withNoOutput
 
         var result = command.run
         result should equal (0)
@@ -205,20 +172,10 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
           }
           """
         )
-        command = Command(
-          "python",
-          makerScript,
-          "-E",
-          "RunUnitTestsTaskTestsModule3.checkTestsAfterFix",
-          "-z",
-          "-l",
-          file(root, "logback.xml").getAbsolutePath,
-          "-L",
-          "40"
-        ).
-        withWorkingDirectory(root).
-        withExitValues(0, 1).
-        withNoOutput
+        command = TestModuleBuilder.makerExecuteCommand(
+          root, 
+          "RunUnitTestsTaskTestsModule3.checkTestsAfterFix"
+        ).withNoOutput
 
         result = command.run
         result should equal (0)

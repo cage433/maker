@@ -61,7 +61,7 @@ case class PublishToSonatype(project : Project, version : String, scalaVersion :
 
     val bundleJar = file("/home/alex/tmp", "bundle.jar")
 
-    BuildJar.build(bundleJar, publishLocalPomDir(version) :: publishLocalJarDir(version) :: Nil).map{
+    BuildJar.build(bundleJar, publishLocalPomDir(version, scalaVersion) :: publishLocalJarDir(version, scalaVersion) :: Nil).map{
       _ => bundleJar
     }
   }
