@@ -9,6 +9,7 @@ import scala.xml.NodeSeq
 import maker.task.FailingTests._
 import maker.task.compile._
 import maker.project._
+import maker.ScalaVersion
 import maker.utils.FileUtils._
 import org.eclipse.aether.util.artifact.JavaScopes
 
@@ -35,15 +36,13 @@ val extraPomInfo : List[NodeSeq] = {
 lazy val testReporterModule = new Module(
   root = file("test-reporter").asAbsoluteFile, 
   name = "maker-test-reporter"
-) 
-  with ClassicLayout 
-  with TmuxIntegration
-{
-  override def resources() = {
+) with ClassicLayout with TmuxIntegration {
+  override def dependencies() = {
     Vector(
       "org.scalatest" % "scalatest_2.10" %  "2.2.0"
     )
   }
+  override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 }
 
 lazy val testReporterProject = new Project(
@@ -59,7 +58,7 @@ lazy val makerModule = new Module(
   root = file("maker").asAbsoluteFile,
   name = "maker"
 ) with ClassicLayout with Bootstrapper {
-  override def resources() = {
+  override def dependencies() = {
     Vector(
       "org.scalatest" % "scalatest_2.10" % "2.2.0",
       "ch.qos.logback" % "logback-classic" % "1.0.6",
@@ -83,21 +82,26 @@ lazy val makerModule = new Module(
       "org.mortbay.jetty" % "jetty" % "6.1.26"
     )
   }
+  override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 }
 
-lazy val makerProject = new Project("maker", file("."), List(makerModule)){
+lazy val makerProject = new Project("maker", file("."), List(makerModule)) with TmuxIntegration {
   override def extraProjectPomInfo = extraPomInfo
   override def organization = Some("com.github.cage433")
-}
+  override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
+} 
 // Used to disambiguate which maker is running in the repl.
 def pwd = println(Properties.userDir)
 
-def publishSnapshots(version : String) = {
-  testReporterProject.publishSonatypeSnapshot(version) andThen makerProject.publishSonatypeSnapshot(version)
+def publishSnapshots(version : String, scalaVersionString : String) = {
+  val scalaVersion = ScalaVersion(scalaVersionString)
+  testReporterProject.publishSonatypeSnapshot(version, scalaVersion) andThen 
+  makerProject.publishSonatypeSnapshot(version, scalaVersion)
 }
 
-def publishRelease(version : String) = {
-  testReporterProject.publishToSonatype(version) andThen makerProject.publishToSonatype(version)
+def publishRelease(version : String, scalaVersionString : String) = {
+  val scalaVersion = ScalaVersion(scalaVersionString)
+  testReporterProject.publishToSonatype(version, scalaVersion) andThen makerProject.publishToSonatype(version, scalaVersion)
 }
 
 import makerProject._

@@ -8,7 +8,7 @@ import maker.project.{TestModule, TestModuleBuilder}
 class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExecution{
 
   test("Broken tests fail"){
-    withTempDir{
+    withTestDir{
       dir => 
         TestModuleBuilder.createMakerProjectFile(dir)
         val module = new TestModuleBuilder(dir, "RunUnitTestsTaskTestsModule")

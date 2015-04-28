@@ -235,11 +235,11 @@ def classpath(jars_and_directories):
 
 def maker_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
-    return [os.path.join(maker_root, module, "target-maker", "classes") for module in ["maker"]]
+    return [os.path.join(maker_root, module, "target-maker", MAKER_SCALA_VERSION, "classes") for module in ["maker"]]
 
 def maker_test_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
-    return [os.path.join(maker_root, module, "target-maker", "test-classes") for module in ["maker"]]
+    return [os.path.join(maker_root, module, "target-maker", MAKER_SCALA_VERSION, "test-classes") for module in ["maker"]]
 
 
 
