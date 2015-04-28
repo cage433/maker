@@ -6,7 +6,7 @@ import maker.utils.Int
 import maker.utils.FileUtils._
 import java.io.File
 import org.eclipse.aether.graph.{Exclusion, Dependency => AetherDependency}
-import maker.project.DependencyPimps
+import maker.project.{DependencyPimps, RichDependency}
 
 /*
  * Deterimines which scala libraries are project
@@ -16,56 +16,52 @@ import maker.project.DependencyPimps
  */
 case class ScalaVersion(
   major : Int, 
-  minor : Int,
-  config : Config = ConfigFactory.load()) 
-  extends ConfigPimps 
-  with DependencyPimps 
+  minor : Int
+)
+  extends DependencyPimps 
   with ToBooleanOps
 {
   require( 
-    List(9, 10, 11).contains(major),
-    "Only supports scala 2.9 to 2.11 inclusive"
+    List(10, 11).contains(major),
+    "Only supports scala 2.10 to 2.11 inclusive"
   )
-  private val versionNo = s"2.$major.$minor"
-  private val versionBase = s"2.$major"
+  val versionNo = s"2.$major.$minor"
+  val versionBase = s"2.$major"
   override def toString = versionNo
 
-  private def resource(org : String, artifact : String, version : String = versionNo) : AetherDependency = {
-    org % artifact % version 
-  }
-  def scalaLibraryResource = resource("org.scala-lang", "scala-library")
-  def compilerResource = resource("org.scala-lang", "scala-compiler")
-  def reflectResource = (major >= 10).option(resource("org.scala-lang", "scala-reflect"))
-  def xmlResource = (major >= 11).option(resource("org.scala-lang.modules", s"scala-xml_$versionBase", "1.0.3"))
-  def parserCombinatorResource = (major >= 11).option(resource("org.scala-lang.modules", s"scala-parser-combinators_$versionBase", "1.0.3"))
+  def scalaLibraryRichDependency = "org.scala-lang" % s"scala-library_$versionBase" % versionNo
+  def scalaCompilerRichDependency = "org.scala-lang" % s"scala-compiler_$versionBase" % versionNo
+  def scalaReflectRichDependency = "org.scala-lang" % s"scala-reflect_$versionBase" % versionNo
+  def scalaXmlRichDependency : Option[RichDependency] = (major >= 11).option("org.scala-lang.modules" % s"scala-xml_$versionBase" % "1.0.3")
+  def scalaParserCombinatorRichDependency = (major >= 11).option("org.scala-lang.modules" % s"scala-parser-combinators_$versionBase" %"1.0.3")
 
-  private def resources = List(scalaLibraryResource, compilerResource) ::: reflectResource.toList ::: xmlResource.toList ::: parserCombinatorResource.toList
-  private def sourceResources = resources.map(_.sourceDependency)
+  private def scalaRichDependencies = List(scalaLibraryRichDependency, scalaCompilerRichDependency, scalaReflectRichDependency) ::: 
+    scalaXmlRichDependency.toList ::: scalaParserCombinatorRichDependency.toList
 
-  def scalaLibraryJar = file(
-    config.projectScalaLibDirectory,
-    scalaLibraryResource.basename
-  )
-  def scalaCompilerJar = file(
-    config.projectScalaLibDirectory,
-    compilerResource.basename
-  )
+  //def scalaLibraryJar = file(
+    //config.projectScalaLibDirectory,
+    //scalaLibraryResource.basename
+  //)
+  //def scalaCompilerJar = file(
+    //config.projectScalaLibDirectory,
+    //compilerResource.basename
+  //)
 
-  def scalaReflectJar = reflectResource.map{
-    resource => 
-      file(
-        config.projectScalaLibDirectory,
-        resource.basename
-      )
-  }
+  //def scalaReflectJar = reflectResource.map{
+    //resource => 
+      //file(
+        //config.projectScalaLibDirectory,
+        //resource.basename
+      //)
+  //}
 
-  def scalaJars : List[File] = resources.map{
-      res => 
-        file(
-          config.projectScalaLibDirectory,
-          res.basename
-        )
-  }
+  //def scalaJars : List[File] = resources.map{
+      //res => 
+        //file(
+          //config.projectScalaLibDirectory,
+          //res.basename
+        //)
+  //}
 }
 
 object ScalaVersion{
@@ -77,6 +73,7 @@ object ScalaVersion{
       case _ => 
         throw new IllegalStateException(s"Unrecognised scala version'$version'")
     }
-    
   }
+
+  def majorVersion(scalaVersion : String) = scalaVersion.split('.').take(2).mkString(".")
 }

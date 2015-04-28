@@ -36,7 +36,7 @@ class Module(
   protected val upstreamModulesForBuild = List(this)
 
   def tearDown(graph : Dependency.Graph, result : BuildResult) = true
-  def dependencies() : Seq[AetherDependency]  = Nil
+  def dependencies : Seq[RichDependency]  = Nil
 
   def compilationMetadataDirectory(majorScalaVersion : String, phase : CompilePhase) = 
     mkdir(file(makerDirectory, "compilation-metadata", majorScalaVersion, phase.name))

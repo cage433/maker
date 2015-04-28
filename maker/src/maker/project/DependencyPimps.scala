@@ -6,9 +6,48 @@ import org.eclipse.aether.graph.{Exclusion, Dependency}
 import scala.collection.JavaConversions._
 
 
+case class RichDependency(
+  org : String, 
+  artifactId : String, 
+  version : String, 
+  useMajorScalaVersion : Boolean,
+  scope : String = JavaScopes.COMPILE,
+  classifier : String = "",
+  extension : String = "",
+  isOptional : Boolean = false,
+  exclusions : Seq[Exclusion] = Nil
+){
+  def scalaVersionedArtifactId(majorScalaVersion : String) = 
+    if (useMajorScalaVersion) s"${artifactId}_$majorScalaVersion" else artifactId
+
+  def pomXml(majorScalaVersion : String) = 
+    <dependency>
+      <groupId>{org}</groupId>
+      <artifactId>{scalaVersionedArtifactId(majorScalaVersion)}</artifactId>
+      <version>{version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+  def dependency(majorScalaVersion : String) = {
+    val artifact = new DefaultArtifact(
+      org,
+      scalaVersionedArtifactId(majorScalaVersion),
+      classifier,
+      extension,
+      version
+    )
+    new Dependency(
+      artifact,
+      scope,
+      isOptional,
+      exclusions
+    )
+  }
+}
 trait DependencyPimps{
   class OrgAndArtifact(org : String, artifact : String){
-    def %(version : String) = new Dependency(new DefaultArtifact(s"$org:$artifact:$version"), JavaScopes.COMPILE)
+    def %(version : String) = new RichDependency(org, artifact, version, useMajorScalaVersion = false)
+    def %%(version : String) = new RichDependency(org, artifact, version, useMajorScalaVersion = true)
   }
   implicit class Organization(name : String){
     def %(artifact : String) = new OrgAndArtifact(name, artifact)

@@ -20,15 +20,15 @@ trait ConfigPimps {
       )
     }
 
-    def scalaVersion : ScalaVersion = ScalaVersion(config.getString("maker.project.scala.version"))
+    //def scalaVersion : ScalaVersion = ScalaVersion(config.getString("maker.project.scala.version"))
 
     def scalaLibraryResolver = config.getString("maker.project.scala.resolver")
 
-    def projectScalaLibDirectory : File = {
-      val dir = file(config.getString("user.home"), ".maker", "scala-libs", scalaVersion.toString)
-      dir.mkdirs
-      dir
-    }
+    //def projectScalaLibDirectory : File = {
+      //val dir = file(config.getString("user.home"), ".maker", "scala-libs", scalaVersion.toString)
+      //dir.mkdirs
+      //dir
+    //}
 
     def resourceCache = mkdirs(file(config.getString("maker.resource-cache")))
 

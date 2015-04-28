@@ -100,10 +100,10 @@ case class UpdateTask(project : ProjectTrait, majorScalaVersion : String, forceS
   }
 
   private def getArtifacts(download : DownloadType) : Seq[Artifact] = {
-    var dependencies = List(
-      "org.scala-lang" % "scala-library" % config.scalaVersion.toString,
-      "org.scala-lang" % "scala-compiler" % config.scalaVersion.toString
-      ) ++: project.upstreamDependencies
+    var dependencies = (List(
+      "org.scala-lang" % "scala-library" %% config.scalaVersion.toString,
+      "org.scala-lang" % "scala-compiler" %% config.scalaVersion.toString
+      ) ++: project.upstreamDependencies).map(_.dependency(majorScalaVersion))
 
     val collectRequest = new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories)
     val dependencyRequest = new DependencyRequest(

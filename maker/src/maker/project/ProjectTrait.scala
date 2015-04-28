@@ -41,7 +41,8 @@ trait ProjectTrait extends ConfigPimps{
    }
   override def hashCode = root.hashCode
 
-  def defaultMajorScalaVersion : String = "2.10"
+  def scalaVersion = "2.10.4"
+  def defaultMajorScalaVersion : String = ScalaVersion.majorVersion(scalaVersion)
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
@@ -67,6 +68,13 @@ trait ProjectTrait extends ConfigPimps{
       Console.err,
       new FileOutputStream(moduleCompilationErrorsFile)
     )
+  }
+
+  def scalaReflectJar(scalaVersion : ScalaVersion) = {
+    dependencyJars(scalaVersion.versionBase).filter(_.getName.contains("scala-reflect")) match {
+      case List(jarFile) => jarFile
+      case other => throw new IllegalStateException(s"Expected to find a single scala reflect jar, got $other")
+    }
   }
 
   private val scalatestOutputParameters_ = new AtomicReference[String]("-oHL")
