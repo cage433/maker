@@ -20,15 +20,7 @@ trait ConfigPimps {
       )
     }
 
-    //def scalaVersion : ScalaVersion = ScalaVersion(config.getString("maker.project.scala.version"))
-
     def scalaLibraryResolver = config.getString("maker.project.scala.resolver")
-
-    //def projectScalaLibDirectory : File = {
-      //val dir = file(config.getString("user.home"), ".maker", "scala-libs", scalaVersion.toString)
-      //dir.mkdirs
-      //dir
-    //}
 
     def resourceCache = mkdirs(file(config.getString("maker.resource-cache")))
 
@@ -41,15 +33,6 @@ trait ConfigPimps {
     }
       
     def makerVersion = config.getString("maker.version")
-    def testReporterJar = {
-      val jar = file(
-        config.getString("maker.maker-binaries-directory"),
-        makerVersion,
-        s"maker-test-reporter-$makerVersion.jar"
-      )
-      require(jar.exists, s"test reporter not found - expected $jar")
-      jar
-    }
 
     def unitTestLogbackConfigFile() = {
       val configFile = file(config.getString("maker.logback.unit-tests-config"))

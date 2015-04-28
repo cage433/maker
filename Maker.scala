@@ -79,7 +79,8 @@ lazy val makerModule = new Module(
       "org.eclipse.aether" % "aether-transport-file" % "1.0.0.v20140518",
       "org.eclipse.aether" % "aether-transport-http" % "1.0.0.v20140518",
       "org.eclipse.aether" %"aether-test-util" % "1.0.0.v20140518",
-      "org.mortbay.jetty" % "jetty" % "6.1.26"
+      "org.mortbay.jetty" % "jetty" % "6.1.26",
+      "com.github.cage433" % "maker-test-reporter" %% "0.07"
     )
   }
   override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT

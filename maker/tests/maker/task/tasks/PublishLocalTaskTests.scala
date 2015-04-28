@@ -30,7 +30,7 @@ class PublishLocalTaskTests
 
     List(
       (project.organization.getOrElse(???), "groupId"), 
-      (project.name, "artifactId"),
+      (project.artifactId(project.defaultScalaVersion), "artifactId"),
       (version, "version")
     ).foreach{
       case (expected, label) => 
@@ -40,7 +40,6 @@ class PublishLocalTaskTests
   }
 
   private def checkPublishedPomIncludesAllDependencies(project : Project, version : String){
-    import project.config
     val pom = XML.loadFile(project.publishLocalPomFile(version, project.defaultScalaVersion))
     val pomDependencies = pom \\ "dependency"
     val dependencies = (project.defaultScalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.dependency(project.defaultScalaVersion))

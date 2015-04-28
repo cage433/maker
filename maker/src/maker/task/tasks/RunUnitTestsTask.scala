@@ -64,7 +64,7 @@ case class RunUnitTestsTask(
     val testParameters : Seq[String] = rootProject.scalatestOutputParameters :: List("-P", "-C", "maker.utils.MakerTestReporter") 
 
     var cmd = Command.scalaCommand(
-      classpath = rootProject.testRuntimeClasspath(scalaVersion) + java.io.File.pathSeparator + config.testReporterJar,
+      classpath = rootProject.testRuntimeClasspath(scalaVersion),
       klass = "scala.tools.nsc.MainGenericRunner",
       opts = opts,
       args = "org.scalatest.tools.Runner" +: testParameters ++: suiteParameters

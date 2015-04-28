@@ -52,6 +52,7 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
         args = Vector("@" + optsFile.getAbsolutePath)
       ).withOutputTo(bs).withWorkingDirectory(docDir)
 
+      println(bs.toString)
       cmd.run() match {
         case 0 => DefaultTaskResult(this, true, sw)
         case _ => 

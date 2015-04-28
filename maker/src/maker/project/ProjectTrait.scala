@@ -322,7 +322,7 @@ trait ProjectTrait extends ConfigPimps{
     */
   def writeVimClasspath(scalaVersion : ScalaVersion) {
     val cp = testCompilationClasspath(scalaVersion)
-    val cpFile : File = file(name + "-classpath.sh")
+    val cpFile : File = file(name + "-classpath.txt")
     println(s"Writing classpath to file $cpFile")
     writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
   }

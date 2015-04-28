@@ -15,13 +15,13 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "2.5-SNAPSHOT"
+MAKER_VERSION       = "2.6-SNAPSHOT"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE            = "http://oss.sonatype.org/content/repositories/snapshots/"
 MAVEN               = "http://repo1.maven.org/maven2/"
 TYPESAFE            = "http://repo.typesafe.com/typesafe/releases/"
-MAKER_BINARIES      = [ (SONATYPE, "com.github.cage433", "maker", MAKER_VERSION),
-                        (SONATYPE, "com.github.cage433", "maker-test-reporter", MAKER_VERSION)
+MAKER_BINARIES      = [ (SONATYPE, "com.github.cage433", "maker_2.10", MAKER_VERSION),
+                        (SONATYPE, "com.github.cage433", "maker-test-reporter_2.10", MAKER_VERSION)
                         ]
 SCALA_LIBRARIES     = [ (TYPESAFE, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
                         (TYPESAFE, "org.scala-lang", "jline", MAKER_SCALA_VERSION),
