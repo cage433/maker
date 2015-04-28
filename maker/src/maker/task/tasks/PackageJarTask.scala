@@ -31,8 +31,8 @@ case class PackageJarTask(
     import project.{packageDir, packageJar, sourcePackageJar, docPackageJar, docOutputDir}
     import BuildJar.{build => buildJar}
 
-    if (!packageDir.exists)
-      packageDir.mkdirs
+    if (!packageDir(scalaVersion).exists)
+      packageDir(scalaVersion).mkdirs
 
     val modules = project.upstreamModules
     val result = buildJar(
@@ -44,8 +44,8 @@ case class PackageJarTask(
                     modules.flatMap(_.sourceDirs(SourceCompilePhase))
                   ) andThen
                   buildJar(
-                    docPackageJar,
-                    docOutputDir :: Nil
+                    docPackageJar(scalaVersion),
+                    docOutputDir(scalaVersion) :: Nil
                   )
     result match {
       case Right(_) => 

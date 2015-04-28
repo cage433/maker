@@ -60,7 +60,7 @@ case class PublishLocalTask(
     result &&= Vector(
       (project.packageJar(Some(version), scalaVersion), s"${project.artifactId(scalaVersion)}-$version.jar"),
       (project.sourcePackageJar(Some(version), scalaVersion), s"${project.artifactId(scalaVersion)}-$version-sources.jar"),
-      (project.docPackageJar, s"${project.artifactId(scalaVersion)}-$version-javadoc.jar")
+      (project.docPackageJar(scalaVersion), s"${project.artifactId(scalaVersion)}-$version-javadoc.jar")
     ).filter(_._1.exists).forall{
       case (jar, versionedBasename) => 
         val fileWithVersion = file(project.publishLocalJarDir(version, scalaVersion), versionedBasename)

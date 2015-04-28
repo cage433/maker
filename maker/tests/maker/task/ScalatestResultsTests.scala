@@ -16,9 +16,10 @@ class ScalatestResultsTests extends FunSuite{
   }
 
   test("Errors are correctly counted"){
-    withTempDir{
+    withTestDir{
       dir =>
         val proj = new TestModule(dir, "ScalatestResultsTests")
+        println(proj.defaultScalaVersion)
         proj.writeTest(
           "foo/FooTest.scala",
           """
@@ -38,6 +39,7 @@ class ScalatestResultsTests extends FunSuite{
           """
         )
 
+        proj.writeMakerProjectDefinitionFile
         proj.test
         assert(proj.testResults.passedTests.size === 2)
         assert(proj.testResults.failedTests.size === 1)

@@ -22,6 +22,21 @@ case class RichDependency(
   def scalaVersionedArtifactId(scalaVersion : ScalaVersion) = 
     if (useMajorScalaVersion) s"${artifactId}_${scalaVersion.versionBase}" else artifactId
 
+  def withExclusions(groupAndArtifacts : String*) = {
+    val exclusions = groupAndArtifacts.map{
+      gAndA => 
+        gAndA.split(":") match {
+          case Array(group, artifact) => 
+            new Exclusion(group, artifact, "*", "*")
+          case Array(group) => 
+            new Exclusion(group, "*", "*", "*")
+          case other =>
+            ???
+        }
+    }
+    copy(exclusions = exclusions)
+  }
+
   def pomXml(scalaVersion : ScalaVersion) = 
     <dependency>
       <groupId>{org}</groupId>

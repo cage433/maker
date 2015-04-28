@@ -37,8 +37,8 @@ case class Project(
     b.addLine(s"""val $name = Project($name, file("${root.getAbsolutePath.toString}"), ${upstreamModules.mkString("List(", ", ", ")")})""")
     b.toString
   }
-  def docOutputDir = file(rootAbsoluteFile, "docs")
-  def packageDir = file(rootAbsoluteFile, "package")
+  def docOutputDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
+  def packageDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 
   def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion) = {
     upstreamModules.flatMap(_.testClassNames(rootProject, scalaVersion))
@@ -53,13 +53,13 @@ case class Project(
   def packageJar(version : Option[String], scalaVersion : ScalaVersion) = {
     val versionAsString = version.map("-" + _).getOrElse("")
     val jarBasename = artifactId(scalaVersion) + versionAsString + ".jar"
-    file(packageDir.getAbsolutePath, jarBasename)
+    file(packageDir(scalaVersion).getAbsolutePath, jarBasename)
   }
 
   def sourcePackageJar(version : Option[String], scalaVersion : ScalaVersion) = {
     val versionAsString = version.map("-" + _).getOrElse("")
     val jarBasename = artifactId(scalaVersion) + versionAsString + "-sources.jar"
-    file(packageDir.getAbsolutePath, jarBasename)
+    file(packageDir(scalaVersion).getAbsolutePath, jarBasename)
   }
 
   def publishLocalJar(version : String, scalaVersion : ScalaVersion) = 
@@ -79,7 +79,7 @@ case class Project(
   }
   def pack : BuildResult = pack(defaultScalaVersion)
 
-  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
+  def docPackageJar(scalaVersion : ScalaVersion) = file(packageDir(scalaVersion).getAbsolutePath, name + "-javadoc.jar")
   def doc(scalaVersion : ScalaVersion) = execute(transitiveBuild(DocTask(this, scalaVersion) :: Nil))
   def doc : BuildResult = doc(defaultScalaVersion)
 

@@ -1,6 +1,6 @@
 package maker.task.tasks
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.{FreeSpec, Matchers, Assertions}
 import maker.utils.FileUtils._
 import maker.project._
 import maker._
@@ -19,6 +19,7 @@ class PublishLocalTaskTests
   with ConfigPimps
   with DependencyPimps
   with ModuleTestPimps
+  with Assertions
 {
 
   private def checkPublishedPomMatchesCoordinates(project : Project, version : String){
@@ -50,7 +51,7 @@ class PublishLocalTaskTests
         pomDependencies.exists{
           node => 
             val pomCoords = List("groupId", "artifactId", "version").map{label => (node \ label).text}
-            coords == pomCoords
+            coords === pomCoords
         }
     }
   }

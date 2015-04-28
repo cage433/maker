@@ -17,7 +17,7 @@ import maker.utils.FileUtils
 class CompileTaskTests extends FunSuite with TestUtils with Matchers with ModuleTestPimps{
 
   test("Can compile 2.10 and 2.11 scala versions"){
-    withTestDir{
+    withTempDir{
       moduleRoot => 
         TestModuleBuilder.createMakerProjectFile(moduleRoot)
         val module = TestModuleBuilder(

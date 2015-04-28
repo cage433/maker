@@ -155,12 +155,12 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
               | }
               | override def setUp(graph : Dependency.Graph) = {
               |   if (graphContainsClean(graph))
-              |     writeToFile(setUpClassCountFile, compilePhase.classFiles.size + "")
+              |     writeToFile(setUpClassCountFile, classFiles(defaultScalaVersion).size + "")
               |   super.setUp(graph)
               | }
               | override def tearDown(graph : Dependency.Graph, result : BuildResult) = {
               |   if (graphContainsClean(graph))
-              |     writeToFile(tearDownClassCountFile, compilePhase.classFiles.size + "")
+              |     writeToFile(tearDownClassCountFile, classFiles(defaultScalaVersion).size + "")
               |   super.tearDown(graph, result)
               | }
               | def deleteClassCountFiles{

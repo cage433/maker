@@ -20,7 +20,7 @@ object PomUtils extends ConfigPimps with DependencyPimps{
     val groupId = project.organization.getOrElse(throw new IllegalStateException("Organization not defined"))
 
     def externalDependencies = {
-      val scalaLibraryDep = "org.scala-lang" % s"scala-library_${scalaVersion.versionBase}" % scalaVersion.versionNo
+      val scalaLibraryDep = "org.scala-lang" % s"scala-library" % scalaVersion.versionNo
       val projectDependencies : Seq[RichDependency] = project.upstreamModules.flatMap(_.dependencies)
       (scalaLibraryDep +: projectDependencies).distinct.map(
         _.pomXml(scalaVersion)

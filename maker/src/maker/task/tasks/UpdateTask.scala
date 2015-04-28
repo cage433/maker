@@ -6,7 +6,6 @@ import maker.task._
 import maker.utils._
 import maker.{ConfigPimps, ScalaVersion}
 import scala.collection.JavaConversions._
-import org.scalatest.Failed
 import java.net.URL
 import java.io.File
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory

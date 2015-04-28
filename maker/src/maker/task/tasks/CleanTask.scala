@@ -42,7 +42,7 @@ case class CleanTask(project : ProjectTrait, scalaVersion : ScalaVersion) extend
 
     project match {
       case p : Project => 
-        recursiveDelete(p.packageDir)
+        recursiveDelete(p.packageDir(scalaVersion))
         cleanRegularFilesLeavingDirectories(p.managedLibDir(scalaVersion))
         cleanRegularFilesLeavingDirectories(p.managedResourceDir)
         cleanRegularFilesLeavingDirectories(p.managedLibSourceDir(scalaVersion))

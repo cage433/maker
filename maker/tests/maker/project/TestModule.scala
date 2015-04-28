@@ -34,9 +34,11 @@ class TestModule(
         |   upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
         |   upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
         |)  with maker.project.DependencyPimps  {
-        |   override def dependencies = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
+        |   override def dependencies = List("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST))
         |}""".stripMargin
   }
+
+  override def reportBuildResult : Boolean = false
 
   def appendDefinitionToProjectFile(rootDir : File){
     val projectFile = file(rootDir, "Maker.scala")
@@ -46,8 +48,8 @@ class TestModule(
     )
   }
   override def dependencies = List(
-    "org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST),
-    "com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST)
+    "org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST),
+    "com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST) withExclusions("org.scalatest:scalatest_2.10")
   )
 
   def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {
@@ -100,7 +102,7 @@ class TestModule(
             |   upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
             |   upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
             |)  with DependencyPimps  {
-            |   override def dependencies = List("org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST))
+            |   override def dependencies = List("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST))
             |}
             |
             | import ${name}._

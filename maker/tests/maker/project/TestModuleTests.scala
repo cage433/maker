@@ -7,7 +7,7 @@ import maker.utils.os.Command
 class TestModuleTests extends FreeSpec with Matchers{
 
   "application.conf should be picked up" in {
-    withTestDir{
+    withTempDir{
       dir => 
         TestModuleBuilder.createMakerProjectFile(dir)
         TestModuleBuilder.writeLogbackConfig(dir, "WARN")

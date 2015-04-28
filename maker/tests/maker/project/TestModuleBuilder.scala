@@ -40,7 +40,7 @@ case class TestModuleBuilder(
         |   "$name",
         |   immediateUpstreamModules = ${listString(immediateUpstreamModuleNames)},
         |   testModuleDependencies = ${listString(testModuleDependencies)}
-        |)  with maker.project.DependencyPimps  with ClassicLayout ${extraTraits.mkString("with ")}{
+        |)  ${("maker.project.DependencyPimps" +: "ClassicLayout" +: extraTraits).mkString(" with ", " with ", "")}{
         |
         |   override def dependencies = List(
         |     "org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST),
@@ -62,7 +62,7 @@ case class TestModuleBuilder(
     )
   }
   def dependencies = List(
-    "org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST),
+    "org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST),
     "com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST)
   )
 

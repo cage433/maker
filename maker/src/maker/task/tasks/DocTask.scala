@@ -29,7 +29,7 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
 
     val inputFiles = project.upstreamModules.flatMap(_.compilePhase.sourceFiles)
 
-    val docDir = project.docOutputDir
+    val docDir = project.docOutputDir(scalaVersion)
     if (inputFiles.nonEmpty && 
         ( !docDir.exists || 
           lastModifiedFileTime(inputFiles).getOrElse(0L) > lastModifiedFileTime(List(docDir)).getOrElse(0L))) {

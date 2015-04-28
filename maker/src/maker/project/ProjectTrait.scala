@@ -80,7 +80,12 @@ trait ProjectTrait extends ConfigPimps{
   def scalaReflectJar(scalaVersion : ScalaVersion) = findSingleScalaJar(scalaVersion, "scala-reflect")
   def scalaCompilerJar(scalaVersion : ScalaVersion) = findSingleScalaJar(scalaVersion, "scala-compiler")
   def scalaLibraryJar(scalaVersion : ScalaVersion) = findSingleScalaJar(scalaVersion, "scala-library")
-  def scalaJars(scalaVersion : ScalaVersion) = Vector(scalaReflectJar(scalaVersion), scalaCompilerJar(scalaVersion), scalaLibraryJar(scalaVersion))
+  def scalaXmlJar(scalaVersion : ScalaVersion) : Option[File] = if (scalaVersion.major >= 11) Some(findSingleScalaJar(scalaVersion, "scala-xml")) else None
+  def scalaParserCombinatorJar(scalaVersion : ScalaVersion) : Option[File] = if (scalaVersion.major >= 11) Some(findSingleScalaJar(scalaVersion, "scala-parser-combinators")) else None
+  def scalaJars(scalaVersion : ScalaVersion) = 
+    Vector(scalaReflectJar(scalaVersion), scalaCompilerJar(scalaVersion), scalaLibraryJar(scalaVersion)) ++: 
+      scalaXmlJar(scalaVersion).toList ++:
+      scalaParserCombinatorJar(scalaVersion).toList 
 
   private val scalatestOutputParameters_ = new AtomicReference[String]("-oHL")
   def scalatestOutputParameters : String = scalatestOutputParameters_.get
