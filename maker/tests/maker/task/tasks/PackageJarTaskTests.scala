@@ -9,7 +9,7 @@ import maker.task.compile.SourceCompilePhase
 import java.util.jar.JarFile
 import scala.collection.JavaConversions._
 
-class PackageJarTaskTests extends FreeSpec with Matchers{
+class PackageJarTaskTests extends FreeSpec with Matchers with ModuleTestPimps{
   private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
     val moduleRoot = file(dir, name)
     new TestModule(
@@ -34,7 +34,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
         proj.pack.succeeded should be (true)
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.outputDir(SourceCompilePhase), 
+          module.classDirectory(SourceCompilePhase), 
           proj.packageJar(version = None))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           module.resourceDir(SourceCompilePhase), 
@@ -86,7 +86,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers{
         Vector(a, b, c).foreach{
           m => 
             PackageJarTaskTests.checkJarContainsDirectoryContents(
-              m.outputDir(SourceCompilePhase),
+              m.classDirectory(SourceCompilePhase),
               oneBigJar
             )
             PackageJarTaskTests.checkJarContainsDirectoryContents(

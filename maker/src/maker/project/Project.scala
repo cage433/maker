@@ -39,8 +39,8 @@ case class Project(
   def docOutputDir = file(rootAbsoluteFile, "docs")
   def packageDir = file(rootAbsoluteFile, "package")
 
-  def testClassNames(rootProject : ProjectTrait) = {
-    upstreamModules.flatMap(_.testClassNames(rootProject))
+  def testClassNames(rootProject : ProjectTrait, majorScalaVersion : String) = {
+    upstreamModules.flatMap(_.testClassNames(rootProject, majorScalaVersion))
   }
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
@@ -64,52 +64,58 @@ case class Project(
   def publishLocalJar(version : String) = file(publishLocalJarDir(version), packageJar(Some(version)).getName)
   def publishLocalSourceJar(version : String) = file(publishLocalJarDir(version), sourcePackageJar(Some(version)).getName)
 
-  def pack : BuildResult = {
-    val tasks = PackageJarTask(this, version = None) :: Nil
+  def pack(majorScalaVersion : String) : BuildResult = {
+    val tasks = PackageJarTask(this, version = None, majorScalaVersion = majorScalaVersion) :: Nil
 
     execute(transitiveBuild(tasks))
   }
-  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
-  def doc = execute(transitiveBuild(DocTask(this) :: Nil))
+  def pack : BuildResult = pack(defaultMajorScalaVersion)
 
-  def publishLocalTaskBuild(version : String, signArtifacts : Boolean) = {
-    transitiveBuild(PublishLocalTask(this, version, signArtifacts) :: Nil)
+  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
+  def doc(majorScalaVersion : String) = execute(transitiveBuild(DocTask(this, majorScalaVersion) :: Nil))
+  def doc : BuildResult = doc(defaultMajorScalaVersion)
+
+  def publishLocalTaskBuild(version : String, signArtifacts : Boolean, majorScalaVersion : String) = {
+    transitiveBuild(PublishLocalTask(this, version, signArtifacts, majorScalaVersion) :: Nil)
   }
 
-  def publishLocal(version : String, signArtifacts : Boolean = false) = {
-    execute(publishLocalTaskBuild(version, signArtifacts))
+  def publishLocal(version : String, signArtifacts : Boolean, majorScalaVersion : String) = {
+    execute(publishLocalTaskBuild(version, signArtifacts, majorScalaVersion))
   }
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
 
-  def publishToSonatypeBuild(version : String) = transitiveBuild(PublishToSonatype(this, version) :: Nil)
-  def publishToSonatype(version : String) = execute(publishToSonatypeBuild(version))
+  def publishToSonatypeBuild(version : String, majorScalaVersion : String) = transitiveBuild(PublishToSonatype(this, version, majorScalaVersion) :: Nil)
+  def publishToSonatype(version : String, majorScalaVersion : String) = execute(publishToSonatypeBuild(version, majorScalaVersion))
 
-  def publishSonatypeSnapshotBuild(version : String) = transitiveBuild(PublishSnapshotToSonatype(this, version) :: Nil)
-  def publishSonatypeSnapshot(version : String) = execute(publishSonatypeSnapshotBuild(version))
+  def publishSonatypeSnapshotBuild(version : String, majorScalaVersion : String) = transitiveBuild(PublishSnapshotToSonatype(this, version, majorScalaVersion) :: Nil)
+  def publishSonatypeSnapshot(version : String, majorScalaVersion : String) = execute(publishSonatypeSnapshotBuild(version, majorScalaVersion))
 
   def dependencies = upstreamModules.flatMap(_.dependencies).distinct
 
-  def testTaskBuild = {
+  def testTaskBuild(majorScalaVersion : String) = {
     // For a project, `test` runs tests of all modules
     transitiveBuild(
       RunUnitTestsTask(
         s"Unit tests for $this", 
         upstreamModules,
         rootProject = this, 
-        classOrSuiteNames_ = None
+        classOrSuiteNames_ = None,
+        majorScalaVersion = majorScalaVersion
       ) :: Nil
     )
   }
 
-  def test : BuildResult = {
-    execute(testTaskBuild)
+  def test(majorScalaVersion : String) : BuildResult = {
+    execute(testTaskBuild(majorScalaVersion))
   }
 
+  def test : BuildResult = test(defaultMajorScalaVersion)
 
-  def testCompileTaskBuild = transitiveBuild(
-    upstreamModules.map(TestCompileTask(this, _))
+
+  def testCompileTaskBuild(majorScalaVersion : String) = transitiveBuild(
+    upstreamModules.map(TestCompileTask(this, _, majorScalaVersion))
   )
 }

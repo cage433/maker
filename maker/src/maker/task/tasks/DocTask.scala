@@ -16,13 +16,13 @@ import maker.ConfigPimps
   *
   * Outputs scala-docs per module in the "docs" sub-dir of the project target output dir
   */
-case class DocTask(project : Project) 
+case class DocTask(project : Project, majorScalaVersion : String) 
   extends Task
   with ConfigPimps
 {
   val config = project.config  
   def name = "Doc " + project.name
-  def upstreamTasks = project.modules.map(SourceCompileTask(project, _))
+  def upstreamTasks = project.modules.map(SourceCompileTask(project, _, majorScalaVersion))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
 
     logger.info("running scala-doc gen for project " + project)
@@ -39,7 +39,7 @@ case class DocTask(project : Project)
       // make a separate opts file as the args can get too big for a single command
       val optsFile = file(docDir, "docopts")
       val classpath = Module.asClasspathStr(
-        project.upstreamModules.map(_.outputDir(SourceCompilePhase))
+        project.upstreamModules.map(_.classDirectory(majorScalaVersion, SourceCompilePhase))
       )
       writeToFile(optsFile, s"""-classpath $classpath ${inputFiles.mkString(" ")}""")
 

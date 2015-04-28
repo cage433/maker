@@ -15,7 +15,13 @@ import xsbti.api.Compilation
 import javax.sound.sampled.Line
 import com.sun.org.apache.bcel.internal.classfile.Unknown
 
-abstract class CompileTask(rootProject : ProjectTrait, val module : Module) extends Task{
+abstract class CompileTask(
+  rootProject : ProjectTrait, 
+  val module : Module, 
+  majorScalaVersion : String
+) 
+  extends Task
+{
   
   def phase : CompilePhase
 
@@ -28,7 +34,7 @@ abstract class CompileTask(rootProject : ProjectTrait, val module : Module) exte
   )
 
   def compilationRequired(upstreamTaskResults : Iterable[TaskResult]) = {
-    def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation.nonEmpty
+    def hasDeletedSourceFiles = modulePhase.sourceFilesDeletedSinceLastCompilation(majorScalaVersion).nonEmpty
 
     def upstreamCompilation = upstreamTaskResults.exists{
       case r : CompileTaskResult if r.state != CompilationNotRequired => true
@@ -47,14 +53,14 @@ abstract class CompileTask(rootProject : ProjectTrait, val module : Module) exte
   def exec(upstreamTaskResults : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
     if (modulePhase.sourceFiles.isEmpty){
-      cleanRegularFilesLeavingDirectories(modulePhase.outputDir)
+      cleanRegularFilesLeavingDirectories(module.classDirectory(majorScalaVersion, phase))
       modulePhase.compilationCacheFile.delete
       return successfulResult(sw, CompilationNotRequired)
     }
     if (compilationRequired(upstreamTaskResults)){
       module.compilerName match {
         case "zinc" => 
-          val exitCode = ZincCompile(rootProject, modulePhase)
+          val exitCode = ZincCompile(rootProject, module, phase, majorScalaVersion)
           if (exitCode == 0)
             successfulResult(sw, CompilationSucceeded)
           else {
@@ -66,7 +72,7 @@ abstract class CompileTask(rootProject : ProjectTrait, val module : Module) exte
             )
           }
         case "dummy-test-compiler" =>
-          DummyCompileTask(modulePhase).exec
+          DummyCompileTask(module, phase, majorScalaVersion).exec
           successfulResult(sw, CompilationSucceeded)
 
       }
@@ -91,16 +97,19 @@ case class CompilationFailedInfo(e : CompileFailed) {
 }
 
 
-case class SourceCompileTask(rootProject: ProjectTrait, override val module :Module) extends CompileTask(rootProject, module){
+case class SourceCompileTask(rootProject: ProjectTrait, override val module :Module, majorScalaVersion : String) 
+  extends CompileTask(rootProject, module, majorScalaVersion){
   def upstreamTasks = {
-    module.immediateUpstreamModules.map(SourceCompileTask(rootProject, _)) ++ List(UpdateTask(rootProject, forceSourceUpdate = false))
+    module.immediateUpstreamModules.map(SourceCompileTask(rootProject, _, majorScalaVersion)) ++ 
+      List(UpdateTask(rootProject, majorScalaVersion, forceSourceUpdate = false))
   }
   def phase = SourceCompilePhase
 } 
 
-case class TestCompileTask(rootProject : ProjectTrait, override val module : Module) extends CompileTask(rootProject, module){
+case class TestCompileTask(rootProject : ProjectTrait, override val module : Module, majorScalaVersion : String) 
+  extends CompileTask(rootProject, module, majorScalaVersion){
   def upstreamTasks: Seq[Task] =
-      SourceCompileTask(rootProject, module) +: module.testModuleDependencies.map(TestCompileTask(rootProject, _))
+      SourceCompileTask(rootProject, module, majorScalaVersion) +: module.testModuleDependencies.map(TestCompileTask(rootProject, _, majorScalaVersion))
 
   def phase = TestCompilePhase
 }

@@ -12,7 +12,7 @@ import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
   *
   *  removes all build content and directories that contained it
   */
-case class CleanTask(project : ProjectTrait) extends Task
+case class CleanTask(project : ProjectTrait, majorScalaVersion : String) extends Task
 {
   def name = "Clean"
   lazy val logger = LoggerFactory.getLogger(this.getClass)
@@ -26,9 +26,8 @@ case class CleanTask(project : ProjectTrait) extends Task
                
     project.upstreamModules.foreach{
       module => 
-        cleanRegularFilesLeavingDirectories(module.compilePhase.outputDir)
-        cleanRegularFilesLeavingDirectories(module.testCompilePhase.outputDir)
-        cleanRegularFilesLeavingDirectories(module.targetDir)
+        cleanRegularFilesLeavingDirectories(module.classDirectory(majorScalaVersion, SourceCompilePhase))
+        cleanRegularFilesLeavingDirectories(module.classDirectory(majorScalaVersion, TestCompilePhase))
         cleanRegularFilesLeavingDirectories(module.managedLibDir)
         cleanRegularFilesLeavingDirectories(module.managedResourceDir)
         cleanRegularFilesLeavingDirectories(module.managedLibSourceDir)

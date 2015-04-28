@@ -13,6 +13,7 @@ import sbt.inc.Analysis
 import scala.collection.immutable.Nil
 import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.graph.{Exclusion, Dependency => AetherDependency}
+import maker.utils.FileUtils
 
 /**
   * Corresponds to a module in IntelliJ
@@ -37,9 +38,10 @@ class Module(
   def tearDown(graph : Dependency.Graph, result : BuildResult) = true
   def dependencies() : Seq[AetherDependency]  = Nil
 
-  def phaseDirectory(phase : CompilePhase) = mkdir(file(makerDirectory, phase.name))
-  def compilationCacheFile(phase : CompilePhase) = {
-    file(phaseDirectory(phase), "compilation-analysis-cache")
+  def compilationMetadataDirectory(majorScalaVersion : String, phase : CompilePhase) = 
+    mkdir(file(makerDirectory, "compilation-metadata", majorScalaVersion, phase.name))
+  def compilationCacheFile(majorScalaVersion : String, phase : CompilePhase) = {
+    file(compilationMetadataDirectory(majorScalaVersion, phase), "compilation-analysis-cache")
   }
 
 
@@ -103,9 +105,9 @@ class Module(
     execute(build)
   }
 
-  def cleanOnly = executeSansDependencies(CleanTask(this))
+  def cleanOnly = executeSansDependencies(CleanTask(this, defaultMajorScalaVersion))
 
-  def testTaskBuild = {
+  def testTaskBuild(majorScalaVersion : String) = {
     // For a module, the `test` task runs just tha module's tests.
     // To run all tests, use the containing project
     transitiveBuild(
@@ -113,32 +115,40 @@ class Module(
         s"Unit tests for $this", 
         modules = this :: Nil, 
         rootProject = this, 
-        classOrSuiteNames_ = None
+        classOrSuiteNames_ = None,
+        majorScalaVersion = majorScalaVersion
       ) :: Nil
     )
   }
 
 
-  def test : BuildResult = execute(testTaskBuild)
+  def test(majorScalaVersion : String) : BuildResult = execute(testTaskBuild(majorScalaVersion))
+  def test : BuildResult = test(defaultMajorScalaVersion)
 
-  def testCompileTaskBuild = transitiveBuild(
-    (this +: testModuleDependencies).map(TestCompileTask(this, _))
+  def testCompileTaskBuild(majorScalaVersion : String) = transitiveBuild(
+    (this +: testModuleDependencies).map(TestCompileTask(this, _, majorScalaVersion))
   )
 
-  def testFailuredSuitesOnly : BuildResult = executeSansDependencies(
-    RunUnitTestsTask.failingTests(this, this)
+  def testFailuredSuitesOnly(majorScalaVersion : String) : BuildResult = executeSansDependencies(
+    RunUnitTestsTask.failingTests(this, this, majorScalaVersion)
   )
-  def updateOnly = executeSansDependencies(UpdateTask(this, forceSourceUpdate = false))
+  def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(defaultMajorScalaVersion)
 
 
   /********************
   *     Test classses 
   ********************/
 
+  def classFiles(majorScalaVersion : String) : Seq[File] = FileUtils.findClasses(classDirectory(majorScalaVersion))
+  def testClassFiles(majorScalaVersion : String) : Seq[File] = FileUtils.findClasses(testClassDirectory(majorScalaVersion))
+  def classFiles(majorScalaVersion : String, phase : CompilePhase) : Seq[File] = phase match {
+    case SourceCompilePhase => classFiles(majorScalaVersion)
+    case TestCompilePhase   => testClassFiles(majorScalaVersion)
+  }
 
-  def testClassNames(rootProject : ProjectTrait) : Seq[String] = {
-    val isTestSuite = isAccessibleScalaTestSuite(rootProject)
-    testCompilePhase.classFiles.map(_.className(outputDir(TestCompilePhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
+  def testClassNames(rootProject : ProjectTrait, majorScalaVersion : String) : Seq[String] = {
+    val isTestSuite = isAccessibleScalaTestSuite(rootProject, majorScalaVersion)
+    testClassFiles(majorScalaVersion).map(_.className(testClassDirectory(majorScalaVersion))).filterNot(_.contains("$")).filter(isTestSuite).toList
   }
 
 
@@ -157,16 +167,29 @@ class Module(
       List(file(rootAbsoluteFile, "src/test/scala"), file(rootAbsoluteFile, "src/test/java"))
   }
 
+  def scalaFiles(phase : CompilePhase) = findFilesWithExtension("scala", sourceDirs(phase) : _*)
+  def javaFiles(phase : CompilePhase) = findFilesWithExtension("java", sourceDirs(phase): _*)
+
+  def sourceFiles(phase : CompilePhase) = scalaFiles(phase) ++ javaFiles(phase)
+
   def resourceDir(compilePhase : CompilePhase) = compilePhase match {
     case SourceCompilePhase => file(rootAbsoluteFile, "src/main/resources")
     case TestCompilePhase => file(rootAbsoluteFile, "src/test/resources")
   }
 
   def targetDir = file(rootAbsoluteFile, "target-maker")
-  def outputDir(compilePhase : CompilePhase) = compilePhase match {
-    case SourceCompilePhase => file(targetDir, "classes")
-    case TestCompilePhase => file(targetDir, "test-classes")
+  def classDirectory(majorScalaVersion : String) = file(targetDir, majorScalaVersion, "classes")
+  def testClassDirectory(majorScalaVersion : String) = file(targetDir, majorScalaVersion, "test-classes")
+  def classDirectory(majorScalaVersion : String, phase : CompilePhase) : File = {
+    phase match {
+      case SourceCompilePhase => classDirectory(majorScalaVersion)
+      case TestCompilePhase   => testClassDirectory(majorScalaVersion)
+    }
   }
+  //def outputDir(compilePhase : CompilePhase) = compilePhase match {
+    //case SourceCompilePhase => file(targetDir, "classes")
+    //case TestCompilePhase => file(targetDir, "test-classes")
+  //}
 
   def warnUnnecessaryResources = true
   def vimModuleCompileOutputFile = file(root, "vim-compile-output")

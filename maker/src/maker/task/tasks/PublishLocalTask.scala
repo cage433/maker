@@ -16,7 +16,8 @@ import maker.utils.FileUtils._
 case class PublishLocalTask(
   project : Project, 
   version : String,
-  signArtifacts : Boolean
+  signArtifacts : Boolean,
+  majorScalaVersion : String
 ) 
   extends Task 
   with ConfigPimps
@@ -24,7 +25,7 @@ case class PublishLocalTask(
   import project.config
   def name = "Publish Local"
 
-  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version)))
+  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version), majorScalaVersion))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     IvyLock.synchronized{

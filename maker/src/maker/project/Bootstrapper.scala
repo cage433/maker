@@ -27,7 +27,7 @@ trait Bootstrapper{
 
     def writeBoostrapFile(){
       // TODO - exclusions
-      val artifacts = new UpdateTask(self, forceSourceUpdate = false).binaryArtifacts.filterNot(_.getArtifactId == "compiler-interface")
+      val artifacts = new UpdateTask(self, forceSourceUpdate = false, majorScalaVersion  = "2.10").binaryArtifacts.filterNot(_.getArtifactId == "compiler-interface")
       val bldr = new VectorBuilder[String]()
       def makeLine(artifact : Artifact) = {
         val group = artifact.getGroupId.replace('.', '/')

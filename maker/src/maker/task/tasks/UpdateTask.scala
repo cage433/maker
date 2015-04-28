@@ -39,7 +39,7 @@ import org.eclipse.aether.internal.test.util.DependencyGraphParser
   * Missing source jars are not treated as a cause for failure unless `forceSourceUpdate`
   * is true
   */
-case class UpdateTask(project : ProjectTrait, forceSourceUpdate : Boolean) 
+case class UpdateTask(project : ProjectTrait, majorScalaVersion : String, forceSourceUpdate : Boolean) 
   extends Task
   with ConfigPimps
   with EitherPimps

@@ -7,6 +7,7 @@ import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.util.artifact.JavaScopes
 import java.io.File
 import maker.utils.FileUtils._
+import maker.utils.os.Command
 
 case class TestModuleBuilder(
   root : File, 
@@ -16,17 +17,19 @@ case class TestModuleBuilder(
   reportBuildResult : Boolean = false,
   scalatestOutputParameters : String = "-oHL",
   extraCode : String = "",
-  systemExitOnExecModeFailures : Boolean = true
+  systemExitOnExecModeFailures : Boolean = true,
+  extraTraits : Seq[String] = Nil
 ) 
   extends DependencyPimps
 {
 
+  import TestModuleBuilder.listString
   def withBuildResult = copy(reportBuildResult = true)
   def withTestExceptions = copy(scalatestOutputParameters = "-oFHL")
   def withExtraCode(code : String) = copy(extraCode = code)
   def withNoExecModeExit = copy(systemExitOnExecModeFailures = false)
 
-  private def listString(list : Seq[String]) : String = {
+  def listString(list : Seq[String]) : String = {
     s"${list.mkString("List(", ", ", ")")}"
   }
 
@@ -37,7 +40,8 @@ case class TestModuleBuilder(
         |   "$name",
         |   immediateUpstreamModules = ${listString(immediateUpstreamModuleNames)},
         |   testModuleDependencies = ${listString(testModuleDependencies)}
-        |)  with maker.project.DependencyPimps  with ClassicLayout {
+        |)  with maker.project.DependencyPimps  with ClassicLayout ${extraTraits.mkString("with ", "with ", "")}{
+        |
         |   override def dependencies = List(
         |     "org.scalatest" % "scalatest_2.10" % "2.2.0" withScope(JavaScopes.TEST),
         |     "com.typesafe" % "config" % "1.2.1"
@@ -94,12 +98,36 @@ object TestModuleBuilder{
     val projectFile = file(rootDir, "Maker.scala")
     val text = 
         s"""|
-            |import maker.project.{Module, DependencyPimps, ClassicLayout}
+            |import maker.project.{Module, DependencyPimps, ClassicLayout, Project}
+            |import maker.utils.FileUtils._
             |import org.eclipse.aether.util.artifact.JavaScopes
             |import java.io.File
             |""".stripMargin
     writeToFile(projectFile, text)
     writeLogbackConfig(rootDir)
+  }
+
+  def listString(list : Seq[String]) : String = {
+    s"${list.mkString("List(", ", ", ")")}"
+  }
+
+  def appendTopLevelProjectDefinition(
+    rootDir : File, 
+    name : String, 
+    upstreams : Seq[String],
+    extraCode : String = ""
+  ){
+    val projectFile = file(rootDir, "Maker.scala")
+    val text = 
+      s"""|
+          | val $name = new Project(
+          |               "$name", file("${rootDir.absPath}"),
+          |               immediateUpstreamModules = ${listString(upstreams)}
+          |             ){
+          |               $extraCode
+          |             }
+          |""".stripMargin
+    appendToFile(projectFile, text)
   }
 
   def writeLogbackConfig(rootDir : File, level : String = "ERROR"){
@@ -124,6 +152,25 @@ object TestModuleBuilder{
         |  </root>
         |</configuration>""".stripMargin
     )
+  }
+
+  def makerExecuteCommand(dir : File, method : String) = {
+    val makerScript = file("maker.py").getAbsolutePath
+    val command = Command(
+      "python",
+      makerScript,
+      "-E",
+      method,
+      "-z",
+      "-l",
+      file(dir, "logback.xml").getAbsolutePath,
+      "-L",
+      "40"
+    ).
+    withWorkingDirectory(dir).
+    withExitValues(0, 1)
+
+    command
   }
 
   def writeApplicationConfig(rootDir : File, config : String){

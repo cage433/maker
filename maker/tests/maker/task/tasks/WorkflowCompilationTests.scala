@@ -1,22 +1,14 @@
 package maker.task.tasks
 
-import org.scalatest.FunSuite
+import org.scalatest._
 import maker.utils.FileUtils._
-import maker.project.TestModule
-import maker.project.Project
-import maker.task.BuildResult
-import maker.project.Module
-import maker.task.TaskResult
+import maker.project._
+import maker.task.{BuildResult, TaskResult}
 import java.io.File
-import org.scalatest.FreeSpec
 import maker.utils.RichString._
 import maker.task.compile._
-import org.scalatest.GivenWhenThen
-import org.scalatest.FunSpec
-import org.scalatest._
-import org.scalatest.FunSuite
 
-class WorkflowCompilationTests extends FunSuite{
+class WorkflowCompilationTests extends FunSuite with ModuleTestPimps{
 
   /** for this tests an imperative style seems more natural - reflecting
     * the changing state of a developer's module(s)
@@ -76,8 +68,8 @@ class WorkflowCompilationTests extends FunSuite{
       assert(a.testCompile.succeeded)
 
       info("there should be no test compilation") 
-      assert(a.compilePhase.classFiles.nonEmpty)
-      assert(a.testCompilePhase.classFiles.isEmpty)
+      assert(a.classFiles(SourceCompilePhase).nonEmpty)
+      assert(a.classFiles(TestCompilePhase).isEmpty)
 
       info("when changing the signature of the upstream source file") 
       src1 = writeSrcWithDependencies(a, 1, Nil, List("def newPublicMethod : Int = 33"))

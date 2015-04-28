@@ -17,7 +17,8 @@ case class RunUnitTestsTask(
   name : String, 
   modules : Seq[Module],
   rootProject : ProjectTrait, 
-  classOrSuiteNames_ : Option[Iterable[String]]
+  classOrSuiteNames_ : Option[Iterable[String]],
+  majorScalaVersion : String
 )  
   extends Task 
   with ConfigPimps
@@ -26,14 +27,14 @@ case class RunUnitTestsTask(
   import rootProject.config
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = modules.map(TestCompileTask(rootProject, _))
+  def upstreamTasks = modules.map(TestCompileTask(rootProject, _, majorScalaVersion))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
     // If no class names are passed in then they are found via reflection, so
     // compilation has to have taken place - hence class names can't be determined
     // at the point the task is created
-    val classOrSuiteNames = classOrSuiteNames_.getOrElse(modules.flatMap(_.testClassNames(rootProject)))
+    val classOrSuiteNames = classOrSuiteNames_.getOrElse(modules.flatMap(_.testClassNames(rootProject, majorScalaVersion)))
 
     if (classOrSuiteNames.isEmpty) {
       return DefaultTaskResult(this, true, sw)
@@ -63,7 +64,7 @@ case class RunUnitTestsTask(
     val testParameters : Seq[String] = rootProject.scalatestOutputParameters :: List("-P", "-C", "maker.utils.MakerTestReporter") 
 
     var cmd = Command.scalaCommand(
-      classpath = rootProject.testRuntimeClasspath + java.io.File.pathSeparator + config.testReporterJar,
+      classpath = rootProject.testRuntimeClasspath(majorScalaVersion) + java.io.File.pathSeparator + config.testReporterJar,
       klass = "scala.tools.nsc.MainGenericRunner",
       opts = opts,
       args = "org.scalatest.tools.Runner" +: testParameters ++: suiteParameters
@@ -100,12 +101,13 @@ object RunUnitTestsTask{
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
   lazy val logger = LoggerFactory.getLogger(this.getClass)
 
-  def failingTests(rootProject : ProjectTrait, module : Module) : RunUnitTestsTask = {
+  def failingTests(rootProject : ProjectTrait, module : Module, majorScalaVersion : String) : RunUnitTestsTask = {
     RunUnitTestsTask(
       "Failing tests",
       module :: Nil,
       rootProject,
-      Some(MakerTestResults(module.testOutputFile).failingSuiteClasses)
+      Some(MakerTestResults(module.testOutputFile).failingSuiteClasses),
+      majorScalaVersion
     )
   }
 

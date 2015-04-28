@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
 trait ProjectTrait extends ConfigPimps{
   protected def root : File
   /**
-   * The standard equals method was slow, making Dependency operations very expensive.
+   * The standard equals and hashCode methods were slow, making Dependency operations very expensive.
    */
    override def equals(rhs : Any) = {
      (this, rhs) match {
@@ -40,6 +40,8 @@ trait ProjectTrait extends ConfigPimps{
      }
    }
   override def hashCode = root.hashCode
+
+  def defaultMajorScalaVersion : String = "2.10"
   val rootAbsoluteFile = root.asAbsoluteFile
   lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   def name : String
@@ -110,33 +112,40 @@ trait ProjectTrait extends ConfigPimps{
   }
 
 
-  def compileTaskBuild() = transitiveBuild(modules.map(SourceCompileTask(this, _)))
-  def compile = execute(compileTaskBuild())
+  def compileTaskBuild(majorScalaVersion : String) = transitiveBuild(modules.map(SourceCompileTask(this, _, majorScalaVersion)))
+  def compile(majorScalaVersion : String) : BuildResult = execute(compileTaskBuild(majorScalaVersion))
+  def compile : BuildResult = compile(defaultMajorScalaVersion)
 
 
-  def testCompileTaskBuild : Build // = transitiveBuild(upstreamModules.map(SourceCompileTask(this, _)) ++ upstreamTestModules.map(TestCompileTask(this, _)))
-  def testCompile = execute(testCompileTaskBuild)
-  def tcc = continuously(testCompileTaskBuild)
+  def testCompileTaskBuild(majorScalaVersion : String) : Build // = transitiveBuild(upstreamModules.map(SourceCompileTask(this, _)) ++ upstreamTestModules.map(TestCompileTask(this, _)))
+  def testCompile(majorScalaVersion : String) = execute(testCompileTaskBuild(majorScalaVersion))
+  def testCompile : BuildResult = testCompile(defaultMajorScalaVersion)
+  def tcc = continuously(testCompileTaskBuild(defaultMajorScalaVersion))
   
-  def testFailedSuitesBuild = {
-    transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _)))
+  def testFailedSuitesBuild(majorScalaVersion : String) = {
+    transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _, majorScalaVersion)))
   }
-  def testFailedSuites : BuildResult = execute(testFailedSuitesBuild)
+  def testFailedSuites(majorScalaVersion : String) : BuildResult = execute(testFailedSuitesBuild(majorScalaVersion))
+  def testFailedSuites : BuildResult = testFailedSuites(defaultMajorScalaVersion)
 
-  def updateTaskBuild(forceSourceUpdate : Boolean) = {
-    transitiveBuild(UpdateTask(this, forceSourceUpdate = forceSourceUpdate) :: Nil)
+  def updateTaskBuild(forceSourceUpdate : Boolean, majorScalaVersion : String) = {
+    transitiveBuild(UpdateTask(this, forceSourceUpdate = forceSourceUpdate, majorScalaVersion = majorScalaVersion) :: Nil)
   }
-  def update = execute(updateTaskBuild(forceSourceUpdate = false))
-  def updateSources = execute(updateTaskBuild(forceSourceUpdate = true))
+  def update(majorScalaVersion : String) = execute(updateTaskBuild(forceSourceUpdate = false, majorScalaVersion = majorScalaVersion))
+  def update : BuildResult = update(defaultMajorScalaVersion)
+  def updateSources = execute(updateTaskBuild(forceSourceUpdate = true, majorScalaVersion = defaultMajorScalaVersion))
 
 
-  def runMainTaskBuild(className : String, opts : Seq[String], args : Seq[String]) = {
-    transitiveBuild(RunMainTask(this, className, opts, args) :: Nil)
+  def runMainTaskBuild(className : String, opts : Seq[String], args : Seq[String], majorScalaVersion : String) = {
+    transitiveBuild(RunMainTask(this, className, opts, args, majorScalaVersion) :: Nil)
   }
-  def runMain(className : String)(opts : String*)(args : String*) = 
-    execute(runMainTaskBuild(className, opts, args))
+  def runMain(className : String, majorScalaVersion : String)(opts : String*)(args : String*) = 
+    execute(runMainTaskBuild(className, opts, args, majorScalaVersion))
+  def runMain(className : String)(opts : String*)(args : String*) : BuildResult = runMain(className, defaultMajorScalaVersion)(opts : _*)(args : _*)
 
-  def clean = execute(transitiveBuild(CleanTask(this) :: Nil))
+  def clean(majorScalaVersion : String) = execute(transitiveBuild(CleanTask(this, majorScalaVersion) :: Nil))
+  def clean : BuildResult = clean(defaultMajorScalaVersion)
+
   protected def execute(bld : Build) = {
     setUp(bld.graph)
     val result = bld.execute
@@ -151,56 +160,59 @@ trait ProjectTrait extends ConfigPimps{
     result
   }
 
-  private [project] def compilationTargetDirectories = upstreamModules.map(_.outputDir(SourceCompilePhase))
+  private [project] def compilationTargetDirectories(majorScalaVersion : String) = 
+    upstreamModules.map(_.classDirectory(majorScalaVersion))
   private [project] def resourceDirectories = upstreamModules.map(_.resourceDir(SourceCompilePhase))
   private [project] def testResourceDirectories = upstreamModules.map(_.resourceDir(TestCompilePhase))
   private [project] def dependencyJars = findJars(managedLibDir)
   private [project] def testDependencyJars = findJars(testManagedLibDir)
   private [project] def unmanagedLibs = findJars(upstreamModules.flatMap(_.unmanagedLibDirs))
 
-  def compilationClasspathComponents = 
-      compilationTargetDirectories ++:
+  def compilationClasspathComponents(majorScalaVersion : String) = 
+      compilationTargetDirectories(majorScalaVersion) ++:
       dependencyJars ++:
       unmanagedLibs
 
-  def compilationClasspath = Module.asClasspathStr(compilationClasspathComponents)
+  def compilationClasspath(majorScalaVersion : String) = Module.asClasspathStr(compilationClasspathComponents(majorScalaVersion))
 
-  def testCompilationClasspathComponents = 
-      compilationTargetDirectories ++:
+  def testCompilationClasspathComponents(majorScalaVersion : String) = 
+      compilationTargetDirectories(majorScalaVersion) ++:
       testDependencyJars ++:
       unmanagedLibs ++:
       (this match {
         case _ : Project => 
-          upstreamModules.map(_.outputDir(TestCompilePhase))
+          upstreamModules.map(_.testClassDirectory(majorScalaVersion))
         case m : Module => 
-          (m +: testModuleDependencies).map(_.outputDir(TestCompilePhase))
+          (m +: testModuleDependencies).map(_.testClassDirectory(majorScalaVersion))
       })
 
-  def testCompilationClasspath = Module.asClasspathStr(testCompilationClasspathComponents)
+  def testCompilationClasspath(majorScalaVersion : String) = 
+    Module.asClasspathStr(testCompilationClasspathComponents(majorScalaVersion))
 
 
-  def runtimeClasspathComponents = 
-    compilationTargetDirectories ++:
+  def runtimeClasspathComponents(majorScalaVersion : String) = 
+    compilationTargetDirectories(majorScalaVersion) ++:
     dependencyJars ++:
     unmanagedLibs ++:
     resourceDirectories 
 
-  def runtimeClasspath = Module.asClasspathStr(runtimeClasspathComponents)
+  def runtimeClasspath(majorScalaVersion : String) = Module.asClasspathStr(runtimeClasspathComponents(majorScalaVersion))
 
 
-  def testRuntimeClasspathComponents : Seq[File] =
-    compilationTargetDirectories ++:
+  def testRuntimeClasspathComponents(majorScalaVersion : String) : Seq[File] =
+    compilationTargetDirectories(majorScalaVersion) ++:
     testDependencyJars ++:
     unmanagedLibs ++:
     resourceDirectories ++:
     (this match {
       case _ : Project => 
-        upstreamModules.flatMap{m => m.outputDir(TestCompilePhase) :: m.resourceDir(TestCompilePhase) :: Nil}
+        upstreamModules.flatMap{m => m.testClassDirectory(majorScalaVersion) :: m.resourceDir(TestCompilePhase) :: Nil}
       case m : Module => 
-        (m +: testModuleDependencies).flatMap{m => m.outputDir(TestCompilePhase) :: m.resourceDir(TestCompilePhase) :: Nil}
+        (m +: testModuleDependencies).flatMap{m => m.testClassDirectory(majorScalaVersion) :: m.resourceDir(TestCompilePhase) :: Nil}
     })
 
-  def testRuntimeClasspath = Module.asClasspathStr(testRuntimeClasspathComponents)
+  def testRuntimeClasspath(majorScalaVersion : String) = 
+    Module.asClasspathStr(testRuntimeClasspathComponents(majorScalaVersion))
 
   def continuously(bld : Build){
     var lastTaskTime :Option[Long] = None
@@ -244,8 +256,8 @@ trait ProjectTrait extends ConfigPimps{
     }
   }
 
-  def isAccessibleScalaTestSuite(rootProject : ProjectTrait) : (String => Boolean) = {
-    val loader = rootProject.testClasspathLoader
+  def isAccessibleScalaTestSuite(rootProject : ProjectTrait, majorScalaVersion : String) : (String => Boolean) = {
+    val loader = rootProject.testClasspathLoader(majorScalaVersion)
 
     className : String => {
 
@@ -254,7 +266,9 @@ trait ProjectTrait extends ConfigPimps{
           loader.loadClass(className)
         } catch {
           case e : ClassNotFoundException => 
-            println(s"Couldn't load class $className in project $this, classpath was ${testRuntimeClasspathComponents.mkString("\n\t", "\n\t", "\n")}")
+            println(
+              s"""Couldn't load class $className in project $this, 
+                  classpath was ${testRuntimeClasspathComponents(majorScalaVersion).mkString("\n\t", "\n\t", "\n")}""")
             throw e
         }
       }
@@ -287,15 +301,15 @@ trait ProjectTrait extends ConfigPimps{
     * To run tests from Vim it is convenient to have _all_ test classes on the classpath,
     * Not just those modules on whom we have a test dependency
     */
-  def writeVimClasspath {
-    val cp = testCompilationClasspath
+  def writeVimClasspath(majorScalaVersion : String) {
+    val cp = testCompilationClasspath(majorScalaVersion)
     val cpFile : File = file(name + "-classpath.sh")
     println(s"Writing classpath to file $cpFile")
     writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
   }
 
 
-  def testClassNames(rootProject : ProjectTrait) : Seq[String]
+  def testClassNames(rootProject : ProjectTrait, majorScalaVersion : String) : Seq[String]
   def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
 
   def managedLibDir = file(rootAbsoluteFile, "lib_managed")
@@ -309,8 +323,8 @@ trait ProjectTrait extends ConfigPimps{
 
   protected def managedJars = findJars(managedLibDir)
 
-  def testClasspathLoader = new URLClassLoader(
-    testRuntimeClasspathComponents.map(_.toURI.toURL).toArray,
+  def testClasspathLoader(majorScalaVersion : String) = new URLClassLoader(
+    testRuntimeClasspathComponents(majorScalaVersion).map(_.toURI.toURL).toArray,
     null
   )
 }

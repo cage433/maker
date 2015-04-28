@@ -3,8 +3,9 @@ package maker.project
 import maker.utils.FileUtils._
 import org.scalatest.{FunSuite, ParallelTestExecution}
 import org.slf4j.LoggerFactory
+import maker.task.compile.SourceCompilePhase
 
-class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
+class TopLevelProjectTests extends FunSuite with ParallelTestExecution with ModuleTestPimps{
 
   // Need to create log to get aether to shut up
   val log = LoggerFactory.getLogger(getClass)
@@ -29,11 +30,11 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
         )
         val top = new Project("Still tops", dir, List(a), isTestProject = true)
 
-        assert(a.compilePhase.classFiles.size == 0, "No class files before compilation")
+        assert(a.classFiles(SourceCompilePhase).size == 0, "No class files before compilation")
 
         assert(top.compile.succeeded, "Compil should succeed")
 
-        assert(a.compilePhase.classFiles.size > 0, "Class files should exist")
+        assert(a.classFiles(SourceCompilePhase).size > 0, "Class files should exist")
     }
   }
 
@@ -58,11 +59,11 @@ class TopLevelProjectTests extends FunSuite with ParallelTestExecution{
         )
         val top = new Project("Still tops", dir, List(b), isTestProject = true)
 
-        assert(a.compilePhase.classFiles.size == 0, "No class files before compilation")
+        assert(a.classFiles(SourceCompilePhase).size == 0, "No class files before compilation")
 
         assert(top.compile.succeeded, "Compilation should succeed")
 
-        assert(a.compilePhase.classFiles.size > 0, "Class files should exist")
+        assert(a.classFiles(SourceCompilePhase).size > 0, "Class files should exist")
     }
   }
 }

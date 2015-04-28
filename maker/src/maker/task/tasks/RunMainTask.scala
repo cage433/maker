@@ -18,7 +18,13 @@ import maker.ConfigPimps
 /**
  * run a class main in a separate JVM instance (but currently synchronously to maker repl)
  */
-case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Seq[String], mainArgs : Seq[String]) 
+case class RunMainTask(
+  baseProject : ProjectTrait, 
+  className : String, 
+  opts : Seq[String], 
+  mainArgs : Seq[String],
+  majorScalaVersion : String
+) 
   extends Task 
   with ConfigPimps
 {
@@ -26,7 +32,7 @@ case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Se
   import baseProject.config
 
   def module = baseProject
-  def upstreamTasks = baseProject.testCompileTaskBuild.tasks
+  def upstreamTasks = baseProject.testCompileTaskBuild(majorScalaVersion).tasks
 
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
@@ -38,7 +44,7 @@ case class RunMainTask(baseProject : ProjectTrait, className : String, opts : Se
       "-Dlogback.configurationFile=" + "logback.xml"
     ) ++: opts
     var cmd = Command.scalaCommand(
-      classpath = baseProject.testCompilationClasspath,
+      classpath = baseProject.testCompilationClasspath(majorScalaVersion),
       klass = className,
       opts = optsToUse,
       args = mainArgs

@@ -1,20 +1,21 @@
 package maker.task.compile
 
 import maker.utils.FileUtils._
+import maker.project.Module
 
 /**
   * Use to speed up tests that require a compilation task to execute, but have no need
   * for real class files to be produced. 
   */
-case class DummyCompileTask(mp : ModuleCompilePhase) {
+case class DummyCompileTask(module : Module, phase : CompilePhase, majorScalaVersion : String) {
   def exec() {
-    mp.sourceFiles.foreach{
+    module.sourceFiles(phase).foreach{
       sf =>
-        val root = mp.sourceDirs.find(sf.isContainedIn).get
+        val root = module.sourceDirs(phase).find(sf.isContainedIn).get
         val relativeSrcFile = sf.relativeTo(root)
-        val classFile = file(mp.outputDir.getAbsolutePath + "/" + relativeSrcFile.getParentFile.getPath + "/" + relativeSrcFile.getName.replace(".scala", ".class"))
+        val classFile = file(module.classDirectory(majorScalaVersion, phase).getAbsolutePath + "/" + relativeSrcFile.getParentFile.getPath + "/" + relativeSrcFile.getName.replace(".scala", ".class"))
         classFile.touch
     }
-    assert(mp.sourceFiles.size == mp.classFiles.size, "Should have one dummy class file for each source file")
+    assert(module.sourceFiles(phase).size == module.classFiles(majorScalaVersion, phase).size, "Should have one dummy class file for each source file")
   }
 }

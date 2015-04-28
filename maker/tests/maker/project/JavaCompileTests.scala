@@ -5,14 +5,15 @@ import maker.utils.FileUtils._
 import maker.utils.os.Command
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import xsbti.api.Compilation
+import maker.task.compile.SourceCompilePhase
 
-class JavaCompileTests extends FunSuite with TestUtils {
+class JavaCompileTests extends FunSuite with TestUtils with ModuleTestPimps{
 
   test("Java module fails when expected and stays failed"){
     withTempDir{
       root => 
-        val proj = new TestModule(root, "JavaCompileTests")
-        proj.writeSrc(
+        val module = new TestModule(root, "JavaCompileTests")
+        module.writeSrc(
           "src/foo/Foo.java", 
           """
           package foo;
@@ -21,7 +22,7 @@ class JavaCompileTests extends FunSuite with TestUtils {
           }
           """     
         )
-        proj.writeSrc(
+        module.writeSrc(
           "src/foo/Bar.java", 
           """
           package foo;
@@ -32,24 +33,24 @@ class JavaCompileTests extends FunSuite with TestUtils {
         )
 
 
-        proj.clean
-        assert(proj.compilePhase.classFiles.size === 0)
+        module.clean
+        assert(module.classFiles(SourceCompilePhase).size === 0)
 
-        assert(proj.compile.failed, "Compilation should have failed")
+        assert(module.compile.failed, "Compilation should have failed")
 
-        assert(!file(proj.compilePhase.outputDir, "foo", "Bar.class").exists, "Bar.class should not exist")
+        assert(!file(module.classDirectory(SourceCompilePhase), "foo", "Bar.class").exists, "Bar.class should not exist")
         sleepToNextSecond
-        assert(proj.compile.failed, "Compilation should have failed")
+        assert(module.compile.failed, "Compilation should have failed")
     }
   }
 
   test("Java can compile 1.6 output"){
      withTempDir{
       root => 
-        val proj = new TestModule(root, "JavaCompileTests"){
+        val module = new TestModule(root, "JavaCompileTests"){
           override def javacOptions = List("-source", "1.6", "-target", "1.6")
         }
-        proj.writeSrc(
+        module.writeSrc(
           "src/foo/Foo.java", 
           """
           package foo;
@@ -60,9 +61,9 @@ class JavaCompileTests extends FunSuite with TestUtils {
         )
 
 
-        proj.compile
-        assert(proj.compilePhase.classFiles.size === 1)
-        val classfile = file(proj.compilePhase.outputDir, "foo", "Foo.class")
+        module.compile
+        assert(module.classFiles(SourceCompilePhase).size === 1)
+        val classfile = file(module.classDirectory(SourceCompilePhase), "foo", "Foo.class")
         assert(classfile.exists, "Foo.class should exist")
 
         val bs = new ByteArrayOutputStream()

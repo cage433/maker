@@ -12,9 +12,7 @@ import maker.project.{Module, ProjectTrait}
 object ZincCompile extends ConfigPimps{
 
   lazy val zinc = new ZincClient()
-  def apply(rootProject : ProjectTrait, projectPhase : ModuleCompilePhase) : Int = {
-    val module = projectPhase.module
-    val phase = projectPhase.phase
+  def apply(rootProject : ProjectTrait, module : Module, phase : CompilePhase, majorScalaVersion : String) : Int = {
     val config = module.config
     val upstreamCaches = {
       var map = Map[File, File]()
@@ -30,7 +28,7 @@ object ZincCompile extends ConfigPimps{
         p <- phases
       }{
         map += 
-          (m.outputDir(p) -> m.compilationCacheFile(p))
+          (m.classDirectory(majorScalaVersion, p) -> m.compilationCacheFile(majorScalaVersion, p))
       }
 
       map
@@ -60,18 +58,18 @@ object ZincCompile extends ConfigPimps{
       "-scala-library",
       config.scalaVersion.scalaLibraryJar.getAbsolutePath,
       "-classpath",
-      if (phase == SourceCompilePhase) rootProject.compilationClasspath else rootProject.testCompilationClasspath,
+      if (phase == SourceCompilePhase) rootProject.compilationClasspath(majorScalaVersion) else rootProject.testCompilationClasspath(majorScalaVersion),
       "-d",
-      projectPhase.outputDir.getAbsolutePath,
+      module.classDirectory(majorScalaVersion, phase).getAbsolutePath,
       "-compile-order",
       CompileOrder.Mixed.toString,
       "-analysis-cache",
-      projectPhase.compilationCacheFile.getAbsolutePath
+      module.compilationCacheFile(majorScalaVersion, phase).getAbsolutePath
     ) ::: extraJarArgs :::
-    projectPhase.module.scalacOptions.map("-S" +_) :::
-    projectPhase.module.javacOptions.map("-C" +_) :::
+    module.scalacOptions.map("-S" +_) :::
+    module.javacOptions.map("-C" +_) :::
     analysisMapArguments ::: 
-      projectPhase.sourceFiles.toList.map(_.getAbsolutePath)
+      module.sourceFiles(phase).toList.map(_.getAbsolutePath)
 
     val Parsed(rawSettings, residual, errors) = Settings.parse(
       arguments
@@ -96,12 +94,12 @@ object ZincCompile extends ConfigPimps{
     try {
       val result = zinc.run(
         arguments, 
-        projectPhase.module.rootAbsoluteFile, 
+        module.rootAbsoluteFile, 
         rootProject.compilationOutputStream(phase),
         rootProject.compilationOutputStream(phase)
       )
-      val analysis = Compiler.analysis(projectPhase.compilationCacheFile)
-      projectPhase.module.analyses.put(projectPhase.outputDir, analysis)
+      val analysis = Compiler.analysis(module.compilationCacheFile(majorScalaVersion, phase))
+      module.analyses.put(module.classDirectory(majorScalaVersion, phase), analysis)
       result
     } catch {
       case e : Throwable => 

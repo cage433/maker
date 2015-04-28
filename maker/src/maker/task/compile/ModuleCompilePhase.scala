@@ -13,11 +13,11 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
 
   def sourceDirs = module.sourceDirs(phase)
 
-  def outputDir : File = {
-    val f = module.outputDir(phase)
-    f.mkdirs
-    f
-  }
+  //def outputDir : File = {
+    //val f = module.outputDir(phase)
+    //f.mkdirs
+    //f
+  //}
 
 
   def resourceDir : File = {
@@ -36,13 +36,11 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
   def javaFiles = findFilesWithExtension("java", sourceDirs: _*)
 
   def sourceFiles = scalaFiles ++ javaFiles
-  def classFiles : Seq[File] = {
-    findClasses(outputDir)
-  }
-  def classNames : Seq[String] = {
-    // used for class dependency analysis
-    classFiles.map(_.relativeTo(outputDir)).map(_.getPath).filterNot(_.contains("$$")).map(_.replace('/', '.').dropRight(6)) 
-  }
+
+  //def classNames : Seq[String] = {
+    //// used for class dependency analysis
+    //classFiles.map(_.relativeTo(outputDir)).map(_.getPath).filterNot(_.contains("$$")).map(_.replace('/', '.').dropRight(6)) 
+  //}
 
   def lastCompilationTime : Option[Long] = {
     if (compilationCacheFile.exists)
@@ -64,8 +62,8 @@ case class ModuleCompilePhase(module : Module, phase : CompilePhase){
     changedFiles_(javaFiles).toSet
   }
 
-  def sourceFilesDeletedSinceLastCompilation : Seq[File] = {
-    Option(module.analyses.get(outputDir)) match {
+  def sourceFilesDeletedSinceLastCompilation(majorScalaVersion : String) : Seq[File] = {
+    Option(module.analyses.get(module.classDirectory(majorScalaVersion, phase))) match {
       case None => Nil
       case Some(analysis) => 
         analysis.infos.allInfos.keySet.toVector.filterNot(_.exists)
