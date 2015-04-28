@@ -16,7 +16,6 @@ object PomUtils extends ConfigPimps with DependencyPimps{
 
       //<?xml version="1.0" encoding="UTF-8"?>
   def pomXml(project : Project, version : String, scalaVersion : ScalaVersion) = {
-    import project.name
     val groupId = project.organization.getOrElse(throw new IllegalStateException("Organization not defined"))
 
     def externalDependencies = {
@@ -31,7 +30,7 @@ object PomUtils extends ConfigPimps with DependencyPimps{
     
       <modelVersion>4.0.0</modelVersion>
       <groupId>{groupId}</groupId>
-      <artifactId>{name}</artifactId>
+      <artifactId>{project.artifactId(scalaVersion)}</artifactId>
       <packaging>jar</packaging>
       <version>{version}</version>
       {project.extraProjectPomInfo}

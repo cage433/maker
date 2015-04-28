@@ -54,7 +54,8 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
 
       cmd.run() match {
         case 0 => DefaultTaskResult(this, true, sw)
-        case _ => DefaultTaskResult(this, false, sw, message = Some(bs.toString))
+        case _ => 
+          DefaultTaskResult(this, false, sw, message = Some(bs.toString))
       }
     }
     else {
