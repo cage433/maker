@@ -39,7 +39,7 @@ class Module(
   def dependencies : Seq[RichDependency]  = Nil
 
   def compilationMetadataDirectory(scalaVersion : ScalaVersion, phase : CompilePhase) = 
-    mkdir(file(makerDirectory, "compilation-metadata", scalaVersion.versionBase, phase.name))
+    mkdirs(file(makerDirectory, "compilation-metadata", scalaVersion.versionBase, phase.name))
   def compilationCacheFile(scalaVersion : ScalaVersion, phase : CompilePhase) = {
     file(compilationMetadataDirectory(scalaVersion, phase), "compilation-analysis-cache")
   }

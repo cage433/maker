@@ -17,7 +17,7 @@ import maker.utils.FileUtils
 class CompileTaskTests extends FunSuite with TestUtils with Matchers with ModuleTestPimps{
 
   test("Can compile 2.10 and 2.11 scala versions"){
-    withTempDir{
+    withTestDir{
       moduleRoot => 
         TestModuleBuilder.createMakerProjectFile(moduleRoot)
         val module = TestModuleBuilder(
@@ -26,21 +26,54 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
           extraTraits = "org.scalatest.Assertions" :: Nil,
           extraCode = 
              """|
+                |import maker.ScalaVersion
                 |def checkCompilation(scalaVersion : ScalaVersion){
                 |
                 |  assert(classFiles(scalaVersion).size === 0, s"No class files before $scalaVersion compilation")
-                |  compile(scalaVersion)
+                |  println("Compiling")
+                |  compile(scalaVersion).reportResult
+                |  println("Compile build finished")
                 |  assert(classFiles(scalaVersion).size > 0, s"Some class files after $scalaVersion compilation")
                 |
                 |}
                 |
                 |def checkCrossCompilation{
-                |  checkCompilation("2.10")
-                |  checkCompilation("2.11")
+                |  println("2.10")
+                |  checkCompilation(ScalaVersion.TWO_TEN_DEFAULT)
+                |  println("2.11")
+                |  checkCompilation(ScalaVersion.TWO_ELEVEN_DEFAULT)
                 |}
                 |""".stripMargin
-        )
+        ).withBuildResult.withNoExecModeExit
         module.appendDefinitionToProjectFile(moduleRoot)
+        module.writeSrc(
+          "foo/Foo.scala", 
+          """
+          package foo
+          case class Foo(x : Double){
+            val fred = 10
+            def double() = x + x
+          }
+          """
+        )
+
+        module.writeSrc(
+          "foo/bar/Bar.scala", 
+          """
+          package foo.bar
+          import foo.Foo
+
+          case class Bar(x : Foo)
+          """
+        )
+
+        module.writeSrc(
+          "foo/Baz.scala", 
+          """
+          package foo
+          case class Baz(y : Int)
+          """
+        )
         val result = TestModuleBuilder.makerExecuteCommand(
           moduleRoot,
           "CrossCompiling.checkCrossCompilation"

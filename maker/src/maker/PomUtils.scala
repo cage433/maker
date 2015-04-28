@@ -23,7 +23,7 @@ object PomUtils extends ConfigPimps with DependencyPimps{
       val scalaLibraryDep = "org.scala-lang" % s"scala-library_${scalaVersion.versionBase}" % scalaVersion.versionNo
       val projectDependencies : Seq[RichDependency] = project.upstreamModules.flatMap(_.dependencies)
       (scalaLibraryDep +: projectDependencies).distinct.map(
-        _.dependency(scalaVersion).pomDependencyXML
+        _.pomXml(scalaVersion)
       )
     }
 

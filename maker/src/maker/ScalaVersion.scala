@@ -29,9 +29,9 @@ case class ScalaVersion(
   val versionBase = s"2.$major"
   override def toString = versionNo
 
-  def scalaLibraryRichDependency = "org.scala-lang" % s"scala-library_$versionBase" % versionNo
-  def scalaCompilerRichDependency = "org.scala-lang" % s"scala-compiler_$versionBase" % versionNo
-  def scalaReflectRichDependency = "org.scala-lang" % s"scala-reflect_$versionBase" % versionNo
+  def scalaLibraryRichDependency = "org.scala-lang" % s"scala-library" % versionNo
+  def scalaCompilerRichDependency = "org.scala-lang" % s"scala-compiler" % versionNo
+  def scalaReflectRichDependency = "org.scala-lang" % s"scala-reflect" % versionNo
   def scalaXmlRichDependency : Option[RichDependency] = (major >= 11).option("org.scala-lang.modules" % s"scala-xml_$versionBase" % "1.0.3")
   def scalaParserCombinatorRichDependency = (major >= 11).option("org.scala-lang.modules" % s"scala-parser-combinators_$versionBase" %"1.0.3")
 
