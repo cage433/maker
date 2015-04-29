@@ -31,7 +31,7 @@ with SonatypeTask with EitherPimps{
   def name = s"Publish $project snapshot to Sonatype"
 
   def upstreamTasks = 
-    PublishLocalTask(project, version, signArtifacts = true, scalaVersion = scalaVersion) :: Nil
+    PublishLocalTask(project, version, signArtifacts = false, scalaVersion = scalaVersion) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val toUpload : Seq[(File, ContentType)] = (project.publishLocalPomFile(version, scalaVersion), ContentType.APPLICATION_XML) +: {

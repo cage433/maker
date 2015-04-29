@@ -314,9 +314,12 @@ trait ProjectTrait extends ConfigPimps{
     val cp = testCompilationClasspath(scalaVersion)
     val cpFile : File = file(name + "-classpath.txt")
     println(s"Writing classpath to file $cpFile")
-    writeToFile(cpFile, "export CLASSPATH=" + cp + "\n")
+    writeToFile(cpFile, cp)
   }
 
+  def writeVimClasspath {
+    writeVimClasspath(defaultScalaVersion)
+  }
 
   def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion) : Seq[String]
   def constructorCodeAsString : String = throw new Exception("Only supported by test projects")

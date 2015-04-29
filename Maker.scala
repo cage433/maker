@@ -15,7 +15,7 @@ import org.eclipse.aether.util.artifact.JavaScopes
 
 import DependencyPimps._
 
-val extraPomInfo : List[NodeSeq] = {
+def extraPomInfo : List[NodeSeq] = {
   val devNodes = List("Alex McGuire", "Louis Botterill", "Sam Halliday").map{name => <developer><name>{name}</name></developer>}
   List(
     <name>Maker</name>
@@ -80,7 +80,7 @@ lazy val makerModule = new Module(
       "org.eclipse.aether" % "aether-transport-http" % "1.0.0.v20140518",
       "org.eclipse.aether" %"aether-test-util" % "1.0.0.v20140518",
       "org.mortbay.jetty" % "jetty" % "6.1.26",
-      "com.github.cage433" % "maker-test-reporter" %% "0.07"
+      "com.github.cage433" % "maker-test-reporter_2.10" % "0.07"
     )
   }
   override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
@@ -94,15 +94,21 @@ lazy val makerProject = new Project("maker", file("."), List(makerModule)) with 
 // Used to disambiguate which maker is running in the repl.
 def pwd = println(Properties.userDir)
 
-def publishSnapshots(version : String, scalaVersionString : String) = {
-  val scalaVersion = ScalaVersion(scalaVersionString)
-  testReporterProject.publishSonatypeSnapshot(version, scalaVersion) andThen 
-  makerProject.publishSonatypeSnapshot(version, scalaVersion)
+def snapshot(version_ : String) = {
+  val version = if (version_.contains("SNAPSHOT"))
+    version_
+  else 
+    s"${version_}-SNAPSHOT"
+
+  testReporterProject.publishSonatypeSnapshot(version, ScalaVersion.TWO_TEN_DEFAULT) andThen 
+  testReporterProject.publishSonatypeSnapshot(version, ScalaVersion.TWO_ELEVEN_DEFAULT) andThen 
+  makerProject.publishSonatypeSnapshot(version, ScalaVersion.TWO_TEN_DEFAULT)
 }
 
-def publishRelease(version : String, scalaVersionString : String) = {
-  val scalaVersion = ScalaVersion(scalaVersionString)
-  testReporterProject.publishToSonatype(version, scalaVersion) andThen makerProject.publishToSonatype(version, scalaVersion)
+def release(version : String) = {
+  testReporterProject.publishToSonatype(version, ScalaVersion.TWO_TEN_DEFAULT) andThen 
+  testReporterProject.publishToSonatype(version, ScalaVersion.TWO_ELEVEN_DEFAULT) andThen 
+  makerProject.publishToSonatype(version, ScalaVersion.TWO_TEN_DEFAULT)
 }
 
 import makerProject._

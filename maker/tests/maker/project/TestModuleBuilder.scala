@@ -50,10 +50,7 @@ case class TestModuleBuilder(
         |   testModuleDependencies = ${listString(testModuleDependencies)}
         |)  ${("maker.project.DependencyPimps" +: "ClassicLayout" +: extraTraits).mkString(" with ", " with ", "")}{
         |
-        |   override def dependencies = List(
-        |     "org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST),
-        |     "com.typesafe" % "config" % "1.2.1"
-        |   )
+        |   override def dependencies = ${listString(dependencies.map(_.toLongString))}
         |   override def reportBuildResult = ${reportBuildResult}
         |   override def scalatestOutputParameters = "${scalatestOutputParameters}"
         |   override def systemExitOnExecModeFailures = ${systemExitOnExecModeFailures}

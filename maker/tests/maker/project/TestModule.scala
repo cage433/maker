@@ -49,7 +49,7 @@ class TestModule(
   }
   override def dependencies = List(
     "org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST),
-    "com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST) withExclusions("org.scalatest:scalatest_2.10")
+    "com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST) excluding("org.scalatest:scalatest_2.10")
   )
 
   def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {

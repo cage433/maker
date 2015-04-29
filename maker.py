@@ -15,7 +15,7 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "2.6-SNAPSHOT"
+MAKER_VERSION       = "2.7-SNAPSHOT"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE            = "http://oss.sonatype.org/content/repositories/snapshots/"
 MAVEN               = "http://repo1.maven.org/maven2/"

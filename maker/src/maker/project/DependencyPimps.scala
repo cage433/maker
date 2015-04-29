@@ -16,14 +16,27 @@ case class RichDependency(
   classifier : String = "",
   extension : String = "jar",
   isOptional : Boolean = false,
-  exclusions : Seq[Exclusion] = Nil
+  toExclude : Seq[String] = Nil // Of the form "group:artifact" or "group"
 ){
+
+  // Note the long string has no mention of classifier or optional
+  def toLongString = {
+    var s = s""""$org" % "$artifactId" ${if (useMajorScalaVersion) "%%" else "%"} "$version""""
+    if (scope != JavaScopes.COMPILE) 
+      s += s""" withScope("${scope}")"""
+    if (toExclude.nonEmpty)
+      s += toExclude.mkString(" withExclusions(", ",", ")")
+    s
+  }
+
   def withScope(scope : String) = copy(scope = scope)
   def scalaVersionedArtifactId(scalaVersion : ScalaVersion) = 
     if (useMajorScalaVersion) s"${artifactId}_${scalaVersion.versionBase}" else artifactId
 
-  def withExclusions(groupAndArtifacts : String*) = {
-    val exclusions = groupAndArtifacts.map{
+  def excluding(groupAndArtifacts : String*) = copy(toExclude = groupAndArtifacts)
+
+  def makeExclusions : Seq[Exclusion] = {
+    toExclude.map{
       gAndA => 
         gAndA.split(":") match {
           case Array(group, artifact) => 
@@ -34,7 +47,6 @@ case class RichDependency(
             ???
         }
     }
-    copy(exclusions = exclusions)
   }
 
   def pomXml(scalaVersion : ScalaVersion) = 
@@ -57,7 +69,7 @@ case class RichDependency(
       artifact,
       scope,
       isOptional,
-      exclusions
+      makeExclusions
     )
   }
 }
