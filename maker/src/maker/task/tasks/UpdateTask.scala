@@ -118,6 +118,7 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
     var aetherDependencies = download.aetherDependencies(
       scalaVersion.scalaLibraryRichDependency +: 
       scalaVersion.scalaCompilerRichDependency +:
+      config.makerTestReporterDependency +:
       project.upstreamDependencies
     )
 

@@ -7,9 +7,10 @@ import org.slf4j.LoggerFactory
 import maker.utils.FileUtils._
 import scala.collection.JavaConversions._
 import java.io.File
-import maker.project.Module
+import maker.project.{Module, DependencyPimps}
+import org.eclipse.aether.util.artifact.JavaScopes
 
-trait ConfigPimps {
+trait ConfigPimps extends DependencyPimps{
   lazy val logger = LoggerFactory.getLogger(getClass)
 
   implicit class RichConfig(config : Config) extends ToBooleanOps{
@@ -33,6 +34,8 @@ trait ConfigPimps {
     }
       
     def makerVersion = config.getString("maker.version")
+
+    def makerTestReporterDependency = "com.github.cage433" % "maker-test-reporter" %% makerVersion withScope(JavaScopes.TEST)
 
     def unitTestLogbackConfigFile() = {
       val configFile = file(config.getString("maker.logback.unit-tests-config"))
