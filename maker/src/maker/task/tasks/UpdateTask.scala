@@ -1,6 +1,6 @@
 package maker.task.tasks
 
-import maker.project.{Module, DependencyPimps, ProjectTrait}
+import maker.project._
 import maker.utils.FileUtils._
 import maker.task._
 import maker.utils._
@@ -38,7 +38,7 @@ import org.eclipse.aether.internal.test.util.DependencyGraphParser
   * Missing source jars are not treated as a cause for failure unless `forceSourceUpdate`
   * is true
   */
-case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, forceSourceUpdate : Boolean) 
+case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion) 
   extends Task
   with ConfigPimps
   with EitherPimps
@@ -53,14 +53,22 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, force
   private val (system, session, repositories) = UpdateTask.aetherState(config)
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    val result = updateDependencies(BinaryDownload(JavaScopes.COMPILE)) andThen 
-      updateDependencies(BinaryDownload(JavaScopes.TEST)) 
-    result match {
-      case Right(hasChanged) => 
-        if (hasChanged || forceSourceUpdate){
+    val result = if (project.dependenciesAlreadyUpdated(scalaVersion)){
+      logger.info(s"$project has up to date dependencies")
+      Right(Unit)
+    } else {
+      updateDependencies(BinaryDownload(JavaScopes.COMPILE)) andThen 
+      updateDependencies(BinaryDownload(JavaScopes.TEST)) andThen {
+        if (project.updateIncludesSourceJars){
           updateDependencies(SourceDownload(JavaScopes.COMPILE)) andThen
           updateDependencies(SourceDownload(JavaScopes.TEST)) 
-        }
+        } else 
+          Right(Unit)
+      }
+    }
+    result match {
+      case Right(_) => 
+        project.markDependenciesUpdated(scalaVersion)
         DefaultTaskResult(this, true, sw)
       case Left(ex) => 
         DefaultTaskResult(
@@ -77,6 +85,7 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, force
     def scope : String
     def downloadDirectory : File
     def isOfCorrectType(artifact : Artifact) : Boolean
+    def aetherDependencies(dpes : Seq[RichDependency]) : Seq[Dependency]
   }
 
   case class BinaryDownload(scope : String) extends DownloadType{
@@ -85,6 +94,9 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, force
       case JavaScopes.COMPILE => project.managedLibDir(scalaVersion)
       case JavaScopes.TEST => project.testManagedLibDir(scalaVersion)
       case _ => ???
+    }
+    def aetherDependencies(deps : Seq[RichDependency]) : Seq[Dependency] = {
+      deps.map(_.aetherDependency(scalaVersion))
     }
   }
 
@@ -96,13 +108,20 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, force
       case JavaScopes.TEST => project.testManagedLibSourceDir(scalaVersion)
       case _ => ???
     }
+    def aetherDependencies(deps : Seq[RichDependency]) : Seq[Dependency] = {
+      deps.map(_.withClassifier("sources").aetherDependency(scalaVersion))
+    }
   }
 
   private def getArtifacts(download : DownloadType) : Seq[Artifact] = {
-    var dependencies = (List(scalaVersion.scalaLibraryRichDependency, scalaVersion.scalaCompilerRichDependency) ++: 
-      project.upstreamDependencies).map(_.dependency(scalaVersion))
+    logger.info(s"Getting artifacts for $this - $download")
+    var aetherDependencies = download.aetherDependencies(
+      scalaVersion.scalaLibraryRichDependency +: 
+      scalaVersion.scalaCompilerRichDependency +:
+      project.upstreamDependencies
+    )
 
-    val collectRequest = new CollectRequest(dependencies, new java.util.LinkedList[Dependency](), repositories)
+    val collectRequest = new CollectRequest(aetherDependencies, new java.util.LinkedList[Dependency](), repositories)
     val dependencyRequest = new DependencyRequest(
       collectRequest,
       DependencyFilterUtils.classpathFilter(download.scope)
@@ -115,12 +134,10 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, force
 
     collectRequest.setRepositories(repositories)
     val collectResult : CollectResult = system.collectDependencies(session, collectRequest)
-    val parser = new DependencyGraphParser()
-    val dependencyNode : DependencyNode = collectResult.getRoot
 
     FileUtils.writeToFile(
       file(download.downloadDirectory, "dependency-graph"), 
-      parser.dump(dependencyNode)
+      new DependencyGraphParser().dump(collectResult.getRoot)
     )
 
     artifacts
@@ -129,38 +146,18 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion, force
   // Used for bootstrapping
   def binaryArtifacts = getArtifacts(BinaryDownload(JavaScopes.COMPILE))
 
-  private def updateDependencies(download : DownloadType) : Either[Exception, Boolean] = {
-    def addMissingDependencies(dependencyFiles : Seq[File]) : Boolean = {
-      val currentBasenames = download.downloadDirectory.safeListFiles.map(_.basename).toSet
-      var hasChanged = false
-      dependencyFiles.foreach{
-        file => 
-          if (! currentBasenames.contains(file.basename)){
-            logger.info(s"Adding dependency ${file.basename}")
-            ApacheFileUtils.copyFileToDirectory(file, download.downloadDirectory)
-            hasChanged = true
-          }
-      }
-      hasChanged
-    }
-    def removeRedundantDependencies(dependencyFiles : Seq[File]) : Boolean = {
-      val dependencyBasenames = dependencyFiles.map(_.basename).toSet
-      var hasChanged = false
-      download.downloadDirectory.safeListFiles.foreach{
-        file => 
-          if (! dependencyBasenames.contains(file.basename) && file.basename != "dependency-graph"){
-            logger.info("Removing redundant dependency " + file)
-            file.delete
-            hasChanged = true
-          }
-      }
-      hasChanged
-    }
+  private def updateDependencies(download : DownloadType) : Either[Exception, Unit] = {
     try {
       val dependencyFiles = getArtifacts(download).map(_.getFile)
-      var hasChanged : Boolean = removeRedundantDependencies(dependencyFiles)
-      hasChanged = addMissingDependencies(dependencyFiles) || hasChanged
-      Right(hasChanged)
+      logger.info(s"Purging ${download.downloadDirectory}")
+      cleanRegularFilesLeavingDirectories(download.downloadDirectory)
+      dependencyFiles.foreach{
+        file => 
+          logger.info(s"Adding dependency ${file.basename}")
+          ApacheFileUtils.copyFileToDirectory(file, download.downloadDirectory)
+      }
+      
+      Right(Unit)
     } catch {
       case e : Exception => 
         Left(e)

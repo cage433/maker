@@ -100,7 +100,7 @@ case class SourceCompileTask(rootProject: ProjectTrait, override val module :Mod
   extends CompileTask(rootProject, module, scalaVersion){
   def upstreamTasks = {
     module.immediateUpstreamModules.map(SourceCompileTask(rootProject, _, scalaVersion)) ++ 
-      List(UpdateTask(rootProject, scalaVersion, forceSourceUpdate = false))
+      List(UpdateTask(rootProject, scalaVersion))
   }
   def phase = SourceCompilePhase
 } 
@@ -115,12 +115,6 @@ case class TestCompileTask(rootProject : ProjectTrait, override val module : Mod
 
 object CompileTask{
   def CALL_TO_COMPILER = "CALL TO SCALA COMPILER"
-  //def apply(module : Module, phase : CompilePhase) : CompileTask = {
-    //phase match{
-      //case SourceCompilePhase => SourceCompileTask(module)
-      //case TestCompilePhase => TestCompileTask(module)
-    //}
-  //}
 
   def reportOnCompilationErrors(taskResults : List[TaskResult]){
     def position(prob : Problem) = {

@@ -6,6 +6,7 @@ import org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM
 import scala.concurrent.duration.Duration
 import com.typesafe.config.ConfigFactory
 import maker.ConfigPimps
+import org.slf4j.LoggerFactory
 
 case class Command(
   overrideOutput : Option[OutputStream],
@@ -14,9 +15,12 @@ case class Command(
   overrideExitValues : Option[Seq[Int]] = None,
   args : Seq[String]
 ){
+  val logger = LoggerFactory.getLogger(getClass)
   override def toString = args.mkString(" ")
 
   def withOutputTo(os : OutputStream) = copy(overrideOutput = Some(os))
+
+  def withTimeout(timeout : Duration) = copy(timeout = Some(timeout))
 
   def withNoOutput = withOutputTo(NULL_OUTPUT_STREAM)
 
@@ -30,16 +34,16 @@ case class Command(
     cmd
   }
 
+  val watchdog = {
+    val timeoutMillis = timeout.map(_.toMillis).getOrElse(ExecuteWatchdog.INFINITE_TIMEOUT)
+    new ExecuteWatchdog(timeoutMillis)
+  }
   def executor = {
     val streamHandler = overrideOutput match {
       case Some(os) => new PumpStreamHandler(os)
       case None => new PumpStreamHandler()
     }
 
-    val watchdog = {
-      val timeoutMillis = timeout.map(_.toMillis).getOrElse(ExecuteWatchdog.INFINITE_TIMEOUT)
-      new ExecuteWatchdog(timeoutMillis)
-    }
     val executor_ = new DefaultExecutor()
     executor_.setStreamHandler(streamHandler)
     executor_.setWatchdog(watchdog)
@@ -48,7 +52,12 @@ case class Command(
     executor_
   }
   def run() = {
-    executor.execute(commandLine)
+    logger.info(s"running command '${toString}'")
+    val result = executor.execute(commandLine)
+    logger.info(s"finished command '${toString}'")
+    if (watchdog.killedProcess)
+      logger.error(s"Command '${toString}' timed out after $timeout")
+    result
   }
 
   def runAsync() = {
@@ -60,6 +69,7 @@ case class Command(
         // do nothing
       }
     }
+    logger.info(s"running command '${toString}' asynchronously")
     executor.execute(commandLine, resultHandler)
   }
 }

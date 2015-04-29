@@ -2,13 +2,20 @@ package maker.task.tasks
 
 import maker.utils.FileUtils._
 import maker.utils.os.Command
-import org.scalatest.{Matchers, FunSuite, ParallelTestExecution}
+import org.scalatest._
 import maker.project.{TestModule, TestModuleBuilder}
+import org.slf4j.LoggerFactory
 
-class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExecution{
+class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExecution
+  with BeforeAndAfterAll
+{
+
+  override def beforeAll(){
+    val logger = LoggerFactory.getLogger(getClass)
+  }
 
   test("Broken tests fail"){
-    withTestDir{
+    withTempDir{
       dir => 
         TestModuleBuilder.createMakerProjectFile(dir)
         val module = new TestModuleBuilder(dir, "RunUnitTestsTaskTestsModule")
@@ -33,7 +40,7 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
         val command = TestModuleBuilder.makerExecuteCommand(
           dir, 
           "RunUnitTestsTaskTestsModule.test"
-        )//.withNoOutput
+        ).withNoOutput
 
         val result = command.run
         result should equal (1)
@@ -42,7 +49,7 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
   }
 
 
-  ignore("Unit test runs"){
+  test("Unit test runs"){
     withTempDir{
       root => 
         TestModuleBuilder.createMakerProjectFile(root)
@@ -85,7 +92,7 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
   }
 
 
-  ignore("Can re-run failing tests"){
+  test("Can re-run failing tests"){
     withTempDir{
       root => 
         TestModuleBuilder.createMakerProjectFile(root)

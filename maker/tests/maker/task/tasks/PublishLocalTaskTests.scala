@@ -42,7 +42,7 @@ class PublishLocalTaskTests
   private def checkPublishedPomIncludesAllDependencies(project : Project, version : String){
     val pom = XML.loadFile(project.publishLocalPomFile(version, project.defaultScalaVersion))
     val pomDependencies = pom \\ "dependency"
-    val dependencies = (project.defaultScalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.dependency(project.defaultScalaVersion))
+    val dependencies = (project.defaultScalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.aetherDependency(project.defaultScalaVersion))
 
     dependencies should allSatisfy {
       dependency : AetherDependency => 

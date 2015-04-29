@@ -30,6 +30,9 @@ case class RichDependency(
   }
 
   def withScope(scope : String) = copy(scope = scope)
+
+  def withClassifier(classifier : String) = copy(classifier = classifier)
+
   def scalaVersionedArtifactId(scalaVersion : ScalaVersion) = 
     if (useMajorScalaVersion) s"${artifactId}_${scalaVersion.versionBase}" else artifactId
 
@@ -57,7 +60,7 @@ case class RichDependency(
       <scope>compile</scope>
     </dependency>
 
-  def dependency(scalaVersion : ScalaVersion) = {
+  def aetherDependency(scalaVersion : ScalaVersion) = {
     val artifact = new DefaultArtifact(
       org,
       scalaVersionedArtifactId(scalaVersion),

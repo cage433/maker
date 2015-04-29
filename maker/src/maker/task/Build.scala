@@ -54,7 +54,7 @@ case class Build(
                   println
                 print(".")
                 monitor.addLaunch(pt)
-                logger.debug("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
+                logger.info("Launched " + pt + " (" + monitor.numRunning + " running, " + monitor.numQueued + " queued)")
                 val res = pt.exec(resultsSoFar.toList, sw)
                 res
               } catch {

@@ -87,9 +87,24 @@ trait ProjectTrait extends ConfigPimps{
       scalatestOutputParameters_.set("-oHL")
   }
 
+  /* Methods that are overriden by maker unit tests projects/modules */
   def reportBuildResult : Boolean = true
-
   def systemExitOnExecModeFailures : Boolean = true
+  def updateIncludesSourceJars : Boolean = true
+
+  private var dependenciesUpdated = Set[ScalaVersion]()
+  def markDependenciesUpdated(scalaVersion : ScalaVersion) = {
+    dependenciesUpdated += scalaVersion
+  }
+  def dependenciesAlreadyUpdated(scalaVersion : ScalaVersion) = dependenciesUpdated.contains(scalaVersion)
+  def clearDependencies(scalaVersion : ScalaVersion) = {
+    dependenciesUpdated -= scalaVersion
+
+    cleanRegularFilesLeavingDirectories(managedLibDir(scalaVersion))
+    cleanRegularFilesLeavingDirectories(managedLibSourceDir(scalaVersion))
+    cleanRegularFilesLeavingDirectories(testManagedLibDir(scalaVersion))
+    cleanRegularFilesLeavingDirectories(testManagedLibSourceDir(scalaVersion))
+  }
 
   protected def transitiveClosure[A](start : Seq[A], expand : A => Seq[A]) : Seq[A] = {
     var closure : Seq[A] = Nil
@@ -136,12 +151,17 @@ trait ProjectTrait extends ConfigPimps{
   def testFailedSuites(scalaVersion : ScalaVersion) : BuildResult = execute(testFailedSuitesBuild(scalaVersion))
   def testFailedSuites : BuildResult = testFailedSuites(defaultScalaVersion)
 
-  def updateTaskBuild(forceSourceUpdate : Boolean, scalaVersion : ScalaVersion) = {
-    transitiveBuild(UpdateTask(this, forceSourceUpdate = forceSourceUpdate, scalaVersion = scalaVersion) :: Nil)
+  def updateTaskBuild(scalaVersion : ScalaVersion) = {
+    transitiveBuild(UpdateTask(this, scalaVersion) :: Nil)
   }
-  def update(scalaVersion : ScalaVersion) = execute(updateTaskBuild(forceSourceUpdate = false, scalaVersion = scalaVersion))
+  def update(scalaVersion : ScalaVersion) = execute(updateTaskBuild(scalaVersion))
   def update : BuildResult = update(defaultScalaVersion)
-  def updateSources = execute(updateTaskBuild(forceSourceUpdate = true, scalaVersion = defaultScalaVersion))
+
+  def forceUpdate(scalaVersion : ScalaVersion) : BuildResult = {
+    clearDependencies(scalaVersion)
+    update(scalaVersion)
+  }
+  def forceUpdate : BuildResult = forceUpdate(defaultScalaVersion)
 
 
   def runMainTaskBuild(className : String, opts : Seq[String], args : Seq[String], scalaVersion : ScalaVersion) = {

@@ -15,13 +15,14 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "2.7-SNAPSHOT"
+MAKER_VERSION       = "0.09"
 MAKER_SCALA_VERSION = "2.10.4"
-SONATYPE            = "http://oss.sonatype.org/content/repositories/snapshots/"
+SONATYPE_SNAPSHOTS  = "http://oss.sonatype.org/content/repositories/snapshots/"
+SONATYPE_RELEASES   = "http://oss.sonatype.org/content/repositories/releases/"
 MAVEN               = "http://repo1.maven.org/maven2/"
 TYPESAFE            = "http://repo.typesafe.com/typesafe/releases/"
-MAKER_BINARIES      = [ (SONATYPE, "com.github.cage433", "maker_2.10", MAKER_VERSION),
-                        (SONATYPE, "com.github.cage433", "maker-test-reporter_2.10", MAKER_VERSION)
+MAKER_BINARIES      = [ (SONATYPE_RELEASES, "com.github.cage433", "maker_2.10", MAKER_VERSION),
+                        (SONATYPE_RELEASES, "com.github.cage433", "maker-test-reporter_2.10", MAKER_VERSION)
                         ]
 SCALA_LIBRARIES     = [ (TYPESAFE, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
                         (TYPESAFE, "org.scala-lang", "jline", MAKER_SCALA_VERSION),
@@ -61,7 +62,7 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/eclipse/aether", "aether-api", "1.0.0.v20140518"),
 	(MAVEN, "org/eclipse/aether", "aether-spi", "1.0.0.v20140518"),
 	(MAVEN, "org/eclipse/aether", "aether-util", "1.0.0.v20140518"),
-  (MAVEN, "org.eclipse.aether", "aether-test-util", "1.0.0.v20140518"),
+        (MAVEN, "org.eclipse.aether", "aether-test-util", "1.0.0.v20140518"),
 	(MAVEN, "org/codehaus/plexus", "plexus-component-annotations", "1.5.5"),
 	(MAVEN, "org/codehaus/plexus", "plexus-utils", "3.0.20"),
 	(MAVEN, "org/eclipse/aether", "aether-connector-basic", "1.0.0.v20140518"),

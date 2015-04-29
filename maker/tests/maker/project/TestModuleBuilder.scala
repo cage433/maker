@@ -38,7 +38,7 @@ case class TestModuleBuilder(
   def dependencies : Seq[RichDependency] = 
         ("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST)) +:
         "com.typesafe" % "config" % "1.2.1" +: 
-        ("com.github.cage433" % "maker-test-reporter" % "0.06" withScope(JavaScopes.TEST)) +:
+        ("com.github.cage433" % "maker-test-reporter" %% "0.09" withScope(JavaScopes.TEST)) +:
         extraDependencies
 
   def constructorCodeAsString : String = {
@@ -54,6 +54,7 @@ case class TestModuleBuilder(
         |   override def reportBuildResult = ${reportBuildResult}
         |   override def scalatestOutputParameters = "${scalatestOutputParameters}"
         |   override def systemExitOnExecModeFailures = ${systemExitOnExecModeFailures}
+        |   override def updateIncludesSourceJars = false
         |   $extraCode
         |} 
         |""".stripMargin
@@ -158,6 +159,7 @@ object TestModuleBuilder{
   def makerExecuteCommand(dir : File, method : String) = {
     val makerScript = file("maker.py").getAbsolutePath
     val configDirectory = file("config").getAbsolutePath
+    import scala.concurrent.duration._
     val command = Command(
       "python",
       makerScript,
@@ -172,7 +174,8 @@ object TestModuleBuilder{
       "40"
     ).
     withWorkingDirectory(dir).
-    withExitValues(0, 1)
+    withExitValues(0, 1).
+    withTimeout(1 minute)
 
     command
   }
