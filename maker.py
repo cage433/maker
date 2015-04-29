@@ -103,8 +103,9 @@ def logback_file():
       log.info("No logback file provided, using " + logback_file)
       return logback_file
     else:
-      log.critical("No logback file provided or found - exiting")
-      sys.exit(1)
+      logback_file = os.path.join(maker_directory(), "logback-config", "logback.xml")
+      log.info("No logback provided or found in PWD - using Maker's " + logback_file)
+      return logback_file
 
 
 
@@ -252,6 +253,8 @@ def launch_repl():
         classpath_components.extend(maker_test_class_directories())
     else:
         classpath_components.extend(maker_binaries())
+
+    classpath_components.extend(os.path.join(maker_directory(), "config"))
 
     if args.extra_classpath:
         classpath_components.extend(args.extra_classpath.split(":"))

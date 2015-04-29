@@ -1,6 +1,6 @@
 package maker.project
 
-import java.io.File
+import java.io.{File, FileOutputStream}
 import java.util.concurrent.ConcurrentHashMap
 import maker.task._
 import maker.task.compile._
@@ -14,6 +14,7 @@ import scala.collection.immutable.Nil
 import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.graph.{Exclusion, Dependency => AetherDependency}
 import maker.utils.FileUtils
+import org.apache.commons.io.output.TeeOutputStream
 
 /**
   * Corresponds to a module in IntelliJ
@@ -66,6 +67,12 @@ class Module(
     file(compilationMetadataDirectory(scalaVersion, phase), "vim-compile-errors")
   }
 
+  def compilationOutputStream(scalaVersion : ScalaVersion, phase : CompilePhase) = {
+    new TeeOutputStream(
+      Console.err,
+      new FileOutputStream(moduleCompilationErrorsFile(scalaVersion, phase))
+    )
+  }
   def compilationFailedMarker(scalaVersion : ScalaVersion, phase : CompilePhase) = 
     file(compilationMetadataDirectory(scalaVersion, phase), "compilation-failed-marker")
 

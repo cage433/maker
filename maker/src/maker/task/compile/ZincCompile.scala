@@ -93,8 +93,8 @@ object ZincCompile extends ConfigPimps{
       val result = zinc.run(
         arguments, 
         module.rootAbsoluteFile, 
-        rootProject.compilationOutputStream(phase),
-        rootProject.compilationOutputStream(phase)
+        module.compilationOutputStream(scalaVersion, phase),
+        module.compilationOutputStream(scalaVersion, phase)
       )
       val analysis = Compiler.analysis(module.compilationCacheFile(scalaVersion, phase))
       module.analyses.put(module.classDirectory(scalaVersion, phase), analysis)

@@ -33,7 +33,7 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
         val command = TestModuleBuilder.makerExecuteCommand(
           dir, 
           "RunUnitTestsTaskTestsModule.test"
-        ).withNoOutput
+        )//.withNoOutput
 
         val result = command.run
         result should equal (1)
@@ -42,7 +42,7 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
   }
 
 
-  test("Unit test runs"){
+  ignore("Unit test runs"){
     withTempDir{
       root => 
         TestModuleBuilder.createMakerProjectFile(root)
@@ -85,7 +85,7 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
   }
 
 
-  test("Can re-run failing tests"){
+  ignore("Can re-run failing tests"){
     withTempDir{
       root => 
         TestModuleBuilder.createMakerProjectFile(root)

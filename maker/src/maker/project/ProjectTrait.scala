@@ -60,16 +60,6 @@ trait ProjectTrait extends ConfigPimps{
     new TeeToFileOutputStream(runLogFile)
   }
 
-  def compilationOutputStream(phase : CompilePhase) = {
-    val moduleCompilationErrorsFile = phase match {
-      case TestCompilePhase =>  file(rootAbsoluteFile, "module-vim-test-compile-errors")
-      case SourceCompilePhase => file(rootAbsoluteFile, "module-vim-compile-errors")
-    }
-    new TeeOutputStream(
-      Console.err,
-      new FileOutputStream(moduleCompilationErrorsFile)
-    )
-  }
 
   private def findSingleScalaJar(scalaVersion : ScalaVersion, partName : String) : File = {
     dependencyJars(scalaVersion).filter(_.getName.contains(partName)) match {

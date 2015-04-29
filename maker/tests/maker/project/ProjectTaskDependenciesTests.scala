@@ -12,18 +12,6 @@ import maker.ScalaVersion
 
 class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTestPimps{
   private val SCALA_VERSION = ScalaVersion.TWO_ELEVEN_DEFAULT
-  case class WriteClassCountToFile(module : Module, basename : String = "ClassCount") extends Task {
-    def name = "Write class count "
-    def copy_(p : Module) = copy(module = p)
-    def upstreamTasks = Nil
-    def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
-      exec
-      DefaultTaskResult(WriteClassCountToFile.this, true, sw)
-    }
-    def exec = {
-      writeToFile(file(module.rootAbsoluteFile, basename), module.classFiles(SourceCompilePhase).size + "")
-    }
-  }
 
   ignore("Can add custom task to run before standard task"){
 
@@ -105,36 +93,6 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
 
 
   test("Module setUp and tearDown can be overriden"){
-    //def moduleWithSetupAndTeardowns(root : File, upstreamProjects : Module*) = new TestModule(
-      //root = root, 
-      //name = "With setup",
-      //upstreamProjects = upstreamProjects.toList
-    //) {
-      //val setUpClassCountFile = file(rootAbsoluteFile, "setup")
-      //val tearDownClassCountFile= file(rootAbsoluteFile, "teardown")
-      //def graphContainsClean(graph : Dependency.Graph) = {
-        //graph.nodes.exists {
-          //case _ : CleanTask => true
-          //case _ => false
-        //}
-      //}
-      //override def setUp(graph : Dependency.Graph) = {
-        //if (graphContainsClean(graph))
-          //WriteClassCountToFile(this, "setup").exec
-        //super.setUp(graph)
-      //}
-      //override def tearDown(graph : Dependency.Graph, result : BuildResult) = {
-        //if (graphContainsClean(graph))
-          //WriteClassCountToFile(this, "teardown").exec
-        //super.tearDown(graph, result)
-      //}
-      //def deleteClassCountFiles{
-        //setUpClassCountFile.delete
-        //tearDownClassCountFile.delete
-      //}
-      //def setUpClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
-      //def tearDownClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
-    //}
     withTempDir{
       projectRoot => 
         TestModuleBuilder.createMakerProjectFile(projectRoot)
