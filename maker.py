@@ -268,7 +268,6 @@ def launch_repl():
     if args.execute_command:
         extra_opts = extra_opts + ["-Dmaker.exec-mode=true"]
 
-
     cmd_args=[  java(),
             "-classpath", classpath(scala_libraries()),
             "-Dsbt.log.format=false",

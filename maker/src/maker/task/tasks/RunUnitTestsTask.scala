@@ -18,7 +18,8 @@ case class RunUnitTestsTask(
   modules : Seq[Module],
   rootProject : ProjectTrait, 
   classOrSuiteNames_ : Option[Iterable[String]],
-  scalaVersion : ScalaVersion
+  scalaVersion : ScalaVersion,
+  lastCompilationTimeFilter : Option[Long]
 )  
   extends Task 
   with ConfigPimps
@@ -34,7 +35,7 @@ case class RunUnitTestsTask(
     // If no class names are passed in then they are found via reflection, so
     // compilation has to have taken place - hence class names can't be determined
     // at the point the task is created
-    val classOrSuiteNames = classOrSuiteNames_.getOrElse(modules.flatMap(_.testClassNames(rootProject, scalaVersion)))
+    val classOrSuiteNames = classOrSuiteNames_.getOrElse(modules.flatMap(_.testClassNames(rootProject, scalaVersion, lastCompilationTimeFilter)))
 
     if (classOrSuiteNames.isEmpty) {
       return DefaultTaskResult(this, true, sw)
@@ -107,7 +108,8 @@ object RunUnitTestsTask{
       module :: Nil,
       rootProject,
       Some(MakerTestResults(module.testOutputFile).failingSuiteClasses),
-      scalaVersion
+      scalaVersion,
+      lastCompilationTimeFilter = None
     )
   }
 

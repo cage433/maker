@@ -143,7 +143,7 @@ trait ProjectTrait extends ConfigPimps{
   def testCompileTaskBuild(scalaVersion : ScalaVersion) : Build // = transitiveBuild(upstreamModules.map(SourceCompileTask(this, _)) ++ upstreamTestModules.map(TestCompileTask(this, _)))
   def testCompile(scalaVersion : ScalaVersion) = execute(testCompileTaskBuild(scalaVersion))
   def testCompile : BuildResult = testCompile(defaultScalaVersion)
-  def tcc = continuously(testCompileTaskBuild(defaultScalaVersion))
+  def tcc = continuously(() => testCompileTaskBuild(defaultScalaVersion))
   
   def testFailedSuitesBuild(scalaVersion : ScalaVersion) = {
     transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _, scalaVersion)))
@@ -242,7 +242,7 @@ trait ProjectTrait extends ConfigPimps{
   def testRuntimeClasspath(scalaVersion : ScalaVersion) = 
     Module.asClasspathStr(testRuntimeClasspathComponents(scalaVersion))
 
-  def continuously(bld : Build){
+  def continuously(bld : () => Build){
     var lastTaskTime :Option[Long] = None
 
     def allSourceFiles : Seq[File] = upstreamModules.flatMap(_.sourceFiles(SourceCompilePhase)) ++: 
@@ -255,7 +255,7 @@ trait ProjectTrait extends ConfigPimps{
 
     def printWaitingMessage = println("\nWaiting for source file changes (press 'enter' to interrupt)")
     def rerunTask{
-      println(execute(bld))
+      println(execute(bld()))
       lastTaskTime = Some(System.currentTimeMillis)
       lastFileCount = sourceFileCount
       lastSourceFileNames = sourceFileNames
@@ -341,7 +341,7 @@ trait ProjectTrait extends ConfigPimps{
     writeVimClasspath(defaultScalaVersion)
   }
 
-  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion) : Seq[String]
+  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long]) : Seq[String]
   def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
 
   def managedLibDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "lib_managed", scalaVersion.versionNo)
@@ -357,4 +357,20 @@ trait ProjectTrait extends ConfigPimps{
     testRuntimeClasspathComponents(scalaVersion).map(_.toURI.toURL).toArray,
     null
   )
+  def testTaskBuild(scalaVersion : ScalaVersion, lastCompilationTimeFilter : Option[Long]) : Build
+
+  def test(scalaVersion : ScalaVersion) : BuildResult = {
+    execute(testTaskBuild(scalaVersion, lastCompilationTimeFilter = None))
+  }
+
+  def test : BuildResult = test(defaultScalaVersion)
+
+  def testQuick(scalaVersion : ScalaVersion) : BuildResult = {
+    execute(testTaskBuild(scalaVersion, lastCompilationTimeFilter = Some(System.currentTimeMillis)))
+  }
+
+  def testQuick : BuildResult = testQuick(defaultScalaVersion)
+
+  def testQuickContinuously = continuously(() => testTaskBuild(defaultScalaVersion, lastCompilationTimeFilter = Some(System.currentTimeMillis)))
+  def tqc = testQuickContinuously
 }

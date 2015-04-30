@@ -140,7 +140,7 @@ class Module(
 
   def cleanOnly = executeSansDependencies(CleanTask(this, defaultScalaVersion))
 
-  def testTaskBuild(scalaVersion : ScalaVersion) = {
+  def testTaskBuild(scalaVersion : ScalaVersion, lastCompilationTimeFilter : Option[Long]) = {
     // For a module, the `test` task runs just tha module's tests.
     // To run all tests, use the containing project
     transitiveBuild(
@@ -149,14 +149,13 @@ class Module(
         modules = this :: Nil, 
         rootProject = this, 
         classOrSuiteNames_ = None,
-        scalaVersion = scalaVersion
+        scalaVersion = scalaVersion,
+        lastCompilationTimeFilter = lastCompilationTimeFilter
       ) :: Nil
     )
   }
 
 
-  def test(scalaVersion : ScalaVersion) : BuildResult = execute(testTaskBuild(scalaVersion))
-  def test : BuildResult = test(defaultScalaVersion)
 
   def testCompileTaskBuild(scalaVersion : ScalaVersion) = transitiveBuild(
     (this +: testModuleDependencies).map(TestCompileTask(this, _, scalaVersion))
@@ -172,16 +171,16 @@ class Module(
   *     Test classses 
   ********************/
 
-  def classFiles(scalaVersion : ScalaVersion) : Seq[File] = FileUtils.findClasses(classDirectory(scalaVersion))
-  def testClassFiles(scalaVersion : ScalaVersion) : Seq[File] = FileUtils.findClasses(testClassDirectory(scalaVersion))
-  def classFiles(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = phase match {
-    case SourceCompilePhase => classFiles(scalaVersion)
-    case TestCompilePhase   => testClassFiles(scalaVersion)
-  }
+  private def classFiles(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(scalaVersion, phase))
 
-  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion) : Seq[String] = {
+  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long]) : Seq[String] = {
     val isTestSuite = isAccessibleScalaTestSuite(rootProject, scalaVersion)
-    testClassFiles(scalaVersion).map(_.className(testClassDirectory(scalaVersion))).filterNot(_.contains("$")).filter(isTestSuite).toList
+    var classFiles_ = classFiles(scalaVersion, TestCompilePhase)
+    lastCompilationTime.foreach{
+      time => 
+        classFiles_ = classFiles_.filter(_.lastModified >= time)
+    }
+    classFiles_.map(_.className(testClassDirectory(scalaVersion))).filterNot(_.contains("$")).filter(isTestSuite).toList
   }
 
 

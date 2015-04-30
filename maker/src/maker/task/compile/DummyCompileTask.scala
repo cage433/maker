@@ -3,6 +3,7 @@ package maker.task.compile
 import maker.utils.FileUtils._
 import maker.project.Module
 import maker.ScalaVersion
+import maker.utils.FileUtils
 
 /**
   * Use to speed up tests that require a compilation task to execute, but have no need
@@ -17,6 +18,7 @@ case class DummyCompileTask(module : Module, phase : CompilePhase, scalaVersion 
         val classFile = file(module.classDirectory(scalaVersion, phase).getAbsolutePath + "/" + relativeSrcFile.getParentFile.getPath + "/" + relativeSrcFile.getName.replace(".scala", ".class"))
         classFile.touch
     }
-    assert(module.sourceFiles(phase).size == module.classFiles(scalaVersion, phase).size, "Should have one dummy class file for each source file")
+    val classFiles = FileUtils.findClasses(module.classDirectory(scalaVersion, phase))
+    assert(module.sourceFiles(phase).size == classFiles.size, "Should have one dummy class file for each source file")
   }
 }

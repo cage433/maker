@@ -242,15 +242,15 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
 
         List(A, B, C).foreach{
           proj => 
-            assert(proj.testTaskBuild(SCALA_VERSION).graph.nodes.exists{
-              case RunUnitTestsTask(_, _, `proj`, _, SCALA_VERSION) => true
+            assert(proj.testTaskBuild(SCALA_VERSION, lastCompilationTimeFilter = None).graph.nodes.exists{
+              case RunUnitTestsTask(_, _, `proj`, _, SCALA_VERSION, _) => true
               case _ => false
             })
         }
         import Dependency.Edge
         assert(!D.testCompileTaskBuild(SCALA_VERSION).graph.edges.contains(Edge(TestCompileTask(D, A, SCALA_VERSION), TestCompileTask(D, C, SCALA_VERSION))))
 
-        assert(C.testTaskBuild(SCALA_VERSION).graph.edges.contains(Edge(TestCompileTask(C, A, SCALA_VERSION), TestCompileTask(C, C, SCALA_VERSION))))
+        assert(C.testTaskBuild(SCALA_VERSION, lastCompilationTimeFilter = None).graph.edges.contains(Edge(TestCompileTask(C, A, SCALA_VERSION), TestCompileTask(C, C, SCALA_VERSION))))
         assert(!D.testCompileTaskBuild(SCALA_VERSION).graph.edges.contains(Edge(TestCompileTask(D, B, SCALA_VERSION), TestCompileTask(D, C, SCALA_VERSION))))
 
     }
