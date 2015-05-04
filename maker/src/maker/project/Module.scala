@@ -218,10 +218,6 @@ class Module(
       case TestCompilePhase   => testClassDirectory(scalaVersion)
     }
   }
-  //def outputDir(compilePhase : CompilePhase) = compilePhase match {
-    //case SourceCompilePhase => file(targetDir, "classes")
-    //case TestCompilePhase => file(targetDir, "test-classes")
-  //}
 
   def warnUnnecessaryResources = true
   def vimModuleCompileOutputFile = file(root, "vim-compile-output")

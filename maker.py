@@ -86,13 +86,16 @@ def read_args():
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     parser.add_argument('-l', '--logback-config', dest='logback_file')
+    parser.add_argument('-c', '--application-config-directory', dest='application_config_directory')
     parser.add_argument('-L', '--python_log_level', dest='python_log_level', default=logging.INFO)
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
     parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
     parser.add_argument('-J', '--JVM-ARGS', dest='jvm_args', nargs=argparse.REMAINDER, default = [])
     parser.add_argument('-e', '--extra-classpath', dest='extra_classpath', help='Colon separated list of directories/jars')
     parser.add_argument('-E', '--execute-command', dest='execute_command', help='maker command to run (and then exit)')
-    args = parser.parse_args()
+    (args, unknown_args) = parser.parse_known_args()
+    print("unknown args" + " - ".join(unknown_args))
+    args
 
 
 def logback_file():
@@ -129,9 +132,6 @@ def maker_scala_directory():
 
 def maker_resource_cache():
     return os.path.join(os.environ['HOME'], ".maker", "resource-cache")
-
-def project_class_directory():
-    return mkdir_p(os.path.join(".maker", "project-classes"))
 
 def reference_config_directory():
     return os.path.join(maker_directory(), "config")
@@ -248,17 +248,21 @@ def maker_test_class_directories():
 def launch_repl():
     mkdir_p(".maker")
     
-    classpath_components = scala_libraries() + maker_dependencies() + [project_class_directory(), reference_config_directory()]
+    classpath_components = scala_libraries() + maker_dependencies() 
+
+    if args.application_config_directory:
+        classpath_components.extend([args.application_config_directory])
+    
     if args.maker_developer_mode:
         classpath_components.extend(maker_class_directories())
         classpath_components.extend(maker_test_class_directories())
     else:
         classpath_components.extend(maker_binaries())
 
-    classpath_components.extend(os.path.join(maker_directory(), "config"))
+    classpath_components.extend([reference_config_directory()])
 
     if args.extra_classpath:
-        classpath_components.extend(args.extra_classpath.split(":"))
+        classpath_components.extend(args.extra_classpath.split(':'))
 
     if args.use_jrebel:
         extra_opts = ["-javaagent:/usr/local/jrebel/jrebel.jar"]
@@ -281,7 +285,7 @@ def launch_repl():
             "-i", project_definition_file()]
 
     if args.execute_command:
-        cmd_args = cmd_args + ["-e"] + args.execute_command.split()
+        cmd_args = cmd_args + ["-e"] + args.execute_command.split() 
 
     return call(cmd_args)
 

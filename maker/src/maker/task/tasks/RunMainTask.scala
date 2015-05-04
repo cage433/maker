@@ -41,7 +41,7 @@ case class RunMainTask(
 
     val optsToUse = config.debugFlags ++: List(
       s"-Xmx${config.unitTestHeapSize}m", 
-      "-Dlogback.configurationFile=" + "logback.xml"
+      "-Dlogback.configurationFile=" + Option(System.getProperty("logback.configurationFile")).getOrElse("logback.xml")
     ) ++: opts
     var cmd = Command.scalaCommand(
       classpath = baseProject.testCompilationClasspath(scalaVersion),

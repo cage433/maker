@@ -52,9 +52,7 @@ case class Command(
     executor_
   }
   def run() = {
-    logger.info(s"running command '${toString}'")
     val result = executor.execute(commandLine)
-    logger.info(s"finished command '${toString}'")
     if (watchdog.killedProcess)
       logger.error(s"Command '${toString}' timed out after $timeout")
     result
