@@ -24,10 +24,10 @@ TYPESAFE            = "http://repo.typesafe.com/typesafe/releases/"
 MAKER_BINARIES      = [ (SONATYPE_RELEASES, "com.github.cage433", "maker_2.10", MAKER_VERSION),
                         (SONATYPE_RELEASES, "com.github.cage433", "maker-test-reporter_2.10", MAKER_VERSION)
                         ]
-SCALA_LIBRARIES     = [ (TYPESAFE, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
-                        (TYPESAFE, "org.scala-lang", "jline", MAKER_SCALA_VERSION),
-                        (TYPESAFE, "org.scala-lang", "scala-compiler", MAKER_SCALA_VERSION),
-                        (TYPESAFE, "org.scala-lang", "scala-reflect", MAKER_SCALA_VERSION)]
+SCALA_LIBRARIES     = [ (MAVEN, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
+                        (MAVEN, "org.scala-lang", "jline", MAKER_SCALA_VERSION),
+                        (MAVEN, "org.scala-lang", "scala-compiler", MAKER_SCALA_VERSION),
+                        (MAVEN, "org.scala-lang", "scala-reflect", MAKER_SCALA_VERSION)]
 # GENERATED MAKER DEPENDENCIES
 MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/scalatest", "scalatest_2.10", "2.2.0"),
