@@ -331,7 +331,8 @@ trait ProjectTrait extends ConfigPimps{
     * Not just those modules on whom we have a test dependency
     */
   def writeVimClasspath(scalaVersion : ScalaVersion) {
-    val relativePaths = testCompilationClasspathComponents(scalaVersion).map(_.relativeTo(file("."))).map(_.getPath)
+    val components = testCompilationClasspathComponents(scalaVersion) ++: testResourceDirectories ++: resourceDirectories
+    val relativePaths = components.map(_.relativeTo(file("."))).map(_.getPath)
     val cp = relativePaths.mkString(File.pathSeparator)
     val cpFile : File = file("maker-classpath.txt")
     println(s"Writing classpath to file $cpFile")

@@ -29,23 +29,17 @@ case class CleanTask(project : ProjectTrait, scalaVersion : ScalaVersion) extend
       module => 
         cleanRegularFilesLeavingDirectories(module.classDirectory(scalaVersion, SourceCompilePhase))
         cleanRegularFilesLeavingDirectories(module.classDirectory(scalaVersion, TestCompilePhase))
-        cleanRegularFilesLeavingDirectories(module.managedLibDir(scalaVersion))
         cleanRegularFilesLeavingDirectories(module.managedResourceDir)
-        cleanRegularFilesLeavingDirectories(module.managedLibSourceDir(scalaVersion))
-        cleanRegularFilesLeavingDirectories(module.testManagedLibDir(scalaVersion))
-        cleanRegularFilesLeavingDirectories(module.testManagedLibSourceDir(scalaVersion))
         recursiveDelete(module.compilationMetadataDirectory(scalaVersion, SourceCompilePhase))
         recursiveDelete(module.compilationMetadataDirectory(scalaVersion, TestCompilePhase))
+        module.clearDependencies(scalaVersion)
     }
 
     project match {
       case p : Project => 
         recursiveDelete(p.packageDir(scalaVersion))
-        cleanRegularFilesLeavingDirectories(p.managedLibDir(scalaVersion))
         cleanRegularFilesLeavingDirectories(p.managedResourceDir)
-        cleanRegularFilesLeavingDirectories(p.managedLibSourceDir(scalaVersion))
-        cleanRegularFilesLeavingDirectories(p.testManagedLibDir(scalaVersion))
-        cleanRegularFilesLeavingDirectories(p.testManagedLibSourceDir(scalaVersion))
+        p.clearDependencies(scalaVersion)
       case _ =>
     }
 
