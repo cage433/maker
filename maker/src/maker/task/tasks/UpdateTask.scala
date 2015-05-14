@@ -149,9 +149,9 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
 
   private def updateDependencies(download : DownloadType) : Either[Exception, Unit] = {
     try {
-      val dependencyFiles = getArtifacts(download).map(_.getFile)
       logger.info(s"Purging ${download.downloadDirectory}")
       cleanRegularFilesLeavingDirectories(download.downloadDirectory)
+      val dependencyFiles = getArtifacts(download).map(_.getFile)
       dependencyFiles.foreach{
         file => 
           logger.info(s"Adding dependency ${file.basename}")
