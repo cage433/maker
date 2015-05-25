@@ -16,15 +16,24 @@ import javax.sound.sampled.Line
 import com.sun.org.apache.bcel.internal.classfile.Unknown
 import maker.ScalaVersion
 
-abstract class CompileTask(
+case class CompileTask(
   rootProject : ProjectTrait, 
   val module : Module, 
-  scalaVersion : ScalaVersion
+  scalaVersion : ScalaVersion,
+  phase : CompilePhase
 ) 
   extends Task
 {
   
-  def phase : CompilePhase
+  def upstreamTasks = {
+    phase match {
+      case SourceCompilePhase => 
+        module.immediateUpstreamModules.map(CompileTask(rootProject, _, scalaVersion, SourceCompilePhase)) ++ 
+          List(UpdateTask(rootProject, scalaVersion))
+      case _ => 
+          CompileTask(rootProject, module, scalaVersion, SourceCompilePhase) +: module.testModuleDependencies.map(CompileTask(rootProject, _, scalaVersion, phase))
+    }
+  }
 
   private def successfulResult(sw : Stopwatch, state : CompilationState) = CompileTaskResult(
     this, succeeded = true, 
@@ -95,23 +104,6 @@ case class CompilationFailedInfo(e : CompileFailed) {
   }
 }
 
-
-case class SourceCompileTask(rootProject: ProjectTrait, override val module :Module, scalaVersion : ScalaVersion) 
-  extends CompileTask(rootProject, module, scalaVersion){
-  def upstreamTasks = {
-    module.immediateUpstreamModules.map(SourceCompileTask(rootProject, _, scalaVersion)) ++ 
-      List(UpdateTask(rootProject, scalaVersion))
-  }
-  def phase = SourceCompilePhase
-} 
-
-case class TestCompileTask(rootProject : ProjectTrait, override val module : Module, scalaVersion : ScalaVersion) 
-  extends CompileTask(rootProject, module, scalaVersion){
-  def upstreamTasks: Seq[Task] =
-      SourceCompileTask(rootProject, module, scalaVersion) +: module.testModuleDependencies.map(TestCompileTask(rootProject, _, scalaVersion))
-
-  def phase = TestCompilePhase
-}
 
 object CompileTask{
   def CALL_TO_COMPILER = "CALL TO SCALA COMPILER"

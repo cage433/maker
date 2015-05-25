@@ -150,15 +150,18 @@ class Module(
         rootProject = this, 
         classOrSuiteNames_ = None,
         scalaVersion = scalaVersion,
-        lastCompilationTimeFilter = lastCompilationTimeFilter
+        lastCompilationTimeFilter = lastCompilationTimeFilter,
+        testPhase = TestCompilePhase
       ) :: Nil
     )
   }
 
 
 
-  def testCompileTaskBuild(scalaVersion : ScalaVersion) = transitiveBuild(
-    (this +: testModuleDependencies).map(TestCompileTask(this, _, scalaVersion))
+  def testCompileTaskBuild(scalaVersion : ScalaVersion, testPhases : Seq[CompilePhase]) = transitiveBuild(
+    (this +: testModuleDependencies).flatMap{module => 
+      testPhases.map(CompileTask(this, module, scalaVersion, _))
+    }
   )
 
   def testFailuredSuitesOnly(scalaVersion : ScalaVersion) : BuildResult = executeSansDependencies(
@@ -173,14 +176,14 @@ class Module(
 
   private def classFiles(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(scalaVersion, phase))
 
-  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long]) : Seq[String] = {
-    val isTestSuite = isAccessibleScalaTestSuite(rootProject, scalaVersion)
-    var classFiles_ = classFiles(scalaVersion, TestCompilePhase)
+  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String] = {
+    val isTestSuite = isAccessibleScalaTestSuite(rootProject, scalaVersion, testPhase)
+    var classFiles_ = classFiles(scalaVersion, testPhase)
     lastCompilationTime.foreach{
       time => 
         classFiles_ = classFiles_.filter(_.lastModified >= time)
     }
-    classFiles_.map(_.className(testClassDirectory(scalaVersion))).filterNot(_.contains("$")).filter(isTestSuite).toList
+    classFiles_.map(_.className(classDirectory(scalaVersion, testPhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
   }
 
 
@@ -197,6 +200,10 @@ class Module(
       List(file(rootAbsoluteFile, "src/main/scala"), file(rootAbsoluteFile, "src/main/java"))
     case TestCompilePhase => 
       List(file(rootAbsoluteFile, "src/test/scala"), file(rootAbsoluteFile, "src/test/java"))
+    case IntegrationTestCompilePhase => 
+      List(file(rootAbsoluteFile, "src/it/scala"), file(rootAbsoluteFile, "src/it/java"))
+    case EndToEndTestCompilePhase => 
+      List(file(rootAbsoluteFile, "src/e2e/scala"), file(rootAbsoluteFile, "src/e2e/java"))
   }
 
   def scalaFiles(phase : CompilePhase) = findFilesWithExtension("scala", sourceDirs(phase) : _*)
@@ -207,15 +214,17 @@ class Module(
   def resourceDir(compilePhase : CompilePhase) = compilePhase match {
     case SourceCompilePhase => file(rootAbsoluteFile, "src/main/resources")
     case TestCompilePhase => file(rootAbsoluteFile, "src/test/resources")
+    case IntegrationTestCompilePhase => file(rootAbsoluteFile, "src/it/resources")
+    case EndToEndTestCompilePhase => file(rootAbsoluteFile, "src/e2e/resources")
   }
 
   def targetDir = file(rootAbsoluteFile, "target-maker")
-  def classDirectory(scalaVersion : ScalaVersion) = file(targetDir, scalaVersion.versionNo, "classes")
-  def testClassDirectory(scalaVersion : ScalaVersion) = file(targetDir, scalaVersion.versionNo, "test-classes")
   def classDirectory(scalaVersion : ScalaVersion, phase : CompilePhase) : File = {
     phase match {
-      case SourceCompilePhase => classDirectory(scalaVersion)
-      case TestCompilePhase   => testClassDirectory(scalaVersion)
+      case SourceCompilePhase             => file(targetDir, scalaVersion.versionNo, "classes")
+      case TestCompilePhase               => file(targetDir, scalaVersion.versionNo, "test-classes")
+      case IntegrationTestCompilePhase    => file(targetDir, scalaVersion.versionNo, "integration-test-classes")
+      case EndToEndTestCompilePhase       => file(targetDir, scalaVersion.versionNo, "end-to-end-test-classes")
     }
   }
 
@@ -229,12 +238,16 @@ class Module(
 trait ClassicLayout {
   this: Module =>
   override def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {
-    case SourceCompilePhase => file(rootAbsoluteFile, "src") :: Nil
-    case TestCompilePhase => file(rootAbsoluteFile, "tests") :: Nil
+    case SourceCompilePhase           => file(rootAbsoluteFile, "src") :: Nil
+    case TestCompilePhase             => file(rootAbsoluteFile, "tests") :: Nil
+    case IntegrationTestCompilePhase  => file(rootAbsoluteFile, "it") :: Nil
+    case EndToEndTestCompilePhase     => file(rootAbsoluteFile, "e2e") :: Nil
   }
   override def resourceDir(compilePhase : CompilePhase) = compilePhase match {
-    case SourceCompilePhase => file(rootAbsoluteFile, "resources")
-    case TestCompilePhase => file(rootAbsoluteFile, "test-resources")
+    case SourceCompilePhase           => file(rootAbsoluteFile, "resources")
+    case TestCompilePhase             => file(rootAbsoluteFile, "test-resources")
+    case IntegrationTestCompilePhase  => file(rootAbsoluteFile, "integration-test-resources")
+    case EndToEndTestCompilePhase     => file(rootAbsoluteFile, "e2e-test-resources")
   }
 }
 

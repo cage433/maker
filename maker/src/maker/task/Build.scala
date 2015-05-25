@@ -5,7 +5,7 @@ import java.util.Comparator
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import maker.project.{Module}
-import maker.task.compile.{CompileTask, TestCompileTask}
+import maker.task.compile.CompileTask
 import maker.task.tasks.{RunUnitTestsTask, UpdateTask}
 import maker.utils.{Stopwatch, Int}
 import org.slf4j.LoggerFactory

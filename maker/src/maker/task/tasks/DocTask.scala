@@ -22,7 +22,7 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
 {
   val config = project.config  
   def name = "Doc " + project.name
-  def upstreamTasks = project.modules.map(SourceCompileTask(project, _, scalaVersion))
+  def upstreamTasks = project.modules.map(CompileTask(project, _, scalaVersion, SourceCompilePhase))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
 
     logger.info("running scala-doc gen for project " + project)

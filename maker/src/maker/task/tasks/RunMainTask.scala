@@ -6,7 +6,7 @@ import java.io.PrintWriter
 import maker.utils.{TeeToFileOutputStream, Stopwatch}
 import maker.utils.os.Command
 import maker.task._
-import maker.task.compile.{TestCompileTask, Run, TestCompilePhase}
+import maker.task.compile.CompilePhase
 import maker.project.ProjectTrait
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
@@ -32,7 +32,7 @@ case class RunMainTask(
   import baseProject.config
 
   def module = baseProject
-  def upstreamTasks = baseProject.testCompileTaskBuild(scalaVersion).tasks
+  def upstreamTasks = baseProject.testCompileTaskBuild(scalaVersion, CompilePhase.TEST_PHASES).tasks
 
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
@@ -44,7 +44,7 @@ case class RunMainTask(
       "-Dlogback.configurationFile=" + Option(System.getProperty("logback.configurationFile")).getOrElse("logback.xml")
     ) ++: opts
     var cmd = Command.scalaCommand(
-      classpath = baseProject.testCompilationClasspath(scalaVersion),
+      classpath = baseProject.runtimeClasspath(scalaVersion, CompilePhase.PHASES),
       klass = className,
       opts = optsToUse,
       args = mainArgs

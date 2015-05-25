@@ -3,7 +3,7 @@ package maker.task.compile
 
 trait Phase
 
-trait CompilePhase extends Phase {
+sealed trait CompilePhase extends Phase {
   def name : String
 }
 
@@ -17,14 +17,28 @@ case object TestCompilePhase extends CompilePhase {
   override def toString = "Test compile"
 }
 
+case object IntegrationTestCompilePhase extends CompilePhase {
+  def name = "integration-test-compile"
+  override def toString = "Integration test compile"
+}
+
+case object EndToEndTestCompilePhase extends CompilePhase {
+  def name = "e2e-test-compile"
+  override def toString = "End-to-end test compile"
+}
+
 object CompilePhase{
   def apply(name : String) : CompilePhase = {
-    if (name == SourceCompilePhase.toString)
-      SourceCompilePhase
-    else if (name == TestCompilePhase.toString)
-      TestCompilePhase
-    else
-      throw new RuntimeException("Unrecognised phase name " + name)
+    List(SourceCompilePhase, TestCompilePhase, IntegrationTestCompilePhase, EndToEndTestCompilePhase).find(
+      _.name == name
+    ) match {
+      case Some(phase) => phase
+      case None => 
+        throw new RuntimeException("Unrecognised phase name " + name)
+    }
   }
+
+  val TEST_PHASES = Vector(TestCompilePhase, IntegrationTestCompilePhase, EndToEndTestCompilePhase)
+  val PHASES = SourceCompilePhase +: TEST_PHASES
 }
 case object Run extends Phase

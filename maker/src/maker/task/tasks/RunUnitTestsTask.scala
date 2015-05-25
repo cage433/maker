@@ -5,7 +5,7 @@ import maker.utils.os.Command
 import maker.task._
 import maker.utils._
 import maker.utils.RichIterable._
-import maker.task.compile.{TestCompileTask, TestCompilePhase}
+import maker.task.compile.{TestCompilePhase, CompilePhase, CompileTask}
 import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
 import ch.qos.logback.classic.Logger
@@ -19,7 +19,8 @@ case class RunUnitTestsTask(
   rootProject : ProjectTrait, 
   classOrSuiteNames_ : Option[Iterable[String]],
   scalaVersion : ScalaVersion,
-  lastCompilationTimeFilter : Option[Long]
+  lastCompilationTimeFilter : Option[Long],
+  testPhase : CompilePhase
 )  
   extends Task 
   with ConfigPimps
@@ -28,14 +29,14 @@ case class RunUnitTestsTask(
   import rootProject.config
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = modules.map(TestCompileTask(rootProject, _, scalaVersion))
+  def upstreamTasks = modules.map(CompileTask(rootProject, _, scalaVersion, testPhase))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
     // If no class names are passed in then they are found via reflection, so
     // compilation has to have taken place - hence class names can't be determined
     // at the point the task is created
-    val classOrSuiteNames = classOrSuiteNames_.getOrElse(modules.flatMap(_.testClassNames(rootProject, scalaVersion, lastCompilationTimeFilter)))
+    val classOrSuiteNames = classOrSuiteNames_.getOrElse(modules.flatMap(_.testClassNames(rootProject, scalaVersion, lastCompilationTimeFilter, testPhase)))
 
     if (classOrSuiteNames.isEmpty) {
       return DefaultTaskResult(this, true, sw)
@@ -65,7 +66,7 @@ case class RunUnitTestsTask(
     val testParameters : Seq[String] = rootProject.scalatestOutputParameters :: List("-P", "-C", "maker.utils.MakerTestReporter") 
 
     var cmd = Command.scalaCommand(
-      classpath = rootProject.testRuntimeClasspath(scalaVersion),
+      classpath = rootProject.runtimeClasspath(scalaVersion, testPhase :: Nil),
       klass = "scala.tools.nsc.MainGenericRunner",
       opts = opts,
       args = "org.scalatest.tools.Runner" +: testParameters ++: suiteParameters
@@ -109,7 +110,8 @@ object RunUnitTestsTask{
       rootProject,
       Some(MakerTestResults(module.testOutputFile).failingSuiteClasses),
       scalaVersion,
-      lastCompilationTimeFilter = None
+      lastCompilationTimeFilter = None,
+      testPhase = TestCompilePhase
     )
   }
 

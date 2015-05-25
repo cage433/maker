@@ -42,8 +42,8 @@ case class Project(
   def docOutputDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
   def packageDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 
-  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long]) = {
-    upstreamModules.flatMap(_.testClassNames(rootProject, scalaVersion, lastCompilationTime))
+  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long], testPhase : CompilePhase) = {
+    upstreamModules.flatMap(_.testClassNames(rootProject, scalaVersion, lastCompilationTime, testPhase))
   }
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
@@ -114,13 +114,16 @@ case class Project(
         rootProject = this, 
         classOrSuiteNames_ = None,
         scalaVersion = scalaVersion,
-        lastCompilationTimeFilter = lastCompilationTimeFilter
+        lastCompilationTimeFilter = lastCompilationTimeFilter,
+        testPhase = TestCompilePhase
       ) :: Nil
     )
   }
 
 
-  def testCompileTaskBuild(scalaVersion : ScalaVersion) = transitiveBuild(
-    upstreamModules.map(TestCompileTask(this, _, scalaVersion))
+  def testCompileTaskBuild(scalaVersion : ScalaVersion, testPhases : Seq[CompilePhase]) = transitiveBuild(
+    upstreamModules.flatMap{module => 
+      testPhases.map(CompileTask(this, module, scalaVersion, _))
+    }
   )
 }

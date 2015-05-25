@@ -1,7 +1,7 @@
 package maker.project
 
 import sbt.inc.Analysis
-import maker.task.compile.{CompilePhase, SourceCompilePhase, TestCompilePhase}
+import maker.task.compile._
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.util.artifact.JavaScopes

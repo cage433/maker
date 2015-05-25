@@ -53,5 +53,5 @@ object ScalaVersion{
   def majorVersion(scalaVersion : String) = scalaVersion.split('.').take(2).mkString(".")
 
   val TWO_TEN_DEFAULT = ScalaVersion("2.10.4")
-  val TWO_ELEVEN_DEFAULT = ScalaVersion("2.11.5")
+  val TWO_ELEVEN_DEFAULT = ScalaVersion("2.11.6")
 }

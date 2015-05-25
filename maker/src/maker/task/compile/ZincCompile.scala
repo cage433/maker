@@ -21,7 +21,7 @@ object ZincCompile extends ConfigPimps{
       val phases = if (phase == SourceCompilePhase) 
         Vector(SourceCompilePhase) 
       else
-        Vector(SourceCompilePhase, TestCompilePhase) 
+        Vector(SourceCompilePhase, phase) 
 
       for {
         m <- strictlyUpstreamModules;
@@ -54,7 +54,7 @@ object ZincCompile extends ConfigPimps{
       "-scala-library",
       rootProject.scalaLibraryJar(scalaVersion).getAbsolutePath,
       "-classpath",
-      if (phase == SourceCompilePhase) rootProject.compilationClasspath(scalaVersion) else rootProject.testCompilationClasspath(scalaVersion),
+      rootProject.compilationClasspath(scalaVersion, phase),
       "-d",
       module.classDirectory(scalaVersion, phase).getAbsolutePath,
       "-compile-order",
