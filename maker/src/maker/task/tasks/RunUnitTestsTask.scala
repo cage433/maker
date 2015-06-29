@@ -61,16 +61,19 @@ case class RunUnitTestsTask(
 
     rootProject.testOutputFile.delete
 
-    val opts = config.debugFlags ::: memoryArguments ::: systemPropertiesArguments
+    val opts : Seq[String] = config.debugFlags ::: memoryArguments ::: systemPropertiesArguments
  
     val testParameters : Seq[String] = rootProject.scalatestOutputParameters :: List("-P", "-C", "maker.utils.MakerTestReporter") 
 
-    var cmd = Command.scalaCommand(
-      classpath = rootProject.runtimeClasspath(scalaVersion, testPhase :: Nil),
-      klass = "scala.tools.nsc.MainGenericRunner",
-      opts = opts,
-      args = "org.scalatest.tools.Runner" +: testParameters ++: suiteParameters
-    )
+    var cmd = {
+      val args : Seq[String] = List(
+        config.javaExecutable.getAbsolutePath, 
+        "-classpath",
+        rootProject.runtimeClasspath(scalaVersion, testPhase :: Nil)) ++:
+        (opts :+ "org.scalatest.tools.Runner") ++:
+        testParameters ++: suiteParameters
+      Command(args : _*)
+    }
 
     // Apache executor is noisy when exit is non-zero, so switch that off here.
     // Actual exit value is checked below.
