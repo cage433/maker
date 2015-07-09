@@ -3,12 +3,12 @@ package maker.project
 import maker.task._
 import maker._
 import maker.task.compile._
-import java.io.{File, FileOutputStream}
+import java.io._
 import maker.utils._
 import maker.utils.FileUtils._
 import maker.task.tasks._
 import maker.utils.RichString._
-import java.net.URLClassLoader
+import java.net.{URLClassLoader, ServerSocket}
 import java.lang.reflect.Modifier
 import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
@@ -421,4 +421,28 @@ trait ProjectTrait extends ConfigPimps{
 
   def testQuickContinuously = continuously(() => testTaskBuild(defaultScalaVersion, lastCompilationTimeFilter = Some(System.currentTimeMillis)))
   def tqc = testQuickContinuously
+
+  def listenForCommands(){
+    val server = new ServerSocket(5555)
+    var shouldDie = false
+    while (!shouldDie){
+      val socket = server.accept()
+      val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
+      val out = new PrintWriter(socket.getOutputStream(), true)
+      in.readLine() match {
+        case "DIE" => 
+          shouldDie = true
+          out.println("DONE")
+        case "COMPILE" =>
+          val buildResult : BuildResult = compile
+          if (buildResult.succeeded)
+            out.println("SUCCEEDED")
+          else
+            out.println("FAILED")
+      }
+      in.close
+      out.close
+    }
+    server.close
+  }
 }
