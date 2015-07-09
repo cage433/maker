@@ -434,7 +434,7 @@ trait ProjectTrait extends ConfigPimps{
           shouldDie = true
           out.println("DONE")
         case "COMPILE" =>
-          val buildResult : BuildResult = compile
+          val buildResult : BuildResult = testCompile
           if (buildResult.succeeded)
             out.println("SUCCEEDED")
           else
