@@ -2,31 +2,61 @@ package maker.remote
 
 import java.io.{BufferedReader, InputStreamReader, PrintWriter}
 import java.net.Socket
+import maker.utils.os.Command
+import maker.utils.Int
 
-case class RemoteBuild(remoteHost : String, remotePort : Int, remoteAbsDir : String){
+case class RemoteBuild(remoteHost : String, sshPort : Int, socketPort : Int, remoteAbsDir : String){
   def remoteCompile(){
     val copyScalaFilesCommand = Command(
       "rsync", 
       "-aive", 
-      "ssh -p 5555", 
+      s"ssh -p $sshPort", 
       "--exclude=.git", 
       "--include=*/", 
       "--exclude=target*/", 
       "--include=*.scala",
+      "--include=*.java",
       "--exclude=*", 
-      "127.0.0.1",
-      ":/"home",/"alex",/"repos",/"evcel", "evcel"
+      ".",
+      s"remoteHost:$remoteAbsDir"
     )
 
-    val socket = new Socket("localhost", 5555)
+    val copyClassFilesCommand = Command(
+      "rsync", 
+      "-aive", 
+      s"ssh -p $sshPort", 
+      "--exclude=.git", 
+      "--include=*/", 
+      "--exclude=src/", 
+      "--exclude=tests/", 
+      "--include=*.class",
+      "--exclude=*", 
+      s"remoteHost:$remoteAbsDir",
+      "."
+    )
+
+    val socket = new Socket(remoteHost, socketPort)
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
     val out = new PrintWriter(socket.getOutputStream(), true)
-    out.println("COMPILE")
-    in.readLine() match {
-      case "SUCCEEDED" =>
-        println("SUCCEEDED")
-      case "FAILED" =>
-        println("FAILED")
+
+    val succeeded = try {
+      if (copyScalaFilesCommand.run() != 0)
+        throw new RuntimeException("Failed to copy source files")
+
+      out.println("COMPILE")
+      in.readLine() match {
+        case "SUCCEEDED" =>
+          println("SUCCEEDED")
+        case "FAILED" =>
+          throw new RuntimeException("Compilation failed")
+      }
+      if (copyClassFilesCommand.run() != 0)
+        throw new RuntimeException("Failed to copy class files")
+      true
+    } catch {
+      case e : Exception =>
+        println(e.getMessage)
+        false
     }
   }
 }

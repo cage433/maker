@@ -422,8 +422,8 @@ trait ProjectTrait extends ConfigPimps{
   def testQuickContinuously = continuously(() => testTaskBuild(defaultScalaVersion, lastCompilationTimeFilter = Some(System.currentTimeMillis)))
   def tqc = testQuickContinuously
 
-  def listenForCommands(){
-    val server = new ServerSocket(5555)
+  def listenForCommands(port : Int){
+    val server = new ServerSocket(port)
     var shouldDie = false
     while (!shouldDie){
       val socket = server.accept()
@@ -434,8 +434,15 @@ trait ProjectTrait extends ConfigPimps{
           shouldDie = true
           out.println("DONE")
         case "COMPILE" =>
-          val buildResult : BuildResult = testCompile
-          if (buildResult.succeeded)
+          val succeeded = try {
+            testCompile.succeeded
+          } catch {
+            case e : Exception => 
+              println(e.getMessage)
+              false
+          }
+
+          if (succeeded)
             out.println("SUCCEEDED")
           else
             out.println("FAILED")
