@@ -446,6 +446,8 @@ trait ProjectTrait extends ConfigPimps{
             out.println("SUCCEEDED")
           else
             out.println("FAILED")
+        case other => 
+          println(s"Unexpected command $other")
       }
       in.close
       out.close

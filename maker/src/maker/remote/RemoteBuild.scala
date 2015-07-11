@@ -10,36 +10,39 @@ case class RemoteBuild(remoteHost : String, sshPort : Int, socketPort : Int, rem
     val copyScalaFilesCommand = Command(
       "rsync", 
       "-aive", 
-      s"ssh -p $sshPort", 
+      s"'ssh -p $sshPort'", 
       "--exclude=.git", 
-      "--include=*/", 
-      "--exclude=target*/", 
-      "--include=*.scala",
-      "--include=*.java",
-      "--exclude=*", 
+      "--include='*/'", 
+      "--exclude='target*/'", 
+      "--include='*.scala'",
+      "--include='*.java'",
+      "--exclude='*'", 
       ".",
-      s"remoteHost:$remoteAbsDir"
+      s"$remoteHost:$remoteAbsDir"
     )
 
     val copyClassFilesCommand = Command(
       "rsync", 
       "-aive", 
-      s"ssh -p $sshPort", 
+      s"'ssh -p $sshPort'", 
       "--exclude=.git", 
-      "--include=*/", 
+      "--include='*/'", 
       "--exclude=src/", 
       "--exclude=tests/", 
-      "--include=*.class",
-      "--exclude=*", 
-      s"remoteHost:$remoteAbsDir",
+      "--include='*.class'",
+      "--exclude='*'", 
+      s"$remoteHost:$remoteAbsDir",
       "."
     )
 
-    val socket = new Socket(remoteHost, socketPort)
+    println("Opening socket")
+    val socket = new Socket("localhost", socketPort)
+    println("Opened socket")
     val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
     val out = new PrintWriter(socket.getOutputStream(), true)
 
     val succeeded = try {
+      println(s"Copying source files\n$copyScalaFilesCommand")
       if (copyScalaFilesCommand.run() != 0)
         throw new RuntimeException("Failed to copy source files")
 
