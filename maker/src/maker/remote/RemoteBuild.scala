@@ -17,7 +17,7 @@ case class RemoteBuild(remoteHost : String, sshPort : Int, socketPort : Int, rem
       "--include='*.scala'",
       "--include='*.java'",
       "--exclude='*'", 
-      ".",
+      "'.'",
       s"$remoteHost:$remoteAbsDir"
     )
 
@@ -32,7 +32,7 @@ case class RemoteBuild(remoteHost : String, sshPort : Int, socketPort : Int, rem
       "--include='*.class'",
       "--exclude='*'", 
       s"$remoteHost:$remoteAbsDir",
-      "."
+      "'.'"
     )
 
     println("Opening socket")
