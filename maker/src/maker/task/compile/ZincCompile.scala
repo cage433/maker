@@ -46,6 +46,7 @@ object ZincCompile extends ConfigPimps{
     val arguments = List[String](
       "-log-level",
       "warn",
+      "-transactional",
       "-no-color",
       "-java-home",
       config.javaHome.getCanonicalFile.getAbsolutePath,

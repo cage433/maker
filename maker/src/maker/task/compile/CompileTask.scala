@@ -154,6 +154,8 @@ object CompileTask{
   }
 
   def appendCompileOutputToTopLevel(module : Module, scalaVersion : ScalaVersion, phase : CompilePhase) = synchronized {
+    println(s"Appending output from $module - errors exist ${module.moduleCompilationErrorsFile(scalaVersion, phase).exists}")
+    println(s"error file is ${module.moduleCompilationErrorsFile(scalaVersion, phase)}")
     withFileAppender(module.topLevelCompilationErrorsFile){
       writer : BufferedWriter =>
         // Vim bug prevents all error being shown unless 
