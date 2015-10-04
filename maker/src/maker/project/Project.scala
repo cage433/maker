@@ -14,9 +14,9 @@ import maker.ScalaVersion
 case class Project(
   name : String,
   root : File,
-  immediateUpstreamModules:List[Module],
+  immediateUpstreamModules:Seq[Module],
   config : Config = ConfigFactory.load(),
-  topLevelExcludedFolders:List[String] = Nil,
+  topLevelExcludedFolders:Seq[String] = Nil,
   isTestProject : Boolean = false
 ) 
   extends ProjectTrait 
