@@ -4,7 +4,6 @@ import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.task._
 import maker.utils.{Stopwatch, FileUtils}
-import maker.utils.maven.IvyLock
 import maker.{PomUtils, ConfigPimps, ScalaVersion}
 import maker.task.compile.SourceCompilePhase
 import java.io.File
@@ -28,9 +27,7 @@ case class PublishLocalTask(
   def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version), scalaVersion))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    IvyLock.synchronized{
-      doPublish(project, results, sw)
-    }
+    doPublish(project, results, sw)
   }
   
   private def signFile(file : File) = {

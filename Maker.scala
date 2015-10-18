@@ -60,15 +60,13 @@ lazy val makerModule = new Module(
 ) with ClassicLayout with Bootstrapper {
   override def dependencies() = {
     Vector(
-      "org.scalatest" % "scalatest_2.10" % "2.2.0",
+      "org.scalatest" % "scalatest" %% "2.2.0",
       "ch.qos.logback" % "logback-classic" % "1.0.6",
       "org.slf4j" % "jcl-over-slf4j" % "1.6.1",
       "commons-io" % "commons-io" % "2.1",
       "com.typesafe.zinc" % "zinc" % "0.3.7",
       "org.apache.httpcomponents" % "httpclient" % "4.3",
-      "org.apache.ivy" % "ivy" % "2.3.0-rc2",
-      "org.scalaz" % "scalaz-core_2.10" % "7.0.1",
-      "com.google.guava" % "guava" %  "11.0.2", 
+      "org.scalaz" % "scalaz-core" %% "7.0.1",
       "com.typesafe" % "config" % "1.2.1",
       "io.spray" % "spray-json_2.10" % "1.3.1",
       "javax.inject" % "javax.inject" %  "1", 
@@ -79,8 +77,7 @@ lazy val makerModule = new Module(
       "org.eclipse.aether" % "aether-transport-file" % "1.0.0.v20140518",
       "org.eclipse.aether" % "aether-transport-http" % "1.0.0.v20140518",
       "org.eclipse.aether" %"aether-test-util" % "1.0.0.v20140518",
-      "org.mortbay.jetty" % "jetty" % "6.1.26",
-      "com.github.cage433" % "maker-test-reporter_2.10" % "0.07"
+      "com.github.cage433" % "maker-test-reporter" %% "0.07"
     )
   }
   override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
