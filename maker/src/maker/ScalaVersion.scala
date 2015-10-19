@@ -1,7 +1,6 @@
 package maker
 
 import scalaz.syntax.std.ToBooleanOps
-import com.typesafe.config.{ConfigFactory, Config}
 import maker.utils.Int
 import maker.utils.FileUtils._
 import java.io.File

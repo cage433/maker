@@ -6,14 +6,14 @@ import java.io.File
 import maker.utils.FileUtils._
 import org.scalatest.Failed
 import maker.utils.Int
-import maker.{ConfigPimps, ScalaVersion}
+import maker.{ScalaVersion, Log}
 import maker.project.{Module, ProjectTrait}
 
-object ZincCompile extends ConfigPimps{
+object ZincCompile extends Log {
 
   lazy val zinc = new ZincClient()
   def apply(rootProject : ProjectTrait, module : Module, phase : CompilePhase, scalaVersion : ScalaVersion) : Int = {
-    val config = module.config
+    println("Building compiler")
     val upstreamCaches = {
       var map = Map[File, File]()
 
@@ -49,7 +49,7 @@ object ZincCompile extends ConfigPimps{
       "-transactional",
       "-no-color",
       "-java-home",
-      config.javaHome.getCanonicalFile.getAbsolutePath,
+      rootProject.javaHome.getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
       rootProject.scalaCompilerJar(scalaVersion).getAbsolutePath,
       "-scala-library",
@@ -91,6 +91,8 @@ object ZincCompile extends ConfigPimps{
 
 
     try {
+      println(arguments)
+      println("Running zinc")
       val result = zinc.run(
         arguments, 
         module.rootAbsoluteFile, 

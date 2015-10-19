@@ -12,7 +12,7 @@ import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import maker.{ConfigPimps, ScalaVersion}
+import maker.ScalaVersion
 
 
 /**
@@ -26,10 +26,9 @@ case class RunMainTask(
   scalaVersion : ScalaVersion
 ) 
   extends Task 
-  with ConfigPimps
 {
+  lazy val logger = LoggerFactory.getLogger(getClass)
   def name = "Run Main"
-  import baseProject.config
 
   def module = baseProject
   def upstreamTasks = baseProject.testCompileTaskBuild(scalaVersion, CompilePhase.TEST_PHASES).tasks
@@ -39,11 +38,12 @@ case class RunMainTask(
     logger.info("running main in class " + className)
 
 
-    val optsToUse = config.debugFlags ++: List(
-      s"-Xmx${config.unitTestHeapSize}m", 
+    val optsToUse = baseProject.remoteDebuggingOption ++: List(
+      s"-Xmx${baseProject.unitTestHeapSize}m", 
       "-Dlogback.configurationFile=" + Option(System.getProperty("logback.configurationFile")).getOrElse("logback.xml")
     ) ++: opts
     var cmd = Command.scalaCommand(
+      baseProject,
       classpath = baseProject.runtimeClasspath(scalaVersion, CompilePhase.PHASES),
       klass = className,
       opts = optsToUse,

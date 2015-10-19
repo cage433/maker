@@ -1,7 +1,5 @@
 package maker.task.tasks
 
-import maker.ConfigPimps
-import com.typesafe.config.Config
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.impl.client.{DefaultHttpClient, BasicCredentialsProvider}
 import org.apache.http.client.config.RequestConfig
@@ -12,10 +10,11 @@ import org.apache.http.entity._
 import org.apache.http.conn.params.ConnRoutePNames
 import org.apache.http.util.EntityUtils
 import java.io._
+import maker.project.ProjectTrait
 
-trait SonatypeTask extends ConfigPimps{
-  def config : Config
-  val Array(sonatypeUsername, sonatypePassword) = config.sonatypeCredentials
+trait SonatypeTask {
+  def project: ProjectTrait
+  val Array(sonatypeUsername, sonatypePassword) = project.sonatypeCredentials
   val credentialHost = "oss.sonatype.org"
   type ErrorMessage = String
   //

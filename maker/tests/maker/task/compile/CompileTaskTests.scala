@@ -1,7 +1,7 @@
 package maker.task.compile
 
 import org.scalatest.{FunSuite, ParallelTestExecution, Matchers}
-import java.io.File
+import java.io.{File, ByteArrayOutputStream}
 import maker.utils.FileUtils._
 import maker.project.Module._
 import scalaz.syntax.id._
@@ -16,7 +16,7 @@ import maker.utils.FileUtils
 
 class CompileTaskTests extends FunSuite with TestUtils with Matchers with ModuleTestPimps{
 
-  test("Can compile 2.10 and 2.11 scala versions"){
+  ignore("Can compile 2.10 and 2.11 scala versions"){
     withTempDir{
       moduleRoot => 
         TestModuleBuilder.createMakerProjectFile(moduleRoot)
@@ -27,18 +27,21 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
           extraCode = 
              """|
                 |import maker.ScalaVersion
+                |import maker.task.compile._
+                |import scala.language.reflectiveCalls
                 |def checkCompilation(scalaVersion : ScalaVersion){
                 |
-                |  assert(classFiles(scalaVersion).size === 0, s"No class files before $scalaVersion compilation")
+                |  clean(scalaVersion)
+                |  assert(classFiles(scalaVersion, SourceCompilePhase).size === 0, s"No class files before $scalaVersion compilation")
+                |  println("Compiling")
                 |  compile(scalaVersion)
-                |  assert(classFiles(scalaVersion).size > 0, s"Some class files after $scalaVersion compilation")
+                |  assert(classFiles(scalaVersion, SourceCompilePhase).size > 0, s"Some class files after $scalaVersion compilation")
                 |
                 |}
                 |
                 |def checkCrossCompilation{
-                |  println("2.10")
+                |  println("2.10 first")
                 |  checkCompilation(ScalaVersion.TWO_TEN_DEFAULT)
-                |  println("2.11")
                 |  checkCompilation(ScalaVersion.TWO_ELEVEN_DEFAULT)
                 |}
                 |""".stripMargin
@@ -124,7 +127,7 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
     (proj, module, files)
   }
 
-  ignore("Compilation makes class files, writes dependencies, and package makes jar"){
+  test("Compilation makes class files, writes dependencies, and package makes jar"){
     withTempDir {
       dir => 
         val (proj, module, _) = simpleProject(dir)

@@ -94,7 +94,8 @@ def read_args():
     parser.add_argument('-e', '--extra-classpath', dest='extra_classpath', help='Colon separated list of directories/jars')
     parser.add_argument('-E', '--execute-command', dest='execute_command', help='maker command to run (and then exit)')
     (args, unknown_args) = parser.parse_known_args()
-    print("unknown args" + " - ".join(unknown_args))
+    if unknown_args:
+        print("unknown args" + " - ".join(unknown_args))
     args
 
 
@@ -246,6 +247,7 @@ def maker_test_class_directories():
 
 
 def launch_repl():
+    log.warn("Launcinhg repl")
     mkdir_p(".maker")
     
     classpath_components = scala_libraries() + maker_dependencies() 
@@ -295,13 +297,11 @@ read_args()
 create_logger()
 create_maker_lib_directories()
 
-log.info("Checking for missing resources")
 download_required_dependencies(SCALA_LIBRARIES, maker_scala_directory())
 download_required_dependencies(MAKER_DEPENDENCIES, maker_dependencies_directory())
 download_required_dependencies(MAKER_BINARIES, maker_binaries_directory())
 
 
-log.info("Launching repl")
 return_code = launch_repl()
 sys.exit(return_code)
 

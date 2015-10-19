@@ -10,7 +10,7 @@ import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
-import maker.{ConfigPimps, ScalaVersion}
+import maker.ScalaVersion
 import java.sql.Time
 
 case class RunUnitTestsTask(
@@ -23,10 +23,8 @@ case class RunUnitTestsTask(
   testPhase : CompilePhase
 )  
   extends Task 
-  with ConfigPimps
 {
 
-  import rootProject.config
   override def failureHaltsTaskManager = false
 
   def upstreamTasks = modules.map(CompileTask(rootProject, _, scalaVersion, testPhase))
@@ -56,18 +54,18 @@ case class RunUnitTestsTask(
     }
 
     val memoryArguments = List(
-      s"-Xmx${config.unitTestHeapSize}m"
+      s"-Xmx${rootProject.unitTestHeapSize}m"
     )
 
     rootProject.testOutputFile.delete
 
-    val opts : Seq[String] = config.debugFlags ::: memoryArguments ::: systemPropertiesArguments
+    val opts : Seq[String] = rootProject.remoteDebuggingOption ++: memoryArguments ++: systemPropertiesArguments
  
     val testParameters : Seq[String] = rootProject.scalatestOutputParameters :: List("-P", "-C", "maker.utils.MakerTestReporter") 
 
     var cmd = {
       val args : Seq[String] = List(
-        config.javaExecutable.getAbsolutePath, 
+        rootProject.javaExecutable.getAbsolutePath, 
         "-classpath",
         rootProject.runtimeClasspath(scalaVersion, testPhase :: Nil)) ++:
         (opts :+ "org.scalatest.tools.Runner") ++:

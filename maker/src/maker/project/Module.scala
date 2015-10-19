@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory
 import sbt.ConsoleLogger
 import sbt.inc.Analysis
 import scala.collection.immutable.Nil
-import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.graph.{Exclusion, Dependency => AetherDependency}
 import maker.utils.FileUtils
 import org.apache.commons.io.output.TeeOutputStream
@@ -23,7 +22,6 @@ import org.apache.commons.io.output.TeeOutputStream
 class Module(
     val root : File,
     val name : String,
-    val config : Config = ConfigFactory.load(),
     val immediateUpstreamModules : Seq[Module] = Nil,
     val testModuleDependencies : Seq[Module] = Nil,
     val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
@@ -37,6 +35,7 @@ class Module(
   protected val upstreamModulesForBuild = List(this)
 
   override def tearDown(graph : Dependency.Graph, result : BuildResult) = true
+
   def dependencies : Seq[RichDependency]  = Nil
 
   def compilationMetadataDirectory(scalaVersion : ScalaVersion, phase : CompilePhase) = 
@@ -84,7 +83,7 @@ class Module(
   Module.warnOfUnnecessaryDependencies(this)
 
   def javacOptions : List[String] = Nil 
-  def scalacOptions : List[String] = Nil
+  def scalacOptions : List[String] = "-feature" :: Nil
   /**
    * The standard equals method was slow, making Dependency operations very expensive.
    */
@@ -133,7 +132,7 @@ class Module(
     val build = Build(
       task.name + " for " + name + " only",
       Dependency.Graph(task),
-      config.taskThreadPoolSize
+      taskThreadPoolSize
     )
     execute(build)
   }
@@ -174,7 +173,7 @@ class Module(
   *     Test classses 
   ********************/
 
-  private def classFiles(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(scalaVersion, phase))
+  def classFiles(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(scalaVersion, phase))
 
   def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String] = {
     val isTestSuite = isAccessibleScalaTestSuite(rootProject, scalaVersion, testPhase)

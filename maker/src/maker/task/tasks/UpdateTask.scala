@@ -4,7 +4,7 @@ import maker.project._
 import maker.utils.FileUtils._
 import maker.task._
 import maker.utils._
-import maker.{ConfigPimps, ScalaVersion}
+import maker.ScalaVersion
 import scala.collection.JavaConversions._
 import java.net.URL
 import java.io.File
@@ -24,10 +24,10 @@ import org.eclipse.aether.spi.connector.transport.TransporterFactory
 import org.eclipse.aether.artifact.{Artifact, DefaultArtifact}
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import org.eclipse.aether.graph.{Dependency, DependencyNode}
-import com.typesafe.config.Config
 import org.eclipse.aether.util.graph.selector._
 import java.util.Arrays
 import org.eclipse.aether.internal.test.util.DependencyGraphParser
+import org.slf4j.LoggerFactory
 
 
 /**
@@ -40,17 +40,16 @@ import org.eclipse.aether.internal.test.util.DependencyGraphParser
   */
 case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion) 
   extends Task
-  with ConfigPimps
   with EitherPimps
   with DependencyPimps
   with StringBufferPimps
 {
+  lazy val logger = LoggerFactory.getLogger(getClass)
   def name = "Update " + project
 
   def upstreamTasks : List[Task] = Nil
-  import project.config
 
-  private val (system, session, repositories) = UpdateTask.aetherState(config)
+  private val (system, session, repositories) = UpdateTask.aetherState(project)
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     val result = if (project.dependenciesAlreadyUpdated(scalaVersion)){
@@ -118,7 +117,7 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
     var aetherDependencies = download.aetherDependencies(
       scalaVersion.scalaLibraryRichDependency +: 
       scalaVersion.scalaCompilerRichDependency +:
-      config.makerTestReporterDependency +:
+      project.makerTestReporterDependency +:
       project.upstreamDependencies
     )
 
@@ -167,8 +166,8 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
 
 }
 
-object UpdateTask extends ConfigPimps {
-  def aetherState(config : Config) = {
+object UpdateTask {
+  def aetherState(project: ProjectTrait) = {
     val system = {
       val locator = MavenRepositorySystemUtils.newServiceLocator()
       locator.addService( classOf[RepositoryConnectorFactory], classOf[BasicRepositoryConnectorFactory] )
@@ -202,18 +201,18 @@ object UpdateTask extends ConfigPimps {
       session.setLocalRepositoryManager( 
         system.newLocalRepositoryManager( 
           session, 
-          new LocalRepository(config.resourceCache.getAbsolutePath)
+          new LocalRepository(project.resourceCacheDirectory)
         )
       )
       session
     }
-    (system, session, repositories(config))
+    (system, session, repositories(project))
   }
 
-  def repositories(config : Config) = {
+  def repositories(project: ProjectTrait) = {
     val repos = new java.util.LinkedList[RemoteRepository]()
-    config.httpResolvers.foreach{
-      case List(name, url) => 
+    project.httpResolvers.foreach{
+      case (name, url) => 
         repos.add(new RemoteRepository.Builder(name, "default", url).build())
     }
     repos

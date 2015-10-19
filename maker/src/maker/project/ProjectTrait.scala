@@ -13,11 +13,11 @@ import java.lang.reflect.Modifier
 import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
 import scala.collection.immutable.Nil
-import com.typesafe.config.Config
 import org.apache.commons.io.output.TeeOutputStream
 import java.util.concurrent.atomic.AtomicReference
 
-trait ProjectTrait extends ConfigPimps{
+trait ProjectTrait extends MakerConfig{
+  lazy val logger = LoggerFactory.getLogger(getClass)
   protected def root : File
   /**
    * The standard equals and hashCode methods were slow, making Dependency operations very expensive.
@@ -49,7 +49,6 @@ trait ProjectTrait extends ConfigPimps{
   protected def name : String
   def modules : Seq[Module]
   def testModuleDependencies : Seq[Module]
-  def config : Config
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
 
@@ -124,13 +123,14 @@ trait ProjectTrait extends ConfigPimps{
     }
     ! topLevelCompilationErrorsFile.exists()
   }
-  def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean = true
+  protected def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean = true
 
+  protected def taskThreadPoolSize: Int = 0
   protected def transitiveBuild(rootTasks : Seq[Task]) = {
     Build(
       rootTasks.headOption.map(_.name).getOrElse("Empty build"),
       Dependency.Graph.transitiveClosure(rootTasks, extraUpstreamTasksMatcher, extraDownstreamTasksMatcher),
-      config.taskThreadPoolSize
+      taskThreadPoolSize
     )
   }
 
@@ -177,7 +177,7 @@ trait ProjectTrait extends ConfigPimps{
     setUp(bld.graph)
     val result = bld.execute
     tearDown(bld.graph, result)
-    if (result.failed && config.execMode && systemExitOnExecModeFailures){
+    if (result.failed && runningInExecMode && systemExitOnExecModeFailures){
       logger.error(bld + " failed - exiting")
       System.exit(1)
     }
@@ -226,20 +226,6 @@ trait ProjectTrait extends ConfigPimps{
   def compilationClasspath(scalaVersion : ScalaVersion, phase : CompilePhase) = 
     Module.asClasspathStr(compilationClasspathComponents(scalaVersion, phase))
 
-  //def testCompilationClasspathComponents(scalaVersion : ScalaVersion) = 
-      //compilationTargetDirectories(scalaVersion) ++:
-      //testDependencyJars(scalaVersion) ++:
-      //unmanagedLibs ++:
-      //(this match {
-        //case _ : Project => 
-          //upstreamModules.map(_.testClassDirectory(scalaVersion))
-        //case m : Module => 
-          //(m +: upstreamModules.flatMap(_.testModuleDependencies)).map(_.testClassDirectory(scalaVersion))
-      //})
-
-  //def testCompilationClasspath(scalaVersion : ScalaVersion) = 
-    //Module.asClasspathStr(testCompilationClasspathComponents(scalaVersion))
-
 
   def runtimeClasspathComponents(scalaVersion : ScalaVersion, phases : Seq[CompilePhase]) = 
     compilationTargetDirectories(scalaVersion, phases) ++:
@@ -254,22 +240,8 @@ trait ProjectTrait extends ConfigPimps{
   def runtimeClasspath(scalaVersion : ScalaVersion, phases : Seq[CompilePhase]) = Module.asClasspathStr(runtimeClasspathComponents(scalaVersion, phases))
 
 
-  //def testRuntimeClasspathComponents(scalaVersion : ScalaVersion, testPhase : CompilePhase) : Seq[File] =
-    //compilationTargetDirectories(scalaVersion) ++:
-    //testDependencyJars(scalaVersion) ++:
-    //unmanagedLibs ++:
-    //resourceDirectories ++:
-    //(this match {
-      //case _ : Project => 
-        //upstreamModules.flatMap{m => m.classDirectory(scalaVersion, testPhase) :: m.resourceDir(testPhase) :: Nil}
-      //case m : Module => 
-        //(m +: testModuleDependencies).flatMap{m => m.classDirectory(scalaVersion, testPhase) :: m.resourceDir(testPhase) :: Nil}
-    //})
 
-  //def testRuntimeClasspath(scalaVersion : ScalaVersion, testPhase : CompilePhase) = 
-    //Module.asClasspathStr(testRuntimeClasspathComponents(scalaVersion, testPhase))
-
-  def continuously(bld : () => Build){
+  def continuously(bld : () => Build) {
     var lastTaskTime :Option[Long] = None
 
     def allSourceFiles : Seq[File] = upstreamModules.flatMap(_.sourceFiles(SourceCompilePhase)) ++: 
@@ -454,4 +426,5 @@ trait ProjectTrait extends ConfigPimps{
     }
     server.close
   }
+
 }

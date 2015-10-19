@@ -16,7 +16,6 @@ class PublishLocalTaskTests
   extends FreeSpec 
   with Matchers 
   with CustomMatchers
-  with ConfigPimps
   with DependencyPimps
   with ModuleTestPimps
   with Assertions

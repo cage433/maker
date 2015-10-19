@@ -6,7 +6,6 @@ import maker._
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import maker.task.compile._
-import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.util.artifact.JavaScopes
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 
@@ -15,12 +14,10 @@ class TestModule(
   name : String,
   upstreamProjects : List[Module] = Nil,
   upstreamTestProjects : List[Module] = Nil,
-  analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis](),
-  config : Config = ConfigFactory.load()
+  analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis]()
 ) extends Module(
   root, 
   name,
-  config,
   upstreamProjects, 
   upstreamTestProjects,
   analyses
@@ -120,6 +117,7 @@ object TestModule{
         s"""|
             |import maker.project.{TestModule, DependencyPimps}
             |import org.eclipse.aether.util.artifact.JavaScopes
+            |import scala.language.reflectiveCalls
             |import java.io.File
             |""".stripMargin
     writeToFile(projectFile, text)

@@ -7,7 +7,6 @@ import java.io.File
 import maker.utils.RichString._
 import scala.collection.immutable.Nil
 import maker.task.compile._
-import com.typesafe.config.{ConfigFactory, Config}
 import scala.xml.{Elem, NodeSeq}
 import maker.ScalaVersion
 
@@ -15,7 +14,6 @@ case class Project(
   name : String,
   root : File,
   immediateUpstreamModules:Seq[Module],
-  config : Config = ConfigFactory.load(),
   topLevelExcludedFolders:Seq[String] = Nil,
   isTestProject : Boolean = false
 ) 

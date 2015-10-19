@@ -4,9 +4,9 @@ import java.io.{InputStream, OutputStream, File}
 import org.apache.commons.exec._
 import org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM
 import scala.concurrent.duration.Duration
-import com.typesafe.config.ConfigFactory
-import maker.ConfigPimps
+import maker.{MakerConfig, Log}
 import org.slf4j.LoggerFactory
+import maker.utils.Int
 
 case class Command(
   overrideOutput : Option[OutputStream],
@@ -14,8 +14,9 @@ case class Command(
   overrideWorkingDirectory : Option[File] = None,
   overrideExitValues : Option[Seq[Int]] = None,
   args : Seq[String]
-){
-  val logger = LoggerFactory.getLogger(getClass)
+) 
+  extends Log
+{
   override def toString = args.mkString(" ")
 
   def withOutputTo(os : OutputStream) = copy(overrideOutput = Some(os))
@@ -72,7 +73,7 @@ case class Command(
   }
 }
 
-object Command extends ConfigPimps{
+object Command {
   def apply(args : String*) : Command = Command(
     overrideOutput = None, 
     timeout = None,
@@ -81,8 +82,7 @@ object Command extends ConfigPimps{
     args 
   )
 
-  def scalaCommand(classpath : String, klass : String, opts : Seq[String] = Nil, args : Seq[String] = Nil) : Command = {
-    val config = ConfigFactory.load()
+  def scalaCommand(config: MakerConfig, classpath : String, klass : String, opts : Seq[String] = Nil, args : Seq[String] = Nil) : Command = {
 
     var commandArgs : Seq[String] =  
       config.javaExecutable.getAbsolutePath +: 

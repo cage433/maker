@@ -352,7 +352,7 @@ object FileUtils {
   def mkdirs(dir : File, subdirs : String*) : File = {
     val dir_ = file(dir, subdirs : _*)
     dir_.mkdirs
-    dir_
+    dir_.asAbsoluteFile
   }
 
   def mkdir(dir : File) : File = {

@@ -9,7 +9,7 @@ import maker.task.compile._
 import maker.project.{Module, Project}
 import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
-import maker.{ConfigPimps, ScalaVersion}
+import maker.{ScalaVersion, Log}
 
 
 /** Doc generation task - produces scaladocs from project sources
@@ -17,10 +17,8 @@ import maker.{ConfigPimps, ScalaVersion}
   * Outputs scala-docs per module in the "docs" sub-dir of the project target output dir
   */
 case class DocTask(project : Project, scalaVersion : ScalaVersion) 
-  extends Task
-  with ConfigPimps
+  extends Task with Log
 {
-  val config = project.config  
   def name = "Doc " + project.name
   def upstreamTasks = project.modules.map(CompileTask(project, _, scalaVersion, SourceCompilePhase))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
@@ -47,6 +45,7 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
 
       val bs = new ByteArrayOutputStream()
       val cmd = Command.scalaCommand(
+        project,
         classpath = scalaToolsClasspath,
         klass = "scala.tools.nsc.ScalaDoc",
         args = Vector("@" + optsFile.getAbsolutePath)

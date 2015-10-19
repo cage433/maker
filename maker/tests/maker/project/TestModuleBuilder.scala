@@ -3,7 +3,6 @@ package maker.project
 import sbt.inc.Analysis
 import maker.task.compile._
 import java.util.concurrent.ConcurrentHashMap
-import com.typesafe.config.{ConfigFactory, Config}
 import org.eclipse.aether.util.artifact.JavaScopes
 import java.io.File
 import maker.utils.FileUtils._
@@ -37,7 +36,6 @@ case class TestModuleBuilder(
 
   def dependencies : Seq[RichDependency] = 
         ("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST)) +:
-        "com.typesafe" % "config" % "1.2.1" +: 
         ("com.github.cage433" % "maker-test-reporter" %% "0.09" withScope(JavaScopes.TEST)) +:
         extraDependencies
 
@@ -54,6 +52,7 @@ case class TestModuleBuilder(
         |   override def reportBuildResult = ${reportBuildResult}
         |   override def scalatestOutputParameters = "${scalatestOutputParameters}"
         |   override def systemExitOnExecModeFailures = ${systemExitOnExecModeFailures}
+        |   override def scalacOptions = List("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings")
         |   override def updateIncludesSourceJars = false
         |   $extraCode
         |} 
@@ -158,15 +157,12 @@ object TestModuleBuilder{
 
   def makerExecuteCommand(dir : File, method : String) = {
     val makerScript = file("maker.py").getAbsolutePath
-    val configDirectory = file("config").getAbsolutePath
     import scala.concurrent.duration._
     val command = Command(
       "python",
       makerScript,
       "-E",
       method,
-      "-e",
-      configDirectory,
       "-z",
       "-l",
       file(dir, "logback.xml").getAbsolutePath,
@@ -180,9 +176,5 @@ object TestModuleBuilder{
     command
   }
 
-  def writeApplicationConfig(rootDir : File, config : String){
-    val configFile = file(rootDir, "config", "application.conf")
-    writeToFile(configFile, config)
-  }
 }
 

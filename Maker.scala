@@ -67,7 +67,6 @@ lazy val makerModule = new Module(
       "com.typesafe.zinc" % "zinc" % "0.3.7",
       "org.apache.httpcomponents" % "httpclient" % "4.3",
       "org.scalaz" % "scalaz-core" %% "7.0.1",
-      "com.typesafe" % "config" % "1.2.1",
       "io.spray" % "spray-json_2.10" % "1.3.1",
       "javax.inject" % "javax.inject" %  "1", 
       "org.apache.commons" % "commons-exec" % "1.3",

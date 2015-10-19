@@ -21,11 +21,10 @@ import org.apache.http.conn.params.ConnRoutePNames
 import org.apache.http.util.EntityUtils
 import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
-import maker.{ConfigPimps, ScalaVersion}
+import maker.ScalaVersion
 
 case class PublishSnapshotToSonatype(project : Project, version : String, scalaVersion : ScalaVersion) extends Task
 with SonatypeTask with EitherPimps{
-  def config = project.config
   val sonatypeRepository = "https://oss.sonatype.org/service/local"
            
   def name = s"Publish $project snapshot to Sonatype"
