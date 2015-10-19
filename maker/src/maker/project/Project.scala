@@ -15,7 +15,8 @@ case class Project(
   root : File,
   immediateUpstreamModules:Seq[Module],
   topLevelExcludedFolders:Seq[String] = Nil,
-  isTestProject : Boolean = false
+  isTestProject : Boolean = false,
+  scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 ) 
   extends ProjectTrait 
 {

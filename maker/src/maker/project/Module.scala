@@ -24,7 +24,8 @@ class Module(
     val name : String,
     val immediateUpstreamModules : Seq[Module] = Nil,
     val testModuleDependencies : Seq[Module] = Nil,
-    val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
+    val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses,
+    val scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 )
   extends ProjectTrait
   with DependencyPimps

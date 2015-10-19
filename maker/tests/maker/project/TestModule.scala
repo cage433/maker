@@ -14,13 +14,15 @@ class TestModule(
   name : String,
   upstreamProjects : List[Module] = Nil,
   upstreamTestProjects : List[Module] = Nil,
-  analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis]()
+  analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis](),
+  scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 ) extends Module(
   root, 
   name,
   upstreamProjects, 
   upstreamTestProjects,
-  analyses
+  analyses,
+  scalaVersion
 ) with ClassicLayout with DependencyPimps {
 
   override def constructorCodeAsString : String = {

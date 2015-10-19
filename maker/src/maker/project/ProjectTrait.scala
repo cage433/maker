@@ -41,7 +41,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars {
    }
   override def hashCode = root.hashCode
 
-  def scalaVersion : ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+  def scalaVersion : ScalaVersion 
 
   val rootAbsoluteFile = root.asAbsoluteFile
   protected def name : String
