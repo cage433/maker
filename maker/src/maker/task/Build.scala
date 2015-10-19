@@ -25,7 +25,7 @@ case class Build(
   def execute = new Execute().execute
   class Execute{
 
-    val executor = Build.PriorityExecutor(numberOfWorkers, name)
+    val executor = Build.PriorityExecutor(maybeNumberOfWorkers, name)
 
     val monitor = new Build.TaskMonitor(graph, executor)
 
