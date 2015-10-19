@@ -1,7 +1,7 @@
 package maker.task.tasks
 
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
-import org.apache.http.impl.client.{DefaultHttpClient, BasicCredentialsProvider}
+import org.apache.http.impl.client._
 import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.{HttpPost, HttpGet}
 import org.apache.http.client.HttpClient
@@ -23,17 +23,18 @@ trait SonatypeTask {
 
   private def withHttpClient[U](body: HttpClient => U) : U = {
 
-    val client = new DefaultHttpClient()
-    //client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy)
+    val credsProvider = new BasicCredentialsProvider()
+    credsProvider.setCredentials(
+      new AuthScope(credentialHost, AuthScope.ANY_PORT),
+      new UsernamePasswordCredentials(sonatypeUsername, sonatypePassword))
+      val httpclient = HttpClients.custom()
+            .setDefaultCredentialsProvider(credsProvider)
+            .build()
     try {
-      client.getCredentialsProvider.setCredentials(
-        new AuthScope(credentialHost, AuthScope.ANY_PORT),
-        new UsernamePasswordCredentials(sonatypeUsername, sonatypePassword)
-      )
-      body(client)
+      body(httpclient)
     }
     finally
-      client.getConnectionManager.shutdown()
+      httpclient.close()
   }
 
   def Get[U](path:String)(body: HttpResponse => U) : U = {

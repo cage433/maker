@@ -30,7 +30,7 @@ class MakerTestReporter extends Reporter{
 
   private val EscapeChars = sys.env.get("MAKER_ESCAPECHARS").isDefined
   private def inColour(code: String, s: String) =
-    if (EscapeChars) "\033[" + code + "m" + s + "\033[0m" else s
+    if (EscapeChars) "\u033b[" + code + "m" + s + "\u033b[0m" else s
   private val Green = "0;32"
   private val Red = "0;31"
   private val LightRed = "1;31"

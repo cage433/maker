@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.Properties
 import scala.language.implicitConversions
 
-object FileUtils {
+trait FileUtils {
 
   def file(f : File, d : String*) : File = {
     assert(f != null)  // Because Java will happily ignore a null f
@@ -416,3 +416,5 @@ object FileUtils {
   }
 
 }
+
+object FileUtils extends FileUtils
