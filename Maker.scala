@@ -75,7 +75,7 @@ lazy val makerModule = new Module(
       "org.eclipse.aether" % "aether-impl" % "1.0.0.v20140518",
       "org.eclipse.aether" % "aether-transport-file" % "1.0.0.v20140518",
       "org.eclipse.aether" % "aether-transport-http" % "1.0.0.v20140518",
-      "org.eclipse.aether" %"aether-test-util" % "1.0.0.v20140518",
+      "org.eclipse.aether" % "aether-test-util" % "1.0.0.v20140518",
       "com.github.cage433" % "maker-test-reporter" %% "0.07"
     )
   }

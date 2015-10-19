@@ -41,23 +41,14 @@ trait ProjectTrait extends MakerConfig{
    }
   override def hashCode = root.hashCode
 
-
   def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 
   val rootAbsoluteFile = root.asAbsoluteFile
-  lazy val testOutputFile = file(rootAbsoluteFile, "maker-test-output")
   protected def name : String
   def modules : Seq[Module]
   def testModuleDependencies : Seq[Module]
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
-
-  def topLevelCompilationErrorsFile = file("vim-compilation-errors")
-
-  def runMainOutputStream = {
-    val runLogFile = file(rootAbsoluteFile, "runlog.out")
-    new TeeToFileOutputStream(runLogFile)
-  }
 
 
   private def findSingleScalaJar(scalaVersion : ScalaVersion, partName : String) : File = {
@@ -119,9 +110,9 @@ trait ProjectTrait extends MakerConfig{
 
   def setUp(graph : Dependency.Graph) : Boolean = {
     if (graph.includesCompileTask){
-      topLevelCompilationErrorsFile.delete
+      CompileTask.topLevelCompilationErrorsFile.delete
     }
-    ! topLevelCompilationErrorsFile.exists()
+    ! CompileTask.topLevelCompilationErrorsFile.exists()
   }
   protected def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean = true
 
@@ -323,7 +314,7 @@ trait ProjectTrait extends MakerConfig{
   def testResults = {
     // Test results may either be in a top level project's directory, or else in
     // module directoriy(s)
-    (testOutputFile +: upstreamModules.map(_.testOutputFile)).distinct.map(MakerTestResults(_)).reduce(_++_)
+    upstreamModules.distinct.map(MakerTestResults(_)).reduce(_++_)
   }
 
 

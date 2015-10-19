@@ -106,6 +106,7 @@ case class CompilationFailedInfo(e : CompileFailed) {
 
 
 object CompileTask{
+  val topLevelCompilationErrorsFile = file("vim-compilation-errors")
   def CALL_TO_COMPILER = "CALL TO SCALA COMPILER"
 
   def reportOnCompilationErrors(taskResults : List[TaskResult]){
@@ -156,7 +157,7 @@ object CompileTask{
   def appendCompileOutputToTopLevel(module : Module, scalaVersion : ScalaVersion, phase : CompilePhase) = synchronized {
     println(s"Appending output from $module - errors exist ${module.moduleCompilationErrorsFile(scalaVersion, phase).exists}")
     println(s"error file is ${module.moduleCompilationErrorsFile(scalaVersion, phase)}")
-    withFileAppender(module.topLevelCompilationErrorsFile){
+    withFileAppender(CompileTask.topLevelCompilationErrorsFile){
       writer : BufferedWriter =>
         // Vim bug prevents all error being shown unless 
         // there is a blank line initially

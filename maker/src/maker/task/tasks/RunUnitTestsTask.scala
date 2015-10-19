@@ -4,6 +4,7 @@ import maker.project.{Module, ProjectTrait}
 import maker.utils.os.Command
 import maker.task._
 import maker.utils._
+import maker.utils.FileUtils._
 import maker.utils.RichIterable._
 import maker.task.compile.{TestCompilePhase, CompilePhase, CompileTask}
 import com.sun.org.apache.xpath.internal.operations.Bool
@@ -12,6 +13,7 @@ import ch.qos.logback.classic.Logger
 import org.slf4j.LoggerFactory
 import maker.ScalaVersion
 import java.sql.Time
+import java.io.File
 
 case class RunUnitTestsTask(
   name : String, 
@@ -42,11 +44,12 @@ case class RunUnitTestsTask(
 
 
     val suiteParameters : Seq[String] = classOrSuiteNames.map(List("-s", _)).flatten.toVector
+    val testOutputFile = RunUnitTestsTask.testOutputFile(rootProject)
     val systemPropertiesArguments = {
       var s = Map[String, String]()
       s += "scala.usejavacp" -> "true"
       s += "logback.configurationFile" -> Option(System.getProperty("logback.configurationFile")).getOrElse(throw new Exception("No logback config defined"))
-      s += "maker.test.output" -> rootProject.testOutputFile.toString
+      s += "maker.test.output" -> testOutputFile.toString
       s += "sbt.log.format" -> "=false"
       s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
@@ -57,7 +60,7 @@ case class RunUnitTestsTask(
       s"-Xmx${rootProject.unitTestHeapSize}m"
     )
 
-    rootProject.testOutputFile.delete
+    testOutputFile.delete
 
     val opts : Seq[String] = rootProject.remoteDebuggingOption ++: memoryArguments ++: systemPropertiesArguments
  
@@ -79,7 +82,7 @@ case class RunUnitTestsTask(
 
     val res = cmd.run
 
-    val results = MakerTestResults(rootProject.testOutputFile)
+    val results = MakerTestResults(testOutputFile)
 
     val result = if (res == 0 && results.failures.isEmpty){
       RunUnitTestsTaskResult(this, succeeded = true, stopwatch = sw, testResults = results)
@@ -109,7 +112,7 @@ object RunUnitTestsTask{
       "Failing tests",
       module :: Nil,
       rootProject,
-      Some(MakerTestResults(module.testOutputFile).failingSuiteClasses),
+      Some(MakerTestResults(testOutputFile(module)).failingSuiteClasses),
       scalaVersion,
       lastCompilationTimeFilter = None,
       testPhase = TestCompilePhase
@@ -166,6 +169,10 @@ object RunUnitTestsTask{
         )
     }
     println(testTable.toString)
+  }
+
+  def testOutputFile(project: ProjectTrait): File = {
+    file(project.rootAbsoluteFile, "maker-test-output")
   }
 }
 

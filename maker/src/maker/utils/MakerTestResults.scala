@@ -1,22 +1,19 @@
 package maker.utils
 
 import org.scalatest.events._
-import org.scalatest.events.Event
-import org.scalatest.events.SuiteCompleted
-import org.scalatest.events.SuiteStarting
 import org.scalatest.Reporter
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.SynchronizedMap
-import scala.collection.mutable.SynchronizedQueue
+import scala.collection.mutable.{HashMap, SynchronizedMap, SynchronizedQueue}
 import scala.Console
 import scala.util.Properties
-
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.io._
 import maker.utils.FileUtils._
 import maker.utils.RichString._
 import maker.utils.RichIterable._
+import maker.project.ProjectTrait
+import maker.task.tasks.RunUnitTestsTask
+
 
 case class TestIdentifier(suite : String, suiteClass : String, test : String) extends Ordered[TestIdentifier]{
   def compare(rhs : TestIdentifier) = toString.compare(rhs.toString)
@@ -51,7 +48,8 @@ object MakerTestResults{
     field.split(grpSep).toList.mkString("\n")
   }
 
-  def apply(file : File) : MakerTestResults = {
+  def apply(project: ProjectTrait): MakerTestResults = apply(RunUnitTestsTask.testOutputFile(project))
+  def apply(file : File): MakerTestResults = {
 
     val startTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
     val endTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()

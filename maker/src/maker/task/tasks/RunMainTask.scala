@@ -42,6 +42,10 @@ case class RunMainTask(
       s"-Xmx${baseProject.unitTestHeapSize}m", 
       "-Dlogback.configurationFile=" + Option(System.getProperty("logback.configurationFile")).getOrElse("logback.xml")
     ) ++: opts
+    val outputStream = {
+      val runLogFile = file(baseProject.rootAbsoluteFile, "runlog.out")
+      new TeeToFileOutputStream(runLogFile)
+    }
     var cmd = Command.scalaCommand(
       baseProject,
       classpath = baseProject.runtimeClasspath(scalaVersion, CompilePhase.PHASES),
@@ -49,7 +53,7 @@ case class RunMainTask(
       opts = optsToUse,
       args = mainArgs
     )
-    cmd = cmd.withOutputTo(baseProject.runMainOutputStream)
+    cmd = cmd.withOutputTo(outputStream)
     cmd.run match {
       case 0 => DefaultTaskResult(this, true, sw)
       case code => DefaultTaskResult(this, false, sw, message = Some("Run Main failed in " + baseProject))
