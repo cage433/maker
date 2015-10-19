@@ -116,7 +116,7 @@ trait ProjectTrait extends MakerConfig{
   }
   protected def tearDown(graph : Dependency.Graph, result : BuildResult) : Boolean = true
 
-  protected def taskThreadPoolSize: Int = 0
+  protected def taskThreadPoolSize: Option[Int] = None
   protected def transitiveBuild(rootTasks : Seq[Task]) = {
     Build(
       rootTasks.headOption.map(_.name).getOrElse("Empty build"),

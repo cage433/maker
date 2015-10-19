@@ -14,7 +14,7 @@ import ch.qos.logback.classic.Logger
 case class Build(
   name : String,
   graph : Dependency.Graph,
-  numberOfWorkers : Int
+  maybeNumberOfWorkers : Option[Int]
 ) {
 
   import Build.logger
@@ -131,8 +131,14 @@ object Build{
     * a low priority task that has been accepted will continue to run
     * even if high priority tasks are subsequently submitted.
     */
-  class PriorityExecutor private(workers: Int, queue: BlockingQueue[Runnable])
-      extends ThreadPoolExecutor(workers, workers, Long.MaxValue, TimeUnit.NANOSECONDS, queue) {
+  class PriorityExecutor private(maybeNumberOfWorkers: Option[Int], queue: BlockingQueue[Runnable])
+      extends ThreadPoolExecutor(
+        maybeNumberOfWorkers.getOrElse(0), 
+        maybeNumberOfWorkers.getOrElse(0), 
+        Long.MaxValue, 
+        TimeUnit.NANOSECONDS, 
+        queue
+      ) {
     def executeWithPriority(priority: Int)(f: => Unit): Unit = {
       val task = new PrioritisedFutureTask(new Runnable {
         override def run(): Unit = f
@@ -142,7 +148,7 @@ object Build{
   }
 
   object PriorityExecutor {
-    def apply(workers: Int, name: String): PriorityExecutor = {
+    def apply(maybeNumberOfWorkers: Option[Int], name: String): PriorityExecutor = {
       // should really be a PriorityExecutor[ComparableFutureTask] but
       // we are forced by invariance to use reflection and handle
       // Runnables
@@ -164,7 +170,7 @@ object Build{
           thread
         }
       }
-      new PriorityExecutor(workers, queue)
+      new PriorityExecutor(maybeNumberOfWorkers, queue)
     }
   }
 
