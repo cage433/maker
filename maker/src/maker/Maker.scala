@@ -35,7 +35,7 @@ trait MakerConfig extends DependencyPimps {
   }
 
   def javaHome = {
-    maybeProperty("JAVA_HOME") orElse maybeProperty("JDK_HOME") match {
+    maybeEnvVar("JAVA_HOME") orElse maybeEnvVar("JDK_HOME") match {
       case Some(dir) => file(dir)
       case None => 
         throw new IllegalStateException("JAVA_HOME or JDK_HOME must be specified")
