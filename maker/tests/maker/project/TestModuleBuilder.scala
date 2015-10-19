@@ -7,6 +7,7 @@ import org.eclipse.aether.util.artifact.JavaScopes
 import java.io.File
 import maker.utils.FileUtils._
 import maker.utils.os.Command
+import scala.language.postfixOps
 
 case class TestModuleBuilder(
   root : File, 

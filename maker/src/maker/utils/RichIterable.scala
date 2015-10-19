@@ -2,6 +2,7 @@ package maker.utils
 
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.ListBuffer
+import scala.language.implicitConversions
 
 object RichIterable{
   implicit def toRichIterable[A](as : Iterable[A]) = RichIterable(as)

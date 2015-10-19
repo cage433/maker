@@ -4,6 +4,7 @@ import scalaz.syntax.id._
 import scala.collection.immutable.TreeMap
 import java.io.StringWriter
 import java.io.PrintWriter
+import scala.language.implicitConversions
 
 trait StringBufferPimps{
   implicit class RichStringBuffer(b : StringBuffer){

@@ -2,6 +2,7 @@ package maker.utils
 
 import scala.util.Either
 import scala.util.Either.RightProjection
+import scala.language.implicitConversions
 
 trait EitherPimps {
   implicit def rightBias[L, R](either: Either[L, R]): RightProjection[L, R] = either.right

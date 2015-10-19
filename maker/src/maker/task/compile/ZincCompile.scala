@@ -13,7 +13,6 @@ object ZincCompile extends Log {
 
   lazy val zinc = new ZincClient()
   def apply(rootProject : ProjectTrait, module : Module, phase : CompilePhase, scalaVersion : ScalaVersion) : Int = {
-    println("Building compiler")
     val upstreamCaches = {
       var map = Map[File, File]()
 
@@ -91,8 +90,6 @@ object ZincCompile extends Log {
 
 
     try {
-      println(arguments)
-      println("Running zinc")
       val result = zinc.run(
         arguments, 
         module.rootAbsoluteFile, 

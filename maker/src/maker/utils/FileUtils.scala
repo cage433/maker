@@ -18,6 +18,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.util.EnumSet
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.Properties
+import scala.language.implicitConversions
 
 object FileUtils {
 

@@ -3,6 +3,7 @@ package maker.utils
 import scala.collection.TraversableLike
 import scala.collection.SeqLike
 import scala.collection.generic.CanBuildFrom
+import scala.language.implicitConversions
 
 object RichTraversableLike{
   class RichTraversableLike[+A, +Repr](tl : TraversableLike[A, Repr]) {

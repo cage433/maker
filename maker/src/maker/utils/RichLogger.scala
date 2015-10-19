@@ -1,6 +1,7 @@
 package maker.utils
 
 import ch.qos.logback.classic.Logger
+import scala.language.implicitConversions
 
 object RichLogger{
 
