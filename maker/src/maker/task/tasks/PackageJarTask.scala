@@ -15,15 +15,14 @@ import maker.ScalaVersion
 
 case class PackageJarTask(
   project: Project, 
-  version : Option[String],
-  scalaVersion : ScalaVersion
+  version : Option[String]
 ) 
   extends Task with EitherPimps
 {
 
   def name = "Package Main Jar"
 
-  def upstreamTasks = DocTask(project, scalaVersion) :: Nil
+  def upstreamTasks = DocTask(project) :: Nil
 
   // TODO - find out why this is synchronized
   def exec(results: Iterable[TaskResult], sw: Stopwatch) = synchronized {

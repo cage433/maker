@@ -137,7 +137,7 @@ class Module(
     execute(build)
   }
 
-  def cleanOnly = executeSansDependencies(CleanTask(this, scalaVersion))
+  def cleanOnly = executeSansDependencies(CleanTask(this))
 
   def testTaskBuild(lastCompilationTimeFilter : Option[Long]) = {
     // For a module, the `test` task runs just tha module's tests.
@@ -148,7 +148,6 @@ class Module(
         modules = this :: Nil, 
         rootProject = this, 
         classOrSuiteNames_ = None,
-        scalaVersion = scalaVersion,
         lastCompilationTimeFilter = lastCompilationTimeFilter,
         testPhase = TestCompilePhase
       ) :: Nil
@@ -159,12 +158,12 @@ class Module(
 
   def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
     (this +: testModuleDependencies).flatMap{module => 
-      testPhases.map(CompileTask(this, module, scalaVersion, _))
+      testPhases.map(CompileTask(this, module, _))
     }
   )
 
   def testFailuredSuitesOnly : BuildResult = executeSansDependencies(
-    RunUnitTestsTask.failingTests(this, this, scalaVersion)
+    RunUnitTestsTask.failingTests(this, this)
   )
 
 

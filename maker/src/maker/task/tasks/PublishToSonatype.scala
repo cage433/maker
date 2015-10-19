@@ -23,7 +23,7 @@ import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
 import maker.ScalaVersion
 
-case class PublishToSonatype(project : Project, version : String, scalaVersion : ScalaVersion) 
+case class PublishToSonatype(project : Project, version : String) 
   extends Task 
   with SonatypeTask
   with EitherPimps
@@ -35,7 +35,7 @@ case class PublishToSonatype(project : Project, version : String, scalaVersion :
   def name = s"Publish $project to Sonatype"
 
   def upstreamTasks = 
-    PublishLocalTask(project, version, signArtifacts = true, scalaVersion = scalaVersion) :: Nil
+    PublishLocalTask(project, version, signArtifacts = true) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     FileUtils.withTempDir{

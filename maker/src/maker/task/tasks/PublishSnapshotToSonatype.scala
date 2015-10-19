@@ -23,14 +23,14 @@ import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
 import maker.ScalaVersion
 
-case class PublishSnapshotToSonatype(project : Project, version : String, scalaVersion : ScalaVersion) extends Task
+case class PublishSnapshotToSonatype(project : Project, version : String) extends Task
 with SonatypeTask with EitherPimps{
   val sonatypeRepository = "https://oss.sonatype.org/service/local"
            
   def name = s"Publish $project snapshot to Sonatype"
 
   def upstreamTasks = 
-    PublishLocalTask(project, version, signArtifacts = false, scalaVersion = scalaVersion) :: Nil
+    PublishLocalTask(project, version, signArtifacts = false) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     val toUpload : Seq[(File, ContentType)] = (project.publishLocalPomFile(version), ContentType.APPLICATION_XML) +: {

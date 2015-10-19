@@ -192,20 +192,20 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
 
         assert(
           !B.testCompileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
-            CompileTask(B, B, SCALA_VERSION, TestCompilePhase)
-          ).contains(CompileTask(B, A, SCALA_VERSION, TestCompilePhase)),
+            CompileTask(B, B, TestCompilePhase)
+          ).contains(CompileTask(B, A, TestCompilePhase)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
           C.testCompileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
-            CompileTask(C, C, SCALA_VERSION, TestCompilePhase)
-          ).contains(CompileTask(C, A, SCALA_VERSION, TestCompilePhase)),
+            CompileTask(C, C, TestCompilePhase)
+          ).contains(CompileTask(C, A, TestCompilePhase)),
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
           B.compileTaskBuild.graph.upstreams(
-            CompileTask(B, B, SCALA_VERSION, SourceCompilePhase)
-          ).contains(CompileTask(B, A, SCALA_VERSION, SourceCompilePhase)),
+            CompileTask(B, B, SourceCompilePhase)
+          ).contains(CompileTask(B, A, SourceCompilePhase)),
           "Upstream source compilation is a dependency"  
         )
 
@@ -249,18 +249,18 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
         List(A, B, C).foreach{
           proj => 
             assert(proj.testTaskBuild(lastCompilationTimeFilter = None).graph.nodes.exists{
-              case RunUnitTestsTask(_, _, `proj`, _, SCALA_VERSION, _, _) => true
+              case RunUnitTestsTask(_, _, `proj`, _, _, _) => true
               case _ => false
             })
         }
         import Dependency.Edge
         assert(!D.testCompileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
-          Edge(CompileTask(D, A, SCALA_VERSION, TestCompilePhase), CompileTask(D, C, SCALA_VERSION, TestCompilePhase))))
+          Edge(CompileTask(D, A, TestCompilePhase), CompileTask(D, C, TestCompilePhase))))
 
         assert(C.testTaskBuild(lastCompilationTimeFilter = None).graph.edges.contains(
-          Edge(CompileTask(C, A, SCALA_VERSION, TestCompilePhase), CompileTask(C, C, SCALA_VERSION, TestCompilePhase))))
+          Edge(CompileTask(C, A, TestCompilePhase), CompileTask(C, C, TestCompilePhase))))
         assert(!D.testCompileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
-          Edge(CompileTask(D, B, SCALA_VERSION, TestCompilePhase), CompileTask(D, C, SCALA_VERSION, TestCompilePhase))))
+          Edge(CompileTask(D, B, TestCompilePhase), CompileTask(D, C, TestCompilePhase))))
 
     }
     

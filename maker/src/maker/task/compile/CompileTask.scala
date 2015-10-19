@@ -19,7 +19,6 @@ import maker.ScalaVersion
 case class CompileTask(
   rootProject : ProjectTrait, 
   val module : Module, 
-  scalaVersion : ScalaVersion,
   phase : CompilePhase
 ) 
   extends Task
@@ -28,10 +27,10 @@ case class CompileTask(
   def upstreamTasks = {
     phase match {
       case SourceCompilePhase => 
-        module.immediateUpstreamModules.map(CompileTask(rootProject, _, scalaVersion, SourceCompilePhase)) ++ 
-          List(UpdateTask(rootProject, scalaVersion))
+        module.immediateUpstreamModules.map(CompileTask(rootProject, _, SourceCompilePhase)) ++ 
+          List(UpdateTask(rootProject))
       case _ => 
-          CompileTask(rootProject, module, scalaVersion, SourceCompilePhase) +: module.testModuleDependencies.map(CompileTask(rootProject, _, scalaVersion, phase))
+          CompileTask(rootProject, module, SourceCompilePhase) +: module.testModuleDependencies.map(CompileTask(rootProject, _, phase))
     }
   }
 
@@ -80,7 +79,7 @@ case class CompileTask(
             )
           }
         case "dummy-test-compiler" =>
-          DummyCompileTask(module, phase, scalaVersion).exec
+          DummyCompileTask(module, phase).exec
           successfulResult(sw, CompilationSucceeded)
 
       }

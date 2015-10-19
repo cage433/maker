@@ -9,7 +9,7 @@ import maker.utils.FileUtils
   * Use to speed up tests that require a compilation task to execute, but have no need
   * for real class files to be produced. 
   */
-case class DummyCompileTask(module : Module, phase : CompilePhase, scalaVersion : ScalaVersion) {
+case class DummyCompileTask(module : Module, phase : CompilePhase) {
   def exec() {
     module.sourceFiles(phase).foreach{
       sf =>

@@ -15,15 +15,14 @@ import maker.utils.FileUtils._
 case class PublishLocalTask(
   project : Project, 
   version : String,
-  signArtifacts : Boolean,
-  scalaVersion : ScalaVersion
+  signArtifacts : Boolean
 ) 
   extends Task 
   with Log
 {
   def name = "Publish Local"
 
-  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version), scalaVersion))
+  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version)))
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     doPublish(project, results, sw)

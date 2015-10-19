@@ -13,7 +13,7 @@ import maker.ScalaVersion
   *
   *  removes all build content and directories that contained it
   */
-case class CleanTask(project : ProjectTrait, scalaVersion : ScalaVersion) extends Task
+case class CleanTask(project : ProjectTrait) extends Task
 {
   def name = "Clean"
   lazy val logger = LoggerFactory.getLogger(this.getClass)

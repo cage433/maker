@@ -110,7 +110,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars {
   }
 
 
-  def compileTaskBuild = transitiveBuild(modules.map(CompileTask(this, _, scalaVersion, SourceCompilePhase)))
+  def compileTaskBuild = transitiveBuild(modules.map(CompileTask(this, _, SourceCompilePhase)))
   def compile : BuildResult = execute(compileTaskBuild)
 
 
@@ -119,12 +119,12 @@ trait ProjectTrait extends MakerConfig with ScalaJars {
   def tcc = continuously(() => testCompileTaskBuild(CompilePhase.TEST_PHASES))
   
   def testFailedSuitesBuild() = {
-    transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _, scalaVersion)))
+    transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _)))
   }
   def testFailedSuites : BuildResult = execute(testFailedSuitesBuild())
 
   def updateTaskBuild = {
-    transitiveBuild(UpdateTask(this, scalaVersion) :: Nil)
+    transitiveBuild(UpdateTask(this) :: Nil)
   }
   def update: BuildResult = execute(updateTaskBuild)
 
@@ -140,7 +140,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars {
   def runMain(className : String)(opts : String*)(args : String*) = 
     execute(runMainTaskBuild(className, opts, args))
 
-  def clean = execute(transitiveBuild(CleanTask(this, scalaVersion) :: Nil))
+  def clean = execute(transitiveBuild(CleanTask(this) :: Nil))
 
   protected def execute(bld : Build) = {
     setUp(bld.graph)

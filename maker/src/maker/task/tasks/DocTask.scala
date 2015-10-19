@@ -16,11 +16,11 @@ import maker.{ScalaVersion, Log}
   *
   * Outputs scala-docs per module in the "docs" sub-dir of the project target output dir
   */
-case class DocTask(project : Project, scalaVersion : ScalaVersion) 
+case class DocTask(project : Project) 
   extends Task with Log
 {
   def name = "Doc " + project.name
-  def upstreamTasks = project.modules.map(CompileTask(project, _, scalaVersion, SourceCompilePhase))
+  def upstreamTasks = project.modules.map(CompileTask(project, _, SourceCompilePhase))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
 
     logger.info("running scala-doc gen for project " + project)

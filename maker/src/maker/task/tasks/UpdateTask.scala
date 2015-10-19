@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory
   * Missing source jars are not treated as a cause for failure unless `forceSourceUpdate`
   * is true
   */
-case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion) 
+case class UpdateTask(project : ProjectTrait) 
   extends Task
   with EitherPimps
   with DependencyPimps
@@ -95,7 +95,7 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
       case _ => ???
     }
     def aetherDependencies(deps : Seq[RichDependency]) : Seq[Dependency] = {
-      deps.map(_.aetherDependency(scalaVersion))
+      deps.map(_.aetherDependency(project.scalaVersion))
     }
   }
 
@@ -108,15 +108,15 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
       case _ => ???
     }
     def aetherDependencies(deps : Seq[RichDependency]) : Seq[Dependency] = {
-      deps.map(_.withClassifier("sources").aetherDependency(scalaVersion))
+      deps.map(_.withClassifier("sources").aetherDependency(project.scalaVersion))
     }
   }
 
   private def getArtifacts(download : DownloadType) : Seq[Artifact] = {
     logger.info(s"Getting artifacts for $this - $download")
     var aetherDependencies = download.aetherDependencies(
-      scalaVersion.scalaLibraryRichDependency +: 
-      scalaVersion.scalaCompilerRichDependency +:
+      project.scalaVersion.scalaLibraryRichDependency +: 
+      project.scalaVersion.scalaCompilerRichDependency +:
       project.makerTestReporterDependency +:
       project.upstreamDependencies
     )

@@ -73,16 +73,16 @@ case class Project(
       sourcePackageJar(Some(version)).getName)
 
   def pack : BuildResult = {
-    val tasks = PackageJarTask(this, version = None, scalaVersion = scalaVersion) :: Nil
+    val tasks = PackageJarTask(this, version = None) :: Nil
 
     execute(transitiveBuild(tasks))
   }
 
   def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
-  def doc = execute(transitiveBuild(DocTask(this, scalaVersion) :: Nil))
+  def doc = execute(transitiveBuild(DocTask(this) :: Nil))
 
   def publishLocalTaskBuild(version : String, signArtifacts : Boolean) = {
-    transitiveBuild(PublishLocalTask(this, version, signArtifacts, scalaVersion) :: Nil)
+    transitiveBuild(PublishLocalTask(this, version, signArtifacts) :: Nil)
   }
 
   def publishLocal(version : String, signArtifacts : Boolean) = {
@@ -93,10 +93,10 @@ case class Project(
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
 
-  def publishToSonatypeBuild(version : String) = transitiveBuild(PublishToSonatype(this, version, scalaVersion) :: Nil)
+  def publishToSonatypeBuild(version : String) = transitiveBuild(PublishToSonatype(this, version) :: Nil)
   def publishToSonatype(version : String) = execute(publishToSonatypeBuild(version))
 
-  def publishSonatypeSnapshotBuild(version : String) = transitiveBuild(PublishSnapshotToSonatype(this, version, scalaVersion) :: Nil)
+  def publishSonatypeSnapshotBuild(version : String) = transitiveBuild(PublishSnapshotToSonatype(this, version) :: Nil)
   def publishSonatypeSnapshot(version : String) = execute(publishSonatypeSnapshotBuild(version))
 
   def dependencies = upstreamModules.flatMap(_.dependencies).distinct
@@ -109,7 +109,6 @@ case class Project(
         upstreamModules,
         rootProject = this, 
         classOrSuiteNames_ = None,
-        scalaVersion = scalaVersion,
         lastCompilationTimeFilter = lastCompilationTimeFilter,
         testPhase = TestCompilePhase
       ) :: Nil
@@ -119,7 +118,7 @@ case class Project(
 
   def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
     upstreamModules.flatMap{module => 
-      testPhases.map(CompileTask(this, module, scalaVersion, _))
+      testPhases.map(CompileTask(this, module, _))
     }
   )
 }

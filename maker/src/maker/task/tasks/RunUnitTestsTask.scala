@@ -20,7 +20,6 @@ case class RunUnitTestsTask(
   modules : Seq[Module],
   rootProject : ProjectTrait, 
   classOrSuiteNames_ : Option[Iterable[String]],
-  scalaVersion : ScalaVersion,
   lastCompilationTimeFilter : Option[Long],
   testPhase : CompilePhase
 )  
@@ -29,7 +28,7 @@ case class RunUnitTestsTask(
 
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = modules.map(CompileTask(rootProject, _, scalaVersion, testPhase))
+  def upstreamTasks = modules.map(CompileTask(rootProject, _, testPhase))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
@@ -107,13 +106,12 @@ object RunUnitTestsTask{
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
   lazy val logger = LoggerFactory.getLogger(this.getClass)
 
-  def failingTests(rootProject : ProjectTrait, module : Module, scalaVersion : ScalaVersion) : RunUnitTestsTask = {
+  def failingTests(rootProject : ProjectTrait, module : Module) : RunUnitTestsTask = {
     RunUnitTestsTask(
       "Failing tests",
       module :: Nil,
       rootProject,
       Some(MakerTestResults(testOutputFile(module)).failingSuiteClasses),
-      scalaVersion,
       lastCompilationTimeFilter = None,
       testPhase = TestCompilePhase
     )

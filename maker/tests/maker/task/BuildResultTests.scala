@@ -42,12 +42,12 @@ class BuildResultTests extends FunSuite {
       // some success build results
       val br1 = BuildResult("foo", 
         List(
-          DefaultTaskResult(CleanTask(p1, SCALA_VERSION), true, sw), 
-          DefaultTaskResult(CleanTask(p3, SCALA_VERSION), true, sw)), emptyGraph)
-      val br2 = BuildResult("foo", List(DefaultTaskResult(CompileTask(p2, p2, SCALA_VERSION, SourceCompilePhase), true, sw)), emptyGraph)
+          DefaultTaskResult(CleanTask(p1), true, sw), 
+          DefaultTaskResult(CleanTask(p3), true, sw)), emptyGraph)
+      val br2 = BuildResult("foo", List(DefaultTaskResult(CompileTask(p2, p2, SourceCompilePhase), true, sw)), emptyGraph)
 
       // and some failures
-      val fr1 = BuildResult("foo", List(DefaultTaskResult(CompileTask(p2, p2, SCALA_VERSION, SourceCompilePhase), false, sw, message = Some("was broke"))), emptyGraph)
+      val fr1 = BuildResult("foo", List(DefaultTaskResult(CompileTask(p2, p2, SourceCompilePhase), false, sw, message = Some("was broke"))), emptyGraph)
 
       val r1 = for {
         w <- br1
