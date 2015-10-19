@@ -25,7 +25,10 @@ case class Build(
   def execute = new Execute().execute
   class Execute{
 
-    val executor = Build.PriorityExecutor(maybeNumberOfWorkers, name)
+    val noWorkers = maybeNumberOfWorkers.getOrElse(
+      (Runtime.getRuntime.availableProcessors / 2 max 1) min 4
+    )
+    val executor = Build.PriorityExecutor(noWorkers, name)
 
     val monitor = new Build.TaskMonitor(graph, executor)
 
@@ -131,10 +134,10 @@ object Build{
     * a low priority task that has been accepted will continue to run
     * even if high priority tasks are subsequently submitted.
     */
-  class PriorityExecutor private(maybeNumberOfWorkers: Option[Int], queue: BlockingQueue[Runnable])
+  class PriorityExecutor private(numberOfWorkers: Int, queue: BlockingQueue[Runnable])
       extends ThreadPoolExecutor(
-        maybeNumberOfWorkers.getOrElse(0), 
-        maybeNumberOfWorkers.getOrElse(0), 
+        numberOfWorkers, 
+        numberOfWorkers, 
         Long.MaxValue, 
         TimeUnit.NANOSECONDS, 
         queue
@@ -148,7 +151,7 @@ object Build{
   }
 
   object PriorityExecutor {
-    def apply(maybeNumberOfWorkers: Option[Int], name: String): PriorityExecutor = {
+    def apply(numberOfWorkers: Int, name: String): PriorityExecutor = {
       // should really be a PriorityExecutor[ComparableFutureTask] but
       // we are forced by invariance to use reflection and handle
       // Runnables
@@ -170,7 +173,7 @@ object Build{
           thread
         }
       }
-      new PriorityExecutor(maybeNumberOfWorkers, queue)
+      new PriorityExecutor(numberOfWorkers, queue)
     }
   }
 
