@@ -27,7 +27,7 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
 
     val inputFiles = project.upstreamModules.flatMap(_.sourceFiles(SourceCompilePhase))
 
-    val docDir = project.docOutputDir(scalaVersion)
+    val docDir = project.docOutputDir
     if (inputFiles.nonEmpty && 
         ( !docDir.exists || 
           lastModifiedFileTime(inputFiles).getOrElse(0L) > lastModifiedFileTime(List(docDir)).getOrElse(0L))) {
@@ -37,11 +37,11 @@ case class DocTask(project : Project, scalaVersion : ScalaVersion)
       // make a separate opts file as the args can get too big for a single command
       val optsFile = file(docDir, "docopts")
       val classpath = Module.asClasspathStr(
-        project.upstreamModules.map(_.classDirectory(scalaVersion, SourceCompilePhase))
+        project.upstreamModules.map(_.classDirectory(SourceCompilePhase))
       )
       writeToFile(optsFile, s"""-classpath $classpath ${inputFiles.mkString(" ")}""")
 
-      val scalaToolsClasspath = project.scalaJars(scalaVersion).map(_.getAbsolutePath).mkString(":")
+      val scalaToolsClasspath = project.scalaJars().map(_.getAbsolutePath).mkString(":")
 
       val bs = new ByteArrayOutputStream()
       val cmd = Command.scalaCommand(

@@ -31,21 +31,21 @@ case class PackageJarTask(
     import project.{packageDir, packageJar, sourcePackageJar, docPackageJar, docOutputDir}
     import BuildJar.{build => buildJar}
 
-    if (!packageDir(scalaVersion).exists)
-      packageDir(scalaVersion).mkdirs
+    if (!packageDir.exists)
+      packageDir.mkdirs
 
     val modules = project.upstreamModules
     val result = buildJar(
-                    packageJar(version, scalaVersion),
-                    modules.map(_.classDirectory(scalaVersion, SourceCompilePhase)) ++ modules.map(_.resourceDir(SourceCompilePhase))
+                    packageJar(version),
+                    modules.map(_.classDirectory(SourceCompilePhase)) ++ modules.map(_.resourceDir(SourceCompilePhase))
                   ) andThen
                   buildJar(
-                    sourcePackageJar(version, scalaVersion),
+                    sourcePackageJar(version),
                     modules.flatMap(_.sourceDirs(SourceCompilePhase))
                   ) andThen
                   buildJar(
-                    docPackageJar(scalaVersion),
-                    docOutputDir(scalaVersion) :: Nil
+                    docPackageJar,
+                    docOutputDir :: Nil
                   )
     result match {
       case Right(_) => 

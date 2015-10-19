@@ -35,10 +35,10 @@ class PackageJarTaskTests extends FreeSpec with Matchers with ModuleTestPimps{
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           module.classDirectory(SourceCompilePhase), 
-          proj.packageJar(version = None, proj.defaultScalaVersion))
+          proj.packageJar(version = None))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           module.resourceDir(SourceCompilePhase), 
-          proj.packageJar(version = None, proj.defaultScalaVersion))
+          proj.packageJar(version = None))
     }
   }
 
@@ -58,7 +58,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers with ModuleTestPimps{
 
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           module.sourceDirs(SourceCompilePhase).head,
-          proj.sourcePackageJar(version = None, proj.defaultScalaVersion))
+          proj.sourcePackageJar(version = None))
     }
   }
   "Can package upstream modules into one big jar" in {
@@ -81,7 +81,7 @@ class PackageJarTaskTests extends FreeSpec with Matchers with ModuleTestPimps{
 
         p.pack
 
-        val oneBigJar = p.packageJar(version = None, p.defaultScalaVersion)
+        val oneBigJar = p.packageJar(version = None)
 
         Vector(a, b, c).foreach{
           m => 

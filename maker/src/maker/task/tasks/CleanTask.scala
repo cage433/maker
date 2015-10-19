@@ -27,19 +27,19 @@ case class CleanTask(project : ProjectTrait, scalaVersion : ScalaVersion) extend
                
     project.upstreamModules.foreach{
       module => 
-        cleanRegularFilesLeavingDirectories(module.classDirectory(scalaVersion, SourceCompilePhase))
-        cleanRegularFilesLeavingDirectories(module.classDirectory(scalaVersion, TestCompilePhase))
+        cleanRegularFilesLeavingDirectories(module.classDirectory(SourceCompilePhase))
+        cleanRegularFilesLeavingDirectories(module.classDirectory(TestCompilePhase))
         cleanRegularFilesLeavingDirectories(module.managedResourceDir)
-        recursiveDelete(module.compilationMetadataDirectory(scalaVersion, SourceCompilePhase))
-        recursiveDelete(module.compilationMetadataDirectory(scalaVersion, TestCompilePhase))
-        module.clearDependencies(scalaVersion)
+        recursiveDelete(module.compilationMetadataDirectory(SourceCompilePhase))
+        recursiveDelete(module.compilationMetadataDirectory(TestCompilePhase))
+        module.clearDependencies()
     }
 
     project match {
       case p : Project => 
-        recursiveDelete(p.packageDir(scalaVersion))
+        recursiveDelete(p.packageDir)
         cleanRegularFilesLeavingDirectories(p.managedResourceDir)
-        p.clearDependencies(scalaVersion)
+        p.clearDependencies()
       case _ =>
     }
 

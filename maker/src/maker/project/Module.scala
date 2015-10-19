@@ -38,47 +38,47 @@ class Module(
 
   def dependencies : Seq[RichDependency]  = Nil
 
-  def compilationMetadataDirectory(scalaVersion : ScalaVersion, phase : CompilePhase) = 
+  def compilationMetadataDirectory(phase : CompilePhase) = 
     mkdirs(file(makerDirectory, "compilation-metadata", scalaVersion.versionBase, phase.name))
 
-  def compilationCacheFile(scalaVersion : ScalaVersion, phase : CompilePhase) = {
-    file(compilationMetadataDirectory(scalaVersion, phase), "compilation-analysis-cache")
+  def compilationCacheFile(phase : CompilePhase) = {
+    file(compilationMetadataDirectory(phase), "compilation-analysis-cache")
   }
 
-  def lastCompilationTime(scalaVersion : ScalaVersion, phase : CompilePhase) : Option[Long] = {
-    if (compilationCacheFile(scalaVersion, phase).exists)
-      lastModifiedProperFileTime(Vector(compilationCacheFile(scalaVersion, phase)))
+  def lastCompilationTime(phase : CompilePhase) : Option[Long] = {
+    if (compilationCacheFile(phase).exists)
+      lastModifiedProperFileTime(Vector(compilationCacheFile(phase)))
     else
       None
   }
 
   def lastSourceModifcationTime(phase : CompilePhase) : Option[Long] = lastModifiedProperFileTime(sourceFiles(phase))
 
-  def sourceFilesDeletedSinceLastCompilation(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = {
-    Option(analyses.get(classDirectory(scalaVersion, phase))) match {
+  def sourceFilesDeletedSinceLastCompilation(phase : CompilePhase) : Seq[File] = {
+    Option(analyses.get(classDirectory(phase))) match {
       case None => Nil
       case Some(analysis) => 
         analysis.infos.allInfos.keySet.toVector.filterNot(_.exists)
     }
   }
 
-  def moduleCompilationErrorsFile(scalaVersion : ScalaVersion, phase : CompilePhase) = {
-    file(compilationMetadataDirectory(scalaVersion, phase), "vim-compile-errors")
+  def moduleCompilationErrorsFile(phase : CompilePhase) = {
+    file(compilationMetadataDirectory(phase), "vim-compile-errors")
   }
 
-  def compilationOutputStream(scalaVersion : ScalaVersion, phase : CompilePhase) = {
+  def compilationOutputStream(phase : CompilePhase) = {
     new TeeOutputStream(
       Console.err,
-      new FileOutputStream(moduleCompilationErrorsFile(scalaVersion, phase))
+      new FileOutputStream(moduleCompilationErrorsFile(phase))
     )
   }
-  def compilationFailedMarker(scalaVersion : ScalaVersion, phase : CompilePhase) = 
-    file(compilationMetadataDirectory(scalaVersion, phase), "compilation-failed-marker")
+  def compilationFailedMarker(phase : CompilePhase) = 
+    file(compilationMetadataDirectory(phase), "compilation-failed-marker")
 
-  def lastCompilationFailed(scalaVersion : ScalaVersion, phase : CompilePhase) = 
-    compilationFailedMarker(scalaVersion, phase).exists
+  def lastCompilationFailed(phase : CompilePhase) = 
+    compilationFailedMarker(phase).exists
 
-  def markCompilatonFailure(scalaVersion : ScalaVersion, phase : CompilePhase) = compilationFailedMarker(scalaVersion, phase).touch
+  def markCompilatonFailure(phase : CompilePhase) = compilationFailedMarker(phase).touch
 
   Module.warnOfUnnecessaryDependencies(this)
 
@@ -137,9 +137,9 @@ class Module(
     execute(build)
   }
 
-  def cleanOnly = executeSansDependencies(CleanTask(this, defaultScalaVersion))
+  def cleanOnly = executeSansDependencies(CleanTask(this, scalaVersion))
 
-  def testTaskBuild(scalaVersion : ScalaVersion, lastCompilationTimeFilter : Option[Long]) = {
+  def testTaskBuild(lastCompilationTimeFilter : Option[Long]) = {
     // For a module, the `test` task runs just tha module's tests.
     // To run all tests, use the containing project
     transitiveBuild(
@@ -157,32 +157,31 @@ class Module(
 
 
 
-  def testCompileTaskBuild(scalaVersion : ScalaVersion, testPhases : Seq[CompilePhase]) = transitiveBuild(
+  def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
     (this +: testModuleDependencies).flatMap{module => 
       testPhases.map(CompileTask(this, module, scalaVersion, _))
     }
   )
 
-  def testFailuredSuitesOnly(scalaVersion : ScalaVersion) : BuildResult = executeSansDependencies(
+  def testFailuredSuitesOnly : BuildResult = executeSansDependencies(
     RunUnitTestsTask.failingTests(this, this, scalaVersion)
   )
-  def testFailuredSuitesOnly : BuildResult = testFailuredSuitesOnly(defaultScalaVersion)
 
 
   /********************
   *     Test classses 
   ********************/
 
-  def classFiles(scalaVersion : ScalaVersion, phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(scalaVersion, phase))
+  def classFiles(phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(phase))
 
-  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String] = {
-    val isTestSuite = isAccessibleScalaTestSuite(rootProject, scalaVersion, testPhase)
-    var classFiles_ = classFiles(scalaVersion, testPhase)
+  def testClassNames(rootProject : ProjectTrait, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String] = {
+    val isTestSuite = isAccessibleScalaTestSuite(rootProject, testPhase)
+    var classFiles_ = classFiles(testPhase)
     lastCompilationTime.foreach{
       time => 
         classFiles_ = classFiles_.filter(_.lastModified >= time)
     }
-    classFiles_.map(_.className(classDirectory(scalaVersion, testPhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
+    classFiles_.map(_.className(classDirectory(testPhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
   }
 
 
@@ -218,7 +217,7 @@ class Module(
   }
 
   def targetDir = file(rootAbsoluteFile, "target-maker")
-  def classDirectory(scalaVersion : ScalaVersion, phase : CompilePhase) : File = {
+  def classDirectory(phase : CompilePhase) : File = {
     phase match {
       case SourceCompilePhase             => file(targetDir, scalaVersion.versionNo, "classes")
       case TestCompilePhase               => file(targetDir, scalaVersion.versionNo, "test-classes")

@@ -22,14 +22,14 @@ class PublishLocalTaskTests
 {
 
   private def checkPublishedPomMatchesCoordinates(project : Project, version : String){
-    assert(project.publishLocalPomFile(version, project.defaultScalaVersion).exists, 
-      s"${project.publishLocalPomFile(version, project.defaultScalaVersion)} doesn't exist")
+    assert(project.publishLocalPomFile(version).exists, 
+      s"${project.publishLocalPomFile(version)} doesn't exist")
 
-    val pom = XML.loadFile(project.publishLocalPomFile(version, project.defaultScalaVersion))
+    val pom = XML.loadFile(project.publishLocalPomFile(version))
 
     List(
       (project.organization.getOrElse(???), "groupId"), 
-      (project.artifactId(project.defaultScalaVersion), "artifactId"),
+      (project.artifactId, "artifactId"),
       (version, "version")
     ).foreach{
       case (expected, label) => 
@@ -39,9 +39,9 @@ class PublishLocalTaskTests
   }
 
   private def checkPublishedPomIncludesAllDependencies(project : Project, version : String){
-    val pom = XML.loadFile(project.publishLocalPomFile(version, project.defaultScalaVersion))
+    val pom = XML.loadFile(project.publishLocalPomFile(version))
     val pomDependencies = pom \\ "dependency"
-    val dependencies = (project.defaultScalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.aetherDependency(project.defaultScalaVersion))
+    val dependencies = (project.scalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.aetherDependency(project.scalaVersion))
 
     dependencies should allSatisfy {
       dependency : AetherDependency => 
@@ -79,17 +79,17 @@ class PublishLocalTaskTests
 
         module.writeCaseObject("Foo", "testPublishLocal")
 
-        proj.publishLocal(version, signArtifacts = false, scalaVersion = proj.defaultScalaVersion)
+        proj.publishLocal(version, signArtifacts = false)
 
         checkPublishedPomMatchesCoordinates(proj, version)
         checkPublishedPomIncludesAllDependencies(proj, version)
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.classDirectory(SourceCompilePhase), proj.publishLocalJar(version, module.defaultScalaVersion))
+          module.classDirectory(SourceCompilePhase), proj.publishLocalJar(version))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
           module.resourceDir(SourceCompilePhase), 
-          proj.publishLocalJar(version, proj.defaultScalaVersion))
+          proj.publishLocalJar(version))
         PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version, proj.defaultScalaVersion))
+          module.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version))
     }
   }
 
@@ -120,21 +120,21 @@ class PublishLocalTaskTests
         val project = new Project("publish test", dir, moduleA :: moduleB :: Nil, isTestProject = true){
           override def organization = Some("org.org")
         }
-        project.publishLocal(version, signArtifacts = false, scalaVersion = project.defaultScalaVersion)
+        project.publishLocal(version, signArtifacts = false)
 
         checkPublishedPomMatchesCoordinates(project, version)
         checkPublishedPomIncludesAllDependencies(project, version)
 
         import project.{publishLocalJar => publishJar, publishLocalSourceJar => publishSourceJar}
-        publishJar(version, project.defaultScalaVersion) should be ('exists)
+        publishJar(version) should be ('exists)
 
         Vector(moduleA, moduleB).foreach{
           module => 
             checkJarContainsDirectoryContents(
-              module.classDirectory(SourceCompilePhase), publishJar(version, module.defaultScalaVersion))
-            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar(version, module.defaultScalaVersion))
+              module.classDirectory(SourceCompilePhase), publishJar(version))
+            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar(version))
             checkJarContainsDirectoryContents(
-              module.sourceDirs(SourceCompilePhase).head, publishSourceJar(version, module.defaultScalaVersion))
+              module.sourceDirs(SourceCompilePhase).head, publishSourceJar(version))
         }
     }
   }
@@ -148,7 +148,7 @@ class PublishLocalTaskTests
           override def organization = Some("org.org")
         }
 
-        topLevel.publishLocal(version, signArtifacts = false, scalaVersion = topLevel.defaultScalaVersion)
+        topLevel.publishLocal(version, signArtifacts = false)
 
         checkPublishedPomMatchesCoordinates(topLevel, version)
 

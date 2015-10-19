@@ -12,7 +12,8 @@ import maker.project.{Module, ProjectTrait}
 object ZincCompile extends Log {
 
   lazy val zinc = new ZincClient()
-  def apply(rootProject : ProjectTrait, module : Module, phase : CompilePhase, scalaVersion : ScalaVersion) : Int = {
+
+  def apply(rootProject : ProjectTrait, module : Module, phase : CompilePhase) : Int = {
     val upstreamCaches = {
       var map = Map[File, File]()
 
@@ -27,7 +28,7 @@ object ZincCompile extends Log {
         p <- phases
       }{
         map += 
-          (m.classDirectory(scalaVersion, p) -> m.compilationCacheFile(scalaVersion, p))
+          (m.classDirectory(p) -> m.compilationCacheFile(p))
       }
 
       map
@@ -50,19 +51,19 @@ object ZincCompile extends Log {
       "-java-home",
       rootProject.javaHome.getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
-      rootProject.scalaCompilerJar(scalaVersion).getAbsolutePath,
+      rootProject.scalaCompilerJar.getAbsolutePath,
       "-scala-library",
-      rootProject.scalaLibraryJar(scalaVersion).getAbsolutePath,
+      rootProject.scalaLibraryJar.getAbsolutePath,
       "-classpath",
-      rootProject.compilationClasspath(scalaVersion, phase),
+      rootProject.compilationClasspath(phase),
       "-d",
-      module.classDirectory(scalaVersion, phase).getAbsolutePath,
+      module.classDirectory(phase).getAbsolutePath,
       "-compile-order",
       CompileOrder.Mixed.toString,
       "-analysis-cache",
-      module.compilationCacheFile(scalaVersion, phase).getAbsolutePath,
+      module.compilationCacheFile(phase).getAbsolutePath,
       "-scala-extra",
-      rootProject.scalaReflectJar(scalaVersion).getAbsolutePath
+      rootProject.scalaReflectJar.getAbsolutePath
     ) :::
     module.scalacOptions.map("-S" +_) :::
     module.javacOptions.map("-C" +_) :::
@@ -93,11 +94,11 @@ object ZincCompile extends Log {
       val result = zinc.run(
         arguments, 
         module.rootAbsoluteFile, 
-        module.compilationOutputStream(scalaVersion, phase),
-        module.compilationOutputStream(scalaVersion, phase)
+        module.compilationOutputStream(phase),
+        module.compilationOutputStream(phase)
       )
-      val analysis = Compiler.analysis(module.compilationCacheFile(scalaVersion, phase))
-      module.analyses.put(module.classDirectory(scalaVersion, phase), analysis)
+      val analysis = Compiler.analysis(module.compilationCacheFile(phase))
+      module.analyses.put(module.classDirectory(phase), analysis)
       result
     } catch {
       case e : Throwable => 
@@ -110,3 +111,4 @@ object ZincCompile extends Log {
   }
 
 }
+

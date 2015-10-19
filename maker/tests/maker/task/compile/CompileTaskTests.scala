@@ -135,12 +135,12 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
         assert(module.classFiles(SourceCompilePhase).size === 0)
         assert(proj.compile.succeeded, "Compile should succeed")
         assert(module.classFiles(SourceCompilePhase).size > 0)
-        assert(!proj.packageJar(version = None, proj.defaultScalaVersion).exists)
+        assert(!proj.packageJar(version = None).exists)
         proj.pack
-        assert(proj.packageJar(version = None, proj.defaultScalaVersion).exists)
+        assert(proj.packageJar(version = None).exists)
         proj.clean
         assert(module.classFiles(SourceCompilePhase).size === 0)
-        assert(!proj.packageJar(version = None, proj.defaultScalaVersion).exists)
+        assert(!proj.packageJar(version = None).exists)
     }
   }
 
@@ -472,7 +472,7 @@ class SomeClass extends SomeTrait{
         assert(proj.compile.succeeded)
 
         // now update the base trait to invalidate implementations, check it fails
-        val compilationTime = proj.lastCompilationTime(proj.defaultScalaVersion, SourceCompilePhase).get
+        val compilationTime = proj.lastCompilationTime(SourceCompilePhase).get
         sleepToNextSecond
         proj.writeSrc(
           "foo/Foo.scala",

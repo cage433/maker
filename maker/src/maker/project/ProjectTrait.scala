@@ -14,9 +14,9 @@ import scala.xml.{Elem, NodeSeq}
 import org.slf4j.LoggerFactory
 import scala.collection.immutable.Nil
 import org.apache.commons.io.output.TeeOutputStream
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
 
-trait ProjectTrait extends MakerConfig{
+trait ProjectTrait extends MakerConfig with ScalaJars {
   lazy val logger = LoggerFactory.getLogger(getClass)
   protected def root : File
   /**
@@ -41,7 +41,7 @@ trait ProjectTrait extends MakerConfig{
    }
   override def hashCode = root.hashCode
 
-  def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+  def scalaVersion : ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 
   val rootAbsoluteFile = root.asAbsoluteFile
   protected def name : String
@@ -50,22 +50,6 @@ trait ProjectTrait extends MakerConfig{
   def extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
   def extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]] = Map.empty
 
-
-  private def findSingleScalaJar(scalaVersion : ScalaVersion, partName : String) : File = {
-    dependencyJars(scalaVersion, SourceCompilePhase).filter(_.getName.contains(partName)) match {
-      case List(jarFile) => jarFile
-      case other => throw new IllegalStateException(s"Expected to find a single scala reflect jar, got $other")
-    }
-  }
-  def scalaReflectJar(scalaVersion : ScalaVersion) = findSingleScalaJar(scalaVersion, "scala-reflect")
-  def scalaCompilerJar(scalaVersion : ScalaVersion) = findSingleScalaJar(scalaVersion, "scala-compiler")
-  def scalaLibraryJar(scalaVersion : ScalaVersion) = findSingleScalaJar(scalaVersion, "scala-library")
-  def scalaXmlJar(scalaVersion : ScalaVersion) : Option[File] = if (scalaVersion.major >= 11) Some(findSingleScalaJar(scalaVersion, "scala-xml")) else None
-  def scalaParserCombinatorJar(scalaVersion : ScalaVersion) : Option[File] = if (scalaVersion.major >= 11) Some(findSingleScalaJar(scalaVersion, "scala-parser-combinators")) else None
-  def scalaJars(scalaVersion : ScalaVersion) = 
-    Vector(scalaReflectJar(scalaVersion), scalaCompilerJar(scalaVersion), scalaLibraryJar(scalaVersion)) ++: 
-      scalaXmlJar(scalaVersion).toList ++:
-      scalaParserCombinatorJar(scalaVersion).toList 
 
   private val scalatestOutputParameters_ = new AtomicReference[String]("-oHL")
   def scalatestOutputParameters : String = scalatestOutputParameters_.get
@@ -82,18 +66,18 @@ trait ProjectTrait extends MakerConfig{
   def systemExitOnExecModeFailures : Boolean = true
   def updateIncludesSourceJars : Boolean = true
 
-  private var dependenciesUpdated = Set[ScalaVersion]()
-  def markDependenciesUpdated(scalaVersion : ScalaVersion) = {
-    dependenciesUpdated += scalaVersion
+  private val dependenciesUpdated = new AtomicBoolean(false)
+  def markDependenciesUpdated() = {
+    dependenciesUpdated.set(true)
   }
-  def dependenciesAlreadyUpdated(scalaVersion : ScalaVersion) = dependenciesUpdated.contains(scalaVersion)
-  def clearDependencies(scalaVersion : ScalaVersion) = {
-    dependenciesUpdated -= scalaVersion
+  def dependenciesAlreadyUpdated() = dependenciesUpdated.get
+  def clearDependencies() = {
+    dependenciesUpdated.set(false)
 
-    cleanRegularFilesLeavingDirectories(managedLibDir(scalaVersion))
-    cleanRegularFilesLeavingDirectories(managedLibSourceDir(scalaVersion))
-    cleanRegularFilesLeavingDirectories(testManagedLibDir(scalaVersion))
-    cleanRegularFilesLeavingDirectories(testManagedLibSourceDir(scalaVersion))
+    cleanRegularFilesLeavingDirectories(managedLibDir)
+    cleanRegularFilesLeavingDirectories(managedLibSourceDir)
+    cleanRegularFilesLeavingDirectories(testManagedLibDir)
+    cleanRegularFilesLeavingDirectories(testManagedLibSourceDir)
   }
 
   protected def transitiveClosure[A](start : Seq[A], expand : A => Seq[A]) : Seq[A] = {
@@ -126,43 +110,37 @@ trait ProjectTrait extends MakerConfig{
   }
 
 
-  def compileTaskBuild(scalaVersion : ScalaVersion) = transitiveBuild(modules.map(CompileTask(this, _, scalaVersion, SourceCompilePhase)))
-  def compile(scalaVersion : ScalaVersion) : BuildResult = execute(compileTaskBuild(scalaVersion))
-  def compile : BuildResult = compile(defaultScalaVersion)
+  def compileTaskBuild = transitiveBuild(modules.map(CompileTask(this, _, scalaVersion, SourceCompilePhase)))
+  def compile : BuildResult = execute(compileTaskBuild)
 
 
-  def testCompileTaskBuild(scalaVersion : ScalaVersion, testPhases : Seq[CompilePhase]) : Build // = transitiveBuild(upstreamModules.map(SourceCompileTask(this, _)) ++ upstreamTestModules.map(TestCompileTask(this, _)))
-  def testCompile : BuildResult = execute(testCompileTaskBuild(defaultScalaVersion, CompilePhase.TEST_PHASES))
-  def tcc = continuously(() => testCompileTaskBuild(defaultScalaVersion, CompilePhase.TEST_PHASES))
+  def testCompileTaskBuild(testPhases : Seq[CompilePhase]) : Build // = transitiveBuild(upstreamModules.map(SourceCompileTask(this, _)) ++ upstreamTestModules.map(TestCompileTask(this, _)))
+  def testCompile : BuildResult = execute(testCompileTaskBuild(CompilePhase.TEST_PHASES))
+  def tcc = continuously(() => testCompileTaskBuild(CompilePhase.TEST_PHASES))
   
-  def testFailedSuitesBuild(scalaVersion : ScalaVersion) = {
+  def testFailedSuitesBuild() = {
     transitiveBuild(upstreamModules.map(RunUnitTestsTask.failingTests(this, _, scalaVersion)))
   }
-  def testFailedSuites(scalaVersion : ScalaVersion) : BuildResult = execute(testFailedSuitesBuild(scalaVersion))
-  def testFailedSuites : BuildResult = testFailedSuites(defaultScalaVersion)
+  def testFailedSuites : BuildResult = execute(testFailedSuitesBuild())
 
-  def updateTaskBuild(scalaVersion : ScalaVersion) = {
+  def updateTaskBuild = {
     transitiveBuild(UpdateTask(this, scalaVersion) :: Nil)
   }
-  def update(scalaVersion : ScalaVersion) = execute(updateTaskBuild(scalaVersion))
-  def update : BuildResult = update(defaultScalaVersion)
+  def update: BuildResult = execute(updateTaskBuild)
 
-  def forceUpdate(scalaVersion : ScalaVersion) : BuildResult = {
-    clearDependencies(scalaVersion)
-    update(scalaVersion)
+  def forceUpdate : BuildResult = {
+    clearDependencies()
+    update
   }
-  def forceUpdate : BuildResult = forceUpdate(defaultScalaVersion)
 
 
-  def runMainTaskBuild(className : String, opts : Seq[String], args : Seq[String], scalaVersion : ScalaVersion) = {
+  def runMainTaskBuild(className : String, opts : Seq[String], args : Seq[String]) = {
     transitiveBuild(RunMainTask(this, className, opts, args, scalaVersion) :: Nil)
   }
-  def runMain(className : String, scalaVersion : ScalaVersion)(opts : String*)(args : String*) = 
-    execute(runMainTaskBuild(className, opts, args, scalaVersion))
-  def runMain(className : String)(opts : String*)(args : String*) : BuildResult = runMain(className, defaultScalaVersion)(opts : _*)(args : _*)
+  def runMain(className : String)(opts : String*)(args : String*) = 
+    execute(runMainTaskBuild(className, opts, args))
 
-  def clean(scalaVersion : ScalaVersion) = execute(transitiveBuild(CleanTask(this, scalaVersion) :: Nil))
-  def clean : BuildResult = clean(defaultScalaVersion)
+  def clean = execute(transitiveBuild(CleanTask(this, scalaVersion) :: Nil))
 
   protected def execute(bld : Build) = {
     setUp(bld.graph)
@@ -178,19 +156,19 @@ trait ProjectTrait extends MakerConfig{
     result
   }
 
-  private [project] def compilationTargetDirectories(scalaVersion : ScalaVersion, phases : Seq[CompilePhase]) = {
+  private [project] def compilationTargetDirectories(phases : Seq[CompilePhase]) = {
     val phases_ = (SourceCompilePhase +: phases).distinct
     phases_.flatMap{
       phase => 
         phase match {
           case SourceCompilePhase => 
-            upstreamModules.map(_.classDirectory(scalaVersion, phase))
+            upstreamModules.map(_.classDirectory(phase))
           case _ => 
             (this match {
               case _ : Project => 
-                upstreamModules.map(_.classDirectory(scalaVersion, phase))
+                upstreamModules.map(_.classDirectory(phase))
               case m : Module => 
-                (m +: upstreamModules.flatMap(_.testModuleDependencies)).map(_.classDirectory(scalaVersion, phase))
+                (m +: upstreamModules.flatMap(_.testModuleDependencies)).map(_.classDirectory(phase))
             })
         }
     }
@@ -201,34 +179,34 @@ trait ProjectTrait extends MakerConfig{
       phases.map(module.resourceDir(_))
   }
 
-  private [project] def dependencyJars(scalaVersion : ScalaVersion, phase : CompilePhase) = phase match {
+  private [project] def dependencyJars(phase : CompilePhase) = phase match {
     case SourceCompilePhase => 
-      findJars(managedLibDir(scalaVersion))
+      findJars(managedLibDir)
     case _ => 
-      findJars(testManagedLibDir(scalaVersion))
+      findJars(testManagedLibDir)
   }
   private [project] def unmanagedLibs = findJars(upstreamModules.flatMap(_.unmanagedLibDirs))
 
-  def compilationClasspathComponents(scalaVersion : ScalaVersion, phase : CompilePhase) = 
-      compilationTargetDirectories(scalaVersion, phase :: Nil) ++:
-      dependencyJars(scalaVersion, phase) ++:
+  def compilationClasspathComponents(phase : CompilePhase) = 
+      compilationTargetDirectories(phase :: Nil) ++:
+      dependencyJars(phase) ++:
       unmanagedLibs
 
-  def compilationClasspath(scalaVersion : ScalaVersion, phase : CompilePhase) = 
-    Module.asClasspathStr(compilationClasspathComponents(scalaVersion, phase))
+  def compilationClasspath(phase : CompilePhase) = 
+    Module.asClasspathStr(compilationClasspathComponents(phase))
 
 
-  def runtimeClasspathComponents(scalaVersion : ScalaVersion, phases : Seq[CompilePhase]) = 
-    compilationTargetDirectories(scalaVersion, phases) ++:
+  def runtimeClasspathComponents(phases : Seq[CompilePhase]) = 
+    compilationTargetDirectories(phases) ++:
     (if (phases.toSet.intersect(CompilePhase.TEST_PHASES.toSet).nonEmpty)
-      dependencyJars(scalaVersion, TestCompilePhase) 
+      dependencyJars(TestCompilePhase) 
     else
-      dependencyJars(scalaVersion, SourceCompilePhase)
+      dependencyJars(SourceCompilePhase)
     ) ++:
     unmanagedLibs ++:
     resourceDirectories(phases) 
 
-  def runtimeClasspath(scalaVersion : ScalaVersion, phases : Seq[CompilePhase]) = Module.asClasspathStr(runtimeClasspathComponents(scalaVersion, phases))
+  def runtimeClasspath(phases : Seq[CompilePhase]) = Module.asClasspathStr(runtimeClasspathComponents(phases))
 
 
 
@@ -277,8 +255,8 @@ trait ProjectTrait extends MakerConfig{
     }
   }
 
-  def isAccessibleScalaTestSuite(rootProject : ProjectTrait, scalaVersion : ScalaVersion, testPhase : CompilePhase) : (String => Boolean) = {
-    val loader = rootProject.testClasspathLoader(scalaVersion, testPhase)
+  def isAccessibleScalaTestSuite(rootProject : ProjectTrait, testPhase : CompilePhase) : (String => Boolean) = {
+    val loader = rootProject.testClasspathLoader(testPhase)
 
     className : String => {
 
@@ -289,7 +267,7 @@ trait ProjectTrait extends MakerConfig{
           case e : ClassNotFoundException => 
             println(
               s"""Couldn't load class $className in project $this, 
-                  classpath was ${runtimeClasspathComponents(scalaVersion, testPhase :: Nil).mkString("\n\t", "\n\t", "\n")}""")
+                  classpath was ${runtimeClasspathComponents(testPhase :: Nil).mkString("\n\t", "\n\t", "\n")}""")
             throw e
         }
       }
@@ -322,13 +300,13 @@ trait ProjectTrait extends MakerConfig{
     * To run tests from Vim it is convenient to have _all_ test classes on the classpath,
     * Not just those modules on whom we have a test dependency
     */
-  def writeVimClasspath(scalaVersion : ScalaVersion) {
+  def writeVimClasspath {
     var components = CompilePhase.PHASES.flatMap{phase => 
-      compilationTargetDirectories(scalaVersion, phase :: Nil)
+      compilationTargetDirectories(phase :: Nil)
     }.distinct ++: resourceDirectories(CompilePhase.PHASES)
-    components ++= dependencyJars(scalaVersion, TestCompilePhase)
+    components ++= dependencyJars(TestCompilePhase)
     components ++= unmanagedLibs
-    components ++= managedLibDir(scalaVersion) :: Nil
+    components ++= managedLibDir :: Nil
     components = components.filter{
       file =>
         file.exists && (!file.isDirectory || file.list.size > 0)
@@ -348,41 +326,36 @@ trait ProjectTrait extends MakerConfig{
     writeToFile(cpFile, cp)
   }
 
-  def writeVimClasspath {
-    writeVimClasspath(defaultScalaVersion)
-  }
 
-  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String]
+  def testClassNames(rootProject : ProjectTrait, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String]
   def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
 
-  def managedLibDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "lib_managed", scalaVersion.versionNo)
-  def testManagedLibDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "test_lib_managed", scalaVersion.versionNo)
-  def managedLibSourceDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "lib_src_managed", scalaVersion.versionNo)
-  def testManagedLibSourceDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "test_lib_src_managed", scalaVersion.versionNo)
+  def managedLibDir = file(rootAbsoluteFile, "lib_managed", scalaVersion.versionNo)
+  def testManagedLibDir = file(rootAbsoluteFile, "test_lib_managed", scalaVersion.versionNo)
+  def managedLibSourceDir = file(rootAbsoluteFile, "lib_src_managed", scalaVersion.versionNo)
+  def testManagedLibSourceDir = file(rootAbsoluteFile, "test_lib_src_managed", scalaVersion.versionNo)
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Seq[File] = List(file(rootAbsoluteFile, "lib"))
 
   def upstreamDependencies = (upstreamModules ++ upstreamModules.flatMap(_.testModuleDependencies)).distinct.flatMap(_.dependencies)
 
-  def testClasspathLoader(scalaVersion : ScalaVersion, testPhase : CompilePhase) = new URLClassLoader(
-    runtimeClasspathComponents(scalaVersion, testPhase :: Nil).map(_.toURI.toURL).toArray,
+  def testClasspathLoader(testPhase : CompilePhase) = new URLClassLoader(
+    runtimeClasspathComponents(testPhase :: Nil).map(_.toURI.toURL).toArray,
     null
   )
-  def testTaskBuild(scalaVersion : ScalaVersion, lastCompilationTimeFilter : Option[Long]) : Build
+  def testTaskBuild(lastCompilationTimeFilter : Option[Long]) : Build
 
-  def test(scalaVersion : ScalaVersion) : BuildResult = {
-    execute(testTaskBuild(scalaVersion, lastCompilationTimeFilter = None))
+  def test : BuildResult = {
+    execute(testTaskBuild(lastCompilationTimeFilter = None))
   }
 
-  def test : BuildResult = test(defaultScalaVersion)
 
-  def testQuick(scalaVersion : ScalaVersion) : BuildResult = {
-    execute(testTaskBuild(scalaVersion, lastCompilationTimeFilter = Some(System.currentTimeMillis)))
+  def testQuick : BuildResult = {
+    execute(testTaskBuild(lastCompilationTimeFilter = Some(System.currentTimeMillis)))
   }
 
-  def testQuick : BuildResult = testQuick(defaultScalaVersion)
 
-  def testQuickContinuously = continuously(() => testTaskBuild(defaultScalaVersion, lastCompilationTimeFilter = Some(System.currentTimeMillis)))
+  def testQuickContinuously = continuously(() => testTaskBuild(lastCompilationTimeFilter = Some(System.currentTimeMillis)))
   def tqc = testQuickContinuously
 
   def listenForCommands(port : Int){

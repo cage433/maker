@@ -30,7 +30,7 @@ object PomUtils extends DependencyPimps{
     
       <modelVersion>4.0.0</modelVersion>
       <groupId>{groupId}</groupId>
-      <artifactId>{project.artifactId(scalaVersion)}</artifactId>
+      <artifactId>{project.artifactId}</artifactId>
       <packaging>jar</packaging>
       <version>{version}</version>
       {project.extraProjectPomInfo}
@@ -40,9 +40,9 @@ object PomUtils extends DependencyPimps{
     </project>
   }
 
-  def pomXmlText(project : Project, version : String, scalaVersion : ScalaVersion) = {
+  def pomXmlText(project : Project, version : String) = {
     val xmlPrinter = new PrettyPrinter(160, 2)
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
-      xmlPrinter.format(pomXml(project, version, scalaVersion)) 
+      xmlPrinter.format(pomXml(project, version, project.scalaVersion)) 
   }
 }

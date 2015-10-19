@@ -10,12 +10,12 @@ class DocTaskTests extends FreeSpec with Matchers{
     withTempDir{
       dir => 
         val module = new TestModule(dir, "DocTaskTests"){
-          override def defaultScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+          override def scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
         }
         val proj = new Project("DocTaskTests", dir, module :: Nil, isTestProject = true){
-          override def defaultScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+          override def scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
         }
-        val indexHtmlFile = file(proj.docOutputDir(proj.defaultScalaVersion), "index.html")
+        val indexHtmlFile = file(proj.docOutputDir, "index.html")
         indexHtmlFile.exists should be (false)
         module.writeSrc(
           "foo/Foo.scala",

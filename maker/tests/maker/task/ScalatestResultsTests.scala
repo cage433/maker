@@ -19,7 +19,6 @@ class ScalatestResultsTests extends FunSuite{
     withTempDir{
       dir =>
         val proj = new TestModule(dir, "ScalatestResultsTests")
-        println(proj.defaultScalaVersion)
         proj.writeTest(
           "foo/FooTest.scala",
           """

@@ -52,7 +52,7 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
   private val (system, session, repositories) = UpdateTask.aetherState(project)
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
-    val result = if (project.dependenciesAlreadyUpdated(scalaVersion)){
+    val result = if (project.dependenciesAlreadyUpdated()){
       logger.info(s"$project has up to date dependencies")
       Right(Unit)
     } else {
@@ -67,7 +67,7 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
     }
     result match {
       case Right(_) => 
-        project.markDependenciesUpdated(scalaVersion)
+        project.markDependenciesUpdated()
         DefaultTaskResult(this, true, sw)
       case Left(ex) => 
         DefaultTaskResult(
@@ -90,8 +90,8 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
   case class BinaryDownload(scope : String) extends DownloadType{
     def isOfCorrectType(artifact : Artifact) = true
     def downloadDirectory = scope match {
-      case JavaScopes.COMPILE => project.managedLibDir(scalaVersion)
-      case JavaScopes.TEST => project.testManagedLibDir(scalaVersion)
+      case JavaScopes.COMPILE => project.managedLibDir
+      case JavaScopes.TEST => project.testManagedLibDir
       case _ => ???
     }
     def aetherDependencies(deps : Seq[RichDependency]) : Seq[Dependency] = {
@@ -103,8 +103,8 @@ case class UpdateTask(project : ProjectTrait, scalaVersion : ScalaVersion)
     // Aether downloads the binary when sources aren't in the repository - no idea why
     def isOfCorrectType(artifact : Artifact) = Option(artifact.getClassifier) == Some("sources")
     def downloadDirectory = scope match {
-      case JavaScopes.COMPILE => project.managedLibSourceDir(scalaVersion)
-      case JavaScopes.TEST => project.testManagedLibSourceDir(scalaVersion)
+      case JavaScopes.COMPILE => project.managedLibSourceDir
+      case JavaScopes.TEST => project.testManagedLibSourceDir
       case _ => ???
     }
     def aetherDependencies(deps : Seq[RichDependency]) : Seq[Dependency] = {

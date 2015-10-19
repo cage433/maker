@@ -31,7 +31,7 @@ case class RunMainTask(
   def name = "Run Main"
 
   def module = baseProject
-  def upstreamTasks = baseProject.testCompileTaskBuild(scalaVersion, CompilePhase.TEST_PHASES).tasks
+  def upstreamTasks = baseProject.testCompileTaskBuild(CompilePhase.TEST_PHASES).tasks
 
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
@@ -48,7 +48,7 @@ case class RunMainTask(
     }
     var cmd = Command.scalaCommand(
       baseProject,
-      classpath = baseProject.runtimeClasspath(scalaVersion, CompilePhase.PHASES),
+      classpath = baseProject.runtimeClasspath(CompilePhase.PHASES),
       klass = className,
       opts = optsToUse,
       args = mainArgs

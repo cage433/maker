@@ -23,7 +23,7 @@ case class Project(
   def projectRoot = root.asAbsoluteFile
 
   def organization : Option[String] = None
-  def artifactId(scalaVersion : ScalaVersion) = s"${name}_${scalaVersion.versionBase}"
+  def artifactId = s"${name}_${scalaVersion.versionBase}"
   def modules = immediateUpstreamModules
   def testModuleDependencies = upstreamModules
   override def toString = name
@@ -37,73 +37,71 @@ case class Project(
     b.addLine(s"""val $name = Project($name, file("${root.getAbsolutePath.toString}"), ${upstreamModules.mkString("List(", ", ", ")")})""")
     b.toString
   }
-  def docOutputDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
-  def packageDir(scalaVersion : ScalaVersion) = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
+  def docOutputDir = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
+  def packageDir = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 
-  def testClassNames(rootProject : ProjectTrait, scalaVersion : ScalaVersion, lastCompilationTime : Option[Long], testPhase : CompilePhase) = {
-    upstreamModules.flatMap(_.testClassNames(rootProject, scalaVersion, lastCompilationTime, testPhase))
+  def testClassNames(rootProject : ProjectTrait, lastCompilationTime : Option[Long], testPhase : CompilePhase) = {
+    upstreamModules.flatMap(_.testClassNames(rootProject, lastCompilationTime, testPhase))
   }
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
-  def publishLocalDir(version : String, scalaVersion : ScalaVersion) = file(publishLocalRootDir, organization.getOrElse(???), artifactId(scalaVersion), version).makeDirs
-  def publishLocalJarDir(version : String, scalaVersion : ScalaVersion) = file(publishLocalDir(version, scalaVersion), "jars").makeDir
-  def publishLocalPomDir(version : String, scalaVersion : ScalaVersion) = file(publishLocalDir(version, scalaVersion), "poms").makeDir
-  def publishLocalPomFile(version : String, scalaVersion : ScalaVersion) = file(publishLocalPomDir(version, scalaVersion), s"pom.xml")
+  def publishLocalDir(version : String) = file(publishLocalRootDir, organization.getOrElse(???), artifactId, version).makeDirs
+  def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
+  def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
+  def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
 
-  def packageJar(version : Option[String], scalaVersion : ScalaVersion) = {
+  def packageJar(version : Option[String]) = {
     val versionAsString = version.map("-" + _).getOrElse("")
-    val jarBasename = artifactId(scalaVersion) + versionAsString + ".jar"
-    file(packageDir(scalaVersion).getAbsolutePath, jarBasename)
+    val jarBasename = artifactId + versionAsString + ".jar"
+    file(packageDir.getAbsolutePath, jarBasename)
   }
 
-  def sourcePackageJar(version : Option[String], scalaVersion : ScalaVersion) = {
+  def sourcePackageJar(version : Option[String]) = {
     val versionAsString = version.map("-" + _).getOrElse("")
-    val jarBasename = artifactId(scalaVersion) + versionAsString + "-sources.jar"
-    file(packageDir(scalaVersion).getAbsolutePath, jarBasename)
+    val jarBasename = artifactId + versionAsString + "-sources.jar"
+    file(packageDir.getAbsolutePath, jarBasename)
   }
 
-  def publishLocalJar(version : String, scalaVersion : ScalaVersion) = 
+  def publishLocalJar(version : String) = 
     file(
-      publishLocalJarDir(version, scalaVersion), 
-      packageJar(Some(version), scalaVersion).getName)
+      publishLocalJarDir(version), 
+      packageJar(Some(version)).getName)
 
-  def publishLocalSourceJar(version : String, scalaVersion : ScalaVersion) = 
+  def publishLocalSourceJar(version : String) = 
     file(
-      publishLocalJarDir(version, scalaVersion), 
-      sourcePackageJar(Some(version), scalaVersion).getName)
+      publishLocalJarDir(version), 
+      sourcePackageJar(Some(version)).getName)
 
-  def pack(scalaVersion : ScalaVersion) : BuildResult = {
+  def pack : BuildResult = {
     val tasks = PackageJarTask(this, version = None, scalaVersion = scalaVersion) :: Nil
 
     execute(transitiveBuild(tasks))
   }
-  def pack : BuildResult = pack(defaultScalaVersion)
 
-  def docPackageJar(scalaVersion : ScalaVersion) = file(packageDir(scalaVersion).getAbsolutePath, name + "-javadoc.jar")
-  def doc(scalaVersion : ScalaVersion) = execute(transitiveBuild(DocTask(this, scalaVersion) :: Nil))
-  def doc : BuildResult = doc(defaultScalaVersion)
+  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
+  def doc = execute(transitiveBuild(DocTask(this, scalaVersion) :: Nil))
 
-  def publishLocalTaskBuild(version : String, signArtifacts : Boolean, scalaVersion : ScalaVersion) = {
+  def publishLocalTaskBuild(version : String, signArtifacts : Boolean) = {
     transitiveBuild(PublishLocalTask(this, version, signArtifacts, scalaVersion) :: Nil)
   }
 
-  def publishLocal(version : String, signArtifacts : Boolean, scalaVersion : ScalaVersion) = {
-    execute(publishLocalTaskBuild(version, signArtifacts, scalaVersion))
+  def publishLocal(version : String, signArtifacts : Boolean) = {
+    execute(publishLocalTaskBuild(version, signArtifacts))
   }
 
   def extraProjectPomInfo : List[NodeSeq] = Nil
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
 
-  def publishToSonatypeBuild(version : String, scalaVersion : ScalaVersion) = transitiveBuild(PublishToSonatype(this, version, scalaVersion) :: Nil)
-  def publishToSonatype(version : String, scalaVersion : ScalaVersion) = execute(publishToSonatypeBuild(version, scalaVersion))
+  def publishToSonatypeBuild(version : String) = transitiveBuild(PublishToSonatype(this, version, scalaVersion) :: Nil)
+  def publishToSonatype(version : String) = execute(publishToSonatypeBuild(version))
 
-  def publishSonatypeSnapshotBuild(version : String, scalaVersion : ScalaVersion) = transitiveBuild(PublishSnapshotToSonatype(this, version, scalaVersion) :: Nil)
-  def publishSonatypeSnapshot(version : String, scalaVersion : ScalaVersion) = execute(publishSonatypeSnapshotBuild(version, scalaVersion))
+  def publishSonatypeSnapshotBuild(version : String) = transitiveBuild(PublishSnapshotToSonatype(this, version, scalaVersion) :: Nil)
+  def publishSonatypeSnapshot(version : String) = execute(publishSonatypeSnapshotBuild(version))
 
   def dependencies = upstreamModules.flatMap(_.dependencies).distinct
 
-  def testTaskBuild(scalaVersion : ScalaVersion, lastCompilationTimeFilter : Option[Long]) = {
+  def testTaskBuild(lastCompilationTimeFilter : Option[Long]) = {
     // For a project, `test` runs tests of all modules
     transitiveBuild(
       RunUnitTestsTask(
@@ -119,7 +117,7 @@ case class Project(
   }
 
 
-  def testCompileTaskBuild(scalaVersion : ScalaVersion, testPhases : Seq[CompilePhase]) = transitiveBuild(
+  def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
     upstreamModules.flatMap{module => 
       testPhases.map(CompileTask(this, module, scalaVersion, _))
     }

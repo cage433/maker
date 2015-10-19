@@ -191,19 +191,19 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
         val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
 
         assert(
-          !B.testCompileTaskBuild(SCALA_VERSION, TestCompilePhase :: Nil).graph.upstreams(
+          !B.testCompileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
             CompileTask(B, B, SCALA_VERSION, TestCompilePhase)
           ).contains(CompileTask(B, A, SCALA_VERSION, TestCompilePhase)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
-          C.testCompileTaskBuild(SCALA_VERSION, TestCompilePhase :: Nil).graph.upstreams(
+          C.testCompileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
             CompileTask(C, C, SCALA_VERSION, TestCompilePhase)
           ).contains(CompileTask(C, A, SCALA_VERSION, TestCompilePhase)),
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
-          B.compileTaskBuild(SCALA_VERSION).graph.upstreams(
+          B.compileTaskBuild.graph.upstreams(
             CompileTask(B, B, SCALA_VERSION, SourceCompilePhase)
           ).contains(CompileTask(B, A, SCALA_VERSION, SourceCompilePhase)),
           "Upstream source compilation is a dependency"  
@@ -221,15 +221,15 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
         val D = new TestModule(file(dir, "D"), "D", List(C))
 
         assert(
-          ! B.compilationClasspathComponents(SCALA_VERSION, TestCompilePhase).contains(A.classDirectory(SCALA_VERSION, TestCompilePhase)), 
+          ! B.compilationClasspathComponents(TestCompilePhase).contains(A.classDirectory(TestCompilePhase)), 
           "A's test output directory is not in B's classpath"
         )
         assert(
-          C.compilationClasspathComponents(SCALA_VERSION, TestCompilePhase).contains(A.classDirectory(SCALA_VERSION, TestCompilePhase)), 
+          C.compilationClasspathComponents(TestCompilePhase).contains(A.classDirectory(TestCompilePhase)), 
           "A's test output directory is in C's classpath"
         )
         assert(
-          ! D.compilationClasspathComponents(SCALA_VERSION, TestCompilePhase).contains(A.classDirectory(SCALA_VERSION, TestCompilePhase)), 
+          ! D.compilationClasspathComponents(TestCompilePhase).contains(A.classDirectory(TestCompilePhase)), 
           "A's test output directory is in D's classpath"
         )
     }
@@ -248,18 +248,18 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
 
         List(A, B, C).foreach{
           proj => 
-            assert(proj.testTaskBuild(SCALA_VERSION, lastCompilationTimeFilter = None).graph.nodes.exists{
+            assert(proj.testTaskBuild(lastCompilationTimeFilter = None).graph.nodes.exists{
               case RunUnitTestsTask(_, _, `proj`, _, SCALA_VERSION, _, _) => true
               case _ => false
             })
         }
         import Dependency.Edge
-        assert(!D.testCompileTaskBuild(SCALA_VERSION, TestCompilePhase :: Nil).graph.edges.contains(
+        assert(!D.testCompileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
           Edge(CompileTask(D, A, SCALA_VERSION, TestCompilePhase), CompileTask(D, C, SCALA_VERSION, TestCompilePhase))))
 
-        assert(C.testTaskBuild(SCALA_VERSION, lastCompilationTimeFilter = None).graph.edges.contains(
+        assert(C.testTaskBuild(lastCompilationTimeFilter = None).graph.edges.contains(
           Edge(CompileTask(C, A, SCALA_VERSION, TestCompilePhase), CompileTask(C, C, SCALA_VERSION, TestCompilePhase))))
-        assert(!D.testCompileTaskBuild(SCALA_VERSION, TestCompilePhase :: Nil).graph.edges.contains(
+        assert(!D.testCompileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
           Edge(CompileTask(D, B, SCALA_VERSION, TestCompilePhase), CompileTask(D, C, SCALA_VERSION, TestCompilePhase))))
 
     }
