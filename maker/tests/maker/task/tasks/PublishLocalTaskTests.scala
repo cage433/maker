@@ -69,9 +69,7 @@ class PublishLocalTaskTests
 
         val version = "1.0-SNAPSHOT"
         val module = createTestModule(dir, "single-module-publish-local-test")
-        val proj = new Project(module.name, dir, module :: Nil, isTestProject = true){
-          override def organization = Some("org.org")
-        }
+        val proj = new Project(module.name, dir, module :: Nil, isTestProject = true, organization = Some("org.org"))
 
         module.addExternalResource("org.slf4j slf4j-api 1.6.1")
         module.addUnmanagedResource("MainResource1")
@@ -117,9 +115,13 @@ class PublishLocalTaskTests
           proj.writeCaseObject("Bar", "bar")
           proj
         }
-        val project = new Project("publish test", dir, moduleA :: moduleB :: Nil, isTestProject = true){
-          override def organization = Some("org.org")
-        }
+        val project = new Project(
+          "publish test", 
+          dir, 
+          moduleA :: moduleB :: Nil, 
+          isTestProject = true,
+          organization = Some("org.org")
+        )
         project.publishLocal(version, signArtifacts = false)
 
         checkPublishedPomMatchesCoordinates(project, version)
@@ -144,9 +146,13 @@ class PublishLocalTaskTests
         val version = "1.0-SNAPSHOT"
         val a = createTestModule(dir, "multi-module-publish-local-test-a")
         val b = createTestModule(dir, "multi-module-publish-local-test-b", upstreamModules = List(a))
-        val topLevel =new  Project("TopLevelProject", dir, List(b), isTestProject = true){
-          override def organization = Some("org.org")
-        }
+        val topLevel =new  Project(
+          "TopLevelProject", 
+          dir, 
+          List(b), 
+          isTestProject = true,
+          organization = Some("org.org")
+        )
 
         topLevel.publishLocal(version, signArtifacts = false)
 

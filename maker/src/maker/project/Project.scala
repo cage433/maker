@@ -16,14 +16,14 @@ case class Project(
   immediateUpstreamModules:Seq[Module],
   topLevelExcludedFolders:Seq[String] = Nil,
   isTestProject : Boolean = false,
-  scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+  scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
+  organization: Option[String] = None
 ) 
   extends ProjectTrait 
 {
 
   def projectRoot = root.asAbsoluteFile
 
-  def organization : Option[String] = None
   def artifactId = s"${name}_${scalaVersion.versionBase}"
   def furthestDownstreamModules = immediateUpstreamModules
   def testModuleDependencies = upstreamModules
