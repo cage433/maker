@@ -64,7 +64,7 @@ object ZincCompile extends Log {
       module.compilationCacheFile(phase).getAbsolutePath,
       "-scala-extra",
       rootProject.scalaReflectJar.getAbsolutePath
-    ) :::
+    ) ++:
     module.scalacOptions.map("-S" +_) ++:
     module.javacOptions.map("-C" +_) ++:
     analysisMapArguments ++: 

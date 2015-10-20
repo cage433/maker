@@ -58,7 +58,7 @@ case class PublishToSonatype(project : Project, version : String)
   private def makeBundle(tmpDir : File) : Either[ErrorMessage, File] = {
     import project.{publishLocalPomDir, publishLocalJarDir}
 
-    val bundleJar = file("/home/alex/tmp", "bundle.jar")
+    val bundleJar = file(System.getenv("HOME"), "tmp", "bundle.jar")
 
     BuildJar.build(bundleJar, publishLocalPomDir(version) :: publishLocalJarDir(version) :: Nil).map{
       _ => bundleJar
