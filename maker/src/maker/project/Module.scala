@@ -32,7 +32,7 @@ class Module(
 {
 
   import Module.logger
-  def modules = this :: Nil
+  def furthestDownstreamModules = Seq(this)
   protected val upstreamModulesForBuild = List(this)
 
   override def tearDown(graph : Dependency.Graph, result : BuildResult) = true
@@ -83,8 +83,8 @@ class Module(
 
   Module.warnOfUnnecessaryDependencies(this)
 
-  def javacOptions : List[String] = Nil 
-  def scalacOptions : List[String] = "-feature" :: Nil
+  def javacOptions : Seq[String] = Nil 
+  def scalacOptions : Seq[String] = "-feature" :: Nil
   /**
    * The standard equals method was slow, making Dependency operations very expensive.
    */
@@ -149,8 +149,7 @@ class Module(
         modules = this :: Nil, 
         rootProject = this, 
         classOrSuiteNames_ = None,
-        lastCompilationTimeFilter = lastCompilationTimeFilter,
-        testPhase = TestCompilePhase
+        lastCompilationTimeFilter = lastCompilationTimeFilter
       ) :: Nil
     )
   }
@@ -174,15 +173,15 @@ class Module(
 
   def classFiles(phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(phase))
 
-  def testClassNames(rootProject : ProjectTrait, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String] = {
-    val isTestSuite = isAccessibleScalaTestSuite(rootProject, testPhase)
-    var classFiles_ = classFiles(testPhase)
-    lastCompilationTime.foreach{
-      time => 
-        classFiles_ = classFiles_.filter(_.lastModified >= time)
-    }
-    classFiles_.map(_.className(classDirectory(testPhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
-  }
+  //def testClassNames(rootProject : ProjectTrait, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String] = {
+    //val isTestSuite = isAccessibleScalaTestSuite(rootProject, testPhase)
+    //var classFiles_ = classFiles(testPhase)
+    //lastCompilationTime.foreach{
+      //time => 
+        //classFiles_ = classFiles_.filter(_.lastModified >= time)
+    //}
+    //classFiles_.map(_.className(classDirectory(testPhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
+  //}
 
 
   /********************

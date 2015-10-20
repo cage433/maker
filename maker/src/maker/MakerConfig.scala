@@ -25,6 +25,8 @@ trait MakerConfig extends DependencyPimps {
     }
   }
 
+  protected def taskThreadPoolSize: Option[Int] = None
+
   def unitTestHeapSize : Int = {
     maybeProperty("maker.unit-test-heap-size") match {
       case Some(size) => size.toInt
@@ -72,4 +74,13 @@ trait MakerConfig extends DependencyPimps {
     case Some(cred) => cred.split(":")
     case None => throw new Exception(s"MAKER_SONATYPE_CREDENTIALS variable not set")
   }
+
+  def scalatestOutputParameters : String = "-oHL"
+
+  /* Methods that are overriden by maker unit tests projects/modules */
+  def reportBuildResult : Boolean = true
+
+  def systemExitOnExecModeFailures : Boolean = true
+
+  def updateIncludesSourceJars : Boolean = true
 }

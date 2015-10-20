@@ -249,7 +249,7 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
         List(A, B, C).foreach{
           proj => 
             assert(proj.testTaskBuild(lastCompilationTimeFilter = None).graph.nodes.exists{
-              case RunUnitTestsTask(_, _, `proj`, _, _, _) => true
+              case RunUnitTestsTask(_, _, `proj`, _, _) => true
               case _ => false
             })
         }

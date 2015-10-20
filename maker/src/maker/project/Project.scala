@@ -25,7 +25,7 @@ case class Project(
 
   def organization : Option[String] = None
   def artifactId = s"${name}_${scalaVersion.versionBase}"
-  def modules = immediateUpstreamModules
+  def furthestDownstreamModules = immediateUpstreamModules
   def testModuleDependencies = upstreamModules
   override def toString = name
 
@@ -40,10 +40,6 @@ case class Project(
   }
   def docOutputDir = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
   def packageDir = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
-
-  def testClassNames(rootProject : ProjectTrait, lastCompilationTime : Option[Long], testPhase : CompilePhase) = {
-    upstreamModules.flatMap(_.testClassNames(rootProject, lastCompilationTime, testPhase))
-  }
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
   def publishLocalDir(version : String) = file(publishLocalRootDir, organization.getOrElse(???), artifactId, version).makeDirs
@@ -110,8 +106,7 @@ case class Project(
         upstreamModules,
         rootProject = this, 
         classOrSuiteNames_ = None,
-        lastCompilationTimeFilter = lastCompilationTimeFilter,
-        testPhase = TestCompilePhase
+        lastCompilationTimeFilter = lastCompilationTimeFilter
       ) :: Nil
     )
   }

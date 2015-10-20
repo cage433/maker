@@ -14,28 +14,42 @@ import org.slf4j.LoggerFactory
 import maker.ScalaVersion
 import java.sql.Time
 import java.io.File
+import java.lang.reflect.Modifier
 
 case class RunUnitTestsTask(
   name : String, 
   modules : Seq[Module],
   rootProject : ProjectTrait, 
   classOrSuiteNames_ : Option[Iterable[String]],
-  lastCompilationTimeFilter : Option[Long],
-  testPhase : CompilePhase
+  lastCompilationTimeFilter : Option[Long]
 )  
   extends Task 
 {
 
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = modules.map(CompileTask(rootProject, _, testPhase))
+  def upstreamTasks = modules.map(CompileTask(rootProject, _, TestCompilePhase))
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
     // If no class names are passed in then they are found via reflection, so
     // compilation has to have taken place - hence class names can't be determined
     // at the point the task is created
-    val classOrSuiteNames = classOrSuiteNames_.getOrElse(modules.flatMap(_.testClassNames(rootProject, lastCompilationTimeFilter, testPhase))).toSeq.distinct
+    val classOrSuiteNames = classOrSuiteNames_.getOrElse{
+      val isTestSuite = RunUnitTestsTask.isAccessibleScalaTestSuite(rootProject)
+      def filterByCompilationTime(classFiles: Seq[File]) = lastCompilationTimeFilter match {
+        case Some(time) => classFiles.filter(_.lastModified >= time)
+        case None => classFiles
+      }
+      val classNames = modules.flatMap{
+        m => 
+          filterByCompilationTime(m.classFiles(TestCompilePhase)).map{
+            classFile => 
+              classFile.className(m.classDirectory(TestCompilePhase))
+          }
+      }.filterNot(_.contains("$"))
+      classNames.filter(isTestSuite)
+    }
 
     if (classOrSuiteNames.isEmpty) {
       return DefaultTaskResult(this, true, sw)
@@ -69,7 +83,7 @@ case class RunUnitTestsTask(
       val args : Seq[String] = List(
         rootProject.javaExecutable.getAbsolutePath, 
         "-classpath",
-        rootProject.runtimeClasspath(testPhase :: Nil)) ++:
+        rootProject.runtimeClasspath(TestCompilePhase :: Nil)) ++:
         (opts :+ "org.scalatest.tools.Runner") ++:
         testParameters ++: suiteParameters
       Command(args : _*)
@@ -112,8 +126,7 @@ object RunUnitTestsTask{
       module :: Nil,
       rootProject,
       Some(MakerTestResults(testOutputFile(module)).failingSuiteClasses),
-      lastCompilationTimeFilter = None,
-      testPhase = TestCompilePhase
+      lastCompilationTimeFilter = None
     )
   }
 
@@ -172,6 +185,41 @@ object RunUnitTestsTask{
   def testOutputFile(project: ProjectTrait): File = {
     file(project.rootAbsoluteFile, "maker-test-output")
   }
+
+  def isAccessibleScalaTestSuite(rootProject : ProjectTrait) : (String => Boolean) = {
+    val loader = rootProject.testClasspathLoader(TestCompilePhase)
+
+    className : String => {
+
+      def loadClass(className : String) = {
+        try {
+          loader.loadClass(className)
+        } catch {
+          case e : ClassNotFoundException => 
+            println(
+              s"""Couldn't load class $className in project $this, 
+                  classpath was ${rootProject.runtimeClasspathComponents(TestCompilePhase :: Nil).mkString("\n\t", "\n\t", "\n")}""")
+            throw e
+        }
+      }
+      val suiteClass = loadClass("org.scalatest.Suite")
+      val emptyClassArray = new Array[java.lang.Class[T] forSome {type T}](0)
+      val clazz = loadClass(className)
+      try {
+        suiteClass.isAssignableFrom(clazz) &&
+          Modifier.isPublic(clazz.getModifiers) &&
+          !Modifier.isAbstract(clazz.getModifiers) &&
+          Modifier.isPublic(clazz.getConstructor(emptyClassArray: _*).getModifiers)
+      }
+      catch {
+        case _: NoSuchMethodException => false
+        case _: SecurityException => false
+        case _: ClassNotFoundException => false
+        case _: NoClassDefFoundError => false
+      }
+    }
+  }
+
 }
 
 case class RunUnitTestsTaskResult(

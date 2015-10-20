@@ -2,6 +2,7 @@ package maker.task
 
 import maker.task.compile.CompileTask
 import maker.task.tasks.RunUnitTestsTask
+import maker.project.ProjectTrait
 
 
 object Dependency{
@@ -13,12 +14,11 @@ object Dependency{
   }
   object Edge{
     def edges(
-      task : Task, 
-      extraUpstreamTasksMatcher : PartialFunction[Task, Set[Task]],
-      extraDownstreamTasksMatcher : PartialFunction[Task, Set[Task]]
+      rootProject: ProjectTrait, 
+      task : Task
     ) = {
-      val upstreams = (task.upstreamTasks ++ extraUpstreamTasksMatcher.lift(task).getOrElse(Set.empty)).map(Edge(_, task))
-      val downstreams = extraDownstreamTasksMatcher.lift(task).getOrElse(Set.empty).map(Edge(task, _))
+      val upstreams = (task.upstreamTasks ++ rootProject.extraUpstreamTasks(task)).map(Edge(_, task))
+      val downstreams = rootProject.extraDownstreamTasks(task).map(Edge(task, _))
       upstreams ++ downstreams
     }
   }
@@ -71,12 +71,11 @@ object Dependency{
     def empty = Graph(Set.empty, Set.empty)
 
     def transitiveClosure(
-      tasks : Iterable[Task],
-      extraUpstreamTasks : PartialFunction[Task, Set[Task]],
-      extraDownstreamTasks : PartialFunction[Task, Set[Task]]
+      rootProject: ProjectTrait,
+      tasks : Iterable[Task]
     ) : Graph = {
       def recurse(acc : Graph) : Graph = {
-        val newEdges = acc.leaves.flatMap(Edge.edges(_, extraUpstreamTasks, extraDownstreamTasks)) -- acc.edges
+        val newEdges = acc.leaves.flatMap(Edge.edges(rootProject, _)) -- acc.edges
         val newNodes = newEdges.flatMap(_.nodes)
         if (newEdges.isEmpty)
           acc
