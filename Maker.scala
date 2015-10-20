@@ -35,21 +35,22 @@ def extraPomInfo : List[NodeSeq] = {
 
 lazy val testReporterModule = new Module(
   root = file("test-reporter").asAbsoluteFile, 
-  name = "maker-test-reporter"
+  name = "maker-test-reporter",
+  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 ) with ClassicLayout with TmuxIntegration {
   override def dependencies() = {
     Vector(
       "org.scalatest" % "scalatest" %%  "2.2.0"
     )
   }
-  override def scalacOptions = List("-feature", "-deprecation", "-Xfatal-warnings")
-  override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
+  override def scalacOptions = Seq("-feature", "-deprecation", "-Xfatal-warnings")
 }
 
 lazy val testReporterProject = new Project(
   "maker-test-reporter",
   root = file("test-reporter").asAbsoluteFile, 
-  immediateUpstreamModules = List(testReporterModule)
+  immediateUpstreamModules = List(testReporterModule),
+  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 ){
   override def extraProjectPomInfo = extraPomInfo
   override def organization = Some("com.github.cage433")
@@ -57,7 +58,8 @@ lazy val testReporterProject = new Project(
 
 lazy val makerModule = new Module(
   root = file("maker").asAbsoluteFile,
-  name = "maker"
+  name = "maker",
+  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 ) with ClassicLayout with Bootstrapper {
   override def dependencies() = {
     Vector(
@@ -81,14 +83,17 @@ lazy val makerModule = new Module(
       "com.google.guava" % "guava" % "18.0"
     )
   }
-  override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
-  override def scalacOptions = List("-feature", "-deprecation", "-Xfatal-warnings")
+  override def scalacOptions = Seq("-feature", "-deprecation", "-Xfatal-warnings")
 }
 
-lazy val makerProject = new Project("maker", file("."), List(makerModule)) with TmuxIntegration {
+lazy val makerProject = new Project(
+  "maker", 
+  file("."), 
+  List(makerModule),
+  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
+) with TmuxIntegration {
   override def extraProjectPomInfo = extraPomInfo
   override def organization = Some("com.github.cage433")
-  override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 } 
 // Used to disambiguate which maker is running in the repl.
 def pwd = println(Properties.userDir)
@@ -99,15 +104,15 @@ def snapshot(version_ : String) = {
   else 
     s"${version_}-SNAPSHOT"
 
-  testReporterProject.publishSonatypeSnapshot(version, ScalaVersion.TWO_TEN_DEFAULT) andThen 
-  testReporterProject.publishSonatypeSnapshot(version, ScalaVersion.TWO_ELEVEN_DEFAULT) andThen 
-  makerProject.publishSonatypeSnapshot(version, ScalaVersion.TWO_TEN_DEFAULT)
+  testReporterProject.publishSonatypeSnapshot(version) andThen 
+  testReporterProject.copy(scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT).publishSonatypeSnapshot(version) andThen 
+  makerProject.publishSonatypeSnapshot(version)
 }
 
 def release(version : String) = {
-  testReporterProject.publishToSonatype(version, ScalaVersion.TWO_TEN_DEFAULT) andThen 
-  testReporterProject.publishToSonatype(version, ScalaVersion.TWO_ELEVEN_DEFAULT) andThen 
-  makerProject.publishToSonatype(version, ScalaVersion.TWO_TEN_DEFAULT)
+  testReporterProject.publishToSonatype(version) andThen 
+  testReporterProject.copy(scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT).publishToSonatype(version) andThen 
+  makerProject.publishToSonatype(version)
 }
 
 import makerProject._
