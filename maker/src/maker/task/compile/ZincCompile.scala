@@ -43,7 +43,7 @@ object ZincCompile extends Log {
       case list => List("-analysis-map", list.mkString(","))
     }
 
-    val arguments = List[String](
+    val arguments = Seq[String](
       "-log-level",
       "warn",
       "-transactional",
@@ -65,9 +65,9 @@ object ZincCompile extends Log {
       "-scala-extra",
       rootProject.scalaReflectJar.getAbsolutePath
     ) :::
-    module.scalacOptions.map("-S" +_) :::
-    module.javacOptions.map("-C" +_) :::
-    analysisMapArguments ::: 
+    module.scalacOptions.map("-S" +_) ++:
+    module.javacOptions.map("-C" +_) ++:
+    analysisMapArguments ++: 
       module.sourceFiles(phase).toList.map(_.getAbsolutePath)
 
     val Parsed(rawSettings, residual, errors) = Settings.parse(

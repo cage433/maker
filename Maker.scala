@@ -42,7 +42,7 @@ lazy val testReporterModule = new Module(
       "org.scalatest" % "scalatest" %%  "2.2.0"
     )
   }
-  override def scalacOptions = Seq("-feature", "-deprecation", "-Xfatal-warnings")
+  override def scalacOptions = List("-feature", "-deprecation", "-Xfatal-warnings")
   override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 }
 
@@ -82,7 +82,7 @@ lazy val makerModule = new Module(
     )
   }
   override def defaultScalaVersion : ScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
-  override def scalacOptions = Seq("-feature", "-deprecation", "-Xfatal-warnings")
+  override def scalacOptions = List("-feature", "-deprecation", "-Xfatal-warnings")
 }
 
 lazy val makerProject = new Project("maker", file("."), List(makerModule)) with TmuxIntegration {
