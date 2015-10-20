@@ -50,11 +50,10 @@ lazy val testReporterProject = new Project(
   "maker-test-reporter",
   root = file("test-reporter").asAbsoluteFile, 
   immediateUpstreamModules = List(testReporterModule),
-  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
-){
-  override def extraProjectPomInfo = extraPomInfo
-  override def organization = Some("com.github.cage433")
-}
+  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT,
+  organization = Some("com.github.cage433"),
+  extraProjectPomInfo = extraPomInfo
+)
 
 lazy val makerModule = new Module(
   root = file("maker").asAbsoluteFile,
@@ -90,11 +89,10 @@ lazy val makerProject = new Project(
   "maker", 
   file("."), 
   List(makerModule),
-  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
-) with TmuxIntegration {
-  override def extraProjectPomInfo = extraPomInfo
-  override def organization = Some("com.github.cage433")
-} 
+  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT,
+  organization = Some("com.github.cage433"),
+  extraProjectPomInfo = extraPomInfo
+) with TmuxIntegration  
 // Used to disambiguate which maker is running in the repl.
 def pwd = println(Properties.userDir)
 

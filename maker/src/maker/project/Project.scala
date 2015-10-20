@@ -17,7 +17,8 @@ case class Project(
   topLevelExcludedFolders:Seq[String] = Nil,
   isTestProject : Boolean = false,
   scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
-  organization: Option[String] = None
+  organization: Option[String] = None,
+  extraProjectPomInfo : List[NodeSeq] = Nil
 ) 
   extends ProjectTrait 
 {
@@ -85,8 +86,6 @@ case class Project(
   def publishLocal(version : String, signArtifacts : Boolean) = {
     execute(publishLocalTaskBuild(version, signArtifacts))
   }
-
-  def extraProjectPomInfo : List[NodeSeq] = Nil
 
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
 
