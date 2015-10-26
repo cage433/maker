@@ -62,7 +62,7 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/eclipse/aether", "aether-api", "1.0.0.v20140518"),
 	(MAVEN, "org/eclipse/aether", "aether-spi", "1.0.0.v20140518"),
 	(MAVEN, "org/eclipse/aether", "aether-util", "1.0.0.v20140518"),
-        (MAVEN, "org.eclipse.aether", "aether-test-util", "1.0.0.v20140518"),
+  (MAVEN, "org.eclipse.aether", "aether-test-util", "1.0.0.v20140518"),
 	(MAVEN, "org/codehaus/plexus", "plexus-component-annotations", "1.5.5"),
 	(MAVEN, "org/codehaus/plexus", "plexus-utils", "3.0.20"),
 	(MAVEN, "org/eclipse/aether", "aether-connector-basic", "1.0.0.v20140518"),
@@ -86,7 +86,6 @@ def read_args():
     parser.add_argument('-r', '--refresh', action='store_true', dest='refresh', default=False)
     parser.add_argument('-p', '--project-definition-file', dest='project_definition_file')
     parser.add_argument('-l', '--logback-config', dest='logback_file')
-    parser.add_argument('-c', '--application-config-directory', dest='application_config_directory')
     parser.add_argument('-L', '--python_log_level', dest='python_log_level', default=logging.INFO)
     parser.add_argument('-z', '--maker-developer-mode', dest='maker_developer_mode', action='store_true', default = False)
     parser.add_argument('-j', '--use-jrebel', dest='use_jrebel', action='store_true', default = False)
@@ -99,18 +98,63 @@ def read_args():
     args
 
 
+def ask_user(question, default):
+  return raw_input(question + ": ") or default
+
+def confirm(question):
+  return (ask_user(question, "Y")).upper() == "Y"
+
 def logback_file():
   if args.logback_file:
     return os.path.abspath(args.logback_file)
-  else:
+  else: 
+    logback_file = os.path.abspath("logback.xml")
     if os.path.isfile("logback.xml"):
-      logback_file = os.path.abspath("logback.xml")
-      log.info("No logback file provided, using " + logback_file)
+      log.info("No logback file specified, using " + logback_file)
+      return logback_file
+    elif confirm("Create logback config file " + logback_file):
+      f = open(logback_file, 'w+')
+      for line in [
+          "<!--The logback file used by the maker repl",
+          "    In normal use maker shouldn't log much, if at all, however",
+          "    logging isn't switched off in case of messages from other libraries-->",
+          "",
+          "<configuration scan=\"true\" scanPeriod=\"3 seconds\">",
+          "",
+          "  <appender name=\"FILE\" class=\"ch.qos.logback.core.FileAppender\">",
+          "    <file>maker.log</file>",
+          "    <append>true</append>",
+          "    <encoder>",
+          "      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>",
+          "      <immediateFlush>true</immediateFlush>",
+          "    </encoder>",
+          "    <filter class=\"ch.qos.logback.classic.filter.ThresholdFilter\">",
+          "      <level>INFO</level>",
+          "    </filter>",
+          "  </appender>",
+          "        ",
+          "  <appender name=\"CONSOLE\" class=\"ch.qos.logback.core.ConsoleAppender\">",
+          "    <encoder>",
+          "      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>",
+          "      <immediateFlush>true</immediateFlush>",
+          "    </encoder>",
+          "    <filter class=\"ch.qos.logback.classic.filter.ThresholdFilter\">",
+          "      <level>WARN</level>",
+          "    </filter>",
+          "  </appender>",
+          "",
+          "  <root level=\"info\">",
+          "    <appender-ref ref=\"CONSOLE\" />",
+          "    <appender-ref ref=\"FILE\" />",
+          "  </root>",
+          " </configuration>"
+          ]:
+        f.write("%s\n" % line)
+      f.close
       return logback_file
     else:
-      logback_file = os.path.join(maker_directory(), "logback-config", "logback.xml")
-      log.info("No logback provided or found in PWD - using Maker's " + logback_file)
-      return logback_file
+      log.warn("Refusing to run without a logback file - exiting")
+      sys.exit(1)
 
 
 
@@ -134,14 +178,62 @@ def maker_scala_directory():
 def maker_resource_cache():
     return os.path.join(os.environ['HOME'], ".maker", "resource-cache")
 
-def reference_config_directory():
-    return os.path.join(maker_directory(), "config")
 
 def project_definition_file():
     if args.project_definition_file:
         return args.project_definition_file
+    elif os.path.isfile(os.path.join("maker", "Project.scala")):
+        log.debug("Using maker/Project.scala as project definition file")
+    elif confirm("Create minimal project [Y/n]"):
+        name = ask_user("Project name", None)
+        mkdir_p(os.path.join(name, "src", "main", "scala", "org", name))
 
-    scala_files_in_pwd = glob('*.scala')
+        src_file = os.path.join(name, "src", "main", "scala", "org", name, "Foo.scala")
+        print(src_file)
+        f = open(src_file, 'w+')
+        f.write("package org." + name + "\n")
+        f.write("\n")
+        f.write("case class Foo(n: Int)\n")
+        f.close
+
+        mkdir_p(os.path.join(name, "src", "test", "scala", "org", name))
+        test_file = os.path.join(name, "src", "test", "scala", "org", name, "FooTest.scala")
+        f = open(test_file, 'w+')
+        f.write("package org." + name + "\n")
+        f.write("\n")
+        f.write("import org.scalatest.FunSuite\n")
+        f.write("import org.scalatest.Matchers\n")
+        f.write("\n")
+        f.write("class FooTest extends FunSuite with Matchers {\n")
+        f.write("\n")
+        f.write("\ttest(\"Dummy test\") {\n")
+        f.write("\t\tFoo(17).n should be (17)\n")
+        f.write("\t}\n")
+        f.write("}\n")
+        f.close
+
+        mkdir_p("maker")
+        project_file = os.path.join("maker", "Project.scala")
+        f = open(project_file, 'w+')
+        f.write("import maker.project.DependencyPimps._\n")
+        f.write("import maker.project.Module\n\n")
+        f.write("lazy val " + name + "Module = new Module(\n")
+        f.write("\troot = new java.io.File(\"" + name + "\"),\n")
+        f.write("\tname = \"" + name + "\"\n")
+        f.write(") {\n")
+        f.write("\toverride def dependencies() = Seq(\"org.scalatest\" % \"scalatest\" %%  \"2.2.0\")\n")
+        f.write("}\n\n")
+        f.write("import " + name + "Module._\n")
+
+        f.close
+
+    else:
+        log.critical("Maker requires a project file - exiting")
+        sys.exit(1)
+
+      
+
+    scala_files_in_pwd = glob('maker/Project.scala')
     if len(scala_files_in_pwd) == 1:
         log.info("Using %s as project file", scala_files_in_pwd[0])
         return scala_files_in_pwd[0]
@@ -247,21 +339,15 @@ def maker_test_class_directories():
 
 
 def launch_repl():
-    log.warn("Launcinhg repl")
     mkdir_p(".maker")
     
     classpath_components = scala_libraries() + maker_dependencies() 
 
-    if args.application_config_directory:
-        classpath_components.extend([args.application_config_directory])
-    
     if args.maker_developer_mode:
         classpath_components.extend(maker_class_directories())
         classpath_components.extend(maker_test_class_directories())
     else:
         classpath_components.extend(maker_binaries())
-
-    classpath_components.extend([reference_config_directory()])
 
     if args.extra_classpath:
         classpath_components.extend(args.extra_classpath.split(':'))
