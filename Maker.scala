@@ -114,3 +114,5 @@ def release(version : String) = {
 }
 
 import makerProject._
+
+def writeVimClasspath = maker.project.VimClasspath.writeVimClasspath(makerProject)

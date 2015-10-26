@@ -5,11 +5,13 @@ How hard could it be to replace SBT?
 Purpose
 -------
 
-Maker is a scala build tool, written out of frustration with the complexity of SBT. It performs similar tasks, namely compile, test, publish etc - its main aim is to speed up the code/compile/test cycle.
+Maker is a scala build tool, written out of frustration with the complexity of SBT. It performs similar tasks, namely compile, test, publish etc - however it isn't a monad transformation tool, it has no DSL. Its main aim is simply to speed up the code/compile/test cycle. 
 
 Installation
 ------------
-Maker bootstraps itself from a single script (link here). For a more detailed description see [Installation](markdown/Installation.md)
+Simply download and run the maker [script](maker.py) in the directory in which your project will live. If no project is present then a simple project will be created. 
+Further examples of projects can be seen in 
+Maker bootstraps itself [from a single script](maker.py). For a more detailed description see [Installation](markdown/Installation.md)
 
 
 Creating a project

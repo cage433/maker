@@ -24,7 +24,7 @@ class ExampleProjectTests extends FunSpec {
   }
   
   describe("Multi module project"){
-    ignore("Should run its tests"){
+    it("Should run its tests"){
       val moduleRootFile = file("examples/multi-module-project")
       assert(moduleRootFile.exists, "Module doesn't exist")
       val bs = new ByteArrayOutputStream()

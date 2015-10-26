@@ -22,7 +22,6 @@ val d = new Module(new File("d"), "d", immediateUpstreamModules = List(c))
 val project = new Project(
   name = "top-level-project",
   root = new File("."), 
-  immediateUpstreamModules = List(d)
-){
-  override def defaultScalaVersion = ScalaVersion.TWO_TEN_DEFAULT
-}
+  immediateUpstreamModules = List(d),
+  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
+)
