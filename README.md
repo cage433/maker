@@ -1,39 +1,42 @@
 How hard could it be to replace SBT?
 ====================================
 
-
 Purpose
 -------
 
-Maker is a scala build tool, written out of frustration with the complexity of SBT. It performs similar tasks, namely compile, test, publish etc - however it isn't a monad transformation tool, it has no DSL. Its main aim is simply to speed up the code/compile/test cycle. 
+Maker is a scala build tool, written out of frustration with the complexity of SBT. It performs similar tasks, namely compile, test, publish etc - however it isn't a monad transformation tool and has no DSL. Its aim is simply to speed up the code/compile/test cycle. 
 
 Installation
 ------------
-Simply download and run the maker [script](maker.py) in the directory in which your project will live. If no project is present then a simple project will be created. 
-Further examples of projects can be seen in 
-Maker bootstraps itself [from a single script](maker.py). For a more detailed description see [Installation](markdown/Installation.md)
+Download and run the script [maker.py](maker.py) in the directory in which your project will live. You will be prompted for the name of your project, and a minimal config file 
+will be created at ./maker/Project.scala. This specifies for each module its dependencies, 
+both external and on other modules. 
 
+Projects and modules
+--------------------
+A project is a collection of modules, a module being a unit of compilation. A very simple codebase may just consist of a single module, 
+note however that only projects can be published - modules cannot. 
 
-Creating a project
-------------------
-A project is a collection of modules (or just a single module). Eash module contains source files, test files, has external dependencies, and may also depend on 'upstream' modules. A two module project will need, at a minimum, the following files and directories.
+A module contains source files, test files and resources, has external dependencies, and may also depend on 'upstream' modules. By default the 
+layout used is the maven standard, however you may notice that the maker codebase does not follow this - purely as I consider the standard to be an ugly, verbose java idiom. 
+If you care to join me in this struggle then mix in the [ClassicLayout](maker/src/maker/project/ClassicLayout.scala) trait and structure your projects
+thus :-
 
           project/module-a/src/
                   module-a/tests/
-                  module-a/external-resources
+                  module-a/resources
+                  module-a/test-resources
 
           project/module-b/src/
                   module-b/tests/
-                  module-b/external-resources
+                  module-b/resources
+                  module-b/test-resources
 
-          project/external-resource-config
           project/Project.scala
 
-Note that the layout doesn't match maven style - as I don't like it - however it's straightforward to override the default layout to change the location of (e.g.) the source and test directories.
 
 The project file, Project.scala, defines the modules and any dependencies between them. 
 
-Maker contains single and multi-module sample projects in maker.git/examples, you can begin with one of these.
 
 
 External Resources
