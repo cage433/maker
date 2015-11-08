@@ -11,8 +11,10 @@ import maker.utils.Int
 case class Command(
   overrideOutput : Option[OutputStream],
   timeout : Option[Duration],
+  overrideInput: Option[InputStream] = None,
   overrideWorkingDirectory : Option[File] = None,
   overrideExitValues : Option[Seq[Int]] = None,
+  overrideStreamHandler: Option[ExecuteStreamHandler] = None,
   args : Seq[String]
 ) 
   extends Log
@@ -40,9 +42,10 @@ case class Command(
     new ExecuteWatchdog(timeoutMillis)
   }
   def executor = {
-    val streamHandler = overrideOutput match {
-      case Some(os) => new PumpStreamHandler(os)
-      case None => new PumpStreamHandler()
+    val streamHandler = overrideStreamHandler.getOrElse {
+      val out = overrideOutput.getOrElse(null)
+      val in = overrideInput.getOrElse(null)
+      new PumpStreamHandler(out, out, in)
     }
 
     val executor_ = new DefaultExecutor()
@@ -59,26 +62,28 @@ case class Command(
     result
   }
 
-  def runAsync() = {
-    val resultHandler = new ExecuteResultHandler(){
-      def onProcessComplete(exitValue : Int) = {
-        // do nothing
-      }
-      def onProcessFailed(e : ExecuteException) = {
-        // do nothing
-      }
-    }
+  def runAsync(resultHandler: ExecuteResultHandler = new Command.DoNothingResultHandler()) = {
     logger.info(s"running command '${toString}' asynchronously")
     executor.execute(commandLine, resultHandler)
   }
 }
 
 object Command {
+  class DoNothingResultHandler extends ExecuteResultHandler {
+    def onProcessComplete(exitValue : Int) = {
+      // do nothing
+    }
+    def onProcessFailed(e : ExecuteException) = {
+      // do nothing
+    }
+  }
   def apply(args : String*) : Command = Command(
     overrideOutput = None, 
     timeout = None,
+    overrideInput = None,
     overrideWorkingDirectory = None,
     overrideExitValues = None,
+    overrideStreamHandler = None,
     args 
   )
 

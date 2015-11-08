@@ -31,11 +31,6 @@ object Continuously {
 
     def lastSrcModificationTime : Option[Long] = {
       FileUtils.lastModifiedFileTime(allSourceFiles)
-      //allSourceFiles.map(FileUtils.lastModifiedFileTime(watchedFiles)).max
-      //allUpstreamTestModules.map(proj => {
-          //val watchedFiles = proj.compilePhase.sourceFiles ++ proj.testCompilePhase.sourceFiles
-          //FileUtils.lastModifiedFileTime(watchedFiles)
-        //}).max
     }
     printWaitingMessage
     while (true) {

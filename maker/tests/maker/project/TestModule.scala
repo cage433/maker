@@ -21,8 +21,8 @@ class TestModule(
   name,
   upstreamProjects, 
   upstreamTestProjects,
-  analyses,
-  scalaVersion
+  scalaVersion,
+  analyses
 ) with ClassicLayout with DependencyPimps {
 
   override def constructorCodeAsString : String = {

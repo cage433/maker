@@ -13,7 +13,7 @@ trait TmuxIntegration extends ProjectTrait{
     private lazy val hasTmux = Command("which", "tmux").withNoOutput.run == 0
     def tmux(args : String*){
       if (hasTmux)
-        Command(("tmux"::args.toList) : _*).withNoOutput.runAsync
+        Command(("tmux"::args.toList) : _*).withNoOutput.runAsync()
     }
 
     private def tmuxReportTaskFailed(msg : String){

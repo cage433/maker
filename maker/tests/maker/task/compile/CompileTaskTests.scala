@@ -13,8 +13,18 @@ import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
 import maker.utils.FileUtils
+import maker.TestMaker
 
 class CompileTaskTests extends FunSuite with TestUtils with Matchers with ModuleTestPimps{
+
+  ignore("Can compile a single module project") {
+    withTempDir{
+      rootDirectory => 
+        val testMaker = TestMaker(
+          rootDirectory
+        ).withModule("a")(rootDirectory)
+    }
+  }
 
   ignore("Can compile 2.10 and 2.11 scala versions"){
     withTempDir{
@@ -127,7 +137,7 @@ class CompileTaskTests extends FunSuite with TestUtils with Matchers with Module
     (proj, module, files)
   }
 
-  test("Compilation makes class files, writes dependencies, and package makes jar"){
+  ignore("Compilation makes class files, writes dependencies, and package makes jar"){
     withTempDir {
       dir => 
         val (proj, module, _) = simpleProject(dir)

@@ -9,7 +9,11 @@ Maker is a scala build tool, written out of frustration with the complexity of S
 Installation
 ------------
 Download and run the script [maker.py](maker.py) in the directory in which your project will live. You will be prompted for the name of your project, and a minimal config file 
-will be created at ./maker/Project.scala. This specifies for each module its dependencies, 
+will be created at ./maker/Project.scala. 
+
+Configuration
+-------------
+This specifies for each module its dependencies, 
 both external and on other modules. 
 
 Projects and modules

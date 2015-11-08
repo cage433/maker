@@ -18,14 +18,13 @@ import org.apache.commons.io.output.TeeOutputStream
 /**
   * Corresponds to a module in IntelliJ
   */
-
 class Module(
     val root : File,
     val name : String,
     val immediateUpstreamModules : Seq[Module] = Nil,
     val testModuleDependencies : Seq[Module] = Nil,
-    val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses,
-    val scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+    val scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
+    val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
 )
   extends ProjectTrait
   with DependencyPimps
