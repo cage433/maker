@@ -315,7 +315,7 @@ def download_required_dependencies(resources, lib_dir):
 def java():
     return os.path.join(os.environ['JAVA_HOME'], "bin", "java")
 
-def scala_libraries():
+def maker_scala_libraries():
     return glob(maker_scala_directory() + "/*.jar")
 
 def maker_dependencies():
@@ -341,7 +341,7 @@ def maker_test_class_directories():
 def launch_repl():
     mkdir_p(".maker")
     
-    classpath_components = scala_libraries() + maker_dependencies() 
+    classpath_components = maker_scala_libraries() + maker_dependencies() 
 
     if args.maker_developer_mode:
         classpath_components.extend(maker_class_directories())
@@ -361,7 +361,7 @@ def launch_repl():
         extra_opts = extra_opts + ["-Dmaker.exec-mode=true"]
 
     cmd_args=[  java(),
-            "-classpath", classpath(scala_libraries()),
+            "-classpath", classpath(maker_scala_libraries()),
             "-Dsbt.log.format=false",
             "-Drebel.log=true",
             "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + \
