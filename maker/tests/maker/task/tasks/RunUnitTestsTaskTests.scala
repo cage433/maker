@@ -5,8 +5,9 @@ import maker.utils.os.Command
 import org.scalatest._
 import maker.project.{TestModule, TestModuleBuilder}
 import org.slf4j.LoggerFactory
+import maker.TestMakerRepl
 
-class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExecution
+class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExecution
   with BeforeAndAfterAll
 {
 
@@ -14,51 +15,12 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
     val logger = LoggerFactory.getLogger(getClass)
   }
 
-  test("Broken tests fail"){
+  "Unit test runs" in {
     withTempDir{
-      dir => 
-        TestModuleBuilder.createMakerProjectFile(dir)
-        val module = new TestModuleBuilder(dir, "RunUnitTestsTaskTestsModule")
+      rootDirectory => 
 
-        module.appendDefinitionToProjectFile(dir)
-        module.writeTest(
-          "foo/Test.scala",
-          """
-            package foo
-
-            import org.scalatest.FunSuite
-
-            class Test extends FunSuite{
-              test("Deliberately broken test"){
-                assert(1 === 2)
-              }
-            }
-          """
-        )
-        val testOutputFile = file(dir, "maker-test-output")
-        testOutputFile.exists should be (false)
-        val command = TestModuleBuilder.makerExecuteCommand(
-          dir, 
-          "RunUnitTestsTaskTestsModule.test"
-        ).withNoOutput
-
-        val result = command.run
-        result should equal (1)
-        testOutputFile.exists should be (true)
-    }
-  }
-
-
-  test("Unit test runs"){
-    withTempDir{
-      root => 
-        TestModuleBuilder.createMakerProjectFile(root)
-        val module = new TestModuleBuilder(root, "RunUnitTestsTaskTestsModule2")
-
-        module.appendDefinitionToProjectFile(root)
-
-        module.writeSrc(
-          "foo/Foo.scala", 
+        writeToFile(
+          file(rootDirectory, "src/foo/Foo.scala"), 
           """
           package foo
           case class Foo(x : Double){
@@ -67,8 +29,8 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
           }
           """
         )
-        module.writeTest(
-          "foo/FooTest.scala",
+        writeToFile(
+          file(rootDirectory, "tests/foo/FooTest.scala"),
           """
           package foo
           import org.scalatest.FunSuite
@@ -81,18 +43,76 @@ class RunUnitTestsTaskTests extends FunSuite with Matchers with ParallelTestExec
           }
           """
         )
-        val command = TestModuleBuilder.makerExecuteCommand(
-          root, 
-          "RunUnitTestsTaskTestsModule2.test"
-        ).withNoOutput
+        writeToFile(
+          file(rootDirectory, "Project.scala"),
+          s"""
+            import maker.project._
+            import maker.utils.FileUtils._
+            import maker.ScalaVersion
 
-        val result = command.run
-        result should equal (0)
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout {
+              override def dependencies = Seq(
+                "org.scalatest" % "scalatest" %%  "2.2.0"
+              )
+            }
+          """
+        )
+        val repl = TestMakerRepl(rootDirectory)
+        repl.inputLine("val res = a.test")
+        repl.waitForRepl()
+        repl.inputLine("System.exit(if(res.succeeded) 0 else 1)")
+        repl.exitValue() should be (0)
+    }
+  }
+
+  "Broken tests fail" in {
+    withTempDir{
+      rootDirectory => 
+        writeToFile(
+          file(rootDirectory, "tests/foo/Test.scala"),
+          """
+            package foo
+
+            import org.scalatest.FunSuite
+
+            class Test extends FunSuite{
+              test("Deliberately broken test"){
+                assert(1 === 2)
+              }
+            }
+          """
+        )
+        writeToFile(
+          file(rootDirectory, "Project.scala"),
+          s"""
+            import maker.project._
+            import maker.utils.FileUtils._
+            import maker.ScalaVersion
+
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout {
+              override def dependencies = Seq(
+                "org.scalatest" % "scalatest" %%  "2.2.0"
+              )
+            }
+          """
+        )
+        val repl = TestMakerRepl(rootDirectory)
+        repl.inputLine("val res = a.test")
+        repl.waitForRepl()
+        repl.makerOutput().contains("1 did not equal 2") should be (true)
+        repl.inputLine("System.exit(if(res.succeeded) 1 else 0)")
+        repl.exitValue() should be (0)
     }
   }
 
 
-  test("Can re-run failing tests"){
+  "Can re-run failing tests" ignore {
     withTempDir{
       root => 
         TestModuleBuilder.createMakerProjectFile(root)

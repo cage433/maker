@@ -8,6 +8,7 @@ import scala.language.reflectiveCalls
 import java.util.concurrent.atomic.AtomicReference
 import org.apache.commons.exec.{ExecuteResultHandler, DefaultExecuteResultHandler}
 import maker.utils.os.Command
+import java.util.UUID
 
 case class TestMakerRepl(rootDirectory: File) extends FileUtils {
 
@@ -25,6 +26,7 @@ case class TestMakerRepl(rootDirectory: File) extends FileUtils {
 
   private def launch() {
     val streamHandler = new ReplTestPumpStreamHandler(os, os, inputStream)
+    //val streamHandler = new ReplTestPumpStreamHandler(System.err, System.err, inputStream)
     Command(
       overrideWorkingDirectory = Some(rootDirectory),
       timeout = None, 
@@ -46,6 +48,20 @@ case class TestMakerRepl(rootDirectory: File) extends FileUtils {
   def exitValue(): Int = {
     waitForExit()
     resultHandler.getExitValue()
+  }
+
+  def exit(exitValue: Int = 0) {
+    inputLine(s"System.exit($exitValue)")
+    waitForExit()
+  }
+
+  def waitForRepl() {
+    val file = new java.io.File(rootDirectory, UUID.randomUUID().toString)
+    inputLine(s"""new java.io.File("${file.getAbsolutePath}").createNewFile()""")
+    while (! file.exists()) {
+      Thread.sleep(100)
+    }
+    file.delete
   }
 }
 

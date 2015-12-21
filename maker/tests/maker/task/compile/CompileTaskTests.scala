@@ -13,7 +13,7 @@ import maker.project._
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
-import maker.{TestMaker, TestMakerRepl, ScalaVersion}
+import maker.{TestMakerRepl, ScalaVersion}
 import maker.ScalaVersion._
 import scala.language.reflectiveCalls
 import xsbti.api.This
