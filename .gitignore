@@ -18,7 +18,9 @@ maker-scalatest-reporter.jar
 vim-compile-output
 vim-test-compile-output
 lib_managed
+test_lib_managed
 lib_src_managed
+test_lib_src_managed
 .maker.vim/
 maker-session.log
 maker-test-output
