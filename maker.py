@@ -79,6 +79,10 @@ MAKER_DEPENDENCIES  = [
 def maker_directory():
     return os.path.dirname(os.path.abspath(__file__))
 
+def print_and_flush(msg):
+  sys.stdout.write(msg)
+  sys.stdout.flush()
+
 def read_args():
     global args
     parser = argparse.ArgumentParser()
@@ -94,12 +98,14 @@ def read_args():
     parser.add_argument('-E', '--execute-command', dest='execute_command', help='maker command to run (and then exit)')
     (args, unknown_args) = parser.parse_known_args()
     if unknown_args:
-        print("unknown args" + " - ".join(unknown_args))
+        print_and_flush("unknown args" + " - ".join(unknown_args))
     args
 
 
 def ask_user(question, default):
-  return raw_input(question + ": ") or default
+  sys.stdout.write(question + ": ")
+  sys.stdout.flush()
+  return raw_input("") or default
 
 def confirm(question):
   return (ask_user(question, "Y")).upper() == "Y"
@@ -189,7 +195,6 @@ def project_definition_file():
         mkdir_p(os.path.join(name, "src", "main", "scala", "org", name))
 
         src_file = os.path.join(name, "src", "main", "scala", "org", name, "Foo.scala")
-        print(src_file)
         f = open(src_file, 'w+')
         f.write("package org." + name + "\n")
         f.write("\n")

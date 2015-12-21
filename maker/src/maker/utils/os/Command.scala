@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory
 import maker.utils.Int
 
 case class Command(
-  overrideOutput : Option[OutputStream],
-  timeout : Option[Duration],
+  overrideOutput : Option[OutputStream] = None,
+  timeout : Option[Duration] = None,
   overrideInput: Option[InputStream] = None,
   overrideWorkingDirectory : Option[File] = None,
   overrideExitValues : Option[Seq[Int]] = None,
@@ -63,7 +63,7 @@ case class Command(
   }
 
   def runAsync(resultHandler: ExecuteResultHandler = new Command.DoNothingResultHandler()) = {
-    logger.info(s"running command '${toString}' asynchronously")
+    logger.debug(s"running command '${toString}' asynchronously")
     executor.execute(commandLine, resultHandler)
   }
 }

@@ -41,7 +41,13 @@ case class CompileTask(
   )
 
   def compilationRequired(upstreamTaskResults : Iterable[TaskResult]) = {
-    def hasDeletedSourceFiles = module.sourceFilesDeletedSinceLastCompilation(phase).nonEmpty
+    def hasDeletedSourceFiles: Boolean = {
+      Option(rootProject.analyses.get(module.classDirectory(phase))) match {
+        case None => false
+        case Some(analysis) => 
+          analysis.infos.allInfos.keySet.toVector.filterNot(_.exists).nonEmpty
+      }
+    }
 
     def upstreamCompilation = upstreamTaskResults.exists{
       case r : CompileTaskResult if r.state != CompilationNotRequired => true

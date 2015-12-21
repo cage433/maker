@@ -12,6 +12,8 @@ import java.net.URLClassLoader
 import java.lang.reflect.Modifier
 import scala.xml.{Elem, NodeSeq}
 import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean}
+import sbt.inc.Analysis
+import java.util.concurrent.ConcurrentHashMap
 
 trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   protected def root : File
@@ -38,6 +40,8 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   override def hashCode = root.hashCode
 
   def scalaVersion : ScalaVersion 
+
+  val analyses = new ConcurrentHashMap[File, Analysis]()
 
   val rootAbsoluteFile = root.asAbsoluteFile
   protected def name : String
@@ -190,8 +194,6 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
     upstreamModules.distinct.map(MakerTestResults(_)).reduce(_++_)
   }
 
-
-  def constructorCodeAsString : String = throw new Exception("Only supported by test projects")
 
   def managedLibDir = file(rootAbsoluteFile, "lib_managed", scalaVersion.versionNo)
   def testManagedLibDir = file(rootAbsoluteFile, "test_lib_managed", scalaVersion.versionNo)

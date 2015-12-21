@@ -30,15 +30,15 @@ case class Project(
   def testModuleDependencies = upstreamModules
   override def toString = name
 
-  override def constructorCodeAsString : String = {
-    val b = new StringBuffer
-    upstreamModules.foreach{
-      m => 
-        b.addLine(m.constructorCodeAsString)
-    }
-    b.addLine(s"""val $name = Project($name, file("${root.getAbsolutePath.toString}"), ${upstreamModules.mkString("List(", ", ", ")")})""")
-    b.toString
-  }
+  //override def constructorCodeAsString : String = {
+    //val b = new StringBuffer
+    //upstreamModules.foreach{
+      //m => 
+        //b.addLine(m.constructorCodeAsString)
+    //}
+    //b.addLine(s"""val $name = Project($name, file("${root.getAbsolutePath.toString}"), ${upstreamModules.mkString("List(", ", ", ")")})""")
+    //b.toString
+  //}
   def docOutputDir = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
   def packageDir = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 

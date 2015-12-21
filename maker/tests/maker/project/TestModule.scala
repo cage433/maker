@@ -1,6 +1,7 @@
 package maker.project
 
 import java.io.File
+import maker.utils.FileUtils
 import maker.utils.FileUtils._
 import maker._
 import java.util.concurrent.ConcurrentHashMap
@@ -9,42 +10,76 @@ import maker.task.compile._
 import org.eclipse.aether.util.artifact.JavaScopes
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 
+trait TestModuleTrait extends FileUtils {
+  self: Module => 
+
+  def writeSrc(relativeSrcPath : String, code : String, phase : CompilePhase = SourceCompilePhase) = {
+    val dir = sourceDirs(phase).head // we know we only have one
+    writeToFile(file(dir, relativeSrcPath), code.stripMargin)
+  }
+
+  def withSrc(relativeSrcPath : String, code : String) = {
+    writeSrc(relativeSrcPath, code)
+    this
+  }
+
+  def constructorCodeAsString : String = {
+    s"""|
+        |val $name = new TestModule(
+        | new java.io.File("${root.getAbsolutePath}"), 
+        |   "$name",
+        |   immediateUpstreamModules = ${immediateUpstreamModules.mkString("List(", ", ", ")")},
+        |   testModuleDependencies = ${testModuleDependencies.mkString("List(", ", ", ")")}
+        |)  with maker.project.DependencyPimps  {
+        |   override def dependencies = List("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST))
+        |}""".stripMargin
+  }
+}
+
+object TestModuleTrait {
+  def apply(root: File)(
+    name: String = root.getName, 
+    immediateUpstreamModules: Seq[Module] = Nil,
+    testModuleDependencies: Seq[Module] = Nil,
+    scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+  ): Module with TestModuleTrait = 
+    new Module(root, name, immediateUpstreamModules, testModuleDependencies, scalaVersion) with TestModuleTrait
+}
+
 class TestModule(
   root : File, 
   name : String,
   upstreamProjects : List[Module] = Nil,
   upstreamTestProjects : List[Module] = Nil,
-  analyses :ConcurrentHashMap[File, Analysis] = new ConcurrentHashMap[File, Analysis](),
   scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 ) extends Module(
   root, 
   name,
   upstreamProjects, 
   upstreamTestProjects,
-  scalaVersion,
-  analyses
+  scalaVersion
 ) with ClassicLayout with DependencyPimps {
 
-  override def constructorCodeAsString : String = {
-    s"""|
-        |val $name = new TestModule(
-        | new java.io.File("${root.getAbsolutePath}"), 
-        |   "$name",
-        |   upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
-        |   upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
-        |)  with maker.project.DependencyPimps  {
-        |   override def dependencies = List("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST))
-        |}""".stripMargin
-  }
+  //override def constructorCodeAsString : String = {
+    //s"""|
+        //|val $name = new TestModule(
+        //| new java.io.File("${root.getAbsolutePath}"), 
+        //|   "$name",
+        //|   upstreamProjects = ${upstreamProjects.mkString("List(", ", ", ")")},
+        //|   upstreamTestProjects = ${upstreamTestProjects.mkString("List(", ", ", ")")}
+        //|)  with maker.project.DependencyPimps  {
+        //|   override def dependencies = List("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST))
+        //|}""".stripMargin
+  //}
 
   override def reportBuildResult : Boolean = false
 
   def appendDefinitionToProjectFile(rootDir : File){
-    val projectFile = file(rootDir, "Maker.scala")
-    appendToFile(
-      projectFile,
-      constructorCodeAsString
-    )
+    //val projectFile = file(rootDir, "Maker.scala")
+    //appendToFile(
+      //projectFile,
+      //constructorCodeAsString
+    //)
   }
   override def dependencies = List(
     "org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST),

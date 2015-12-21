@@ -98,7 +98,7 @@ object ZincCompile extends Log {
         module.compilationOutputStream(phase)
       )
       val analysis = Compiler.analysis(module.compilationCacheFile(phase))
-      module.analyses.put(module.classDirectory(phase), analysis)
+      rootProject.analyses.put(module.classDirectory(phase), analysis)
       result
     } catch {
       case e : Throwable => 

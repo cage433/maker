@@ -23,8 +23,7 @@ class Module(
     val name : String,
     val immediateUpstreamModules : Seq[Module] = Nil,
     val testModuleDependencies : Seq[Module] = Nil,
-    val scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
-    val analyses : ConcurrentHashMap[File, Analysis] = Module.analyses
+    val scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 )
   extends ProjectTrait
   with DependencyPimps
@@ -53,14 +52,6 @@ class Module(
   }
 
   def lastSourceModifcationTime(phase : CompilePhase) : Option[Long] = lastModifiedProperFileTime(sourceFiles(phase))
-
-  def sourceFilesDeletedSinceLastCompilation(phase : CompilePhase) : Seq[File] = {
-    Option(analyses.get(classDirectory(phase))) match {
-      case None => Nil
-      case Some(analysis) => 
-        analysis.infos.allInfos.keySet.toVector.filterNot(_.exists)
-    }
-  }
 
   def moduleCompilationErrorsFile(phase : CompilePhase) = {
     file(compilationMetadataDirectory(phase), "vim-compile-errors")
@@ -235,8 +226,6 @@ class Module(
 object Module{
  
   lazy val logger = LoggerFactory.getLogger(this.getClass)
-
-  val analyses = new ConcurrentHashMap[File, Analysis]()
 
   import maker.utils.RichIterable._
   import maker.utils.FileUtils._

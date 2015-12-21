@@ -37,8 +37,12 @@ class ReplTests extends FreeSpec with Matchers {
 
     }
 
-    val bis = new BufferedInputStream(inputStream)
-    val streamHandler = new PumpStreamHandler2(System.out, System.out, inputStream)
+    val bis = new BufferedInputStream(inputStream) {
+      def inputLine(line: String) {
+        inputStream.inputLine(line)
+      }
+    }
+    val streamHandler = new ReplTestPumpStreamHandler(System.out, System.err, inputStream)
     val repl = Command(
       overrideOutput = None,
       timeout = None, 

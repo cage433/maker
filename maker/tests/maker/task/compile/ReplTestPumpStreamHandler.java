@@ -1,3 +1,10 @@
+/*
+ * Copied from 
+ * https://commons.apache.org/proper/commons-exec/apidocs/org/apache/commons/exec/PumpStreamHandler.html
+ * The only change is that the original class had special treatment of the STDIN stream that
+ * we needed to use with more regular streams, so the we can unit test a user's Maker repl session.
+ */
+
 /* 
  * Licensed to the Apache Software Foundation (ASF) under one or more
  *  contributor license agreements.  See the NOTICE file distributed with
@@ -33,13 +40,13 @@ import org.apache.commons.exec.*;
  *
  * @version $Id: PumpStreamHandler.java 1557263 2014-01-10 21:18:09Z ggregory $
  */
-public class PumpStreamHandler2 implements ExecuteStreamHandler {
+public class ReplTestPumpStreamHandler implements ExecuteStreamHandler {
 
     private static final long STOP_TIMEOUT_ADDITION = 2000L;
 
     private Thread outputThread;
 
-    private Thread errorThread;
+    public Thread errorThread;
 
     private Thread inputThread;
 
@@ -60,7 +67,7 @@ public class PumpStreamHandler2 implements ExecuteStreamHandler {
     /**
      * Construct a new <CODE>PumpStreamHandler</CODE>.
      */
-    public PumpStreamHandler2() {
+    public ReplTestPumpStreamHandler() {
         this(System.out, System.err);
     }
 
@@ -69,7 +76,7 @@ public class PumpStreamHandler2 implements ExecuteStreamHandler {
      *
      * @param outAndErr the output/error <CODE>OutputStream</CODE>.
      */
-    public PumpStreamHandler2(final OutputStream outAndErr) {
+    public ReplTestPumpStreamHandler(final OutputStream outAndErr) {
         this(outAndErr, outAndErr);
     }
 
@@ -79,7 +86,7 @@ public class PumpStreamHandler2 implements ExecuteStreamHandler {
      * @param out the output <CODE>OutputStream</CODE>.
      * @param err the error <CODE>OutputStream</CODE>.
      */
-    public PumpStreamHandler2(final OutputStream out, final OutputStream err) {
+    public ReplTestPumpStreamHandler(final OutputStream out, final OutputStream err) {
         this(out, err, null);
     }
 
@@ -90,7 +97,7 @@ public class PumpStreamHandler2 implements ExecuteStreamHandler {
      * @param err   the error <CODE>OutputStream</CODE>.
      * @param input the input <CODE>InputStream</CODE>.
      */
-    public PumpStreamHandler2(final OutputStream out, final OutputStream err, final InputStream input) {
+    public ReplTestPumpStreamHandler(final OutputStream out, final OutputStream err, final InputStream input) {
         this.out = out;
         this.err = err;
         this.input = input;
@@ -137,6 +144,7 @@ public class PumpStreamHandler2 implements ExecuteStreamHandler {
      * @param os the <CODE>OutputStream</CODE>.
      */
     public void setProcessInputStream(final OutputStream os) {
+
         if (input != null) {
             //if (input == System.in) {
                 inputThread = createSystemInPump(input, os);
@@ -257,6 +265,12 @@ public class PumpStreamHandler2 implements ExecuteStreamHandler {
         return createPump(is, os, closeWhenExhausted);
     }
 
+    //private Thread createSystemInPump(final InputStream is, final OutputStream os) {
+        //inputStreamPumper = new InputStreamPumper(is, os);
+        //final Thread result = new Thread(inputStreamPumper, "Exec Input Stream Pumper");
+        //result.setDaemon(true);
+        //return result;
+    //}
     /**
      * Creates a stream pumper to copy the given input stream to the given
      * output stream.
@@ -311,7 +325,6 @@ public class PumpStreamHandler2 implements ExecuteStreamHandler {
      * @return the stream pumper thread
      */
     private Thread createSystemInPump(final InputStream is, final OutputStream os) {
-        System.out.println("Using input stream " + is);
         inputStreamPumper = new InputStreamPumper(is, os);
         final Thread result = new Thread(inputStreamPumper, "Exec Input Stream Pumper");
         result.setDaemon(true);

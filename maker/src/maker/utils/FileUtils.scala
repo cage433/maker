@@ -1,24 +1,14 @@
 package maker.utils
 
-import java.io.File
-import java.io.FileWriter
-import java.io.BufferedWriter
-import java.io.BufferedReader
-import java.io.FileReader
-import java.io.IOException
-import java.nio.file.CopyOption
-import java.nio.file.FileVisitOption
-import java.nio.file.FileVisitResult
-import java.nio.file.FileVisitor
-import java.nio.file.Paths
-import java.nio.file.{Files => NioFiles}
-import java.nio.file.{Path => Path}
-import java.nio.file.StandardCopyOption
+import java.io._
+import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.EnumSet
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.Properties
 import scala.language.implicitConversions
+import scala.collection.immutable.VectorBuilder
+import java.nio.file.{Files => NioFiles}
 
 trait FileUtils {
 
@@ -277,6 +267,8 @@ trait FileUtils {
       file.delete
   }
 
+  def writeToFile(path: String, text : String): File = writeToFile(file(path), text)
+
   def writeToFile(file : File, text : String)  = {
     withFileWriter(file){
       out : BufferedWriter =>
@@ -289,6 +281,27 @@ trait FileUtils {
     withFileAppender(file){
       out : BufferedWriter =>
         out.write(text)
+    }
+  }
+
+  def readLines(file: File): Seq[String] = {
+    // io.source is more idiomatic however ran into
+    // problems with it making assumptions about the
+    // encoding
+    val br = new BufferedReader(new FileReader(file))
+    try {
+      val bldr = new VectorBuilder[String]()
+      var finished = false
+      while (! finished) {
+        val line = br.readLine()
+        if (line == null)
+          finished = true
+        else
+          bldr += line
+      }
+      bldr.result()
+    } finally {
+      br.close
     }
   }
 
