@@ -9,8 +9,9 @@ import java.util.concurrent.atomic.AtomicReference
 import org.apache.commons.exec.{ExecuteResultHandler, DefaultExecuteResultHandler}
 import maker.utils.os.Command
 import java.util.UUID
+import org.apache.commons.io.output.TeeOutputStream
 
-case class TestMakerRepl(rootDirectory: File) extends FileUtils {
+case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extends FileUtils {
 
   TestMakerRepl.writeLogbackFile(rootDirectory)
 
@@ -25,8 +26,15 @@ case class TestMakerRepl(rootDirectory: File) extends FileUtils {
   }
 
   private def launch() {
-    val streamHandler = new ReplTestPumpStreamHandler(os, os, inputStream)
-    //val streamHandler = new ReplTestPumpStreamHandler(System.err, System.err, inputStream)
+    val streamHandler = if (teeOutput)
+      new ReplTestPumpStreamHandler(
+        new TeeOutputStream(System.err, os), 
+        new TeeOutputStream(System.err, os), 
+        inputStream
+      )
+    else
+      new ReplTestPumpStreamHandler(os, os, inputStream)
+
     Command(
       overrideWorkingDirectory = Some(rootDirectory),
       timeout = None, 
@@ -39,7 +47,10 @@ case class TestMakerRepl(rootDirectory: File) extends FileUtils {
   }
   launch()
 
-  def inputLine(line: String) = inputStream.inputLine(line)
+  def inputLine(line: String) = {
+    inputStream.inputLine(line)
+    waitForRepl()
+  }
 
   def waitForExit() {
     resultHandler.waitFor()
@@ -57,11 +68,22 @@ case class TestMakerRepl(rootDirectory: File) extends FileUtils {
 
   def waitForRepl() {
     val file = new java.io.File(rootDirectory, UUID.randomUUID().toString)
-    inputLine(s"""new java.io.File("${file.getAbsolutePath}").createNewFile()""")
+    inputStream.inputLine(s"""new java.io.File("${file.getAbsolutePath}").createNewFile()""")
     while (! file.exists()) {
       Thread.sleep(100)
     }
     file.delete
+  }
+
+  def value(text: String): String = {
+
+    val file = new java.io.File(rootDirectory, UUID.randomUUID().toString)
+    inputStream.inputLine(s"""writeToFile(file("${file.getAbsolutePath}"), "" + $text)""")
+    waitForRepl()
+    val result = readLines(file).head
+    file.delete
+    result
+
   }
 }
 
@@ -122,6 +144,25 @@ object TestMakerRepl extends FileUtils  {
   </root>
  </configuration>
  """
+    )
+  }
+
+  def writeProjectFile(rootDirectory: File, moduleDefs: String) {
+    writeToFile(
+      file(rootDirectory, "Project.scala"),
+      s"""
+        import maker.project._
+        import maker.utils.FileUtils._
+        import maker.ScalaVersion
+
+        $moduleDefs
+
+        val valueFile = new java.io.File("${file(rootDirectory, "valueFile").getAbsolutePath}")
+        def writeValue(v: => Any) {
+          valueFile.delete
+          writeToFile(valueFile, v.toString)
+        }
+      """
     )
   }
 }
