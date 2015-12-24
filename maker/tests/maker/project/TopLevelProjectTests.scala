@@ -2,13 +2,10 @@ package maker.project
 
 import maker.utils.FileUtils._
 import org.scalatest.{FunSuite, ParallelTestExecution}
-import org.slf4j.LoggerFactory
 import maker.task.compile.SourceCompilePhase
+import maker.Log
 
-class TopLevelProjectTests extends FunSuite with ParallelTestExecution with ModuleTestPimps{
-
-  // Need to create log to get aether to shut up
-  val log = LoggerFactory.getLogger(getClass)
+class TopLevelProjectTests extends FunSuite with ParallelTestExecution with ModuleTestPimps with Log {
 
   test("Empty top level module"){
     withTempDir{

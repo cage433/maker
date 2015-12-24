@@ -27,7 +27,7 @@ case class CompileTask(
   def upstreamTasks = {
     phase match {
       case SourceCompilePhase => 
-        module.immediateUpstreamModules.map(CompileTask(rootProject, _, SourceCompilePhase)) ++ 
+        (module.immediateUpstreamModules ++: module.testModuleDependencies).distinct.map(CompileTask(rootProject, _, SourceCompilePhase)) ++ 
           List(UpdateTask(rootProject))
       case _ => 
           CompileTask(rootProject, module, SourceCompilePhase) +: module.testModuleDependencies.map(CompileTask(rootProject, _, phase))

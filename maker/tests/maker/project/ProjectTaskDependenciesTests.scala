@@ -1,6 +1,6 @@
 package maker.project
 
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.{FunSuite, Matchers, FreeSpec}
 import maker.task._
 import maker.utils.Stopwatch
 import java.io.File
@@ -8,187 +8,121 @@ import maker.task.tasks.{CleanTask, RunUnitTestsTask}
 import maker.utils.FileUtils._
 import maker.task.compile._
 import maker.utils.os.Command
-import maker.ScalaVersion
+import maker.{ScalaVersion, TestMakerRepl}
 
-class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTestPimps{
+class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTestPimps{
   private val SCALA_VERSION = ScalaVersion.TWO_ELEVEN_DEFAULT
 
-  ignore("Can add custom task to run before standard task"){
+  "Can add custom upstream and downstream tasks" ignore {
 
     withTempDir{
-      dir => 
-        TestModuleBuilder.createMakerProjectFile(dir)
-        val bldr = new TestModuleBuilder(dir, "CustomUpstreamTask").withExtraCode(
-          s"""|
-              | import maker.task.tasks.CleanTask
-              | import maker.task._
-              | import maker.utils.FileUtils._
-              | import maker.utils.Stopwatch
-              | case class WriteClassCountToFile(basename : String) extends Task {
-              |   def name = "Write class count "
-              |   def upstreamTasks = Nil
-              |   def exec(results : Iterable[TaskResult] = Nil, sw : Stopwatch) : TaskResult = {
-              |     exec
-              |     DefaultTaskResult(WriteClassCountToFile.this, true, sw)
-              |   }
-              |   def exec = {
-              |     writeToFile(file(rootAbsoluteFile, basename), compilePhase.classFiles.size + "")
-              |   }
-              | }
-              |
-              | override def extraUpstreamTasksMatcher = {
-              |   case _ : CleanTask => Set(WriteClassCountToFile("BeforeClean"))
-              | }
-              | override def extraDownstreamTasksMatcher = {
-              |   case _ : CleanTask => Set(WriteClassCountToFile("AfterClean"))
-              | }
-              |
-              | def numberOfClassFiles(classCountFileBasename : String) : Int = {
-              |   classCountFile(classCountFileBasename).readLines.toList.head.toInt
-              | }
-              |
-              | def classCountFile(basename : String) = file(basename)
-              |
-              | def checkClassCounts{
-              |   assert(!classCountFile("BeforeClean").exists, "file should not exist until clean task is run")
-              |   assert(!classCountFile("AfterClean").exists, "file should not exist until clean task is run")
-              |   clean
-              |   assert(classCountFile("BeforeClean").exists, "file should exist after clean task has run")
-              |   assert(classCountFile("AfterClean").exists, "file should exist after clean task has run")
-              |   assert(numberOfClassFiles("BeforeClean") == 0, "No class files at start")
-              |   assert(numberOfClassFiles("AfterClean") == 0, "No class count in After at start")
-              |   compile
-              |   clean
-              |   assert(numberOfClassFiles("BeforeClean") > 0, "Class count before clean")
-              |   assert(numberOfClassFiles("AfterClean") == 0, "class count after clean")
-              | }
-              |
-              |""".stripMargin
-        )
+      rootDirectory => 
 
-        bldr.appendDefinitionToProjectFile(dir)
-        bldr.writeSrc(
-          "foo/Fred.scala",
-          """
-          |package foo
-          |
-          |case class Fred(i : Int)
+        val markCompilationFile = file(rootDirectory, "countCompiles")
+        val markCleanFile = file(rootDirectory, "countCleans")
+
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            import maker.task._
+            import maker.task.tasks.CleanTask
+            import maker.task.compile.CompileTask
+            import maker.utils.Stopwatch
+            import java.io.File
+
+            case class TouchFile(name: String, path: String) extends Task with FileUtils {
+              def exec(results: Iterable[TaskResult], sw: Stopwatch) = {
+                file(path).touch
+                DefaultTaskResult(this, succeeded = true, stopwatch = sw)
+              }
+              def upstreamTasks = Nil
+            }
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout {
+              override def dependencies = Seq(
+                "org.scalatest" % "scalatest" %%  "2.2.0"
+              )
+              override def extraUpstreamTasks(task: Task) = task match {
+                case _ : CompileTask => 
+                  Seq(TouchFile("Mark Compilation", "${markCompilationFile.getAbsolutePath}"))
+                case _ => Nil
+              }
+              override def extraDownstreamTasks(task: Task) = task match {
+                case _ : CleanTask => 
+                  Seq(TouchFile("Mark Cleans", "${markCleanFile.getAbsolutePath}"))
+
+                case _ => Nil
+              }
+            }
+
           """
         )
+        val repl = TestMakerRepl(rootDirectory)
+        markCompilationFile.exists should be (false)
+        repl.inputLine("a.compile")
+        markCompilationFile.exists should be (true)
+        markCleanFile.exists should be (false)
+        repl.inputLine("a.clean")
+        markCleanFile.exists should be (true)
 
-        // sanity check that it runs
-        file(dir, "BeforeClean").exists should be (false)
-
-        val result = TestModuleBuilder.makerExecuteCommand(
-          dir,
-          "CustomUpstreamTask.checkClassCounts"
-        ).withNoOutput.run
-
-        result should equal (0)
-
-        // sanity check that it ran
-        file(dir, "BeforeClean").exists should be (true)
     }
   }
 
 
-  test("Module setUp and tearDown can be overriden"){
+  "Module setUp and tearDown can be overriden" ignore {
     withTempDir{
-      projectRoot => 
-        TestModuleBuilder.createMakerProjectFile(projectRoot)
-        def moduleBuilder(moduleName : String, upstreams : String*) = 
-          new TestModuleBuilder(file(projectRoot, moduleName), moduleName, immediateUpstreamModuleNames = upstreams).withExtraCode(
-          s"""|
-              |
-              | import maker.task.{Dependency, BuildResult}
-              | import maker.task.tasks.CleanTask
-              |
-              | val setUpClassCountFile = file(rootAbsoluteFile, "setup")
-              | val tearDownClassCountFile= file(rootAbsoluteFile, "teardown")
-              | def graphContainsClean(graph : Dependency.Graph) = {
-              |   graph.nodes.exists {
-              |     case _ : CleanTask => true
-              |     case _ => false
-              |   }
-              | }
-              | override def setUp(graph : Dependency.Graph) = {
-              |   if (graphContainsClean(graph))
-              |     writeToFile(setUpClassCountFile, classFiles(defaultScalaVersion).size + "")
-              |   super.setUp(graph)
-              | }
-              | override def tearDown(graph : Dependency.Graph, result : BuildResult) = {
-              |   if (graphContainsClean(graph))
-              |     writeToFile(tearDownClassCountFile, classFiles(defaultScalaVersion).size + "")
-              |   super.tearDown(graph, result)
-              | }
-              | def deleteClassCountFiles{
-              |   setUpClassCountFile.delete
-              |   tearDownClassCountFile.delete
-              | }
-              | def setUpClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
-              | def tearDownClassCount : Int = setUpClassCountFile.readLines.toList.headOption.map(_.toInt).getOrElse(0)
-              |""".stripMargin
-        )
+      rootDirectory => 
+        val markSetUpFile = file(rootDirectory, "markSetUp")
+        val markTearDownFile = file(rootDirectory, "markTearDown")
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            import maker.task._
+            import maker.task.tasks.CleanTask
+            import maker.task.compile.CompileTask
+            import maker.utils.Stopwatch
+            import java.io.File
 
-        val upstreamModule = moduleBuilder("upstream")
-        val downstreamModule = moduleBuilder("downstream", "upstream")
-        upstreamModule.appendDefinitionToProjectFile(projectRoot)
-        downstreamModule.appendDefinitionToProjectFile(projectRoot)
-        TestModuleBuilder.appendTopLevelProjectDefinition(
-          projectRoot, "project", "upstream" :: Nil,
-          extraCode = """|  def checkSetupTearDown{
-                         |    List(upstream, downstream).foreach{
-                         |      module => 
-                         |        assert(!module.setUpClassCountFile.exists, s"$module should have no setup file")
-                         |        assert(!module.tearDownClassCountFile.exists, s"$module should have no tearDown file")
-                         |    }
-                         |
-                         |    // After cleaning downstream its class count files only should exist
-                         |    downstream.clean
-                         |    assert(!upstream.setUpClassCountFile.exists, "test 1")
-                         |    assert(!upstream.tearDownClassCountFile.exists, "test 2")
-                         |    assert(downstream.setUpClassCountFile.exists, "test 3")
-                         |    assert(downstream.tearDownClassCountFile.exists, "test 4")
-                         |}""".stripMargin
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout with FileUtils {
+              override def setUp(graph: Dependency.Graph) = {
+                file("${markSetUpFile.getAbsolutePath}").touch
+                super.setUp(graph)
+              }
+              override def tearDown(graph: Dependency.Graph, result: BuildResult) = {
+                file("${markTearDownFile.getAbsolutePath}").touch
+                super.tearDown(graph, result)
+              }
+            }
 
-        )
-        upstreamModule.writeSrc(
-          "upstream/Foo",
-          """
-          |package upstream
-          |
-          |case class Foo(x : Int)
           """
         )
-        downstreamModule.writeSrc(
-          "downstream/Bar",
-          """
-          |package downstream
-          |
-          |import upstream.Foo
-          |case class Bar(foo : Foo)
-          """
-        )
-
-        // Sanity check something executed
-        file(projectRoot, "upstream", "setup").exists should be (false)
-        file(projectRoot, "downstream", "setup").exists should be (false)
-
-        val command = TestModuleBuilder.makerExecuteCommand(projectRoot, "project.checkSetupTearDown").withNoOutput
-        command.run should equal(0)
-
-        // Sanity check something executed
-        file(projectRoot, "upstream", "setup").exists should be (false)
-        file(projectRoot, "downstream", "setup").exists should be (true)
+        val repl = TestMakerRepl(rootDirectory)
+        markSetUpFile.exists should be (false)
+        markTearDownFile.exists should be (false)
+        repl.inputLine("a.compile")
+        markSetUpFile.exists should be (true)
+        markTearDownFile.exists should be (true)
     }
   }
 
-  ignore("TestCompile by default doesn't depend on upstream modules TestCompile"){
+  "TestCompile by default doesn't depend on upstream modules TestCompile" in {
     withTempDir{
-      dir => 
-        val A = new TestModule(file(dir, "upstream"), "A")
-        val B = new TestModule(file(dir, "downstream"), "B", List(A))
-        val C = new TestModule(file(dir, "downstream2"), "C", List(A), List(A))
+      rootDirectory => 
+        val A = new Module(file(rootDirectory, "A"), "A")
+        val B = new Module(
+          file(rootDirectory, "B"), 
+          "B", 
+          immediateUpstreamModules = Seq(A)
+        )
+        val C = new Module(file(rootDirectory, "C"), "C", 
+          immediateUpstreamModules = Seq(A), 
+          testModuleDependencies = Seq(A)
+        )
 
         assert(
           !B.testCompileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
@@ -212,7 +146,7 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
     }
   }
 
-  ignore("test dependencies are observed in classpaths"){
+  "test dependencies are observed in classpaths" ignore {
     withTempDir{
       dir => 
         val A = new TestModule(file(dir, "A"), "A")
@@ -235,7 +169,7 @@ class ProjectTaskDependenciesTests extends FunSuite with Matchers with ModuleTes
     }
   }
 
-  ignore("Upstream module tests are associated tasks"){
+  "Upstream module tests are associated tasks" ignore {
     withTempDir{
       dir => 
         def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {

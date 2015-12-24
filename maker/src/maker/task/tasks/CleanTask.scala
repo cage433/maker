@@ -4,19 +4,17 @@ import maker.project.{Module, ProjectTrait, Project}
 import maker.utils.FileUtils._
 import maker.task._
 import maker.utils.Stopwatch
-import org.slf4j.LoggerFactory
 import maker.task.compile.{SourceCompilePhase, TestCompilePhase}
-import maker.ScalaVersion
+import maker.{ScalaVersion, Log}
 
 
 /** Clean task - cleans up all build artifacts from the classpath
   *
   *  removes all build content and directories that contained it
   */
-case class CleanTask(project : ProjectTrait) extends Task
+case class CleanTask(project : ProjectTrait) extends Task with Log
 {
   def name = "Clean"
-  lazy val logger = LoggerFactory.getLogger(this.getClass)
   def upstreamTasks = Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {

@@ -9,12 +9,11 @@ import maker.utils.RichIterable._
 import maker.task.compile.{TestCompilePhase, CompilePhase, CompileTask}
 import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
-import ch.qos.logback.classic.Logger
-import org.slf4j.LoggerFactory
 import maker.ScalaVersion
 import java.sql.Time
 import java.io.File
 import java.lang.reflect.Modifier
+import maker.Log
 
 case class RunUnitTestsTask(
   name : String, 
@@ -23,7 +22,7 @@ case class RunUnitTestsTask(
   classOrSuiteNames_ : Option[Iterable[String]],
   lastCompilationTimeFilter : Option[Long]
 )  
-  extends Task 
+  extends Task with Log
 {
 
   override def failureHaltsTaskManager = false
@@ -116,9 +115,8 @@ case class RunUnitTestsTask(
 
 }
 
-object RunUnitTestsTask{
+object RunUnitTestsTask extends Log {
   import TaskResult.{COLUMN_WIDTHS, fmtNanos}
-  lazy val logger = LoggerFactory.getLogger(this.getClass)
 
   def failingTests(rootProject : ProjectTrait, module : Module) : RunUnitTestsTask = {
     RunUnitTestsTask(

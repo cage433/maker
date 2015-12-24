@@ -4,20 +4,19 @@ import java.lang.Runnable
 import java.util.Comparator
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
-import maker.project.{Module}
+import maker.project.Module
 import maker.task.compile.CompileTask
 import maker.task.tasks.{RunUnitTestsTask, UpdateTask}
 import maker.utils.{Stopwatch, Int}
-import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.Logger
+import maker.Log
 
 case class Build(
   name : String,
   graph : Dependency.Graph,
   maybeNumberOfWorkers : Option[Int]
-) {
+) extends Log {
 
-  import Build.logger
   override def toString = "Build " + name
   
   def tasks = graph.nodes
@@ -117,7 +116,6 @@ case class Build(
 }
 
 object Build{
-  lazy val logger = LoggerFactory.getLogger(this.getClass)
   val taskCount = new AtomicInteger(0)
 
   private class PrioritisedFutureTask(r: Runnable, val priority: Int)
@@ -178,7 +176,7 @@ object Build{
   }
 
 
-  class TaskMonitor(graph : Dependency.Graph, executor : ThreadPoolExecutor){
+  class TaskMonitor(graph : Dependency.Graph, executor : ThreadPoolExecutor) extends Log {
     private val lock = new Object
     var results = List[TaskResult]()
     private var completed = Set[Task]()

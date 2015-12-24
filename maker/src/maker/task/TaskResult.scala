@@ -117,13 +117,13 @@ object TaskResult{
 
 
 
-    val resultsByType = taskResults.groupBy{
-      case taskResult => taskResult.task.getClass.getSimpleName
+    val resultsByName = taskResults.groupBy{
+      case taskResult => taskResult.task.name
     }
-    resultsByType.foreach{
-      case (typeName, resultsForType) =>
+    resultsByName.foreach{
+      case (taskName, resultsForType) =>
         val (clockTime, cpuTime) = clockAndCPUTime(resultsForType)
-        tb.addRow(typeName, "", fmtNanos(cpuTime), fmtNanos(clockTime))
+        tb.addRow(taskName, "", fmtNanos(cpuTime), fmtNanos(clockTime))
 
         val intervalMaps : List[Map[String, (Long, Long)]] = resultsForType.map(_.intervalStartAndEndTime)
         val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
@@ -134,7 +134,7 @@ object TaskResult{
               case Some((t1, t2)) => (t1, t2)
             }
             val (intervalClockTime, intervalCPUTime) = Timings(intervalStartAndEndTimes).clockAndCPUTime
-            tb.addRow(typeName, name, fmtNanos(intervalCPUTime), fmtNanos(intervalClockTime))
+            tb.addRow(taskName, name, fmtNanos(intervalCPUTime), fmtNanos(intervalClockTime))
         }
     }
     val (totalClockTime, totalCpuTime) = clockAndCPUTime(taskResults)

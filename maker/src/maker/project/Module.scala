@@ -6,8 +6,7 @@ import maker.task._
 import maker.task.compile._
 import maker.task.tasks._
 import maker.utils.FileUtils._
-import maker.{PomUtils, ScalaVersion}
-import org.slf4j.LoggerFactory
+import maker.{PomUtils, ScalaVersion, Log}
 import sbt.ConsoleLogger
 import sbt.inc.Analysis
 import scala.collection.immutable.Nil
@@ -27,6 +26,7 @@ class Module(
 )
   extends ProjectTrait
   with DependencyPimps
+  with Log
 {
 
   import Module.logger
@@ -223,9 +223,8 @@ class Module(
 }
 
 
-object Module{
+object Module extends Log {
  
-  lazy val logger = LoggerFactory.getLogger(this.getClass)
 
   import maker.utils.RichIterable._
   import maker.utils.FileUtils._

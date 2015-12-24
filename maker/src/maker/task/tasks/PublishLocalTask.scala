@@ -9,7 +9,6 @@ import maker.task.compile.SourceCompilePhase
 import java.io.File
 import maker.utils.os.Command
 import org.scalatest.Failed
-import org.slf4j.LoggerFactory
 import maker.utils.FileUtils._
 
 case class PublishLocalTask(

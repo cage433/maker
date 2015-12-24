@@ -9,10 +9,9 @@ import maker.task._
 import maker.task.compile.CompilePhase
 import maker.project.ProjectTrait
 import ch.qos.logback.classic.Logger
-import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import maker.ScalaVersion
+import maker.{ScalaVersion, Log}
 
 
 /**
@@ -25,9 +24,8 @@ case class RunMainTask(
   mainArgs : Seq[String],
   scalaVersion : ScalaVersion
 ) 
-  extends Task 
+  extends Task with Log
 {
-  lazy val logger = LoggerFactory.getLogger(getClass)
   def name = "Run Main"
 
   def module = baseProject

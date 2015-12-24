@@ -3,21 +3,21 @@ package maker.task.tasks
 import maker.utils.FileUtils._
 import maker.utils.os.Command
 import org.scalatest._
-import maker.project.{TestModule, TestModuleBuilder}
-import org.slf4j.LoggerFactory
-import maker.TestMakerRepl
+import maker.{TestMakerRepl, Log}
+import maker.utils.FileUtils
+import maker.project.Module
+import maker.task.compile.{TestCompilePhase, CompileTask, SourceCompilePhase}
 
 class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExecution
   with BeforeAndAfterAll
+  with FileUtils 
+  with Log
 {
 
-  override def beforeAll(){
-    val logger = LoggerFactory.getLogger(getClass)
-  }
 
 
-  "Unit test workflow is as expected" in {
-    withTestDir{
+  "Unit test workflow is as expected" ignore {
+    withTempDir{
       rootDirectory => 
 
         writeToFile(
@@ -91,5 +91,6 @@ class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExec
         repl.value("a.testResults.passedTests.size").toInt should be (2)
     }
   }
+
 
 }

@@ -42,7 +42,8 @@ case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extend
       args = Seq(
         file("maker.py").getAbsolutePath,
         "-l", "logback.xml",
-        "-p", "Project.scala")
+        "-p", "Project.scala",
+        "-z")
     ).runAsync(resultHandler)
   }
   launch()
@@ -80,7 +81,7 @@ case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extend
     val file = new java.io.File(rootDirectory, UUID.randomUUID().toString)
     inputStream.inputLine(s"""writeToFile(file("${file.getAbsolutePath}"), "" + $text)""")
     waitForRepl()
-    val result = readLines(file).head
+    val result = readLines(file).mkString("\n")
     file.delete
     result
 
@@ -153,7 +154,9 @@ object TestMakerRepl extends FileUtils  {
       s"""
         import maker.project._
         import maker.utils.FileUtils._
+        import maker.utils.FileUtils
         import maker.ScalaVersion
+        import org.eclipse.aether.util.artifact.JavaScopes._
 
         $moduleDefs
 

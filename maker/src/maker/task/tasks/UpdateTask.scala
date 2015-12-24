@@ -27,7 +27,7 @@ import org.eclipse.aether.graph.{Dependency, DependencyNode}
 import org.eclipse.aether.util.graph.selector._
 import java.util.Arrays
 import org.eclipse.aether.internal.test.util.DependencyGraphParser
-import org.slf4j.LoggerFactory
+import maker.Log
 
 
 /**
@@ -43,8 +43,12 @@ case class UpdateTask(project : ProjectTrait)
   with EitherPimps
   with DependencyPimps
   with StringBufferPimps
+  with Log
 {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+
+  // Need to instantiate logger otherwise aether will do so in parallel, 
+  // causing a ton of logback warnings to be printed
+  logger
   def name = "Update " + project
 
   def upstreamTasks : List[Task] = Nil

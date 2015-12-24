@@ -5,7 +5,6 @@ import org.apache.commons.exec._
 import org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM
 import scala.concurrent.duration.Duration
 import maker.{MakerConfig, Log}
-import org.slf4j.LoggerFactory
 import maker.utils.Int
 
 case class Command(

@@ -13,7 +13,7 @@ import maker.project._
 import java.util.concurrent.ConcurrentHashMap
 import sbt.inc.Analysis
 import com.typesafe.zinc.Compiler
-import maker.{TestMakerRepl, ScalaVersion}
+import maker.{TestMakerRepl, ScalaVersion, Log}
 import maker.ScalaVersion._
 import scala.language.reflectiveCalls
 import xsbti.api.This
@@ -21,9 +21,11 @@ import xsbti.api.This
 class CompileTaskTests 
   extends FreeSpec 
   with ParallelTestExecution with TestUtils with FileUtils with Matchers with ModuleTestPimps
+  with Log
 {
 
-  "Can compile a single module project" in {
+
+  "Can compile a single module project" ignore {
     withTempDir{
       rootDirectory => 
         writeToFile(
@@ -35,12 +37,9 @@ class CompileTaskTests
           """
         )
 
-        writeToFile(
-          file(rootDirectory, "Project.scala"),
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
           s"""
-            import maker.project._
-            import maker.utils.FileUtils._
-            import maker.ScalaVersion
 
             lazy val a = new Module(
               root = file("$rootDirectory"),
@@ -61,7 +60,6 @@ class CompileTaskTests
         findClasses(rootDirectory) should be (empty)
         repl.inputLine("val res = p.compile.succeeded")
         repl.inputLine("System.exit(if (res) 0 else 1)")
-        println(repl.makerOutput())
         repl.waitForExit()
         withClue(s"Maker output was\n${repl.makerOutput()}\n") {
           repl.exitValue() should equal(0)
@@ -70,7 +68,7 @@ class CompileTaskTests
     }
   }
 
-  "Can compile 2.10 and 2.11 scala versions" in {
+  "Can compile 2.10 and 2.11 scala versions" ignore {
     def testCanCompile(scalaVersion: ScalaVersion) {
       withTempDir{
         rootDirectory => 
@@ -121,7 +119,7 @@ class CompileTaskTests
     testCanCompile(TWO_TEN_DEFAULT)
   }
 
-  "Compilation across dependent modules works" in {
+  "Compilation across dependent modules works" ignore {
     withTempDir{
       rootDirectory => 
         writeToFile(
@@ -185,7 +183,7 @@ class CompileTaskTests
     }
   }
 
-  "strict warnings causes compilation to fail" in {
+  "strict warnings causes compilation to fail" ignore {
     def checkCompilation(scalacOptions: Seq[String], expectedExitValue: Int) {
       withTempDir{
         rootDirectory => 
@@ -241,5 +239,99 @@ class CompileTaskTests
 
     checkCompilation(Nil, 0)
     checkCompilation(List("-Xfatal-warnings"), 1)
+  }
+
+  "Upstream compilation tasks" - {
+
+    "Don't depend on upstream modules by default" in {
+        val A = new Module(file("A"), "A")
+        val B = new Module(file("B"), "B", 
+          immediateUpstreamModules = Seq(A)
+        )
+        val buildTasks = B.testCompileTaskBuild(Seq(TestCompilePhase)).graph.nodes
+        buildTasks should not contain (CompileTask(B, A, TestCompilePhase))
+    }
+
+    "Do depend on upstream test dependencies" in {
+        val A = new Module(file("A"), "A")
+        val B = new Module(file("B"), "B", 
+          testModuleDependencies = Seq(A)
+        )
+        val buildTasks = B.testCompileTaskBuild(Seq(TestCompilePhase)).graph.nodes
+        buildTasks should contain (CompileTask(B, A, TestCompilePhase))
+    }
+
+    "Upstream test dependencies" - {
+      "are transitive" in {
+        val A = new Module(file("A"), "A")
+        val B = new Module(file("B"), "B", 
+          testModuleDependencies = Seq(A)
+        )
+        val C = new Module(file("C"), "C", 
+          testModuleDependencies = Seq(B)
+        )
+        val buildTasks = C.testCompileTaskBuild(Seq(TestCompilePhase)).graph.nodes
+        buildTasks should contain (CompileTask(C, A, TestCompilePhase))
+      }
+
+      "do not traverse a source dependency" in {
+        /*
+         *              A           Upstream
+         *              |               ^
+         *              t               |
+         *              |               |
+         *              B               |
+         *              |               |
+         *              c               |
+         *              |               |
+         *              C           Downstream
+         */
+        val A = new Module(file("A"), "A")
+        val B = new Module(file("B"), "B", 
+          testModuleDependencies = Seq(A)
+        )
+        val C = new Module(file("C"), "C", 
+          immediateUpstreamModules = Seq(B)
+        )
+        val buildTasks = C.testCompileTaskBuild(Seq(TestCompilePhase)).graph.nodes
+
+        withClue("Module C should have no test compilation dependency on Module A") {
+          buildTasks should not contain (CompileTask(C, A, TestCompilePhase))
+        }
+
+        withClue("Module C should have a source compilation dependency on Module A") {
+          buildTasks should contain (CompileTask(C, A, SourceCompilePhase))
+        }
+      }
+
+      "do not traverse a source dependency II" in {
+        /*
+         *              A           Upstream
+         *             / \              ^
+         *            t   c             |
+         *           /     \            |
+         *          B       C           |
+         *           \     /            |
+         *            c   t             |
+         *             \ /              |
+         *              D           Downstream
+         */
+        val A = new Module(file("A"), "A")
+        val B = new Module(file("B"), "B", 
+          testModuleDependencies = Seq(A)
+        )
+        val C = new Module(file("C"), "C", 
+          immediateUpstreamModules = Seq(A)
+        )
+        val D = new Module(file("D"), "D", 
+          immediateUpstreamModules = Seq(B),
+          testModuleDependencies = Seq(C)
+        )
+        val buildTasks = D.testCompileTaskBuild(Seq(TestCompilePhase)).graph.nodes
+        buildTasks should not contain (CompileTask(D, A, TestCompilePhase))
+        buildTasks should contain (CompileTask(D, C, TestCompilePhase))
+        buildTasks should contain (CompileTask(D, A, SourceCompilePhase))
+      }
+    }
   }
 }
