@@ -21,7 +21,7 @@ import xsbti.api.This
 class CompileTaskTests 
   extends FreeSpec 
   with ParallelTestExecution 
-  with TestUtils with FileUtils with Matchers with ModuleTestPimps
+  with FileUtils with Matchers with ModuleTestPimps
   with Log
 {
 
@@ -41,11 +41,9 @@ class CompileTaskTests
         TestMakerRepl.writeProjectFile(
           rootDirectory,
           s"""
-
             lazy val a = new Module(
               root = file("$rootDirectory"),
-              name = "a",
-              scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+              name = "a"
             ) with ClassicLayout 
 
             lazy val p = new Project(

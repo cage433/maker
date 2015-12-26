@@ -1,20 +1,23 @@
 package maker.project
 
-import org.scalatest.FunSuite
+import org.scalatest.{Matchers, FreeSpec, ParallelTestExecution}
 import maker.utils.FileUtils._
 import maker.utils.os.Command
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import xsbti.api.Compilation
 import maker.task.compile.SourceCompilePhase
+import maker.utils.FileUtils
+import maker.TestMakerRepl
 
-class JavaCompileTests extends FunSuite with TestUtils with ModuleTestPimps{
+class JavaCompileTests 
+extends FreeSpec with ParallelTestExecution 
+with FileUtils with Matchers {
 
-  test("Java module fails when expected and stays failed"){
+  "Java module fails when expected and stays failed" in {
     withTempDir{
-      root => 
-        val module = new TestModule(root, "JavaCompileTests")
-        module.writeSrc(
-          "src/foo/Foo.java", 
+      rootDirectory => 
+        writeToFile(
+          file(rootDirectory, "src/foo/Foo.java"), 
           """
           package foo;
           class Foo {
@@ -22,8 +25,8 @@ class JavaCompileTests extends FunSuite with TestUtils with ModuleTestPimps{
           }
           """     
         )
-        module.writeSrc(
-          "src/foo/Bar.java", 
+        writeToFile(
+          file(rootDirectory, "src/foo/Bar.java"), 
           """
           package foo;
           xclass Bar {
@@ -32,26 +35,35 @@ class JavaCompileTests extends FunSuite with TestUtils with ModuleTestPimps{
           """     
         )
 
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout 
+          """
+        )
+        val repl = TestMakerRepl(rootDirectory)
+        findClasses(rootDirectory) should be (empty)
 
-        module.clean
-        assert(module.classFiles(SourceCompilePhase).size === 0)
+        repl.inputLine("val res = a.compile.succeeded")
+        repl.value("res").toBoolean should be (false)
+        findClasses(rootDirectory) should be (empty)
+        repl.inputLine("clean")
 
-        assert(module.compile.failed, "Compilation should have failed")
+        repl.inputLine("val res = a.compile.succeeded")
+        repl.value("res").toBoolean should be (false)
 
-        assert(!file(module.classDirectory(SourceCompilePhase), "foo", "Bar.class").exists, "Bar.class should not exist")
-        sleepToNextSecond
-        assert(module.compile.failed, "Compilation should have failed")
     }
   }
 
-  test("Java can compile 1.6 output"){
-     withTempDir{
-      root => 
-        val module = new TestModule(root, "JavaCompileTests"){
-          override def javacOptions = List("-source", "1.6", "-target", "1.6")
-        }
-        module.writeSrc(
-          "src/foo/Foo.java", 
+  "Java can compile 1.6 output" in {
+     withTestDir{
+      rootDirectory => 
+
+        writeToFile(
+          file(rootDirectory, "src/foo/Foo.java"), 
           """
           package foo;
           class Foo {
@@ -60,10 +72,23 @@ class JavaCompileTests extends FunSuite with TestUtils with ModuleTestPimps{
           """     
         )
 
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout  {
+              override def javacOptions = List("-source", "1.6", "-target", "1.6")
+            }
+          """
+        )
 
-        module.compile
-        assert(module.classFiles(SourceCompilePhase).size === 1)
-        val classfile = file(module.classDirectory(SourceCompilePhase), "foo", "Foo.class")
+        val repl = TestMakerRepl(rootDirectory)
+        findClasses(rootDirectory) should be (empty)
+        repl.inputLine("a.compile")
+        findClasses(rootDirectory).size should be (1)
+        val classfile = findClasses(rootDirectory).head
         assert(classfile.exists, "Foo.class should exist")
 
         val bs = new ByteArrayOutputStream()
