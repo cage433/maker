@@ -14,14 +14,14 @@ val a = new Module(
 val b = new Module(
   root = new File("b"), 
   name = "b",
-  immediateUpstreamModules = List(a)) 
+  compileDependencies = List(a)) 
 
-val c = new Module(new File("c"), "c", immediateUpstreamModules = List(a)) 
-val d = new Module(new File("d"), "d", immediateUpstreamModules = List(c)) 
+val c = new Module(new File("c"), "c", compileDependencies = List(a)) 
+val d = new Module(new File("d"), "d", compileDependencies = List(c)) 
 
 val project = new Project(
   name = "top-level-project",
   root = new File("."), 
-  immediateUpstreamModules = List(d),
+  compileDependencies = List(d),
   scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 )

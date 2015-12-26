@@ -18,7 +18,7 @@ case class DocTask(project : Project)
   extends Task with Log
 {
   def name = "Doc " + project.name
-  def upstreamTasks = project.furthestDownstreamModules.map(CompileTask(project, _, SourceCompilePhase))
+  def upstreamTasks = project.modules.map(CompileTask(project, _, SourceCompilePhase))
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
 
     logger.info("running scala-doc gen for project " + project)

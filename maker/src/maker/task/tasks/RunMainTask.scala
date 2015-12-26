@@ -29,7 +29,7 @@ case class RunMainTask(
   def name = "Run Main"
 
   def module = baseProject
-  def upstreamTasks = baseProject.testCompileTaskBuild(CompilePhase.TEST_PHASES).tasks
+  def upstreamTasks = baseProject.compileTaskBuild(CompilePhase.TEST_PHASES).tasks
 
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {

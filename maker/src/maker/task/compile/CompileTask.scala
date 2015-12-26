@@ -13,7 +13,6 @@ import xsbti.{Problem, Severity}
 import java.io.{BufferedWriter, File}
 import xsbti.api.Compilation
 import javax.sound.sampled.Line
-import com.sun.org.apache.bcel.internal.classfile.Unknown
 import maker.ScalaVersion
 
 case class CompileTask(
@@ -27,10 +26,12 @@ case class CompileTask(
   def upstreamTasks = {
     phase match {
       case SourceCompilePhase => 
-        (module.immediateUpstreamModules ++: module.testModuleDependencies).distinct.map(CompileTask(rootProject, _, SourceCompilePhase)) ++ 
+        (module.compileDependencies ++: module.testDependencies).distinct.map(CompileTask(rootProject, _, SourceCompilePhase)) ++ 
           List(UpdateTask(rootProject))
-      case _ => 
-          CompileTask(rootProject, module, SourceCompilePhase) +: module.testModuleDependencies.map(CompileTask(rootProject, _, phase))
+      case IntegrationTestCompilePhase | EndToEndTestCompilePhase =>
+          CompileTask(rootProject, module, TestCompilePhase) +: Nil
+      case TestCompilePhase => 
+          CompileTask(rootProject, module, SourceCompilePhase) +: module.testDependencies.map(CompileTask(rootProject, _, TestCompilePhase))
     }
   }
 

@@ -13,7 +13,7 @@ import maker.{ScalaVersion, TestMakerRepl}
 class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTestPimps{
   private val SCALA_VERSION = ScalaVersion.TWO_ELEVEN_DEFAULT
 
-  "Can add custom upstream and downstream tasks" ignore {
+  "Can add custom upstream and downstream tasks" in {
 
     withTempDir{
       rootDirectory => 
@@ -71,7 +71,7 @@ class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTes
   }
 
 
-  "Module setUp and tearDown can be overriden" ignore {
+  "Module setUp and tearDown can be overriden" in {
     withTempDir{
       rootDirectory => 
         val markSetUpFile = file(rootDirectory, "markSetUp")
@@ -117,27 +117,27 @@ class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTes
         val B = new Module(
           file(rootDirectory, "B"), 
           "B", 
-          immediateUpstreamModules = Seq(A)
+          compileDependencies = Seq(A)
         )
         val C = new Module(file(rootDirectory, "C"), "C", 
-          immediateUpstreamModules = Seq(A), 
-          testModuleDependencies = Seq(A)
+          compileDependencies = Seq(A), 
+          testDependencies = Seq(A)
         )
 
         assert(
-          !B.testCompileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
+          !B.compileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
             CompileTask(B, B, TestCompilePhase)
           ).contains(CompileTask(B, A, TestCompilePhase)),
           "Unless explicitly stated upstream test compilation is not a dependency"  
         )
         assert(
-          C.testCompileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
+          C.compileTaskBuild(TestCompilePhase :: Nil).graph.upstreams(
             CompileTask(C, C, TestCompilePhase)
           ).contains(CompileTask(C, A, TestCompilePhase)),
           "When explicitly stated upstream test compilation is a dependency"  
         )
         assert(
-          B.compileTaskBuild.graph.upstreams(
+          B.compileTaskBuild(SourceCompilePhase :: Nil).graph.upstreams(
             CompileTask(B, B, SourceCompilePhase)
           ).contains(CompileTask(B, A, SourceCompilePhase)),
           "Upstream source compilation is a dependency"  
@@ -146,13 +146,13 @@ class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTes
     }
   }
 
-  "test dependencies are observed in classpaths" ignore {
+  "test dependencies are observed in classpaths" in {
     withTempDir{
       dir => 
-        val A = new TestModule(file(dir, "A"), "A")
-        val B = new TestModule(file(dir, "B"), "B", List(A))
-        val C = new TestModule(file(dir, "C"), "C", List(A), List(A))
-        val D = new TestModule(file(dir, "D"), "D", List(C))
+        val A = new Module(file(dir, "A"), "A")
+        val B = new Module(file(dir, "B"), "B", List(A))
+        val C = new Module(file(dir, "C"), "C", List(A), List(A))
+        val D = new Module(file(dir, "D"), "D", List(C))
 
         assert(
           ! B.compilationClasspathComponents(TestCompilePhase).contains(A.classDirectory(TestCompilePhase)), 
@@ -169,11 +169,11 @@ class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTes
     }
   }
 
-  "Upstream module tests are associated tasks" ignore {
+  "Upstream module tests are associated tasks" in {
     withTempDir{
       dir => 
         def module(name : String, upstreams : List[Module] = Nil, testUpstreams : List[Module] = Nil) : Module = {
-          new TestModule(file(dir, name), name, upstreams, testUpstreams)
+          new Module(file(dir, name), name, upstreams, testUpstreams)
         }
         val A = module("A")
         val B = module("B", List(A))
@@ -182,18 +182,18 @@ class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTes
 
         List(A, B, C).foreach{
           proj => 
-            assert(proj.testTaskBuild(lastCompilationTimeFilter = None).graph.nodes.exists{
+            assert(proj.testTaskBuild(TestCompilePhase, lastCompilationTimeFilter = None).graph.nodes.exists{
               case RunUnitTestsTask(_, _, `proj`, _, _) => true
               case _ => false
             })
         }
         import Dependency.Edge
-        assert(!D.testCompileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
+        assert(!D.compileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
           Edge(CompileTask(D, A, TestCompilePhase), CompileTask(D, C, TestCompilePhase))))
 
-        assert(C.testTaskBuild(lastCompilationTimeFilter = None).graph.edges.contains(
+        assert(C.testTaskBuild(TestCompilePhase, lastCompilationTimeFilter = None).graph.edges.contains(
           Edge(CompileTask(C, A, TestCompilePhase), CompileTask(C, C, TestCompilePhase))))
-        assert(!D.testCompileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
+        assert(!D.compileTaskBuild(TestCompilePhase :: Nil).graph.edges.contains(
           Edge(CompileTask(D, B, TestCompilePhase), CompileTask(D, C, TestCompilePhase))))
 
     }

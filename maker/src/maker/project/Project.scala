@@ -1,6 +1,6 @@
 package maker.project
 
-import maker.task.BuildResult
+import maker.task.{BuildResult, Build}
 import maker.task.tasks._
 import maker.utils.FileUtils._
 import java.io.File
@@ -13,7 +13,7 @@ import maker.ScalaVersion
 case class Project(
   name : String,
   root : File,
-  immediateUpstreamModules:Seq[Module],
+  modules:Seq[Module],
   topLevelExcludedFolders:Seq[String] = Nil,
   isTestProject : Boolean = false,
   scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
@@ -26,19 +26,10 @@ case class Project(
   def projectRoot = root.asAbsoluteFile
 
   def artifactId = s"${name}_${scalaVersion.versionBase}"
-  def furthestDownstreamModules = immediateUpstreamModules
-  def testModuleDependencies = upstreamModules
+  def upstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.compileDependencies})
+  def testDependencies = upstreamModules
   override def toString = name
 
-  //override def constructorCodeAsString : String = {
-    //val b = new StringBuffer
-    //upstreamModules.foreach{
-      //m => 
-        //b.addLine(m.constructorCodeAsString)
-    //}
-    //b.addLine(s"""val $name = Project($name, file("${root.getAbsolutePath.toString}"), ${upstreamModules.mkString("List(", ", ", ")")})""")
-    //b.toString
-  //}
   def docOutputDir = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
   def packageDir = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 
@@ -97,23 +88,24 @@ case class Project(
 
   def dependencies = upstreamModules.flatMap(_.dependencies).distinct
 
-  def testTaskBuild(lastCompilationTimeFilter : Option[Long]) = {
+  def testTaskBuild(testPhase: TestPhase, lastCompilationTimeFilter : Option[Long]) = {
     // For a project, `test` runs tests of all modules
     transitiveBuild(
       RunUnitTestsTask(
         s"Unit tests for $this", 
         upstreamModules,
         rootProject = this, 
-        classOrSuiteNames_ = None,
+        classNamesOrPhase = Right(testPhase),
         lastCompilationTimeFilter = lastCompilationTimeFilter
       ) :: Nil
     )
   }
 
+  def compileTaskBuild(phases: Seq[CompilePhase]): Build = transitiveBuild(modules.flatMap{m => phases.map{ p => CompileTask(this, m, p)}})
 
-  def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
-    upstreamModules.flatMap{module => 
-      testPhases.map(CompileTask(this, module, _))
-    }
-  )
+  //def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
+    //upstreamModules.flatMap{module => 
+      //testPhases.map(CompileTask(this, module, _))
+    //}
+  //)
 }

@@ -20,8 +20,8 @@ import org.apache.commons.io.output.TeeOutputStream
 class Module(
     val root : File,
     val name : String,
-    val immediateUpstreamModules : Seq[Module] = Nil,
-    val testModuleDependencies : Seq[Module] = Nil,
+    val compileDependencies : Seq[Module] = Nil,
+    val testDependencies : Seq[Module] = Nil,
     val scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
 )
   extends ProjectTrait
@@ -30,8 +30,7 @@ class Module(
 {
 
   import Module.logger
-  def furthestDownstreamModules = Seq(this)
-  protected val upstreamModulesForBuild = List(this)
+  def upstreamModules : Seq[Module] = transitiveClosure(Seq(this), {m : Module => m.compileDependencies})
 
   override def tearDown(graph : Dependency.Graph, result : BuildResult) = true
 
@@ -93,9 +92,9 @@ class Module(
   override def hashCode = root.hashCode
 
   private def warnOfRedundantDependencies() {
-    immediateUpstreamModules.foreach{
+    compileDependencies.foreach{
       module =>
-        val otherUpstreamModules = immediateUpstreamModules.filterNot(_ == module)
+        val otherUpstreamModules = compileDependencies.filterNot(_ == module)
         otherUpstreamModules.find(_.upstreamModules.contains(module)) match {
           case Some(otherUpstreamModule) =>
           logger.warn(name + " shouldn't depend on " + module.name + " as it is inherited via " + otherUpstreamModule.name)
@@ -130,27 +129,28 @@ class Module(
 
   def cleanOnly = executeSansDependencies(CleanTask(this))
 
-  def testTaskBuild(lastCompilationTimeFilter : Option[Long]) = {
-    // For a module, the `test` task runs just tha module's tests.
+  def testTaskBuild(testPhase: TestPhase, lastCompilationTimeFilter : Option[Long]) = {
+    // For a module, the `test` task runs just that module's tests.
     // To run all tests, use the containing project
     transitiveBuild(
       RunUnitTestsTask(
         s"Unit tests for $this", 
         modules = this :: Nil, 
         rootProject = this, 
-        classOrSuiteNames_ = None,
+        classNamesOrPhase = Right(testPhase),
         lastCompilationTimeFilter = lastCompilationTimeFilter
       ) :: Nil
     )
   }
 
+  def compileTaskBuild(phases: Seq[CompilePhase]): Build = transitiveBuild(phases.map(CompileTask(this, this, _)))
 
 
-  def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
-    (this +: testModuleDependencies).flatMap{module => 
-      testPhases.map(CompileTask(this, module, _))
-    }
-  )
+  //def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
+    //(this +: testDependencies).flatMap{module => 
+      //testPhases.map(CompileTask(this, module, _))
+    //}
+  //)
 
   def testFailuredSuitesOnly : BuildResult = executeSansDependencies(
     RunUnitTestsTask.failingTests(this, this)
@@ -162,17 +162,6 @@ class Module(
   ********************/
 
   def classFiles(phase : CompilePhase) : Seq[File] = FileUtils.findClasses(classDirectory(phase))
-
-  //def testClassNames(rootProject : ProjectTrait, lastCompilationTime : Option[Long], testPhase : CompilePhase) : Seq[String] = {
-    //val isTestSuite = isAccessibleScalaTestSuite(rootProject, testPhase)
-    //var classFiles_ = classFiles(testPhase)
-    //lastCompilationTime.foreach{
-      //time => 
-        //classFiles_ = classFiles_.filter(_.lastModified >= time)
-    //}
-    //classFiles_.map(_.className(classDirectory(testPhase))).filterNot(_.contains("$")).filter(isTestSuite).toList
-  //}
-
 
   /********************
   *     Paths and files
@@ -241,16 +230,16 @@ object Module extends Log {
 
   def warnOfUnnecessaryDependencies(proj : Module){
 
-    proj.immediateUpstreamModules.foreach{
+    proj.compileDependencies.foreach{
       p => 
-        proj.immediateUpstreamModules.filterNot(_ == p).find(_.upstreamModules.contains(p)).foreach{
+        proj.compileDependencies.filterNot(_ == p).find(_.upstreamModules.contains(p)).foreach{
           p1 => 
             logger.warn("Module " + proj.name + " doesn't need to depend on " + p.name + " as it is already inherited from " + p1.name)
         }
     }
 
 
-    val strictlyUpstreamDependencies = (proj.immediateUpstreamModules ++ proj.testModuleDependencies).distinct.map{
+    val strictlyUpstreamDependencies = (proj.compileDependencies ++ proj.testDependencies).distinct.map{
       module => 
         module -> module.upstreamDependencies
     }.toMap

@@ -45,7 +45,6 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
 
   val rootAbsoluteFile = root.asAbsoluteFile
   protected def name : String
-  protected def furthestDownstreamModules : Seq[Module]
   def extraUpstreamTasks(task: Task): Seq[Task] = Nil
   def extraDownstreamTasks(task: Task): Seq[Task] = Nil
 
@@ -75,7 +74,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
     closure
   }
   // Note that 'upstream' is inclusive of `this`, when `this` is a module
-  def upstreamModules : Seq[Module] = transitiveClosure(furthestDownstreamModules, {m : Module => m.immediateUpstreamModules})
+  def upstreamModules : Seq[Module]
 
   def setUp(graph : Dependency.Graph) : Boolean = {
     if (graph.includesCompileTask){
@@ -94,12 +93,13 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   }
 
 
-  def compileTaskBuild = transitiveBuild(furthestDownstreamModules.map(CompileTask(this, _, SourceCompilePhase)))
-  def compile : BuildResult = execute(compileTaskBuild)
+  def compileTaskBuild(phases: Seq[CompilePhase]): Build 
+  def compile : BuildResult = execute(compileTaskBuild(SourceCompilePhase :: Nil))
 
 
-  def testCompileTaskBuild(testPhases : Seq[CompilePhase]) : Build 
-  def testCompile : BuildResult = execute(testCompileTaskBuild(CompilePhase.TEST_PHASES))
+  //def testCompileTaskBuild(testPhases : Seq[CompilePhase]) : Build 
+  def testCompile : BuildResult = execute(compileTaskBuild(CompilePhase.TEST_PHASES))
+
   def tcc = Continuously(this, () => testCompile)
   
   def testFailedSuites : BuildResult = execute(
@@ -147,7 +147,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
               case _ : Project => 
                 upstreamModules.map(_.classDirectory(phase))
               case m : Module => 
-                (m +: upstreamModules.flatMap(_.testModuleDependencies)).map(_.classDirectory(phase))
+                (m +: upstreamModules.flatMap(_.testDependencies)).map(_.classDirectory(phase))
             })
         }
     }
@@ -166,13 +166,22 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   }
   private [project] def unmanagedLibs = findJars(upstreamModules.flatMap(_.unmanagedLibDirs))
 
-  def compilationClasspathComponents(phase : CompilePhase) = 
-      compilationTargetDirectories(phase :: Nil) ++:
-      dependencyJars(phase) ++:
-      unmanagedLibs
+  def compilationClasspathComponents(phase : CompilePhase) = {
+    val compileTasks : Seq[CompileTask] = compileTaskBuild(phase :: Nil).tasks.toSeq.flatMap {
+      case t : CompileTask => Some(t)
+      case _ =>  None
+    }
+    compileTasks.map {
+      case CompileTask(_, module, phase) => 
+        module.classDirectory(phase)
+    } ++:
+    dependencyJars(phase) ++:
+    unmanagedLibs
+  }
 
-  def compilationClasspath(phase : CompilePhase) = 
+  def compilationClasspath(phase : CompilePhase) = {
     Module.asClasspathStr(compilationClasspathComponents(phase))
+  }
 
 
   def runtimeClasspathComponents(phases : Seq[CompilePhase]) = 
@@ -202,21 +211,27 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Seq[File] = List(file(rootAbsoluteFile, "lib"))
 
-  def upstreamDependencies = (upstreamModules ++ upstreamModules.flatMap(_.testModuleDependencies)).distinct.flatMap(_.dependencies)
+  def upstreamDependencies = (upstreamModules ++ upstreamModules.flatMap(_.testDependencies)).distinct.flatMap(_.dependencies)
 
-  def testClasspathLoader(testPhase : CompilePhase) = new URLClassLoader(
-    runtimeClasspathComponents(testPhase :: Nil).map(_.toURI.toURL).toArray,
+  def testClasspathLoader = new URLClassLoader(
+    runtimeClasspathComponents(CompilePhase.TEST_PHASES).map(_.toURI.toURL).toArray,
     null
   )
-  def testTaskBuild(lastCompilationTimeFilter : Option[Long]) : Build
+  def testTaskBuild(testPhase: TestPhase, lastCompilationTimeFilter : Option[Long]) : Build
 
   def test : BuildResult = {
-    execute(testTaskBuild(lastCompilationTimeFilter = None))
+    execute(testTaskBuild(TestCompilePhase, lastCompilationTimeFilter = None))
   }
 
+  def integrationTest: BuildResult = {
+    execute(testTaskBuild(IntegrationTestCompilePhase, lastCompilationTimeFilter = None))
+  }
 
+  def endToEndTest: BuildResult = {
+    execute(testTaskBuild(EndToEndTestCompilePhase, lastCompilationTimeFilter = None))
+  }
   def testQuick : BuildResult = {
-    execute(testTaskBuild(lastCompilationTimeFilter = Some(System.currentTimeMillis)))
+    execute(testTaskBuild(TestCompilePhase, lastCompilationTimeFilter = Some(System.currentTimeMillis)))
   }
 
 

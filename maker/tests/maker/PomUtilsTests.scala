@@ -23,7 +23,7 @@ class PomUtilsTests extends FreeSpec {
             lazy val p = new Project(
               name = "project",
               root = file("$rootDirectory"),
-              immediateUpstreamModules = Seq(a),
+              modules = Seq(a),
               organization = Some("acme")
             )
           """

@@ -49,7 +49,7 @@ lazy val testReporterModule = new Module(
 lazy val testReporterProject = new Project(
   "maker-test-reporter",
   root = file("test-reporter").asAbsoluteFile, 
-  immediateUpstreamModules = List(testReporterModule),
+  compileDependencies = List(testReporterModule),
   scalaVersion = ScalaVersion.TWO_TEN_DEFAULT,
   organization = Some("com.github.cage433"),
   extraProjectPomInfo = extraPomInfo

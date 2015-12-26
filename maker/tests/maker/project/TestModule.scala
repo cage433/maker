@@ -28,8 +28,8 @@ trait TestModuleTrait extends FileUtils {
         |val $name = new TestModule(
         | new java.io.File("${root.getAbsolutePath}"), 
         |   "$name",
-        |   immediateUpstreamModules = ${immediateUpstreamModules.mkString("List(", ", ", ")")},
-        |   testModuleDependencies = ${testModuleDependencies.mkString("List(", ", ", ")")}
+        |   compileDependencies = ${compileDependencies.mkString("List(", ", ", ")")},
+        |   testDependencies = ${testDependencies.mkString("List(", ", ", ")")}
         |)  with maker.project.DependencyPimps  {
         |   override def dependencies = List("org.scalatest" % "scalatest" %% "2.2.0" withScope(JavaScopes.TEST))
         |}""".stripMargin
@@ -39,11 +39,11 @@ trait TestModuleTrait extends FileUtils {
 object TestModuleTrait {
   def apply(root: File)(
     name: String = root.getName, 
-    immediateUpstreamModules: Seq[Module] = Nil,
-    testModuleDependencies: Seq[Module] = Nil,
+    compileDependencies: Seq[Module] = Nil,
+    testDependencies: Seq[Module] = Nil,
     scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
   ): Module with TestModuleTrait = 
-    new Module(root, name, immediateUpstreamModules, testModuleDependencies, scalaVersion) with TestModuleTrait
+    new Module(root, name, compileDependencies, testDependencies, scalaVersion) with TestModuleTrait
 }
 
 class TestModule(

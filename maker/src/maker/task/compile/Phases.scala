@@ -12,17 +12,19 @@ case object SourceCompilePhase extends CompilePhase {
   override def toString = "Source compile"
 }
 
-case object TestCompilePhase extends CompilePhase {
+sealed trait TestPhase extends CompilePhase
+
+case object TestCompilePhase extends TestPhase {
   def name = "test-compile"
   override def toString = "Test compile"
 }
 
-case object IntegrationTestCompilePhase extends CompilePhase {
+case object IntegrationTestCompilePhase extends TestPhase {
   def name = "integration-test-compile"
   override def toString = "Integration test compile"
 }
 
-case object EndToEndTestCompilePhase extends CompilePhase {
+case object EndToEndTestCompilePhase extends TestPhase {
   def name = "e2e-test-compile"
   override def toString = "End-to-end test compile"
 }

@@ -13,7 +13,7 @@ case class TestModuleBuilder(
   root : File, 
   name : String,
   immediateUpstreamModuleNames : Seq[String] = Nil,
-  testModuleDependencies : Seq[String] = Nil,
+  testDependencies : Seq[String] = Nil,
   reportBuildResult : Boolean = false,
   scalatestOutputParameters : String = "-oHL",
   extraCode : String = "",
@@ -45,8 +45,8 @@ case class TestModuleBuilder(
         |val $name = new Module(
         | new java.io.File("${root.getAbsolutePath}"), 
         |   "$name",
-        |   immediateUpstreamModules = ${listString(immediateUpstreamModuleNames)},
-        |   testModuleDependencies = ${listString(testModuleDependencies)}
+        |   compileDependencies = ${listString(immediateUpstreamModuleNames)},
+        |   testDependencies = ${listString(testDependencies)}
         |)  ${("maker.project.DependencyPimps" +: "ClassicLayout" +: extraTraits).mkString(" with ", " with ", "")}{
         |
         |   override def dependencies = ${listString(dependencies.map(_.toLongString))}
@@ -124,7 +124,7 @@ object TestModuleBuilder{
       s"""|
           | val $name = new Project(
           |               "$name", file("${rootDir.absPath}"),
-          |               immediateUpstreamModules = ${listString(upstreams)}
+          |               compileDependencies = ${listString(upstreams)}
           |             ){
           |               $extraCode
           |             }

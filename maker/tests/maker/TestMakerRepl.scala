@@ -63,7 +63,7 @@ case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extend
   }
 
   def exit(exitValue: Int = 0) {
-    inputLine(s"System.exit($exitValue)")
+    inputStream.inputLine(s"System.exit($exitValue)")
     waitForExit()
   }
 

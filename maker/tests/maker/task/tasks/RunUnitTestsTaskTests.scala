@@ -16,7 +16,7 @@ class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExec
 
 
 
-  "Unit test workflow is as expected" ignore {
+  "Unit test workflow is as expected" in {
     withTempDir{
       rootDirectory => 
 
@@ -89,6 +89,74 @@ class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExec
         repl.inputLine("a.test")
         repl.value("a.testResults.failedTests.size").toInt should be (0)
         repl.value("a.testResults.passedTests.size").toInt should be (2)
+    }
+  }
+
+  "e2e and integration tests can be run" in {
+    withTestDir{
+      rootDirectory => 
+
+        writeToFile(
+          file(rootDirectory, "tests/foo/Incrementer.scala"),
+          """
+          package foo
+          import org.scalatest.FunSuite
+          object Incrementer {
+            def plusOne(n: Int) = {
+              n + 1
+            }
+          }
+          """
+        )
+
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout {
+              override def dependencies = Seq(
+                "org.scalatest" % "scalatest" %%  "2.2.0"
+              )
+            }
+          """
+        )
+
+        val repl = TestMakerRepl(rootDirectory)
+        repl.inputLine("a.integrationTest")
+        repl.value("a.testResults.failedTests.size").toInt should be (0)
+        repl.value("a.testResults.passedTests.size").toInt should be (0)
+        writeToFile( 
+          file(rootDirectory, "it/bar/IntegrationTest.scala"),
+          """
+          package bar
+          import org.scalatest.FunSuite
+          import foo.Incrementer
+          class IntegrationTest extends FunSuite {
+            test("this test should pass"){
+              assert(Incrementer.plusOne(1) === 2)
+            }
+          }
+          """
+        )
+        repl.inputLine("a.integrationTest")
+        repl.value("a.testResults.failedTests.size").toInt should be (0)
+        repl.value("a.testResults.passedTests.size").toInt should be (1)
+
+        writeToFile( 
+          file(rootDirectory, "e2e/bar/EndToEndTest.scala"),
+          """
+          package bar
+          import org.scalatest.FunSuite
+          import foo.Incrementer
+          class IntegrationTest extends FunSuite {
+            test("this test should pass"){
+              assert(Incrementer.plusOne(2) === 3)
+            }
+          }
+          """
+        )
     }
   }
 

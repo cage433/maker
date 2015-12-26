@@ -6,20 +6,19 @@ import maker.task._
 import maker.utils._
 import maker.utils.FileUtils._
 import maker.utils.RichIterable._
-import maker.task.compile.{TestCompilePhase, CompilePhase, CompileTask}
+import maker.task.compile._
 import com.sun.org.apache.xpath.internal.operations.Bool
 import maker.utils.RichString._
-import maker.ScalaVersion
+import maker.{ScalaVersion, Log}
 import java.sql.Time
 import java.io.File
 import java.lang.reflect.Modifier
-import maker.Log
 
 case class RunUnitTestsTask(
   name : String, 
   modules : Seq[Module],
   rootProject : ProjectTrait, 
-  classOrSuiteNames_ : Option[Iterable[String]],
+  classNamesOrPhase: Either[Seq[String], TestPhase],
   lastCompilationTimeFilter : Option[Long]
 )  
   extends Task with Log
@@ -27,27 +26,30 @@ case class RunUnitTestsTask(
 
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = modules.map(CompileTask(rootProject, _, TestCompilePhase))
+  def upstreamTasks = modules.flatMap{m => CompilePhase.TEST_PHASES.map{p => CompileTask(rootProject, m, p)}}
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
     // If no class names are passed in then they are found via reflection, so
     // compilation has to have taken place - hence class names can't be determined
     // at the point the task is created
-    val classOrSuiteNames = classOrSuiteNames_.getOrElse{
-      val isTestSuite = RunUnitTestsTask.isAccessibleScalaTestSuite(rootProject)
-      def filterByCompilationTime(classFiles: Seq[File]) = lastCompilationTimeFilter match {
-        case Some(time) => classFiles.filter(_.lastModified >= time)
-        case None => classFiles
-      }
-      val classNames = modules.flatMap{
-        m => 
-          filterByCompilationTime(m.classFiles(TestCompilePhase)).map{
-            classFile => 
-              classFile.className(m.classDirectory(TestCompilePhase))
-          }
-      }.filterNot(_.contains("$"))
-      classNames.filter(isTestSuite)
+    val classOrSuiteNames = classNamesOrPhase match {
+      case Left(classOrSuiteNames) => 
+        classOrSuiteNames
+      case Right(testPhase) => 
+        val isTestSuite = RunUnitTestsTask.isAccessibleScalaTestSuite(rootProject)
+        def filterByCompilationTime(classFiles: Seq[File]) = lastCompilationTimeFilter match {
+          case Some(time) => classFiles.filter(_.lastModified >= time)
+          case None => classFiles
+        }
+        val classNames = modules.flatMap{
+          m => 
+            filterByCompilationTime(m.classFiles(testPhase)).map{
+              classFile => 
+                classFile.className(m.classDirectory(testPhase))
+            }
+        }.filterNot(_.contains("$"))
+        classNames.filter(isTestSuite)
     }
 
     if (classOrSuiteNames.isEmpty) {
@@ -82,7 +84,7 @@ case class RunUnitTestsTask(
       val args : Seq[String] = List(
         rootProject.javaExecutable.getAbsolutePath, 
         "-classpath",
-        rootProject.runtimeClasspath(TestCompilePhase :: Nil)) ++:
+        rootProject.runtimeClasspath(CompilePhase.TEST_PHASES)) ++:
         (opts :+ "org.scalatest.tools.Runner") ++:
         testParameters ++: suiteParameters
       Command(args : _*)
@@ -123,7 +125,7 @@ object RunUnitTestsTask extends Log {
       "Failing tests",
       module :: Nil,
       rootProject,
-      Some(MakerTestResults(testOutputFile(module)).failingSuiteClasses),
+      Left(MakerTestResults(testOutputFile(module)).failingSuiteClasses),
       lastCompilationTimeFilter = None
     )
   }
@@ -185,7 +187,7 @@ object RunUnitTestsTask extends Log {
   }
 
   def isAccessibleScalaTestSuite(rootProject : ProjectTrait) : (String => Boolean) = {
-    val loader = rootProject.testClasspathLoader(TestCompilePhase)
+    val loader = rootProject.testClasspathLoader
 
     className : String => {
 
