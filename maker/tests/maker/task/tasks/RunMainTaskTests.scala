@@ -3,9 +3,10 @@ package maker.task.tasks
 import org.scalatest.FunSuite
 import maker.utils.FileUtils._
 import maker.utils.RichString._
-import maker.project.{TestModule, Module}
+import maker.utils.FileUtils
+import maker.TestMakerRepl
 
-class RunMainTaskTests extends FunSuite {
+class RunMainTaskTests extends FunSuite with FileUtils {
 
   /**
    * Check run main works, and runs the main only on the module it is invoked on,
@@ -13,18 +14,13 @@ class RunMainTaskTests extends FunSuite {
    */
   test("Can run task run-main with correct upstream tasks run first") {
     withTempDir{
-      dir =>
-        val p1Dir = file(dir, "p1")
-        val p2Dir = file(dir, "p2")
+      rootDirectory =>
 
-        val proj1 = new TestModule(p1Dir, "p1")
-        val proj2 = new TestModule(p2Dir, "p2", upstreamProjects = List(proj1))
-
-        val outputFile = file(p1Dir, "output.txt")
+        val outputFile = file(rootDirectory, "output.txt")
         assert(! outputFile.exists)
 
-        proj1.writeSrc(
-          "bar/Bar.scala",
+        writeToFile(
+          file(rootDirectory, "a/src/bar/Bar.scala"),
           """
             package bar
 
@@ -34,9 +30,9 @@ class RunMainTaskTests extends FunSuite {
           """
         )
 
-        proj2.writeSrc(
-          "foo/Main.scala",
-          """
+        writeToFile(
+          file(rootDirectory, "b/src/foo/Main.scala"),
+          s"""
             package foo
 
             import java.io._
@@ -44,17 +40,38 @@ class RunMainTaskTests extends FunSuite {
 
             object Main extends App{
 
-              val file = new File("%s")
+              val file = new File("${outputFile.getAbsolutePath}")
               val fstream = new FileWriter(file)
               val out = new BufferedWriter(fstream)
               out.write("Hello " + Bar.x)
             }
-          """ % outputFile.getAbsolutePath
+          """ 
         )
 
-        // this should compile proj1 before compiling and then running the main in proj2
-        proj2.compile
-        proj2.runMain("foo.Main")()()
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            lazy val a = new Module(
+              root = file("$rootDirectory", "a"),
+              name = "a"
+            ) with ClassicLayout 
+
+            lazy val b = new Module(
+              root = file("$rootDirectory", "b"),
+              name = "b",
+              compileDependencies = Seq(a)
+            ) with ClassicLayout 
+
+            lazy val p = new Project(
+              "p",
+              file("$rootDirectory"),
+              Seq(b)
+            ) 
+          """
+        )
+
+        val repl = TestMakerRepl(rootDirectory)
+        repl.inputLine("""p.runMain("foo.Main")()()""")
 
         assert(outputFile.exists)
     }

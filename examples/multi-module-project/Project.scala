@@ -22,6 +22,6 @@ val d = new Module(new File("d"), "d", compileDependencies = List(c))
 val project = new Project(
   name = "top-level-project",
   root = new File("."), 
-  compileDependencies = List(d),
+  modules = List(d),
   scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
 )

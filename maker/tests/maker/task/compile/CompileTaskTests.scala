@@ -21,7 +21,7 @@ import xsbti.api.This
 class CompileTaskTests 
   extends FreeSpec 
   with ParallelTestExecution 
-  with FileUtils with Matchers with ModuleTestPimps
+  with FileUtils with Matchers 
   with Log
 {
 

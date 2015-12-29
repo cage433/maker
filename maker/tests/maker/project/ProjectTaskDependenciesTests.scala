@@ -10,7 +10,7 @@ import maker.task.compile._
 import maker.utils.os.Command
 import maker.{ScalaVersion, TestMakerRepl}
 
-class ProjectTaskDependenciesTests extends FreeSpec with Matchers with ModuleTestPimps{
+class ProjectTaskDependenciesTests extends FreeSpec with Matchers {
   private val SCALA_VERSION = ScalaVersion.TWO_ELEVEN_DEFAULT
 
   "Can add custom upstream and downstream tasks" in {

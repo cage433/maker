@@ -93,7 +93,7 @@ class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExec
   }
 
   "e2e and integration tests can be run" in {
-    withTestDir{
+    withTempDir{
       rootDirectory => 
 
         writeToFile(

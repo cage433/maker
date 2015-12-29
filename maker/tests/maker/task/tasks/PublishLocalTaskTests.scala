@@ -6,7 +6,7 @@ import maker.project._
 import maker._
 import org.apache.commons.io.{FileUtils => ApacheFileUtils}
 import scala.xml.{XML, Node}
-import maker.utils.CustomMatchers
+import maker.utils.{CustomMatchers, FileUtils}
 import java.io.File
 import scala.collection.immutable.Nil
 import maker.task.compile.SourceCompilePhase
@@ -16,148 +16,114 @@ class PublishLocalTaskTests
   extends FreeSpec 
   with Matchers 
   with CustomMatchers
+  with FileUtils
   with DependencyPimps
-  with ModuleTestPimps
   with Assertions
 {
 
-  private def checkPublishedPomMatchesCoordinates(project : Project, version : String){
-    assert(project.publishLocalPomFile(version).exists, 
-      s"${project.publishLocalPomFile(version)} doesn't exist")
-
-    val pom = XML.loadFile(project.publishLocalPomFile(version))
-
-    List(
-      (project.organization.getOrElse(???), "groupId"), 
-      (project.artifactId, "artifactId"),
-      (version, "version")
-    ).foreach{
-      case (expected, label) => 
-        assertResult(expected, s"label = $label"){(pom \ label).text}
-    }
-
-  }
-
-  private def checkPublishedPomIncludesAllDependencies(project : Project, version : String){
-    val pom = XML.loadFile(project.publishLocalPomFile(version))
-    val pomDependencies = pom \\ "dependency"
-    val dependencies = (project.scalaVersion.scalaLibraryRichDependency +: project.dependencies).map(_.aetherDependency(project.scalaVersion))
-
-    dependencies should allSatisfy {
-      dependency : AetherDependency => 
-        val coords = List(dependency.groupId, dependency.artifactId, dependency.version)
-        pomDependencies.exists{
-          node => 
-            val pomCoords = List("groupId", "artifactId", "version").map{label => (node \ label).text}
-            coords === pomCoords
-        }
-    }
-  }
-
-  private def createTestModule(dir : File, name : String, upstreamModules : List[Module] = Nil) = {
-    val moduleRoot = file(dir, name)
-    new TestModule(
-      moduleRoot,
-      name,
-      upstreamProjects = upstreamModules
-    ) with HasDummyCompiler
-  }
-
-  "Simple module should publish as expected" in {
+  "Single module project should publish as expected" in {
     withTempDir{
-      dir =>  
+      rootDirectory =>  
 
-        val version = "1.0-SNAPSHOT"
-        val module = createTestModule(dir, "single-module-publish-local-test")
-        val proj = new Project(module.name, dir, module :: Nil, isTestProject = true, organization = Some("org.org"))
-
-        module.addExternalResource("org.slf4j slf4j-api 1.6.1")
-        module.addUnmanagedResource("MainResource1")
-        module.addUnmanagedResource("subdir-b", "MainResource2")
-
-        module.writeCaseObject("Foo", "testPublishLocal")
-
-        proj.publishLocal(version, signArtifacts = false)
-
-        checkPublishedPomMatchesCoordinates(proj, version)
-        checkPublishedPomIncludesAllDependencies(proj, version)
-        PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.classDirectory(SourceCompilePhase), proj.publishLocalJar(version))
-        PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.resourceDir(SourceCompilePhase), 
-          proj.publishLocalJar(version))
-        PackageJarTaskTests.checkJarContainsDirectoryContents(
-          module.sourceDirs(SourceCompilePhase).head, proj.publishLocalSourceJar(version))
-    }
-  }
-
-  "Module can publish itself and dependencies as a single artifact" in {
-    withTempDir{
-      dir =>  
-
-        import PackageJarTaskTests.checkJarContainsDirectoryContents
-
-        val version = "1.0-SNAPSHOT"
-        val moduleA = {
-          val proj = createTestModule(dir, "A")
-          proj.addExternalResource("org.slf4j slf4j-api 1.6.1")
-          proj.addUnmanagedResource("MainResource1")
-          proj.addUnmanagedResource("subdir-a", "MainResource2")
-          proj.writeCaseObject("Foo", "foo")
-          proj
-        }
-
-        val moduleB = {
-          val proj = createTestModule(dir, "B", List(moduleA))
-          proj.addExternalResource("org.slf4j slf4j-api 1.6.1")
-          proj.addUnmanagedResource("MainResource3")
-          proj.addUnmanagedResource("subdir-b", "MainResource4")
-          proj.writeCaseObject("Bar", "bar")
-          proj
-        }
-        val project = new Project(
-          "publish test", 
-          dir, 
-          moduleA :: moduleB :: Nil, 
-          isTestProject = true,
-          organization = Some("org.org")
+        writeToFile(
+          file(rootDirectory, "a/src/a/foo/Foo.scala"),
+          """
+            package foo
+            case object Foo
+          """
         )
-        project.publishLocal(version, signArtifacts = false)
-
-        checkPublishedPomMatchesCoordinates(project, version)
-        checkPublishedPomIncludesAllDependencies(project, version)
-
-        import project.{publishLocalJar => publishJar, publishLocalSourceJar => publishSourceJar}
-        publishJar(version) should be ('exists)
-
-        Vector(moduleA, moduleB).foreach{
-          module => 
-            checkJarContainsDirectoryContents(
-              module.classDirectory(SourceCompilePhase), publishJar(version))
-            checkJarContainsDirectoryContents(module.resourceDir(SourceCompilePhase), publishJar(version))
-            checkJarContainsDirectoryContents(
-              module.sourceDirs(SourceCompilePhase).head, publishSourceJar(version))
-        }
-    }
-  }
-  "Top level project should publish each sub module" in {
-    withTempDir {
-      dir => 
-        val version = "1.0-SNAPSHOT"
-        val a = createTestModule(dir, "multi-module-publish-local-test-a")
-        val b = createTestModule(dir, "multi-module-publish-local-test-b", upstreamModules = List(a))
-        val topLevel =new  Project(
-          "TopLevelProject", 
-          dir, 
-          List(b), 
-          isTestProject = true,
-          organization = Some("org.org")
+        writeToFile(
+          file(rootDirectory, "b/src/b/foo/Foo.scala"),
+          """
+            package bar
+            case object Bar
+          """
         )
 
-        topLevel.publishLocal(version, signArtifacts = false)
+        val organization = "org.org"
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            lazy val a = new Module(
+              root = file("$rootDirectory", "a"),
+              name = "a"
+            ) with ClassicLayout {
+              override def dependencies = Seq(
+                "org.scalatest" % "scalatest" %% "2.2.0"
+              )
+            }
 
-        checkPublishedPomMatchesCoordinates(topLevel, version)
+            lazy val b = new Module(
+              root = file("$rootDirectory", "b"),
+              name = "b",
+              compileDependencies = Seq(a)
+            ) with ClassicLayout 
 
+            lazy val p = new Project(
+              "p",
+              file("$rootDirectory"),
+              Seq(b),
+              organization = Some("$organization")
+            ) 
+          """
+        )
+        val repl = TestMakerRepl(rootDirectory)
+        val resourceDir = file(repl.value("a.resourceDir(SourceCompilePhase)"))
+        val artifactId = repl.value("p.artifactId")
+        file(resourceDir, "MainResource1").touch
+        file(resourceDir, "subdir-b/MainResource2").touch
+
+        val version = "1.0-SNAPSHOT"
+
+        repl.inputLine(s"""p.publishLocal("$version", signArtifacts = false)""")
+
+        val pomFile = file(repl.value(s"""p.publishLocalPomFile("$version")"""))
+        val pom = XML.loadFile(pomFile)
+
+        List(
+          (organization, "groupId"), 
+          (artifactId, "artifactId"),
+          (version, "version")
+        ).foreach{
+          case (expected, label) => 
+            assertResult(expected, s"label = $label"){(pom \ label).text}
+        }
+        val pomDependencies = pom \\ "dependency"
+        val deps: Seq[RichDependency] = Seq(
+          ScalaVersion.TWO_ELEVEN_DEFAULT.scalaLibraryRichDependency,
+          "org.scalatest" % "scalatest" %% "2.2.0"
+        ) 
+        deps should allSatisfy {
+          dep: RichDependency => 
+            val aetherDep = dep.aetherDependency(ScalaVersion.TWO_ELEVEN_DEFAULT)
+            pomDependencies.exists{
+              node => 
+                val pomCoords = Seq("groupId", "artifactId", "version").map{label => (node \ label).text}
+                Seq(aetherDep.groupId, aetherDep.artifactId, aetherDep.version) === pomCoords
+            }
+        }
+
+        val a_classDir = file(repl.value("a.classDirectory(SourceCompilePhase)"))
+        val b_classDir = file(repl.value("b.classDirectory(SourceCompilePhase)"))
+        val publishLocalJar = file(repl.value(s"""p.publishLocalJar("$version")"""))
+        val a_sourceDir = file(repl.value("a.sourceDirs(SourceCompilePhase).head"))
+        val b_sourceDir = file(repl.value("b.sourceDirs(SourceCompilePhase).head"))
+        val sourceJar = file(repl.value(s"""p.sourcePackageJar(version = Some("$version"))"""))
+        Seq(a_classDir, b_classDir).foreach {
+          cd => 
+            PackageJarTaskTests.checkJarContainsDirectoryContents(
+              cd, publishLocalJar
+            )
+        }
+        PackageJarTaskTests.checkJarContainsDirectoryContents(
+          resourceDir, publishLocalJar
+        )
+        Seq(a_sourceDir, b_sourceDir).foreach {
+          sd => 
+            PackageJarTaskTests.checkJarContainsDirectoryContents(
+              sd, sourceJar
+            )
+        }
     }
   }
 

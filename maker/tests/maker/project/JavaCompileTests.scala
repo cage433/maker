@@ -59,7 +59,7 @@ with FileUtils with Matchers {
   }
 
   "Java can compile 1.6 output" in {
-     withTestDir{
+     withTempDir{
       rootDirectory => 
 
         writeToFile(

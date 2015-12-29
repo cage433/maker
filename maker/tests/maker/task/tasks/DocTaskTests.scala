@@ -1,27 +1,43 @@
 package maker.task.tasks
 
 import org.scalatest.{Matchers, FreeSpec}
-import maker.utils.FileUtils._
-import maker.project.{TestModule, Project}
-import maker.ScalaVersion
+import maker.TestMakerRepl
+import maker.utils.FileUtils
 
-class DocTaskTests extends FreeSpec with Matchers{
+class DocTaskTests 
+  extends FreeSpec with Matchers
+  with FileUtils
+{
   "Doc should be produced " in {
     withTempDir{
-      dir => 
-        val module = new TestModule(dir, "DocTaskTests")
-        val proj = new Project("DocTaskTests", dir, module :: Nil, isTestProject = true)
-        val indexHtmlFile = file(proj.docOutputDir, "index.html")
-        indexHtmlFile.exists should be (false)
-        module.writeSrc(
-          "foo/Foo.scala",
+      rootDirectory => 
+        writeToFile(
+          file(rootDirectory, "src/foo/Foo.scala"),
           """
             package foo
 
             case class Foo(n : Int)
           """
         )
-        proj.doc
+        TestMakerRepl.writeProjectFile(
+          rootDirectory,
+          s"""
+            lazy val a = new Module(
+              root = file("$rootDirectory"),
+              name = "a"
+            ) with ClassicLayout 
+
+            lazy val p = new Project(
+              "p",
+              file("$rootDirectory"),
+              Seq(a)
+            ) 
+          """
+        )
+        val repl = TestMakerRepl(rootDirectory)
+        val indexHtmlFile = file(rootDirectory, "docs/2.11.6/index.html")
+        indexHtmlFile.exists should be (false)
+        repl.inputLine("p.doc")
         indexHtmlFile.exists should be (true)
     }
   }

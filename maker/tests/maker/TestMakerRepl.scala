@@ -156,6 +156,7 @@ object TestMakerRepl extends FileUtils  {
         import maker.utils.FileUtils._
         import maker.utils.FileUtils
         import maker.ScalaVersion
+        import maker.task.compile._
         import org.eclipse.aether.util.artifact.JavaScopes._
 
         $moduleDefs

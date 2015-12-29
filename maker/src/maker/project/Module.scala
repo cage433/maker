@@ -208,7 +208,6 @@ class Module(
   def vimModuleCompileOutputFile = file(root, "vim-compile-output")
 
   def compilerName = "zinc"
-
 }
 
 
