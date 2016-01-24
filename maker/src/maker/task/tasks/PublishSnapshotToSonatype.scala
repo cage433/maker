@@ -52,7 +52,7 @@ with SonatypeTask with EitherPimps{
   private def uploadToSonatype(file : File, contentType : ContentType) : Either[ErrorMessage, String] = {
     val url = 
       "https://oss.sonatype.org/content/repositories/snapshots/" + 
-        project.organization.getOrElse(???).replace('.', '/') + "/" + 
+        project.organization.replace('.', '/') + "/" + 
         project.artifactId + "/" + version + "/" + file.basename
 
     Post(url, new FileEntity(file, contentType))

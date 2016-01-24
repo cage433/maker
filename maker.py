@@ -341,6 +341,16 @@ def maker_test_class_directories():
     maker_root = os.path.dirname(os.path.realpath(__file__))
     return [os.path.join(maker_root, module, "target-maker", MAKER_SCALA_VERSION, "test-classes") for module in ["maker"]]
 
+def test_reporter_classpath_component():
+    if args.maker_developer_mode:
+      maker_root = os.path.dirname(os.path.realpath(__file__))
+      return os.path.join(maker_root, "test-reporter", "target-maker", MAKER_SCALA_VERSION, "classes") 
+    else:
+      for jar in maker_binaries():
+        if "test-reporter" in jar:
+          return jar
+        log.critical("Can't find test reporter jar")
+        sys.exit(1)
 
 
 def launch_repl():
@@ -369,6 +379,7 @@ def launch_repl():
             "-classpath", classpath(maker_scala_libraries()),
             "-Dsbt.log.format=false",
             "-Drebel.log=true",
+            "-Dmaker.test.reporter=" + test_reporter_classpath_component(),
             "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + \
                 ["-Dlogback.configurationFile=" + logback_file(),
             "scala.tools.nsc.MainGenericRunner",

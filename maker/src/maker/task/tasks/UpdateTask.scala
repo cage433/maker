@@ -53,7 +53,8 @@ case class UpdateTask(project : ProjectTrait)
 
   def upstreamTasks : List[Task] = Nil
 
-  private val (system, session, repositories) = UpdateTask.aetherState(project)
+  private val aetherSystem = new AetherSystem(project.resourceCacheDirectory)
+  val repos = UpdateTask.repositories(project)
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
     val result = if (project.dependenciesAlreadyUpdated()){
@@ -121,23 +122,23 @@ case class UpdateTask(project : ProjectTrait)
     var aetherDependencies = download.aetherDependencies(
       project.scalaVersion.scalaLibraryRichDependency +: 
       project.scalaVersion.scalaCompilerRichDependency +:
-      project.makerTestReporterDependency +:
+      //project.makerTestReporterDependency +:
       project.upstreamDependencies
     )
 
-    val collectRequest = new CollectRequest(aetherDependencies, new java.util.LinkedList[Dependency](), repositories)
+    val collectRequest = new CollectRequest(aetherDependencies, new java.util.LinkedList[Dependency](), repos)
     val dependencyRequest = new DependencyRequest(
       collectRequest,
       DependencyFilterUtils.classpathFilter(download.scope)
     )
 
-    val artifacts = system.resolveDependencies(
-      session, 
+    val artifacts = aetherSystem.resolveDependencies(
       dependencyRequest
     ).getArtifactResults.map(_.getArtifact).filter(download.isOfCorrectType)
 
-    collectRequest.setRepositories(repositories)
-    val collectResult : CollectResult = system.collectDependencies(session, collectRequest)
+    var a: Artifact = new DefaultArtifact( "org.eclipse.aether.examples", "aeher-example", "jar", "0.1-SNAPSHOT" );
+    collectRequest.setRepositories(repos)
+    val collectResult : CollectResult = aetherSystem.collectDependencies(collectRequest)
 
     FileUtils.writeToFile(
       file(download.downloadDirectory, "dependency-graph"), 
@@ -171,47 +172,6 @@ case class UpdateTask(project : ProjectTrait)
 }
 
 object UpdateTask {
-  def aetherState(project: ProjectTrait) = {
-    val system = {
-      val locator = MavenRepositorySystemUtils.newServiceLocator()
-      locator.addService( classOf[RepositoryConnectorFactory], classOf[BasicRepositoryConnectorFactory] )
-      locator.addService( classOf[TransporterFactory], classOf[FileTransporterFactory] )
-      locator.addService( classOf[TransporterFactory],  classOf[HttpTransporterFactory] )
-
-      locator.setErrorHandler( new DefaultServiceLocator.ErrorHandler()
-      {
-          override def serviceCreationFailed( type_ : Class[_] , impl : Class[_], exception : Throwable )
-          {
-              exception.printStackTrace()
-          }
-      } )
-
-      locator.getService( classOf[RepositorySystem] )
-    }
-
-    val session = {
-      val session = MavenRepositorySystemUtils.newSession
-
-      session.setDependencySelector(
-        new AndDependencySelector(
-          new OptionalDependencySelector(),
-          new ExclusionDependencySelector(),
-          new ScopeDependencySelector(
-            Arrays.asList(JavaScopes.COMPILE),
-            Arrays.asList(JavaScopes.TEST, JavaScopes.SYSTEM, JavaScopes.PROVIDED)
-          )
-        )
-      )
-      session.setLocalRepositoryManager( 
-        system.newLocalRepositoryManager( 
-          session, 
-          new LocalRepository(project.resourceCacheDirectory)
-        )
-      )
-      session
-    }
-    (system, session, repositories(project))
-  }
 
   def repositories(project: ProjectTrait) = {
     val repos = new java.util.LinkedList[RemoteRepository]()

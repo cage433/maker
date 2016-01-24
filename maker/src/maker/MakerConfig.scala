@@ -49,11 +49,7 @@ trait MakerConfig extends DependencyPimps {
   }
 
   def resourceCacheDirectory: File = {
-    maybeEnvVar("HOME") match {
-      case Some(homeDir) => mkdirs(file(homeDir, ".maker", "resource-cache"))
-      case None =>
-        throw new Exception(s"Environment variable HOME nto set")
-    }
+    mkdirs(file(System.getProperty("user.home"), ".maker", "resource-cache"))
   }
 
   def httpResolvers = Seq(
@@ -63,8 +59,8 @@ trait MakerConfig extends DependencyPimps {
     ("sonatype-releases", "https://oss.sonatype.org/content/repositories/releases/")
   )
 
-  def makerVersion = "0.18"
-  def makerTestReporterDependency = "com.github.cage433" % "maker-test-reporter" %% makerVersion withScope(JavaScopes.TEST)
+  //private def makerVersion = "0.24"
+  //def makerTestReporterDependency = "com.github.cage433" % "maker-test-reporter" %% makerVersion withScope(JavaScopes.TEST)
 
   def gpgPassPhrase = maybeEnvVar("MAKER_GPG_PASS_PHRASE") match {
     case Some(phrase) => phrase

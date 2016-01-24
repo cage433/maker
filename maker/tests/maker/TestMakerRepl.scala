@@ -139,9 +139,19 @@ object TestMakerRepl extends FileUtils  {
       <level>INFO</level>
     </filter>
   </appender>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+      <immediateFlush>true</immediateFlush>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>WARN</level>
+    </filter>
+  </appender>
         
   <root level="warn">
     <appender-ref ref="FILE" />
+    <appender-ref ref="CONSOLE" />
   </root>
  </configuration>
  """

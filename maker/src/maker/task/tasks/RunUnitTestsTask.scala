@@ -21,8 +21,17 @@ case class RunUnitTestsTask(
   classNamesOrPhase: Either[Seq[String], TestPhase],
   lastCompilationTimeFilter : Option[Long]
 )  
-  extends Task with Log
+  extends Task with Log with FileUtils
 {
+
+  /**
+    * Used to communicate with the test reporter,
+    * in particular to get it to report on long running
+    * or hanging tests
+    */
+  private val testReporterMessagingDir = {
+    file(rootProject.rootAbsoluteFile, ".maker-test-reporter-messaging").asNewDirectory
+  }
 
   override def failureHaltsTaskManager = false
 
@@ -64,6 +73,7 @@ case class RunUnitTestsTask(
       s += "scala.usejavacp" -> "true"
       s += "logback.configurationFile" -> Option(System.getProperty("logback.configurationFile")).getOrElse(throw new Exception("No logback config defined"))
       s += "maker.test.output" -> testOutputFile.toString
+      //s += "maker.testreporter.messaging.directory" -> testReporterMessagingDir.getAbsolutePath
       s += "sbt.log.format" -> "=false"
       s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
@@ -87,13 +97,14 @@ case class RunUnitTestsTask(
         rootProject.runtimeClasspath(CompilePhase.TEST_PHASES)) ++:
         (opts :+ "org.scalatest.tools.Runner") ++:
         testParameters ++: suiteParameters
-      Command(args : _*)
+      Command(args : _*).withOutputTo(System.err)
     }
 
     // Apache executor is noisy when exit is non-zero, so switch that off here.
     // Actual exit value is checked below.
     cmd = cmd.withExitValues(0, 1)
 
+    println(cmd)
     val res = cmd.run
 
     val results = MakerTestResults(testOutputFile)

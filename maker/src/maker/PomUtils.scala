@@ -16,7 +16,7 @@ object PomUtils extends DependencyPimps{
 
       //<?xml version="1.0" encoding="UTF-8"?>
   def pomXml(project : Project, version : String, scalaVersion : ScalaVersion) = {
-    val groupId = project.organization.getOrElse(throw new IllegalStateException("Organization not defined"))
+    val groupId = project.organization
 
     def externalDependencies = {
       val scalaLibraryDep = "org.scala-lang" % s"scala-library" % scalaVersion.versionNo

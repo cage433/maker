@@ -11,13 +11,11 @@ import scala.xml.{Elem, NodeSeq}
 import maker.ScalaVersion
 
 case class Project(
-  name : String,
-  root : File,
+  organization: String,
+  name: String,
+  root: File,
   modules:Seq[Module],
-  topLevelExcludedFolders:Seq[String] = Nil,
-  isTestProject : Boolean = false,
   scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
-  organization: Option[String] = None,
   extraProjectPomInfo : List[NodeSeq] = Nil
 ) 
   extends ProjectTrait 
@@ -34,7 +32,7 @@ case class Project(
   def packageDir = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
-  def publishLocalDir(version : String) = file(publishLocalRootDir, organization.getOrElse(???), artifactId, version).makeDirs
+  def publishLocalDir(version : String) = file(publishLocalRootDir, organization, artifactId, version).makeDirs
   def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
   def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
   def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
@@ -74,10 +72,17 @@ case class Project(
     transitiveBuild(PublishLocalTask(this, version, signArtifacts) :: Nil)
   }
 
+  def publishLocalTask2Build(version : String, signArtifacts : Boolean) = {
+    transitiveBuild(PublishLocalTask2(this, version, signArtifacts) :: Nil)
+  }
+
   def publishLocal(version : String, signArtifacts : Boolean) = {
     execute(publishLocalTaskBuild(version, signArtifacts))
   }
 
+  def publishLocal2(version : String, signArtifacts : Boolean) = {
+    execute(publishLocalTask2Build(version, signArtifacts))
+  }
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
 
   def publishToSonatypeBuild(version : String) = transitiveBuild(PublishToSonatype(this, version) :: Nil)

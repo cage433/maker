@@ -17,7 +17,7 @@ class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExec
 
 
   "Unit test workflow is as expected" in {
-    withTempDir{
+    withTestDir{
       rootDirectory => 
 
         writeToFile(
@@ -59,10 +59,11 @@ class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExec
           """
         )
 
-        val repl = TestMakerRepl(rootDirectory)
+        val repl = TestMakerRepl(rootDirectory, true)
         repl.inputLine("a.test")
         repl.value("a.testResults.failedTests.size").toInt should be (1)
         repl.value("a.testResults.passedTests.size").toInt should be (1)
+
 
         repl.inputLine("a.testFailedSuites")
         repl.value("a.testResults.failedTests.size").toInt should be (1)
@@ -92,7 +93,7 @@ class RunUnitTestsTaskTests extends FreeSpec with Matchers with ParallelTestExec
     }
   }
 
-  "e2e and integration tests can be run" in {
+  "e2e and integration tests can be run" ignore {
     withTempDir{
       rootDirectory => 
 

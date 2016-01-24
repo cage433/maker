@@ -27,6 +27,10 @@ class MakerTestReporter extends Reporter{
     case Some(f) => new File(f)
     case None => throw new Exception(" maker must have maker.test.output set")
   }
+  val messagingDir : File = Properties.propOrNone("maker.testreporter.messaging.directory" ) match {
+    case Some(f) => new File(f)
+    case None => throw new Exception(" maker must have maker.testreporter.messaging.directory set")
+  }
 
   private val EscapeChars = sys.env.get("MAKER_ESCAPECHARS").isDefined
   private def inColour(code: String, s: String) =

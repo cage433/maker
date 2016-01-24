@@ -22,7 +22,7 @@ class PublishLocalTaskTests
 {
 
   "Single module project should publish as expected" in {
-    withTempDir{
+    withTestDir{
       rootDirectory =>  
 
         writeToFile(
@@ -41,6 +41,8 @@ class PublishLocalTaskTests
         )
 
         val organization = "org.org"
+        val publishLocalDir = mkdir(file(rootDirectory, "publish-local")).makeDirs
+        println(publishLocalDir)
         TestMakerRepl.writeProjectFile(
           rootDirectory,
           s"""
@@ -64,10 +66,14 @@ class PublishLocalTaskTests
               file("$rootDirectory"),
               Seq(b),
               organization = Some("$organization")
-            ) 
+            ) {
+              override def publishLocalDir(version: String) = {
+                file("${publishLocalDir.getAbsolutePath}")
+              }
+            }
           """
         )
-        val repl = TestMakerRepl(rootDirectory)
+        val repl = TestMakerRepl(rootDirectory, true)
         val resourceDir = file(repl.value("a.resourceDir(SourceCompilePhase)"))
         val artifactId = repl.value("p.artifactId")
         file(resourceDir, "MainResource1").touch
@@ -75,7 +81,15 @@ class PublishLocalTaskTests
 
         val version = "1.0-SNAPSHOT"
 
+        if (! publishLocalDir.exists) {
+          println("Pre publish")
+          System.exit(0)
+        }
         repl.inputLine(s"""p.publishLocal("$version", signArtifacts = false)""")
+        if (! publishLocalDir.exists) {
+          println("Post publish")
+          System.exit(0)
+        }
 
         val pomFile = file(repl.value(s"""p.publishLocalPomFile("$version")"""))
         val pom = XML.loadFile(pomFile)
