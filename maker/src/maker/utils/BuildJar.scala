@@ -10,13 +10,17 @@ object BuildJar{
   type ErrorMessage = String
 
   def build(jarFile : File, directories : Seq[File]) : Either[ErrorMessage, Unit] = {
+    println(s"Building ${directories.head}")
     val BUFFER_SIZE=1000 * 10
     jarFile.delete
     val jarOutputStream = new JarOutputStream(new FileOutputStream(jarFile))
     try {
       directories.filter(_.exists).foreach{
         dir => 
-          FileUtils.allProperFiles(dir).foreach{
+          FileUtils.allProperFiles(dir).filter{
+            f => 
+              Seq("jar", "pom", "asc").exists(f.extension == _)
+          }.foreach{
             file => 
               val fis = new FileInputStream(file)
               try {

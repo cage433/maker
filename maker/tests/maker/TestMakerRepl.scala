@@ -11,7 +11,7 @@ import maker.utils.os.Command
 import java.util.UUID
 import org.apache.commons.io.output.TeeOutputStream
 
-case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extends FileUtils {
+case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extends FileUtils with Log {
 
   TestMakerRepl.writeLogbackFile(rootDirectory)
 
@@ -35,7 +35,7 @@ case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extend
     else
       new ReplTestPumpStreamHandler(os, os, inputStream)
 
-    Command(
+    val cmd = Command(
       overrideWorkingDirectory = Some(rootDirectory),
       timeout = None, 
       overrideStreamHandler = Some(streamHandler),
@@ -44,7 +44,8 @@ case class TestMakerRepl(rootDirectory: File, teeOutput: Boolean = false) extend
         "-l", "logback.xml",
         "-p", "Project.scala",
         "-z")
-    ).runAsync(resultHandler)
+    )
+    cmd.runAsync(resultHandler)
   }
   launch()
 

@@ -168,7 +168,6 @@ class Module(
   ********************/
 
   def makerDirectory = mkdirs(rootAbsoluteFile, ".maker")
-  def cacheDirectory = mkdirs(makerDirectory, "cache")
 
 
   def sourceDirs(compilePhase : CompilePhase) : List[File] = compilePhase match {

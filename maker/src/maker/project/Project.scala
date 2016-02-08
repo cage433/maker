@@ -9,6 +9,10 @@ import scala.collection.immutable.Nil
 import maker.task.compile._
 import scala.xml.{Elem, NodeSeq}
 import maker.ScalaVersion
+import org.eclipse.aether.artifact.{Artifact, DefaultArtifact}
+import org.eclipse.aether.installation.InstallRequest
+import org.eclipse.aether.util.artifact.SubArtifact
+import org.eclipse.aether.internal.impl.SimpleLocalRepositoryManager
 
 case class Project(
   organization: String,
@@ -32,10 +36,16 @@ case class Project(
   def packageDir = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 
   def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
-  def publishLocalDir(version : String) = file(publishLocalRootDir, organization, artifactId, version).makeDirs
+  def publishLocalDir(version : String) = {
+    val rootDir = file(System.getenv("HOME"), ".maker", "resource-cache")
+    val relativePath = organization.split('.') :+ artifactId :+ version
+    file(rootDir, relativePath: _*)
+  }
+
   def publishLocalJarDir(version : String) = file(publishLocalDir(version), "jars").makeDir
   def publishLocalPomDir(version : String) = file(publishLocalDir(version), "poms").makeDir
   def publishLocalPomFile(version : String) = file(publishLocalPomDir(version), s"pom.xml")
+
 
   def packageJar(version : Option[String]) = {
     val versionAsString = version.map("-" + _).getOrElse("")

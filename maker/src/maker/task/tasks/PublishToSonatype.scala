@@ -34,8 +34,9 @@ case class PublishToSonatype(project : Project, version : String)
   type StagingRepo = String
   def name = s"Publish $project to Sonatype"
 
+  val system = new AetherSystem(project.resourceCacheDirectory)
   def upstreamTasks = 
-    PublishLocalTask(project, version, signArtifacts = true) :: Nil
+    PublishLocalTask2(project, version, signArtifacts = true) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     FileUtils.withTempDir{
@@ -56,11 +57,10 @@ case class PublishToSonatype(project : Project, version : String)
   }
 
   private def makeBundle(tmpDir : File) : Either[ErrorMessage, File] = {
-    import project.{publishLocalPomDir, publishLocalJarDir}
 
     val bundleJar = file(System.getenv("HOME"), "tmp", "bundle.jar")
 
-    BuildJar.build(bundleJar, publishLocalPomDir(version) :: publishLocalJarDir(version) :: Nil).map{
+    BuildJar.build(bundleJar, project.publishLocalDir(version) :: Nil).map{
       _ => bundleJar
     }
   }

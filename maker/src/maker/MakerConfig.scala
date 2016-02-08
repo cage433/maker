@@ -59,9 +59,6 @@ trait MakerConfig extends DependencyPimps {
     ("sonatype-releases", "https://oss.sonatype.org/content/repositories/releases/")
   )
 
-  //private def makerVersion = "0.24"
-  //def makerTestReporterDependency = "com.github.cage433" % "maker-test-reporter" %% makerVersion withScope(JavaScopes.TEST)
-
   def gpgPassPhrase = maybeEnvVar("MAKER_GPG_PASS_PHRASE") match {
     case Some(phrase) => phrase
     case None => throw new Exception(s"MAKER_GPG_PASS_PHRASE variable not set")

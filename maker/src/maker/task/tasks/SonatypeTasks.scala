@@ -19,7 +19,7 @@ trait SonatypeTask {
   type ErrorMessage = String
   //
   // TODO - add configurable proxy
-  val proxy = new HttpHost("127.0.0.1", 4128, "http")
+  //val proxy = new HttpHost("127.0.0.1", 4128, "http")
 
   private def withHttpClient[U](body: HttpClient => U) : U = {
 
@@ -31,6 +31,7 @@ trait SonatypeTask {
             .setDefaultCredentialsProvider(credsProvider)
             .build()
     try {
+      println("Posting")
       body(httpclient)
     }
     finally
