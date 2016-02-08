@@ -69,12 +69,6 @@ case class Project(
       publishLocalJarDir(version), 
       sourcePackageJar(Some(version)).getName)
 
-  def pack : BuildResult = {
-    val tasks = PackageJarTask(this, version = None) :: Nil
-
-    execute(transitiveBuild(tasks))
-  }
-
   def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
   def doc = execute(transitiveBuild(DocTask(this) :: Nil))
 
