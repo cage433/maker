@@ -82,17 +82,10 @@ case class Project(
     transitiveBuild(PublishLocalTask(this, version, signArtifacts) :: Nil)
   }
 
-  def publishLocalTask2Build(version : String, signArtifacts : Boolean) = {
-    transitiveBuild(PublishLocalTask2(this, version, signArtifacts) :: Nil)
-  }
-
   def publishLocal(version : String, signArtifacts : Boolean) = {
     execute(publishLocalTaskBuild(version, signArtifacts))
   }
 
-  def publishLocal2(version : String, signArtifacts : Boolean) = {
-    execute(publishLocalTask2Build(version, signArtifacts))
-  }
   def bundleJar = file(rootAbsoluteFile, "bundle.jar")
 
   def publishToSonatypeBuild(version : String) = transitiveBuild(PublishToSonatype(this, version) :: Nil)

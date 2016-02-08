@@ -36,7 +36,7 @@ case class PublishToSonatype(project : Project, version : String)
 
   val system = new AetherSystem(project.resourceCacheDirectory)
   def upstreamTasks = 
-    PublishLocalTask2(project, version, signArtifacts = true) :: Nil
+    PublishLocalTask(project, version, signArtifacts = true) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
     FileUtils.withTempDir{

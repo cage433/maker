@@ -3,13 +3,16 @@ package maker.task.tasks
 import org.apache.commons.io.FileUtils._
 import maker.project._
 import maker.task._
-import maker.utils.{Stopwatch, FileUtils}
+import maker.utils._
 import maker._
 import maker.task.compile.SourceCompilePhase
 import java.io.File
 import maker.utils.os.Command
 import org.scalatest.Failed
-import maker.utils.FileUtils._
+import org.eclipse.aether.artifact.{Artifact, DefaultArtifact}
+import org.eclipse.aether.util.artifact.SubArtifact
+import org.eclipse.aether.installation.InstallRequest
+import scala.collection.mutable.Publisher
 
 case class PublishLocalTask(
   project : Project, 
@@ -18,59 +21,90 @@ case class PublishLocalTask(
 ) 
   extends Task 
   with Log
+  with FileUtils
+  with EitherPimps
 {
   def name = "Publish Local"
 
-  def upstreamTasks : List[Task] = List(PackageJarTask(project, Some(version)))
+  val system = new AetherSystem(project.resourceCacheDirectory)
+
+  def upstreamTasks : List[Task] = List(DocTask(project))
+
+  type ErrorMessage = String
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    doPublish(project, results, sw)
-  }
-  
-  private def signFile(file : File) = {
-    val signatureFile = new File(file.getAbsolutePath + ".asc")
-    if (signatureFile.exists)
-      signatureFile.delete
-    val cmd = Command("gpg", "-ab", "--passphrase", project.gpgPassPhrase, file.getAbsolutePath)
-    val result = cmd.run
-    if (result != 0)
-      logger.error("Failed to sign " + file)
-    result == 0
-  }
+    withTempDir {
+      tempDir => 
 
-  private def doPublish(project: Project, results : Iterable[TaskResult], sw : Stopwatch) = {
-  
-    project.publishLocalDir(version).deleteAll()
-    def versionedFilename(file : File) : String = {
-     val basename :: extension :: Nil = file.basename.split('.').toList
-     s"$basename-$version.$extension"
-    }
-    // TODO - fix the includeUpstreamModules hack
-    FileUtils.writeToFile(project.publishLocalPomFile(version), PomUtils.pomXmlText(project, version))
-    var result = true
-    if (signArtifacts)
-      result = signFile(project.publishLocalPomFile(version))
-
-    result &&= Vector(
-      (project.packageJar(Some(version)), s"${project.artifactId}-$version.jar"),
-      (project.sourcePackageJar(Some(version)), s"${project.artifactId}-$version-sources.jar"),
-      (project.docPackageJar, s"${project.artifactId}-$version-javadoc.jar")
-    ).filter(_._1.exists).forall{
-      case (jar, versionedBasename) => 
-        val fileWithVersion = file(project.publishLocalJarDir(version), versionedBasename)
-        fileWithVersion.delete
-        try {
-          copyFile(jar, fileWithVersion)
-        } catch {
-          case e : Exception => 
-            println(e)
-            throw e
+        Publisher(tempDir).install() match {
+          case Left(errorMessage) => 
+            DefaultTaskResult(this, succeeded = false, stopwatch = sw, message = Some(errorMessage))
+          case Right(_) => 
+            DefaultTaskResult(this, true, sw)
         }
-        if (signArtifacts)
-          signFile(fileWithVersion)
-        else
-          true
     }
-    DefaultTaskResult(this, result, sw)
+  }
+  
+  case class Publisher(tempDir: File) extends Log {
+    val tempClassJar = file(tempDir, "classes.jar")
+    val tempSourceJar = file(tempDir, "sources.jar")
+    val tempDocJar = file(tempDir, "doc.jar")
+    val tempPomFile = file(tempDir, "pom.pom")
+
+    lazy val jarArtifact = new DefaultArtifact(project.organization, project.artifactId, "", "jar", version).setFile(tempClassJar)
+    lazy val srcArtifact = new DefaultArtifact(project.organization, project.artifactId, "sources", "jar", version).setFile(tempSourceJar)
+    lazy val docArtifact = new DefaultArtifact(project.organization, project.artifactId, "javadoc", "jar", version).setFile(tempDocJar)
+    lazy val pomArtifact: Artifact = new SubArtifact(jarArtifact, "", "pom" ).setFile(tempPomFile)
+    lazy val installRequest: InstallRequest = new InstallRequest().addArtifact(jarArtifact).addArtifact(srcArtifact).addArtifact(docArtifact).addArtifact(pomArtifact)
+
+    def buildJars(): Either[ErrorMessage, Unit] = {
+      val modules = project.upstreamModules
+      import BuildJar.{build => buildJar}
+      buildJar(
+        tempClassJar,
+        modules.map(_.classDirectory(SourceCompilePhase)) ++ modules.map(_.resourceDir(SourceCompilePhase))
+      ) andThen
+      buildJar(
+        tempSourceJar,
+        modules.flatMap(_.sourceDirs(SourceCompilePhase))
+      ) andThen
+      buildJar(
+        tempDocJar,
+        project.docOutputDir :: Nil
+      )
+    }
+
+    private def signFile(file: File): Either[ErrorMessage, Unit] = {
+      println(s"Signing $file")
+      if (! file.exists) 
+        logger.error(s"File $file doesn't exist")
+      val signatureFile = new File(file.getAbsolutePath + ".asc")
+      if (signatureFile.exists)
+        signatureFile.delete
+      val cmd = Command("gpg", "-ab", "--passphrase", project.gpgPassPhrase, file.getAbsolutePath)
+      val result = cmd.run
+      if (result != 0)
+        Left("Failed to sign " + file)
+      else
+        Right(Unit)
+    }
+
+    def install() : Either[ErrorMessage, Unit] = {
+      FileUtils.writeToFile(tempPomFile, PomUtils.pomXmlText(project, version))
+      buildJars() andThen {
+        system.install(installRequest)
+        Right(Unit)
+      } andThen {
+        signFile(system.absolutePathForLocalArtifact(jarArtifact))
+      } andThen {
+        signFile(system.absolutePathForLocalArtifact(srcArtifact))
+      } andThen {
+        signFile(system.absolutePathForLocalArtifact(docArtifact))
+      } andThen {
+        signFile(system.absolutePathForLocalArtifact(pomArtifact))
+      }
+    }
   }
 }
+
+
