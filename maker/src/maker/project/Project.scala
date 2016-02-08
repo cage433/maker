@@ -35,7 +35,6 @@ case class Project(
   def docOutputDir = file(rootAbsoluteFile, "docs", scalaVersion.versionNo)
   def packageDir = file(rootAbsoluteFile, "package", scalaVersion.versionNo)
 
-  def publishLocalRootDir  = file(System.getenv("HOME"), ".maker", "publish-local")
   def publishLocalDir(version : String) = {
     val rootDir = file(System.getenv("HOME"), ".maker", "resource-cache")
     val relativePath = organization.split('.') :+ artifactId :+ version
@@ -53,23 +52,12 @@ case class Project(
     file(packageDir.getAbsolutePath, jarBasename)
   }
 
-  def sourcePackageJar(version : Option[String]) = {
-    val versionAsString = version.map("-" + _).getOrElse("")
-    val jarBasename = artifactId + versionAsString + "-sources.jar"
-    file(packageDir.getAbsolutePath, jarBasename)
-  }
-
   def publishLocalJar(version : String) = 
     file(
       publishLocalJarDir(version), 
       packageJar(Some(version)).getName)
 
-  def publishLocalSourceJar(version : String) = 
-    file(
-      publishLocalJarDir(version), 
-      sourcePackageJar(Some(version)).getName)
 
-  def docPackageJar = file(packageDir.getAbsolutePath, name + "-javadoc.jar")
   def doc = execute(transitiveBuild(DocTask(this) :: Nil))
 
   def publishLocalTaskBuild(version : String, signArtifacts : Boolean) = {

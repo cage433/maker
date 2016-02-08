@@ -5,7 +5,7 @@ import maker.TestMakerRepl
 import maker.utils.FileUtils
 import java.io.File
 
-class PublishLocalTask2Tests extends FreeSpec with Matchers with FileUtils {
+class PublishLocalTaskTests extends FreeSpec with Matchers with FileUtils {
 
   "Can publish locally" in {
     withTestDir {
