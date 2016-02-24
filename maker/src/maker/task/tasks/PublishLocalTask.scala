@@ -51,11 +51,11 @@ case class PublishLocalTask(
     val tempDocJar = file(tempDir, "doc.jar")
     val tempPomFile = file(tempDir, "pom.pom")
 
-    lazy val jarArtifact = new DefaultArtifact(project.organization, project.artifactId, "", "jar", version).setFile(tempClassJar)
-    lazy val srcArtifact = new DefaultArtifact(project.organization, project.artifactId, "sources", "jar", version).setFile(tempSourceJar)
-    lazy val docArtifact = new DefaultArtifact(project.organization, project.artifactId, "javadoc", "jar", version).setFile(tempDocJar)
-    lazy val pomArtifact: Artifact = new SubArtifact(jarArtifact, "", "pom" ).setFile(tempPomFile)
-    lazy val installRequest: InstallRequest = new InstallRequest().addArtifact(jarArtifact).addArtifact(srcArtifact).addArtifact(docArtifact).addArtifact(pomArtifact)
+    lazy val installRequest: InstallRequest = new InstallRequest().
+      addArtifact(project.jarArtifact(version).setFile(tempClassJar)).
+      addArtifact(project.srcArtifact(version).setFile(tempSourceJar)).
+      addArtifact(project.docArtifact(version).setFile(tempDocJar)).
+      addArtifact(project.pomArtifact(version).setFile(tempPomFile))
 
     def buildJars(): Either[ErrorMessage, Unit] = {
       val modules = project.upstreamModules
@@ -75,18 +75,22 @@ case class PublishLocalTask(
     }
 
     private def signFile(file: File): Either[ErrorMessage, Unit] = {
-      println(s"Signing $file")
-      if (! file.exists) 
-        logger.error(s"File $file doesn't exist")
-      val signatureFile = new File(file.getAbsolutePath + ".asc")
-      if (signatureFile.exists)
-        signatureFile.delete
-      val cmd = Command("gpg", "-ab", "--passphrase", project.gpgPassPhrase, file.getAbsolutePath)
-      val result = cmd.run
-      if (result != 0)
-        Left("Failed to sign " + file)
-      else
-        Right(Unit)
+      logger.debug(s"Signing $file")
+      if (! file.exists) {
+        val msg = s"File $file doesn't exist"
+        logger.error(msg)
+        Left(msg)
+      } else {
+        val signatureFile = new File(file.getAbsolutePath + ".asc")
+        if (signatureFile.exists)
+          signatureFile.delete
+        val cmd = Command("gpg", "-ab", "--passphrase", project.gpgPassPhrase, file.getAbsolutePath)
+        val result = cmd.run
+        if (result != 0)
+          Left("Failed to sign " + file)
+        else
+          Right(Unit)
+      }
     }
 
     def install() : Either[ErrorMessage, Unit] = {
@@ -95,13 +99,13 @@ case class PublishLocalTask(
         system.install(installRequest)
         Right(Unit)
       } andThen {
-        signFile(system.absolutePathForLocalArtifact(jarArtifact))
+        signFile(project.publishedLocalJar(version))
       } andThen {
-        signFile(system.absolutePathForLocalArtifact(srcArtifact))
+        signFile(project.publishedLocalSourcesJar(version))
       } andThen {
-        signFile(system.absolutePathForLocalArtifact(docArtifact))
+        signFile(project.publishedLocalJavadocJar(version))
       } andThen {
-        signFile(system.absolutePathForLocalArtifact(pomArtifact))
+        signFile(project.publishedLocalPom(version))
       }
     }
   }

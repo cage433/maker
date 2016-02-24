@@ -48,9 +48,6 @@ trait MakerConfig extends DependencyPimps {
     file(javaHome, "bin", "java")
   }
 
-  def resourceCacheDirectory: File = {
-    mkdirs(file(System.getProperty("user.home"), ".maker", "resource-cache"))
-  }
 
   def httpResolvers = Seq(
     ("maven",  "http://repo1.maven.org/maven2/"),

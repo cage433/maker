@@ -9,10 +9,8 @@ import scala.collection.immutable.Nil
 import maker.task.compile._
 import scala.xml.{Elem, NodeSeq}
 import maker.ScalaVersion
-import org.eclipse.aether.artifact.{Artifact, DefaultArtifact}
-import org.eclipse.aether.installation.InstallRequest
+import org.eclipse.aether.artifact.DefaultArtifact
 import org.eclipse.aether.util.artifact.SubArtifact
-import org.eclipse.aether.internal.impl.SimpleLocalRepositoryManager
 
 case class Project(
   organization: String,
@@ -28,6 +26,32 @@ case class Project(
   def projectRoot = root.asAbsoluteFile
 
   def artifactId = s"${name}_${scalaVersion.versionBase}"
+  def jarArtifact(version: String) = new DefaultArtifact(organization, artifactId, "", "jar", version)
+  def srcArtifact(version: String) = new DefaultArtifact(organization, artifactId, "sources", "jar", version)
+  def docArtifact(version: String) = new DefaultArtifact(organization, artifactId, "javadoc", "jar", version)
+  def pomArtifact(version: String) = new SubArtifact(jarArtifact(version), "", "pom" )
+
+  lazy val aetherSystem = new AetherSystem(resourceCacheDirectory)
+  def publishedLocalJar(version: String) = {
+    aetherSystem.absolutePathForLocalArtifact(jarArtifact(version))
+  }
+
+  def publishedLocalSourcesJar(version: String) = {
+    aetherSystem.absolutePathForLocalArtifact(srcArtifact(version))
+  }
+
+  def publishedLocalJavadocJar(version: String) = {
+    aetherSystem.absolutePathForLocalArtifact(docArtifact(version))
+  }
+
+  def publishedLocalPom(version: String) = {
+    aetherSystem.absolutePathForLocalArtifact(pomArtifact(version))
+  }
+
+  def publishedLocalDirectory(version: String): File = {
+    publishedLocalJar(version).dirname
+  }
+
   def upstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.compileDependencies})
   def testDependencies = upstreamModules
   override def toString = name

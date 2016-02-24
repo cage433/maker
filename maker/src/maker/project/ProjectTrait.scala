@@ -48,8 +48,9 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   def extraUpstreamTasks(task: Task): Seq[Task] = Nil
   def extraDownstreamTasks(task: Task): Seq[Task] = Nil
 
-
-  def publishLocalDirectory = resourceCacheDirectory
+  def resourceCacheDirectory: File = {
+    mkdirs(file(System.getProperty("user.home"), ".maker", "resource-cache"))
+  }
 
   private val dependenciesUpdated = new AtomicBoolean(false)
   def markDependenciesUpdated() = {

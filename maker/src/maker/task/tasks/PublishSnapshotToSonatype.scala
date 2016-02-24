@@ -33,8 +33,10 @@ with SonatypeTask with EitherPimps{
     PublishLocalTask(project, version, signArtifacts = false) :: Nil
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    val toUpload : Seq[(File, ContentType)] = (project.publishLocalPomFile(version), ContentType.APPLICATION_XML) +: {
+    val toUpload : Seq[(File, ContentType)] = {
+      (project.publishLocalPomFile(version), ContentType.APPLICATION_XML) +: {
       findJars(project.publishLocalJarDir(version)).map((_, ContentType.DEFAULT_BINARY))
+    }
     }
 
     EitherPimps.mapOrErrorLeft(toUpload, {
