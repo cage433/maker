@@ -15,7 +15,7 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "0.24"
+MAKER_VERSION       = "0.28"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE_SNAPSHOTS  = "http://oss.sonatype.org/content/repositories/snapshots/"
 SONATYPE_RELEASES   = "http://oss.sonatype.org/content/repositories/releases/"
@@ -305,6 +305,7 @@ def download_required_dependencies(resources, lib_dir):
     for (resolver, org, artifact, version) in resources:
         resource = Resource(resolver, org, artifact, version)
         lib_file = os.path.join(lib_dir, resource.basename)
+        print lib_file
         if not os.path.isfile(lib_file):
             if os.path.isfile(resource.cache_file):
                 shutil.copy(resource.cache_file, lib_file)
@@ -388,6 +389,7 @@ def launch_repl():
             "-nc", 
             "-i", project_definition_file()]
 
+    print " ".join(cmd_args)
     if args.execute_command:
         cmd_args = cmd_args + ["-e"] + args.execute_command.split() 
 
@@ -398,6 +400,7 @@ def launch_repl():
 read_args()
 create_logger()
 create_maker_lib_directories()
+
 
 download_required_dependencies(SCALA_LIBRARIES, maker_scala_directory())
 download_required_dependencies(MAKER_DEPENDENCIES, maker_dependencies_directory())

@@ -47,11 +47,11 @@ lazy val testReporterModule = new Module(
 }
 
 lazy val testReporterProject = new Project(
-  "maker-test-reporter",
+  organization = "com.github.cage433",
+  name = "maker-test-reporter",
   root = file("test-reporter").asAbsoluteFile, 
   modules = List(testReporterModule),
   scalaVersion = ScalaVersion.TWO_TEN_DEFAULT,
-  organization = Some("com.github.cage433"),
   extraProjectPomInfo = extraPomInfo
 )
 
@@ -85,11 +85,11 @@ lazy val makerModule = new Module(
 }
 
 lazy val makerProject = new Project(
-  "maker", 
-  file("."), 
-  List(makerModule),
+  organization = "com.github.cage433",
+  name = "maker", 
+  root = file("."), 
+  modules = List(makerModule),
   scalaVersion = ScalaVersion.TWO_TEN_DEFAULT,
-  organization = Some("com.github.cage433"),
   extraProjectPomInfo = extraPomInfo
 ) with TmuxIntegration  
 // Used to disambiguate which maker is running in the repl.
