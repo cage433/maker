@@ -9,18 +9,14 @@ object BuildJar{
 
   type ErrorMessage = String
 
-  def build(jarFile : File, directories : Seq[File]) : Either[ErrorMessage, Unit] = {
-    println(s"Building ${directories.head}")
+  def build(jarFile : File, directories : Seq[File], fileFilter: File => Boolean = {f: File => true}) : Either[ErrorMessage, Unit] = {
     val BUFFER_SIZE=1000 * 10
     jarFile.delete
     val jarOutputStream = new JarOutputStream(new FileOutputStream(jarFile))
     try {
       directories.filter(_.exists).foreach{
         dir => 
-          FileUtils.allProperFiles(dir).filter{
-            f => 
-              Seq("jar", "pom", "asc").exists(f.extension == _)
-          }.foreach{
+          FileUtils.allProperFiles(dir).filter(fileFilter).foreach{
             file => 
               val fis = new FileInputStream(file)
               try {

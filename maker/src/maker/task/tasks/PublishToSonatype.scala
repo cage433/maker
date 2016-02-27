@@ -60,7 +60,13 @@ case class PublishToSonatype(project : Project, version : String)
 
     val bundleJar = file(System.getenv("HOME"), "tmp", "bundle.jar")
 
-    BuildJar.build(bundleJar, project.publishLocalDir(version) :: Nil).map{
+    BuildJar.build(
+      bundleJar, 
+      project.publishLocalDir(version) :: Nil,
+      fileFilter = {f => 
+        println(s"File $f")
+        Seq("jar", "pom", "asc").exists(f.extension == _)}
+    ).map{
       _ => bundleJar
     }
   }

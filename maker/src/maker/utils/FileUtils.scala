@@ -76,7 +76,7 @@ trait FileUtils {
     def className(classDirectory : File) : String = {
       relativeTo(classDirectory).getPath.split('.').head.replace(File.separator, ".")
     }
-    def extension: String = basename.split(".").last
+    def extension: String = basename.split('.').last
     def basename : String = plainFile.getName
     def basenameSansExtension : String = basename.split('.').head
     def isScalaFile = plainFile.getName.endsWith(".scala")
