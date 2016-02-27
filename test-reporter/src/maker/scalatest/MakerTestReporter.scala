@@ -27,7 +27,7 @@ class MakerTestReporter extends Reporter{
     case Some(f) => new File(f)
     case None => throw new Exception(" maker must have maker.test.output set")
   }
-  val messagingDir : File = Properties.propOrNone("maker.testreporter.messaging.directory" ) match {
+  lazy val messagingDir : File = Properties.propOrNone("maker.testreporter.messaging.directory" ) match {
     case Some(f) => new File(f)
     case None => throw new Exception(" maker must have maker.testreporter.messaging.directory set")
   }

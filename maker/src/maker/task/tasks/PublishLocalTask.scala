@@ -99,13 +99,14 @@ case class PublishLocalTask(
         system.install(installRequest)
         Right(Unit)
       } andThen {
-        signFile(project.publishedLocalJar(version))
-      } andThen {
-        signFile(project.publishedLocalSourcesJar(version))
-      } andThen {
-        signFile(project.publishedLocalJavadocJar(version))
-      } andThen {
-        signFile(project.publishedLocalPom(version))
+        if (signArtifacts) {
+          signFile(project.publishedLocalJar(version))        andThen 
+          signFile(project.publishedLocalSourcesJar(version)) andThen 
+          signFile(project.publishedLocalJavadocJar(version)) andThen 
+          signFile(project.publishedLocalPom(version))
+        } else {
+          Right(Unit)
+        }
       }
     }
   }

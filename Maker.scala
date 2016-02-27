@@ -106,6 +106,10 @@ def snapshot(version_ : String) = {
   makerProject.publishSonatypeSnapshot(version)
 }
 
+def snapshotTestReporter() = {
+  testReporterProject.publishLocal(version, signArtifacts = false) 
+}
+
 def release(version : String) = {
   testReporterProject.publishToSonatype(version) andThen 
   testReporterProject.copy(scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT).publishToSonatype(version) andThen 

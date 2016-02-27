@@ -122,6 +122,7 @@ case class UpdateTask(project : ProjectTrait)
     var aetherDependencies = download.aetherDependencies(
       project.scalaVersion.scalaLibraryRichDependency +: 
       project.scalaVersion.scalaCompilerRichDependency +:
+      "com.github.cage433" % "maker-test-reporter" %% Option(System.getProperty("maker.version")).getOrElse(throw new Exception("propert maker.version not set")) +:
       //project.makerTestReporterDependency +:
       project.upstreamDependencies
     )

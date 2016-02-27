@@ -305,7 +305,6 @@ def download_required_dependencies(resources, lib_dir):
     for (resolver, org, artifact, version) in resources:
         resource = Resource(resolver, org, artifact, version)
         lib_file = os.path.join(lib_dir, resource.basename)
-        print lib_file
         if not os.path.isfile(lib_file):
             if os.path.isfile(resource.cache_file):
                 shutil.copy(resource.cache_file, lib_file)
@@ -380,6 +379,7 @@ def launch_repl():
             "-classpath", classpath(maker_scala_libraries()),
             "-Dsbt.log.format=false",
             "-Drebel.log=true",
+            "-Dmaker.version=" + MAKER_VERSION,
             "-Dmaker.test.reporter=" + test_reporter_classpath_component(),
             "-Dscala.usejavacp=true"] + extra_opts + args.jvm_args + \
                 ["-Dlogback.configurationFile=" + logback_file(),
@@ -389,7 +389,6 @@ def launch_repl():
             "-nc", 
             "-i", project_definition_file()]
 
-    print " ".join(cmd_args)
     if args.execute_command:
         cmd_args = cmd_args + ["-e"] + args.execute_command.split() 
 
