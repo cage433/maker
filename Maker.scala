@@ -107,7 +107,7 @@ def snapshot(version_ : String) = {
 }
 
 def snapshotTestReporter() = {
-  testReporterProject.publishLocal(version, signArtifacts = false) 
+  testReporterProject.publishLocal("1.0-SNAPSHOT", signArtifacts = false) 
 }
 
 def release(version : String) = {
