@@ -115,7 +115,7 @@ case class Project(
     )
   }
 
-  def compileTaskBuild(phases: Seq[CompilePhase]): Build = transitiveBuild(modules.flatMap{m => phases.map{ p => CompileTask(this, m, p)}})
+  def compileTaskBuild(phases: Seq[CompilePhase]): Build = transitiveBuild(upstreamModules.flatMap{m => phases.map{ p => CompileTask(this, m, p)}})
 
   //def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
     //upstreamModules.flatMap{module => 
