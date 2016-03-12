@@ -25,6 +25,9 @@ case class Project(
 
   def projectRoot = root.asAbsoluteFile
 
+  def extraJars = upstreamModules.flatMap(_.extraJars)
+  def extraTestSystemProperties = testUpstreamModules.flatMap(_.extraTestSystemProperties)
+
   def artifactId = s"${name}_${scalaVersion.versionBase}"
   def jarArtifact(version: String) = new DefaultArtifact(organization, artifactId, "", "jar", version)
   def srcArtifact(version: String) = new DefaultArtifact(organization, artifactId, "sources", "jar", version)
@@ -53,6 +56,7 @@ case class Project(
   }
 
   def upstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.compileDependencies})
+  def testUpstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.testDependencies})
   def testDependencies = upstreamModules
   override def toString = name
 

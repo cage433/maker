@@ -17,12 +17,15 @@ import org.apache.commons.io.output.TeeOutputStream
 /**
   * Corresponds to a module in IntelliJ
   */
-class Module(
-    val root : File,
-    val name : String,
-    val compileDependencies : Seq[Module] = Nil,
-    val testDependencies : Seq[Module] = Nil,
-    val scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT
+ case class Module(
+    root : File,
+    name : String,
+    compileDependencies : Seq[Module] = Nil,
+    testDependencies : Seq[Module] = Nil,
+    scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
+    extraJars: Seq[File] = Nil,                                   /* Initital use case is to add jfxrt.jar */
+    extraTestSystemProperties: Seq[String] = Nil
+
 )
   extends ProjectTrait
   with DependencyPimps
@@ -31,6 +34,10 @@ class Module(
 
   import Module.logger
   def upstreamModules : Seq[Module] = transitiveClosure(Seq(this), {m : Module => m.compileDependencies})
+  def testUpstreamModules : Seq[Module] = {
+    val testDependencyClosure = transitiveClosure(Seq(this), {m : Module => m.testDependencies})
+    transitiveClosure(this +: testDependencyClosure, {m : Module => m.compileDependencies}).distinct
+  }
 
   override def tearDown(graph : Dependency.Graph, result : BuildResult) = true
 

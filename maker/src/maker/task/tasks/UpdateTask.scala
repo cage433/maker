@@ -137,7 +137,6 @@ case class UpdateTask(project : ProjectTrait)
       dependencyRequest
     ).getArtifactResults.map(_.getArtifact).filter(download.isOfCorrectType)
 
-    var a: Artifact = new DefaultArtifact( "org.eclipse.aether.examples", "aeher-example", "jar", "0.1-SNAPSHOT" );
     collectRequest.setRepositories(repos)
     val collectResult : CollectResult = aetherSystem.collectDependencies(collectRequest)
 

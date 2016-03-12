@@ -39,6 +39,8 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
    }
   override def hashCode = root.hashCode
 
+  def extraTestSystemProperties: Seq[String]
+  def extraJars: Seq[File]
   def scalaVersion : ScalaVersion 
 
   val analyses = new ConcurrentHashMap[File, Analysis]()
@@ -77,6 +79,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   }
   // Note that 'upstream' is inclusive of `this`, when `this` is a module
   def upstreamModules : Seq[Module]
+  def testUpstreamModules : Seq[Module]
 
   def setUp(graph : Dependency.Graph) : Boolean = {
     if (graph.includesCompileTask){
@@ -149,10 +152,11 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
               case _ : Project => 
                 upstreamModules.map(_.classDirectory(phase))
               case m : Module => 
-                (m +: upstreamModules.flatMap(_.testDependencies)).map(_.classDirectory(phase))
+                testUpstreamModules.map(_.classDirectory(phase)) ++: 
+                testUpstreamModules.map(_.classDirectory(SourceCompilePhase)) 
             })
         }
-    }
+    }.distinct
   }
 
   private [project] def resourceDirectories(phases : Seq[CompilePhase]) = upstreamModules.flatMap{
@@ -186,15 +190,22 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   }
 
 
-  def runtimeClasspathComponents(phases : Seq[CompilePhase]) = 
-    compilationTargetDirectories(phases) ++:
-    (if (phases.toSet.intersect(CompilePhase.TEST_PHASES.toSet).nonEmpty)
-      dependencyJars(TestCompilePhase) 
-    else
-      dependencyJars(SourceCompilePhase)
-    ) ++:
-    unmanagedLibs ++:
-    resourceDirectories(phases) 
+  def runtimeClasspathComponents(phases : Seq[CompilePhase]): Seq[File] = {
+    if (phases.contains(SourceCompilePhase)) {
+      val components = extraJars ++:
+        compilationTargetDirectories(phases) ++:
+        (if (phases.toSet.intersect(CompilePhase.TEST_PHASES.toSet).nonEmpty)
+          dependencyJars(TestCompilePhase) 
+        else
+          dependencyJars(SourceCompilePhase)
+        ) ++:
+        unmanagedLibs ++:
+        resourceDirectories(phases) 
+      components.distinct
+    } else {
+      runtimeClasspathComponents(SourceCompilePhase +: phases)
+    }
+  }
 
   def runtimeClasspath(phases : Seq[CompilePhase]) = Module.asClasspathStr(runtimeClasspathComponents(phases))
 

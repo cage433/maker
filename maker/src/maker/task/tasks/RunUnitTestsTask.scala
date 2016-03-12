@@ -73,11 +73,10 @@ case class RunUnitTestsTask(
       s += "scala.usejavacp" -> "true"
       s += "logback.configurationFile" -> Option(System.getProperty("logback.configurationFile")).getOrElse(throw new Exception("No logback config defined"))
       s += "maker.test.output" -> testOutputFile.toString
-      //s += "maker.testreporter.messaging.directory" -> testReporterMessagingDir.getAbsolutePath
       s += "sbt.log.format" -> "=false"
       s.map{
         case (key, value) ⇒ "-D" + key + "=" + value
-      }.toList
+      }.toList ++: rootProject.extraTestSystemProperties
     }
 
     val memoryArguments = List(
@@ -104,7 +103,6 @@ case class RunUnitTestsTask(
     // Actual exit value is checked below.
     cmd = cmd.withExitValues(0, 1)
 
-    println(cmd)
     val res = cmd.run
 
     val results = MakerTestResults(testOutputFile)
