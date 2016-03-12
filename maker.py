@@ -15,7 +15,7 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "0.33"
+MAKER_VERSION       = "0.34"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE_SNAPSHOTS  = "http://oss.sonatype.org/content/repositories/snapshots/"
 SONATYPE_RELEASES   = "http://oss.sonatype.org/content/repositories/releases/"
