@@ -14,8 +14,7 @@ object VimClasspath extends FileUtils {
       project.compilationTargetDirectories(phase :: Nil)
     }.distinct ++: project.resourceDirectories(CompilePhase.PHASES)
     components ++= project.dependencyJars(TestCompilePhase)
-    components ++= project.unmanagedLibs
-    components ++= project.managedLibDir :: Nil
+    components ++= project.unmanagedLibs 
     components = components.filter{
       file =>
         file.exists && (!file.isDirectory || file.list.size > 0)
@@ -29,7 +28,8 @@ object VimClasspath extends FileUtils {
         } else 
           path
     }.distinct
-    val cp = relativePaths.mkString(File.pathSeparator)
+    val cp = relativePaths.mkString("", File.pathSeparator, File.pathSeparator + sys.props("line.separator"))
+
     val cpFile : File = file("maker-classpath.txt")
     println(s"Writing classpath to file $cpFile")
     writeToFile(cpFile, cp)
