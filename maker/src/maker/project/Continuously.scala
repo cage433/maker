@@ -10,9 +10,9 @@ object Continuously {
     var lastTaskTime :Option[Long] = None
 
     def allSourceFiles : Seq[File] = project.upstreamModules.flatMap(_.sourceFiles(SourceCompilePhase)) ++: 
-    (project.upstreamModules.flatMap{module => module +: module.testDependencies}).distinct.flatMap{module => 
+    (project.testUpstreamModules.flatMap{module => 
       CompilePhase.TEST_PHASES.flatMap(module.sourceFiles(_))
-    }
+    })
 
     def sourceFileCount : Int = allSourceFiles.size
     var lastFileCount : Int = sourceFileCount 

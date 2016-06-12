@@ -55,8 +55,8 @@ case class Project(
     publishedLocalJar(version).dirname
   }
 
-  def upstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.compileDependencies})
-  def testUpstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.testDependencies})
+  def upstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.upstreamModules}).distinct
+  def testUpstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.testUpstreamModules}).distinct
   def testDependencies = upstreamModules
   override def toString = name
 

@@ -15,30 +15,29 @@ import maker.{ScalaVersion, Log}
 case class CleanTask(project : ProjectTrait) extends Task with Log
 {
   def name = "Clean"
-  def upstreamTasks = Nil
+  def upstreamTasks = project match {
+    case m: Module => 
+      m.upstreamModules.filterNot(_ == m).map(CleanTask(_))
+    case p: ProjectTrait =>
+      p.upstreamModules.map(CleanTask(_))
+  }
 
   def exec(results : Iterable[TaskResult], sw : Stopwatch) = {
-    logger.debug("cleaning " + project)
+    project match {
+      case p : Project =>
+        recursiveDelete(p.packageDir)
+        cleanRegularFilesLeavingDirectories(p.managedResourceDir)
+        p.clearDependencies()
 
-    // remove all output as we don't want lingering files or even empty dirs messing up a subsequent builds
+      case module: Module => 
+        logger.debug("cleaning " + module)
 
-               
-    project.upstreamModules.foreach{
-      module => 
         cleanRegularFilesLeavingDirectories(module.classDirectory(SourceCompilePhase))
         cleanRegularFilesLeavingDirectories(module.classDirectory(TestCompilePhase))
         cleanRegularFilesLeavingDirectories(module.managedResourceDir)
         recursiveDelete(module.compilationMetadataDirectory(SourceCompilePhase))
         recursiveDelete(module.compilationMetadataDirectory(TestCompilePhase))
         module.clearDependencies()
-    }
-
-    project match {
-      case p : Project => 
-        recursiveDelete(p.packageDir)
-        cleanRegularFilesLeavingDirectories(p.managedResourceDir)
-        p.clearDependencies()
-      case _ =>
     }
 
     DefaultTaskResult(this, succeeded = true, stopwatch = sw)
