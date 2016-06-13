@@ -70,13 +70,14 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
 
   protected def transitiveClosure[A](start : Seq[A], expand : A => Seq[A]) : Seq[A] = {
     var closure : Seq[A] = Nil
-    var more = start
+    var more = start.distinct
     while (more.nonEmpty){
       closure ++= more
-      more = more.flatMap(expand).filterNot(closure.contains)
+      more = more.flatMap(expand).distinct.filterNot(closure.contains)
     }
-    closure
+    closure.distinct
   }
+
   // Note that 'upstream' is inclusive of `this`, when `this` is a module
   def upstreamModules : Seq[Module]
   def testUpstreamModules : Seq[Module]
@@ -140,7 +141,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
     result
   }
 
-  private [project] def compilationTargetDirectories(phases : Seq[CompilePhase]) = {
+  def compilationTargetDirectories(phases : Seq[CompilePhase]) = {
     val phases_ = (SourceCompilePhase +: phases).distinct
     phases_.flatMap{
       phase => 

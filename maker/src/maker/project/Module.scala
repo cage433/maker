@@ -89,7 +89,7 @@ import org.apache.commons.io.output.TeeOutputStream
        case p : Module if p.root == root => {
          //I believe this assertion should always hold. It's really here so that
          //this overriden equals method never returns true on differing modules.
-         assert(this eq p, "Shouldn't have two modules pointing to the same root")
+         assert(this eq p, s"Shouldn't have two modules pointing to the same root - have $this and $rhs")
          true
        }
        case _ => false

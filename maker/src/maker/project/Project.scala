@@ -55,8 +55,8 @@ case class Project(
     publishedLocalJar(version).dirname
   }
 
-  def upstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.upstreamModules}).distinct
-  def testUpstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.testUpstreamModules}).distinct
+  def upstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.compileDependencies}).distinct
+  def testUpstreamModules : Seq[Module] = transitiveClosure(modules, {m : Module => m.compileDependencies ++ m.testDependencies}).distinct
   def testDependencies = upstreamModules
   override def toString = name
 
@@ -121,9 +121,4 @@ case class Project(
 
   def compileTaskBuild(phases: Seq[CompilePhase]): Build = transitiveBuild(upstreamModules.flatMap{m => phases.map{ p => CompileTask(this, m, p)}})
 
-  //def testCompileTaskBuild(testPhases : Seq[CompilePhase]) = transitiveBuild(
-    //upstreamModules.flatMap{module => 
-      //testPhases.map(CompileTask(this, module, _))
-    //}
-  //)
 }
