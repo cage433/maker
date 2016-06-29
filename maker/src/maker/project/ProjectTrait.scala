@@ -149,13 +149,8 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
           case SourceCompilePhase => 
             upstreamModules.map(_.classDirectory(phase))
           case _ => 
-            (this match {
-              case _ : Project => 
-                testUpstreamModules.map(_.classDirectory(phase))
-              case m : Module => 
-                testUpstreamModules.map(_.classDirectory(phase)) ++: 
-                testUpstreamModules.map(_.classDirectory(SourceCompilePhase)) 
-            })
+            testUpstreamModules.map(_.classDirectory(phase)) ++: 
+            testUpstreamModules.map(_.classDirectory(SourceCompilePhase)) 
         }
     }.distinct
   }
