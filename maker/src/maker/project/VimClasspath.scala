@@ -1,6 +1,6 @@
 package maker.project
 
-import maker.task.compile.{CompilePhase, TestCompilePhase}
+import maker.task.compile._
 import java.io.File
 import maker.utils.FileUtils
 
@@ -12,7 +12,9 @@ object VimClasspath extends FileUtils {
   def writeVimClasspath(project: ProjectTrait) {
     var components = CompilePhase.PHASES.flatMap{phase => 
       project.compilationTargetDirectories(phase :: Nil)
-    }.distinct ++: project.resourceDirectories(CompilePhase.PHASES)
+    }.distinct ++: project.resourceDirectories(TestCompilePhase :: SourceCompilePhase :: Nil)  // FreeTRM wants test reference.conf to 
+                                                                                               // override main - however may want to change this for 
+                                                                                               // other projects
     components ++= project.dependencyJars(TestCompilePhase)
     components ++= project.unmanagedLibs 
     components = components.filter{
