@@ -11,6 +11,7 @@ import scala.xml.{Elem, NodeSeq}
 import maker.ScalaVersion
 import org.eclipse.aether.artifact.DefaultArtifact
 import org.eclipse.aether.util.artifact.SubArtifact
+import maker.utils.MakerTestResults
 
 case class Project(
   organization: String,
@@ -108,15 +109,25 @@ case class Project(
 
   def testTaskBuild(testPhase: TestPhase, lastCompilationTimeFilter : Option[Long]) = {
     // For a project, `test` runs tests of all modules
-    transitiveBuild(
-      RunUnitTestsTask(
-        s"Unit tests for $this", 
-        upstreamModules,
-        rootProject = this, 
-        classNamesOrPhase = Right(testPhase),
-        lastCompilationTimeFilter = lastCompilationTimeFilter
-      ) :: Nil
-    )
+     transitiveBuild(
+       upstreamModules.map{
+         module => 
+          RunUnitTestsTask(
+            s"Unit tests for $this", 
+            module,
+            rootProject = this, 
+            classNamesOrPhase = Right(testPhase),
+            lastCompilationTimeFilter = lastCompilationTimeFilter
+          )
+       }
+      ) 
+  }
+
+
+  def testResults = {
+    // Test results may either be in a top level project's directory, or else in
+    // module directoriy(s)
+    upstreamModules.distinct.map(MakerTestResults(_)).reduce(_++_)
   }
 
   def compileTaskBuild(phases: Seq[CompilePhase]): Build = transitiveBuild(upstreamModules.flatMap{m => phases.map{ p => CompileTask(this, m, p)}})

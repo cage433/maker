@@ -206,11 +206,8 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   def runtimeClasspath(phases : Seq[CompilePhase]) = Module.asClasspathStr(runtimeClasspathComponents(phases))
 
 
-  def testResults = {
-    // Test results may either be in a top level project's directory, or else in
-    // module directoriy(s)
-    upstreamModules.distinct.map(MakerTestResults(_)).reduce(_++_)
-  }
+
+  def testResults: MakerTestResults 
 
 
   def managedLibDir = file(rootAbsoluteFile, "lib_managed", scalaVersion.versionNo)

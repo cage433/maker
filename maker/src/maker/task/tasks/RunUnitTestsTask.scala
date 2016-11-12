@@ -16,7 +16,7 @@ import java.lang.reflect.Modifier
 
 case class RunUnitTestsTask(
   name : String, 
-  modules : Seq[Module],
+  module : Module,
   rootProject : ProjectTrait, 
   classNamesOrPhase: Either[Seq[String], TestPhase],
   lastCompilationTimeFilter : Option[Long]
@@ -35,7 +35,7 @@ case class RunUnitTestsTask(
 
   override def failureHaltsTaskManager = false
 
-  def upstreamTasks = modules.flatMap{m => CompilePhase.TEST_PHASES.map{p => CompileTask(rootProject, m, p)}}
+  def upstreamTasks = UpdateTask(rootProject) +: CompilePhase.TEST_PHASES.map{p => CompileTask(rootProject, module, p)}
 
   def exec(rs : Iterable[TaskResult], sw : Stopwatch) : TaskResult = {
 
@@ -46,17 +46,14 @@ case class RunUnitTestsTask(
       case Left(classOrSuiteNames) => 
         classOrSuiteNames
       case Right(testPhase) => 
-        val isTestSuite = RunUnitTestsTask.isAccessibleScalaTestSuite(rootProject)
+        val isTestSuite = RunUnitTestsTask.isAccessibleScalaTestSuite(module)
         def filterByCompilationTime(classFiles: Seq[File]) = lastCompilationTimeFilter match {
           case Some(time) => classFiles.filter(_.lastModified >= time)
           case None => classFiles
         }
-        val classNames = modules.flatMap{
-          m => 
-            filterByCompilationTime(m.classFiles(testPhase)).map{
-              classFile => 
-                classFile.className(m.classDirectory(testPhase))
-            }
+        val classNames = filterByCompilationTime(module.classFiles(testPhase)).map{
+          classFile => 
+            classFile.className(module.classDirectory(testPhase))
         }.filterNot(_.contains("$"))
         classNames.filter(isTestSuite)
     }
@@ -67,7 +64,7 @@ case class RunUnitTestsTask(
 
 
     val suiteParameters : Seq[String] = classOrSuiteNames.map(List("-s", _)).flatten.toVector
-    val testOutputFile = RunUnitTestsTask.testOutputFile(rootProject)
+    val testOutputFile = RunUnitTestsTask.testOutputFile(module)
     val systemPropertiesArguments = {
       var s = Map[String, String]()
       s += "scala.usejavacp" -> "true"
@@ -93,7 +90,7 @@ case class RunUnitTestsTask(
       val args : Seq[String] = List(
         rootProject.javaExecutable.getAbsolutePath, 
         "-classpath",
-        rootProject.runtimeClasspath(CompilePhase.TEST_PHASES)) ++:
+        module.runtimeClasspath(CompilePhase.PHASES)) ++:
         (opts :+ "org.scalatest.tools.Runner") ++:
         testParameters ++: suiteParameters
       Command(args : _*).withOutputTo(System.err)
@@ -118,7 +115,7 @@ case class RunUnitTestsTask(
       val failingSuiteClassesText = results.failingSuiteClasses.indented()
       RunUnitTestsTaskResult(
         this, succeeded = false, stopwatch = sw, 
-        message = Some("Test failed in " + rootProject + failingSuiteClassesText),
+        message = Some("Test failed in " + module + failingSuiteClassesText),
         testResults = results)
     }
     result
@@ -132,7 +129,7 @@ object RunUnitTestsTask extends Log {
   def failingTests(rootProject : ProjectTrait, module : Module) : RunUnitTestsTask = {
     RunUnitTestsTask(
       "Failing tests",
-      module :: Nil,
+      module,
       rootProject,
       Left(MakerTestResults(testOutputFile(module)).failingSuiteClasses),
       lastCompilationTimeFilter = None

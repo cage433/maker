@@ -11,7 +11,7 @@ import sbt.ConsoleLogger
 import sbt.inc.Analysis
 import scala.collection.immutable.Nil
 import org.eclipse.aether.graph.{Exclusion, Dependency => AetherDependency}
-import maker.utils.FileUtils
+import maker.utils.{FileUtils, MakerTestResults}
 import org.apache.commons.io.output.TeeOutputStream
 
 /**
@@ -142,13 +142,15 @@ import org.apache.commons.io.output.TeeOutputStream
     transitiveBuild(
       RunUnitTestsTask(
         s"Unit tests for $this", 
-        modules = this :: Nil, 
+        module = this, 
         rootProject = this, 
         classNamesOrPhase = Right(testPhase),
         lastCompilationTimeFilter = lastCompilationTimeFilter
       ) :: Nil
     )
   }
+
+  def testResults = MakerTestResults(this)
 
   def compileTaskBuild(phases: Seq[CompilePhase]): Build = transitiveBuild(phases.map(CompileTask(this, this, _)))
 

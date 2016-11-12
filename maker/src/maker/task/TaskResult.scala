@@ -109,11 +109,12 @@ object TaskResult{
   }
 
   def reportOnTaskTimings(taskResults : List[TaskResult]){
+    val MIN_TIME = 0.05
     val tb = TableBuilder(
       "Task".padRight(COLUMN_WIDTHS(0)), 
       "Interval".padRight(COLUMN_WIDTHS(1)), 
       "CPU Time".padRight(COLUMN_WIDTHS(2)),
-      "Clock Time") 
+      f"Clock Time (if > $MIN_TIME%1.2fs)") 
 
 
 
@@ -123,7 +124,8 @@ object TaskResult{
     resultsByName.foreach{
       case (taskName, resultsForType) =>
         val (clockTime, cpuTime) = clockAndCPUTime(resultsForType)
-        tb.addRow(taskName, "", fmtNanos(cpuTime), fmtNanos(clockTime))
+        if (clockTime > NANOS_PER_SECOND * MIN_TIME)
+          tb.addRow(taskName, "", fmtNanos(cpuTime), fmtNanos(clockTime))
 
         val intervalMaps : List[Map[String, (Long, Long)]] = resultsForType.map(_.intervalStartAndEndTime)
         val intervalNames : List[String] = intervalMaps.flatMap(_.keys.toList).distinct 
@@ -134,7 +136,8 @@ object TaskResult{
               case Some((t1, t2)) => (t1, t2)
             }
             val (intervalClockTime, intervalCPUTime) = Timings(intervalStartAndEndTimes).clockAndCPUTime
-            tb.addRow(taskName, name, fmtNanos(intervalCPUTime), fmtNanos(intervalClockTime))
+            if (intervalClockTime > NANOS_PER_SECOND * MIN_TIME)
+              tb.addRow(taskName, name, fmtNanos(intervalCPUTime), fmtNanos(intervalClockTime))
         }
     }
     val (totalClockTime, totalCpuTime) = clockAndCPUTime(taskResults)
