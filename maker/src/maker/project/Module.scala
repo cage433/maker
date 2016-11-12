@@ -136,6 +136,18 @@ import org.apache.commons.io.output.TeeOutputStream
 
   def cleanOnly = executeSansDependencies(CleanTask(this))
 
+  def testClass(className: String): BuildResult = execute(
+    transitiveBuild(
+      RunUnitTestsTask(
+        s"Testing $className",
+        this,
+        this,
+        Left(className :: Nil),
+        lastCompilationTimeFilter = None
+      ) :: Nil
+    )
+  )
+
   def testTaskBuild(testPhase: TestPhase, lastCompilationTimeFilter : Option[Long]) = {
     // For a module, the `test` task runs just that module's tests.
     // To run all tests, use the containing project

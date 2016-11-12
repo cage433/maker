@@ -217,7 +217,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   def managedResourceDir = file(rootAbsoluteFile, "resource_managed")
   def unmanagedLibDirs : Seq[File] = List(file(rootAbsoluteFile, "lib"))
 
-  def upstreamDependencies = (upstreamModules ++ upstreamModules.flatMap(_.testDependencies)).distinct.flatMap(_.dependencies)
+  def upstreamDependencies = (upstreamModules ++ testUpstreamModules.flatMap(_.testDependencies)).distinct.flatMap(_.dependencies)
 
   def testClasspathLoader = new URLClassLoader(
     runtimeClasspathComponents(CompilePhase.TEST_PHASES).map(_.toURI.toURL).toArray,
