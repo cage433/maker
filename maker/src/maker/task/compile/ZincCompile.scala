@@ -51,9 +51,9 @@ object ZincCompile extends Log {
       "-java-home",
       rootProject.javaHome.getCanonicalFile.getAbsolutePath,
       "-scala-compiler",
-      module.scalaCompilerJar.getAbsolutePath,
+      rootProject.scalaCompilerJar.getAbsolutePath,
       "-scala-library",
-      module.scalaLibraryJar.getAbsolutePath,
+      rootProject.scalaLibraryJar.getAbsolutePath,
       "-classpath",
       module.compilationClasspath(phase),
       "-d",
@@ -63,7 +63,7 @@ object ZincCompile extends Log {
       "-analysis-cache",
       module.compilationCacheFile(phase).getAbsolutePath,
       "-scala-extra",
-      module.scalaReflectJar.getAbsolutePath
+      rootProject.scalaReflectJar.getAbsolutePath
     ) ++:
     module.scalacOptions.map("-S" +_) ++:
     module.javacOptions.map("-C" +_) ++:

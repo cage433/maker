@@ -27,7 +27,7 @@ case class CompileTask(
     phase match {
       case SourceCompilePhase => 
         (module.compileDependencies ++: module.testDependencies).distinct.map(CompileTask(rootProject, _, SourceCompilePhase)) ++ 
-          List(UpdateTask(module))
+          List(UpdateTask(rootProject), UpdateTask(module))
       case IntegrationTestCompilePhase | EndToEndTestCompilePhase =>
           CompileTask(rootProject, module, TestCompilePhase) +: Nil
       case TestCompilePhase => 
