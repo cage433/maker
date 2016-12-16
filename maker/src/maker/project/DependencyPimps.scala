@@ -6,12 +6,30 @@ import org.eclipse.aether.graph.{Exclusion, Dependency}
 import scala.collection.JavaConversions._
 import maker.ScalaVersion
 
+sealed trait ArtifactScalaVersion {
+  def configDelimiter: String
+  def nameExtension(scalaVersion: ScalaVersion): String
+}
+object ArtifactScalaVersion {
+  object NoVersion extends ArtifactScalaVersion {
+    val configDelimiter = "%"
+    def nameExtension(scalaVersion: ScalaVersion) = ""
+  }
+  object MajorVersion extends ArtifactScalaVersion {
+    val configDelimiter = "%%"
+    def nameExtension(scalaVersion: ScalaVersion) = s"_${scalaVersion.versionBase}"
+  }
+  object FullVersion extends ArtifactScalaVersion {
+    val configDelimiter = "%%%"
+    def nameExtension(scalaVersion: ScalaVersion) = s"_${scalaVersion.versionNo}"
+  }
+}
 
 case class RichDependency(
   org : String, 
   artifactId : String, 
   version : String, 
-  useMajorScalaVersion : Boolean,
+  artifactScalaVersion : ArtifactScalaVersion,
   scope : String = JavaScopes.COMPILE,
   classifier : String = "",
   extension : String = "jar",
@@ -21,7 +39,7 @@ case class RichDependency(
 
   // Note the long string has no mention of classifier or optional
   def toLongString = {
-    var s = s""""$org" % "$artifactId" ${if (useMajorScalaVersion) "%%" else "%"} "$version""""
+    var s = s""""$org" % "$artifactId" ${artifactScalaVersion.configDelimiter} "$version""""
     if (scope != JavaScopes.COMPILE) 
       s += s""" withScope("${scope}")"""
     if (toExclude.nonEmpty)
@@ -34,7 +52,7 @@ case class RichDependency(
   def withClassifier(classifier : String) = copy(classifier = classifier)
 
   def scalaVersionedArtifactId(scalaVersion : ScalaVersion) = 
-    if (useMajorScalaVersion) s"${artifactId}_${scalaVersion.versionBase}" else artifactId
+    s"${artifactId}${artifactScalaVersion.nameExtension(scalaVersion)}" 
 
   def excluding(groupAndArtifacts : String*) = copy(toExclude = groupAndArtifacts)
 
@@ -78,8 +96,10 @@ case class RichDependency(
 }
 trait DependencyPimps{
   class OrgAndArtifact(org : String, artifact : String){
-    def %(version : String) = new RichDependency(org, artifact, version, useMajorScalaVersion = false)
-    def %%(version : String) = new RichDependency(org, artifact, version, useMajorScalaVersion = true)
+    import ArtifactScalaVersion._
+    def %(version : String) = new RichDependency(org, artifact, version, artifactScalaVersion = NoVersion)
+    def %%(version : String) = new RichDependency(org, artifact, version, artifactScalaVersion = MajorVersion)
+    def %%%(version : String) = new RichDependency(org, artifact, version, artifactScalaVersion = FullVersion)
   }
   implicit class Organization(name : String){
     def %(artifact : String) = new OrgAndArtifact(name, artifact)
