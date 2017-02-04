@@ -157,7 +157,9 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
 
   private [project] def resourceDirectories(phases : Seq[CompilePhase]) = upstreamModules.flatMap{
     module => 
-      phases.map(module.resourceDir(_))
+      // Put test resources first so that test config files override prod
+      val (testPhases, otherPhases) = phases.partition(_.isInstanceOf[TestPhase])
+      (testPhases ++: otherPhases).map(module.resourceDir)
   }
 
   private [project] def dependencyJars(phase : CompilePhase) = phase match {
