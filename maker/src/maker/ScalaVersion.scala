@@ -21,8 +21,8 @@ case class ScalaVersion(
   with ToBooleanOps
 {
   require( 
-    List(10, 11).contains(major),
-    "Only supports scala 2.10 to 2.11 inclusive"
+    List(10, 11, 12).contains(major),
+    "Only supports scala 2.10 to 2.12 inclusive"
   )
   val versionNo = s"2.$major.$minor"
   val versionBase = s"2.$major"
@@ -53,4 +53,5 @@ object ScalaVersion{
 
   val TWO_TEN_DEFAULT = ScalaVersion("2.10.4")
   val TWO_ELEVEN_DEFAULT = ScalaVersion("2.11.8")
+  val TWO_TWELVE_DEFAULT = ScalaVersion("2.12.1")
 }

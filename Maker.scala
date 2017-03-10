@@ -103,6 +103,7 @@ def snapshot(version_ : String) = {
 
   testReporterProject.publishSonatypeSnapshot(version) andThen 
   testReporterProject.copy(scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT).publishSonatypeSnapshot(version) andThen 
+  testReporterProject.copy(scalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT).publishSonatypeSnapshot(version) andThen 
   makerProject.publishSonatypeSnapshot(version)
 }
 
@@ -113,6 +114,7 @@ def snapshotTestReporter() = {
 def release(version : String) = {
   testReporterProject.publishToSonatype(version) andThen 
   testReporterProject.copy(scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT).publishToSonatype(version) andThen 
+  testReporterProject.copy(scalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT).publishToSonatype(version) andThen 
   makerProject.publishToSonatype(version)
 }
 
