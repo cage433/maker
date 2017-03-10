@@ -40,7 +40,7 @@ lazy val testReporterModule = new Module(
 ) with ClassicLayout with TmuxIntegration {
   override def dependencies() = {
     Vector(
-      "org.scalatest" % "scalatest" %%  "2.2.0"
+      "org.scalatest" % "scalatest" %%  "3.0.1"
     )
   }
   override def scalacOptions = Seq("-feature", "-deprecation", "-Xfatal-warnings")
@@ -62,7 +62,7 @@ lazy val makerModule = new Module(
 ) with ClassicLayout with Bootstrapper {
   override def dependencies() = {
     Vector(
-      "org.scalatest" % "scalatest" %% "2.2.0",
+      "org.scalatest" % "scalatest" %% "3.0.1",
       "ch.qos.logback" % "logback-classic" % "1.0.6",
       "org.slf4j" % "jcl-over-slf4j" % "1.6.1",
       "commons-io" % "commons-io" % "2.1",
