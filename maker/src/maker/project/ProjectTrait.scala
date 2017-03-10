@@ -46,7 +46,7 @@ trait ProjectTrait extends MakerConfig with ScalaJars with Log {
   val analyses = new ConcurrentHashMap[File, Analysis]()
 
   val rootAbsoluteFile = root.asAbsoluteFile
-  protected def name : String
+  def name : String
   def extraUpstreamTasks(task: Task): Seq[Task] = Nil
   def extraDownstreamTasks(task: Task): Seq[Task] = Nil
 
