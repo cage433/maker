@@ -63,22 +63,22 @@ lazy val makerModule = new Module(
   override def dependencies() = {
     Vector(
       "org.scalatest" % "scalatest" %% "3.0.1",
-      "ch.qos.logback" % "logback-classic" % "1.0.6",
-      "org.slf4j" % "jcl-over-slf4j" % "1.6.1",
-      "commons-io" % "commons-io" % "2.1",
-      "com.typesafe.zinc" % "zinc" % "0.3.7",
-      "org.apache.httpcomponents" % "httpclient" % "4.3",
-      "org.scalaz" % "scalaz-core" %% "7.0.1",
-      "io.spray" % "spray-json_2.10" % "1.3.1",
+      "ch.qos.logback" % "logback-classic" % "1.2.1",
+      "org.slf4j" % "jcl-over-slf4j" % "1.7.24",
+      "commons-io" % "commons-io" % "2.5",
+      "com.typesafe.zinc" % "zinc" % "0.3.13",
+      "org.apache.httpcomponents" % "httpclient" % "4.5.3",
+      "org.scalaz" % "scalaz-core" %% "7.2.9",
+      "io.spray" % "spray-json_2.10" % "1.3.3",
       "javax.inject" % "javax.inject" %  "1", 
       "org.apache.commons" % "commons-exec" % "1.3",
-      "org.apache.maven" % "maven-aether-provider" % "3.2.5",
-      "org.eclipse.aether" % "aether-connector-basic" % "1.0.0.v20140518",
-      "org.eclipse.aether" % "aether-impl" % "1.0.0.v20140518",
-      "org.eclipse.aether" % "aether-transport-file" % "1.0.0.v20140518",
-      "org.eclipse.aether" % "aether-transport-http" % "1.0.0.v20140518",
-      "org.eclipse.aether" % "aether-test-util" % "1.0.0.v20140518",
-      "com.google.guava" % "guava" % "18.0"
+      "org.apache.maven" % "maven-aether-provider" % "3.3.9",
+      "org.eclipse.aether" % "aether-connector-basic" % "1.1.0",
+      "org.eclipse.aether" % "aether-impl" % "1.1.0",
+      "org.eclipse.aether" % "aether-transport-file" % "1.1.0",
+      "org.eclipse.aether" % "aether-transport-http" % "1.1.0",
+      "org.eclipse.aether" % "aether-test-util" % "1.1.0",
+      "com.google.guava" % "guava" % "21.0"
     )
   }
   override def scalacOptions = Seq("-feature", "-deprecation", "-Xfatal-warnings")

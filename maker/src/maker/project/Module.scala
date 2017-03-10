@@ -22,7 +22,7 @@ import org.apache.commons.io.output.TeeOutputStream
     name : String,
     compileDependencies : Seq[Module] = Nil,
     testDependencies : Seq[Module] = Nil,
-    scalaVersion: ScalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT,
+    scalaVersion: ScalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT,
     extraJars: Seq[File] = Nil,                                   /* Initital use case is to add jfxrt.jar */
     extraTestSystemProperties: Seq[String] = Nil
 
