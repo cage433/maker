@@ -36,7 +36,7 @@ def extraPomInfo : List[NodeSeq] = {
 lazy val testReporterModule = new Module(
   root = file("test-reporter").asAbsoluteFile, 
   name = "maker-test-reporter",
-  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
+  scalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT
 ) with ClassicLayout with TmuxIntegration {
   override def dependencies() = {
     Vector(
@@ -51,14 +51,14 @@ lazy val testReporterProject = new Project(
   name = "maker-test-reporter",
   root = file("test-reporter").asAbsoluteFile, 
   modules = List(testReporterModule),
-  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT,
+  scalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT,
   extraProjectPomInfo = extraPomInfo
 )
 
 lazy val makerModule = new Module(
   root = file("maker").asAbsoluteFile,
   name = "maker",
-  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT
+  scalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT
 ) with ClassicLayout with Bootstrapper {
   override def dependencies() = {
     Vector(
@@ -69,7 +69,7 @@ lazy val makerModule = new Module(
       "com.typesafe.zinc" % "zinc" % "0.3.13",
       "org.apache.httpcomponents" % "httpclient" % "4.5.3",
       "org.scalaz" % "scalaz-core" %% "7.2.9",
-      "io.spray" % "spray-json_2.10" % "1.3.3",
+      "io.spray" % "spray-json_2.12" % "1.3.3",
       "javax.inject" % "javax.inject" %  "1", 
       "org.apache.commons" % "commons-exec" % "1.3",
       "org.apache.maven" % "maven-aether-provider" % "3.3.9",
@@ -89,7 +89,7 @@ lazy val makerProject = new Project(
   name = "maker", 
   root = file("."), 
   modules = List(makerModule),
-  scalaVersion = ScalaVersion.TWO_TEN_DEFAULT,
+  scalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT,
   extraProjectPomInfo = extraPomInfo
 ) with TmuxIntegration  
 // Used to disambiguate which maker is running in the repl.
@@ -112,10 +112,8 @@ def snapshotTestReporter() = {
 }
 
 def release(version : String) = {
-  testReporterProject.publishToSonatype(version) andThen 
-  testReporterProject.copy(scalaVersion = ScalaVersion.TWO_ELEVEN_DEFAULT).publishToSonatype(version) andThen 
-  testReporterProject.copy(scalaVersion = ScalaVersion.TWO_TWELVE_DEFAULT).publishToSonatype(version) andThen 
-  makerProject.publishToSonatype(version)
+  makerProject.publishToSonatype(version) andThen
+  testReporterProject.publishToSonatype(version) 
 }
 
 import makerProject._

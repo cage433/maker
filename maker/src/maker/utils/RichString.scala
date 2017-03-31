@@ -60,7 +60,7 @@ object RichString {
 		def % (args: Any*) = String.format(s, box(nullsafe(args)):_*)
     import ScreenUtils.EscapeChars
 
-    private def inColourCode(code: String) = if (EscapeChars) "\033[" + code + "m" + s + "\033[0m" else s
+    private def inColourCode(code: String) = if (EscapeChars) "\u001b[" + code + "m" + s + "\u001b[0m" else s
     def inGreen = inColourCode("0;32")
     def inLightRed = inColourCode("1;31")
     def inRed = inColourCode("0;31")

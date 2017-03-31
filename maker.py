@@ -15,27 +15,27 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "0.40"
-MAKER_SCALA_VERSION = "2.10.4"
+MAKER_VERSION       = "0.42"
+MAKER_SCALA_VERSION = "2.12.1"
 SONATYPE_SNAPSHOTS  = "http://oss.sonatype.org/content/repositories/snapshots/"
 SONATYPE_RELEASES   = "http://oss.sonatype.org/content/repositories/releases/"
 MAVEN               = "http://repo1.maven.org/maven2/"
 TYPESAFE            = "http://repo.typesafe.com/typesafe/releases/"
-MAKER_BINARIES      = [ (SONATYPE_RELEASES, "com.github.cage433", "maker_2.10", MAKER_VERSION),
-                        (SONATYPE_RELEASES, "com.github.cage433", "maker-test-reporter_2.10", MAKER_VERSION)
+MAKER_BINARIES      = [ (SONATYPE_RELEASES, "com.github.cage433", "maker_2.12", MAKER_VERSION),
+                        (SONATYPE_RELEASES, "com.github.cage433", "maker-test-reporter_2.12", MAKER_VERSION)
                         ]
 SCALA_LIBRARIES     = [ (MAVEN, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
-                        (MAVEN, "org.scala-lang", "jline", MAKER_SCALA_VERSION),
                         (MAVEN, "org.scala-lang", "scala-compiler", MAKER_SCALA_VERSION),
                         (MAVEN, "org.scala-lang", "scala-reflect", MAKER_SCALA_VERSION)]
 # GENERATED MAKER DEPENDENCIES
 MAKER_DEPENDENCIES  = [
-	(MAVEN, "org/scala-lang", "scala-library", "2.10.4"),
-	(MAVEN, "org/scala-lang", "scala-compiler", "2.10.4"),
-	(MAVEN, "org/scala-lang", "scala-reflect", "2.10.4"),
-	(MAVEN, "com/github/cage433", "maker-test-reporter_2.10", "0.39"),
-	(MAVEN, "org/scalatest", "scalatest_2.10", "3.0.1"),
-	(MAVEN, "org/scalactic", "scalactic_2.10", "3.0.1"),
+	(MAVEN, "org/scala-lang", "scala-library", "2.12.1"),
+	(MAVEN, "org/scala-lang", "scala-compiler", "2.12.1"),
+	(MAVEN, "org/scala-lang", "scala-reflect", "2.12.1"),
+	(MAVEN, "org/scala-lang/modules", "scala-xml_2.12", "1.0.6"),
+	(MAVEN, "org/scalatest", "scalatest_2.12", "3.0.1"),
+	(MAVEN, "org/scalactic", "scalactic_2.12", "3.0.1"),
+	(MAVEN, "org/scala-lang/modules", "scala-parser-combinators_2.12", "1.0.4"),
 	(MAVEN, "ch/qos/logback", "logback-classic", "1.2.1"),
 	(MAVEN, "ch/qos/logback", "logback-core", "1.2.1"),
 	(MAVEN, "org/slf4j", "slf4j-api", "1.7.22"),
@@ -48,8 +48,8 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/apache/httpcomponents", "httpcore", "4.4.6"),
 	(MAVEN, "commons-logging", "commons-logging", "1.2"),
 	(MAVEN, "commons-codec", "commons-codec", "1.9"),
-	(MAVEN, "org/scalaz", "scalaz-core_2.10", "7.2.9"),
-	(MAVEN, "io/spray", "spray-json_2.10", "1.3.3"),
+	(MAVEN, "org/scalaz", "scalaz-core_2.12", "7.2.9"),
+	(MAVEN, "io/spray", "spray-json_2.12", "1.3.3"),
 	(MAVEN, "javax/inject", "javax.inject", "1"),
 	(MAVEN, "org/apache/commons", "commons-exec", "1.3"),
 	(MAVEN, "org/apache/maven", "maven-aether-provider", "3.3.9"),
@@ -70,7 +70,8 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/eclipse/aether", "aether-transport-file", "1.1.0"),
 	(MAVEN, "org/eclipse/aether", "aether-transport-http", "1.1.0"),
 	(MAVEN, "org/eclipse/aether", "aether-test-util", "1.1.0"),
-	(MAVEN, "com/google/guava", "guava", "21.0")
+	(MAVEN, "com/google/guava", "guava", "21.0"),
+	(MAVEN, "com/github/cage433", "maker-test-reporter_2.12", "0.40")
 ]
 # GENERATED MAKER DEPENDENCIES END
 

@@ -3,7 +3,7 @@ package maker.project
 import org.eclipse.aether.util.artifact.JavaScopes
 import org.eclipse.aether.artifact.DefaultArtifact
 import org.eclipse.aether.graph.{Exclusion, Dependency}
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import maker.ScalaVersion
 
 sealed trait ArtifactScalaVersion {
@@ -90,7 +90,7 @@ case class RichDependency(
       artifact,
       scope,
       isOptional,
-      makeExclusions
+      makeExclusions.asJava
     )
   }
 }

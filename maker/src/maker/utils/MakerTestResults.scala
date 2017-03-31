@@ -7,12 +7,14 @@ import scala.Console
 import scala.util.Properties
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.concurrent._
 import java.io._
 import maker.utils.FileUtils._
 import maker.utils.RichString._
 import maker.utils.RichIterable._
 import maker.project.ProjectTrait
 import maker.task.tasks.RunUnitTestsTask
+import scala.collection.JavaConverters._
 
 
 case class TestIdentifier(suite : String, suiteClass : String, test : String) extends Ordered[TestIdentifier]{
@@ -51,8 +53,8 @@ object MakerTestResults{
   def apply(project: ProjectTrait): MakerTestResults = apply(RunUnitTestsTask.testOutputFile(project))
   def apply(file : File): MakerTestResults = {
 
-    val startTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
-    val endTimeInNanos : HashMap[TestIdentifier, Long] = HashMap[TestIdentifier, Long]()
+    val startTimeInNanos = new ConcurrentHashMap[TestIdentifier, Long]()
+    val endTimeInNanos = new ConcurrentHashMap[TestIdentifier, Long]()
     var failures : List[(TestIdentifier, TestFailure)] = Nil
     
     withFileLineReader(file){
@@ -62,10 +64,10 @@ object MakerTestResults{
         fields.head match {
           case "START" => 
             val List(suite, suiteClass, test, time) = fields.tail
-            startTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
+            startTimeInNanos.put(TestIdentifier(suite, suiteClass, test), time.toLong)
           case "END" => 
             val List(suite, suiteClass, test, time) = fields.tail
-            endTimeInNanos += TestIdentifier(suite, suiteClass, test) -> time.toLong
+            endTimeInNanos.put(TestIdentifier(suite, suiteClass, test),time.toLong)
           case "FAILURE" => 
             val suite :: suiteClass :: test :: message :: throwable = fields.tail
             failures ::= (TestIdentifier(suite, suiteClass, test), TestFailure(message, throwable))
@@ -110,9 +112,9 @@ object MakerTestResults{
 
 case class MakerTestResults (
 
-  startTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
-  endTimeInNanos : HashMap[TestIdentifier, Long] = new HashMap[TestIdentifier, Long]() with SynchronizedMap[TestIdentifier, Long],
-  failures : List[(TestIdentifier, TestFailure)] = Nil
+  startTimeInNanos: ConcurrentHashMap[TestIdentifier, Long] = new ConcurrentHashMap[TestIdentifier, Long](),
+  endTimeInNanos: ConcurrentHashMap[TestIdentifier, Long] = new ConcurrentHashMap[TestIdentifier, Long](),
+  failures: List[(TestIdentifier, TestFailure)] = Nil
 ) {
   import MakerTestResults._
 
@@ -123,35 +125,43 @@ case class MakerTestResults (
   def failedTests = failures.map(_._1)
   
 
-  def ++ (rhs : MakerTestResults) = MakerTestResults(
-    startTimeInNanos ++ rhs.startTimeInNanos,
-    endTimeInNanos ++ rhs.endTimeInNanos,
-    (failures ::: rhs.failures).sortWith(_._1 < _._1)
-  )
+  def ++ (rhs : MakerTestResults) = {
+    val newStartTimes = new ConcurrentHashMap[TestIdentifier, Long]()
+    newStartTimes.putAll(startTimeInNanos)
+    newStartTimes.putAll(rhs.startTimeInNanos)
+    val newEndTimes = new ConcurrentHashMap[TestIdentifier, Long]()
+    newEndTimes.putAll(endTimeInNanos)
+    newEndTimes.putAll(rhs.endTimeInNanos)
+    MakerTestResults(
+      newStartTimes, 
+      newEndTimes,
+      (failures ::: rhs.failures).sortWith(_._1 < _._1)
+    )
+  }
 
   def succeeded = failures.isEmpty && startTimeInNanos.size == endTimeInNanos.size
   def failed = !succeeded
-  def unfinished = startTimeInNanos.keySet -- (endTimeInNanos.keySet ++ failures.map(_._1)) 
-  def suites = startTimeInNanos.keySet.map(_.suiteClass)
-  def tests = startTimeInNanos.keySet.map(_.test)
-  def endTime :Long = endTimeInNanos.values.toList.sortWith(_>_).headOption.getOrElse(0L)
-  def startTime :Long = endTimeInNanos.values.toList.sortWith(_<_).headOption.getOrElse(0L)
+  def unfinished = startTimeInNanos.keys.asScala.toSet -- (endTimeInNanos.keys.asScala ++ failures.map(_._1)) 
+  def suites = startTimeInNanos.keys.asScala.map(_.suiteClass)
+  def tests = startTimeInNanos.keys.asScala.map(_.test).toSeq
+  def endTime :Long = endTimeInNanos.values.asScala.toList.sortWith(_>_).headOption.getOrElse(0L)
+  def startTime :Long = endTimeInNanos.values.asScala.toList.sortWith(_<_).headOption.getOrElse(0L)
   def time = (endTime - startTime) / 1.0e9
   def failingSuiteClasses = failingTestIDs.map(_.suiteClass).distinct.filterNot(_ == "")
 
   def testsOrderedByTime : List[(TestIdentifier, Long)] = {
-    endTimeInNanos.map{
+    endTimeInNanos.asScala.map{
       case (id, endTime) => 
-        (id, endTime - startTimeInNanos(id))
+        (id, endTime - startTimeInNanos.get(id))
       }.toList.sortWith(_._2 > _._2)
   }
 
   def orderedSuiteTimes : List[(String, Long, Long, Int)] /*(suite, clock time, cpu time, num tests) */ = {
     var testTimesBySuite = Map[String, List[(Long, Long)]]()
 
-    endTimeInNanos.foreach{
+    endTimeInNanos.asScala.foreach{
       case (id, testEndTime) =>
-        val testStartTime = startTimeInNanos(id)
+        val testStartTime = startTimeInNanos.get(id)
         testTimesBySuite += (id.suite -> ((testStartTime, testEndTime) :: testTimesBySuite.getOrElse(id.suite, Nil)))
     }
     testTimesBySuite.map{

@@ -19,7 +19,7 @@ object ScreenUtils{
     }
 
   private def magic(): Unit = {
-    println("\033[2J\033[1000A")
+    println("\u001b[2J\u001b[1000A")
   }
 }
 

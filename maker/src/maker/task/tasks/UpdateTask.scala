@@ -5,7 +5,7 @@ import maker.utils.FileUtils._
 import maker.task._
 import maker.utils._
 import maker.ScalaVersion
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import java.net.URL
 import java.io.File
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory
@@ -130,7 +130,10 @@ case class UpdateTask(project : ProjectTrait)
     }
     val aetherDependencies = download.aetherDependencies(richDependencies)
 
-    val collectRequest = new CollectRequest(aetherDependencies, new java.util.LinkedList[Dependency](), repos)
+    val collectRequest = new CollectRequest(
+      aetherDependencies.asJava, 
+      new java.util.LinkedList[Dependency](), 
+      repos)
     val dependencyRequest = new DependencyRequest(
       collectRequest,
       DependencyFilterUtils.classpathFilter(download.scope)
@@ -138,7 +141,7 @@ case class UpdateTask(project : ProjectTrait)
 
     val artifacts = aetherSystem.resolveDependencies(
       dependencyRequest
-    ).getArtifactResults.map(_.getArtifact).filter(download.isOfCorrectType)
+    ).getArtifactResults.asScala.map(_.getArtifact).filter(download.isOfCorrectType)
 
     collectRequest.setRepositories(repos)
     val collectResult : CollectResult = aetherSystem.collectDependencies(collectRequest)
@@ -200,7 +203,7 @@ object UpdateTask {
       b.addLine("\n" + tb.toString)
       b.addLine("\n\n" + "Proxy settings may be the cause - env vars are ".inRed)
       val etb = TableBuilder("Variable              ", "Value")
-      System.getenv().filterKeys(_.toLowerCase.contains("proxy")).foreach{
+      System.getenv().asScala.filterKeys(_.toLowerCase.contains("proxy")).foreach{
         case (variable, value) => 
           etb.addRow(variable, value.truncate(100))
       }

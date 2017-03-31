@@ -23,6 +23,11 @@ import java.util.jar.{JarOutputStream, JarEntry}
 import scala.collection.immutable.Nil
 import maker.ScalaVersion
 
+case class RepoUris(repositoryUris : Seq[String]){
+  require(repositoryUris.size == 1, s"expected a single uri, got $repositoryUris")
+  def repoIdentifier = repositoryUris(0).split('/').last
+}
+
 case class PublishToSonatype(project : Project, version : String) 
   extends Task 
   with SonatypeTask
@@ -71,6 +76,8 @@ case class PublishToSonatype(project : Project, version : String)
     }
   }
 
+  implicit val jsonReposFormatter = jsonFormat1(RepoUris)
+
   private def uploadToSonatype(bundle : File) : Either[ErrorMessage, JsonResponse] = {
     Post(
       s"${sonatypeRepository}/staging/bundle_upload",
@@ -80,6 +87,8 @@ case class PublishToSonatype(project : Project, version : String)
       JsonParser(responseString).convertTo[RepoUris].repoIdentifier
     }
   }
+
+
 
   private def waitTillRepoIsClosed(stagingRepo : String) : Either[ErrorMessage, Unit] = {
     var isClosed = false
@@ -106,12 +115,6 @@ case class PublishToSonatype(project : Project, version : String)
 
 
 
-  case class RepoUris(repositoryUris : Seq[String]){
-    require(repositoryUris.size == 1, s"expected a single uri, got $repositoryUris")
-    def repoIdentifier = repositoryUris(0).split('/').last
-  }
-
-  implicit val jsonReposFormatter = jsonFormat1(RepoUris)
  
   private def releaseStagingRepo(tmpDir : File, stagingRepo : StagingRepo) : Either[ErrorMessage, Unit] = {
     Post(

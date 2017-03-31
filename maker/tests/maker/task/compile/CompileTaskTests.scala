@@ -82,6 +82,7 @@ class CompileTaskTests
           val scalaVersionText = scalaVersion match {
             case TWO_ELEVEN_DEFAULT => "TWO_ELEVEN_DEFAULT"
             case TWO_TEN_DEFAULT => "TWO_TEN_DEFAULT"
+            case _ => ???
           }
           writeToFile(
             file(rootDirectory, "Project.scala"),
