@@ -93,6 +93,7 @@ case class RunUnitTestsTask(
         module.runtimeClasspath(CompilePhase.PHASES)) ++:
         (opts :+ "org.scalatest.tools.Runner") ++:
         testParameters ++: suiteParameters
+      args.foreach(println)
       Command(args : _*).withOutputTo(System.err)
     }
 

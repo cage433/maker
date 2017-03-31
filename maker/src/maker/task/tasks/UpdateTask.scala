@@ -123,11 +123,6 @@ case class UpdateTask(project : ProjectTrait)
       project.scalaVersion.scalaCompilerRichDependency +:
       project.upstreamDependencies
 
-    if (project.name != "maker-test-reporter") {
-      val testRepDep: RichDependency = 
-        "com.github.cage433" % "maker-test-reporter" %% Option(System.getProperty("maker.version")).getOrElse(throw new Exception("property maker.version not set"))
-      richDependencies = richDependencies :+ testRepDep
-    }
     val aetherDependencies = download.aetherDependencies(richDependencies)
 
     val collectRequest = new CollectRequest(aetherDependencies, new java.util.LinkedList[Dependency](), repos)

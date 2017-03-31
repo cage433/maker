@@ -71,6 +71,7 @@ lazy val makerModule = new Module(
       "org.scalaz" % "scalaz-core" %% "7.2.9",
       "io.spray" % "spray-json_2.10" % "1.3.3",
       "javax.inject" % "javax.inject" %  "1", 
+      "com.github.cage433" % "maker-test-reporter" %% "0.44",
       "org.apache.commons" % "commons-exec" % "1.3",
       "org.apache.maven" % "maven-aether-provider" % "3.3.9",
       "org.eclipse.aether" % "aether-connector-basic" % "1.1.0",

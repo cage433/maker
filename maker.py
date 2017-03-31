@@ -15,15 +15,13 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "0.40"
+MAKER_VERSION       = "0.44"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE_SNAPSHOTS  = "http://oss.sonatype.org/content/repositories/snapshots/"
 SONATYPE_RELEASES   = "http://oss.sonatype.org/content/repositories/releases/"
 MAVEN               = "http://repo1.maven.org/maven2/"
 TYPESAFE            = "http://repo.typesafe.com/typesafe/releases/"
-MAKER_BINARIES      = [ (SONATYPE_RELEASES, "com.github.cage433", "maker_2.10", MAKER_VERSION),
-                        (SONATYPE_RELEASES, "com.github.cage433", "maker-test-reporter_2.10", MAKER_VERSION)
-                        ]
+MAKER_BINARIES      = [ (SONATYPE_RELEASES, "com.github.cage433", "maker_2.10", MAKER_VERSION) ]
 SCALA_LIBRARIES     = [ (MAVEN, "org.scala-lang", "scala-library", MAKER_SCALA_VERSION),
                         (MAVEN, "org.scala-lang", "jline", MAKER_SCALA_VERSION),
                         (MAVEN, "org.scala-lang", "scala-compiler", MAKER_SCALA_VERSION),
@@ -33,7 +31,6 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/scala-lang", "scala-library", "2.10.4"),
 	(MAVEN, "org/scala-lang", "scala-compiler", "2.10.4"),
 	(MAVEN, "org/scala-lang", "scala-reflect", "2.10.4"),
-	(MAVEN, "com/github/cage433", "maker-test-reporter_2.10", "0.39"),
 	(MAVEN, "org/scalatest", "scalatest_2.10", "3.0.1"),
 	(MAVEN, "org/scalactic", "scalactic_2.10", "3.0.1"),
 	(MAVEN, "ch/qos/logback", "logback-classic", "1.2.1"),
@@ -70,7 +67,8 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/eclipse/aether", "aether-transport-file", "1.1.0"),
 	(MAVEN, "org/eclipse/aether", "aether-transport-http", "1.1.0"),
 	(MAVEN, "org/eclipse/aether", "aether-test-util", "1.1.0"),
-	(MAVEN, "com/google/guava", "guava", "21.0")
+	(MAVEN, "com/google/guava", "guava", "21.0"),
+	(MAVEN, "com/github/cage433", "maker-test-reporter_2.10", "0.44")
 ]
 # GENERATED MAKER DEPENDENCIES END
 

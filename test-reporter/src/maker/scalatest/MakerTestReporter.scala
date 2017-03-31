@@ -102,11 +102,10 @@ class MakerTestReporter extends Reporter{
           case None => t.suiteName
         }
         Log.error(inColour(Red, "FAILED " + source + " " + t.testName))
-        val throwableAsList : List[String] = t.throwable.map(stackTraceAsList).getOrElse(List[String](" ")) // mkstring/split hack
-        appendToOutputFile("FAILURE" :: t.suiteName :: t.suiteClassName.getOrElse("") :: t.testName :: t.message :: throwableAsList : _*)
+        appendToOutputFile("FAILURE" :: t.suiteName :: t.suiteClassName.getOrElse("") :: t.testName :: t.message :: Nil : _*)
       }
       case t : RunAborted => {
-        Log.fatal("Run aborted" + t.message + t.throwable.map(stackTraceAsList).getOrElse(List[String]()).mkString("\n\t", "\n\t", ""))
+        Log.fatal("Run aborted" + t.message) 
       }
       case e =>  //Console.err.println(e)
     }
