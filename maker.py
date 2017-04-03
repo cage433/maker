@@ -343,7 +343,7 @@ def test_reporter_classpath_component():
         maker_root = os.path.dirname(os.path.realpath(__file__))
         return os.path.join(maker_root, "test-reporter", "target-maker", MAKER_SCALA_VERSION, "classes") 
     else:
-        for jar in maker_binaries():
+        for jar in maker_dependencies():
             if "test-reporter" in jar:
                 return jar
     log.critical("Can't find test reporter jar")
