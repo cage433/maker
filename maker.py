@@ -15,7 +15,7 @@ from glob import glob
 import sys
 
 # Computer generated section
-MAKER_VERSION       = "0.44"
+MAKER_VERSION       = "0.45"
 MAKER_SCALA_VERSION = "2.10.4"
 SONATYPE_SNAPSHOTS  = "http://oss.sonatype.org/content/repositories/snapshots/"
 SONATYPE_RELEASES   = "http://oss.sonatype.org/content/repositories/releases/"
@@ -68,7 +68,7 @@ MAKER_DEPENDENCIES  = [
 	(MAVEN, "org/eclipse/aether", "aether-transport-http", "1.1.0"),
 	(MAVEN, "org/eclipse/aether", "aether-test-util", "1.1.0"),
 	(MAVEN, "com/google/guava", "guava", "21.0"),
-	(MAVEN, "com/github/cage433", "maker-test-reporter_2.10", "0.44")
+	(MAVEN, "com/github/cage433", "maker-test-reporter_2.10", "0.45")
 ]
 # GENERATED MAKER DEPENDENCIES END
 
