@@ -42,19 +42,6 @@ thus :-
 The project file, Project.scala, defines the modules and any dependencies between them. 
 
 
-
-External Resources
-------------------
-
-Originally Maker used Ivy to manage its external dependencies, using standard ivy.xml and ivy-settings.xml files to describe the external resources and resolvers. This was dropped for two reasons. 
-
-* Ivy is *slow* - even when all its dependencies are up to date it can take several seconds to decide it has nothing to  do - this went against the purpose of Maker, to speed up the development cycle. 
-* I believe transitive dependencies to be the work of the Devil, and so always explicitly listed the external jars 
-  needed - doing this seemed to remove much of Ivy's purpose
-
-Instead of Ivy, Maker simply uses curl to download external jars. Each module keeps its dependencies in the file module/external-resources, each line defines a resource, with the syntax `org name version`. A single top level config file, external-resource-config, is used to maintain a list of resolvers, and also abbreviations. See the sample projects included for examples of these files - or even Maker itself.
-
-
 Launching Maker
 ---------------
 
